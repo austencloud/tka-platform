@@ -11,10 +11,12 @@
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
+  import { customizeSection } from "../state/shape-matrix-customize";
   import { setShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
   import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
   import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
@@ -72,12 +74,12 @@
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
     { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
   ];
+  /* One split for both surfaces. The panes stay where they are while the
+     grid and the detail inside them crossfade, so a split set on one surface
+     is the split on the other. */
   let sizes = $state([1.28, 0.82]);
-  let theorySizes = $state([1.28, 0.82]);
-  let matrixPaneElement: HTMLDivElement;
+  let gridPaneElement: HTMLDivElement;
   let detailPaneElement: HTMLDivElement;
-  let theoryPaneElement: HTMLDivElement;
-  let theoryDetailElement: HTMLDivElement;
   let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
   let workspaceElement: HTMLDivElement;
 
@@ -96,12 +98,10 @@
   const STAGE_MIN = 380;
   const CUSTOMIZE_MIN = 440;
   const customizeOpen = $derived(
-    !appState.compact &&
-      (animationState.activeSection !== null || appState.propPickerOpen)
+    customizeSection(appState, animationState) !== null
   );
   let restingSizes: number[] | null = null;
-  let restingTheorySizes: number[] | null = null;
-  let customizeSurface: "matrix" | "theory" | null = null;
+  let customizeApplied = false;
 
   function customizeSplit(): number[] | null {
     if (!workspaceElement) return null;
@@ -142,23 +142,16 @@
   }
 
   $effect(() => {
-    const target = customizeOpen ? (theory ? "theory" : "matrix") : null;
-    if (target === customizeSurface) return;
+    const target = customizeOpen;
+    if (target === customizeApplied) return;
     untrack(() => {
-      if (customizeSurface === "matrix" && restingSizes) sizes = restingSizes;
-      if (customizeSurface === "theory" && restingTheorySizes) {
-        theorySizes = restingTheorySizes;
-      }
-      if (target === "matrix") {
+      if (customizeApplied && restingSizes) sizes = restingSizes;
+      if (target) {
         restingSizes = [...sizes];
         const split = customizeSplit();
         if (split) sizes = split;
-      } else if (target === "theory") {
-        restingTheorySizes = [...theorySizes];
-        const split = customizeSplit();
-        if (split) theorySizes = split;
       }
-      customizeSurface = target;
+      customizeApplied = target;
     });
   });
 
@@ -211,7 +204,7 @@
     const previous = revealedToken;
     revealedToken = token;
     if (previous === null || previous === token) return;
-    const pane = theory ? theoryDetailElement : detailPaneElement;
+    const pane = detailPaneElement;
     if (!pane) return;
     void tick().then(() => {
       runShapeMatrixDetailReveal(pane, { hero: !appState.compact });
@@ -227,13 +220,8 @@
     void tick().then(() => {
       if (cancelled) return;
       frame = requestAnimationFrame(() => {
-        const pane = theory
-          ? request.target === "matrix"
-            ? theoryPaneElement
-            : theoryDetailElement
-          : request.target === "matrix"
-            ? matrixPaneElement
-            : detailPaneElement;
+        const pane =
+          request.target === "matrix" ? gridPaneElement : detailPaneElement;
         if (!pane) return;
         const focusTarget =
           request.target === "matrix"
@@ -254,14 +242,42 @@
   });
 </script>
 
-{#snippet matrixPane()}
+{#snippet matrixGrid()}
+  <!-- The crossfade lays its sources out as absolutely positioned blocks. Each
+       pane root fills by height, so each source gets one block that is the
+       source's whole box for the root to fill. -->
+  <div class="pane-source">
+    <ShapeMatrixMatrixPane onselect={selectPair} onsurprise={surpriseMe} />
+  </div>
+{/snippet}
+
+{#snippet theoryGrid()}
+  <div class="pane-source">
+    <ShapeMatrixTheoryPane
+      emphasizedAxis={theoryEditingAxis}
+      onsurprise={surpriseMe}
+    />
+  </div>
+{/snippet}
+
+<!-- One grid pane for both surfaces. The surface changes what the grid is
+     made of, not where it is: the Matrix grid and the Theory grid crossfade
+     inside the pane, and the customize workspace covers the pane once,
+     whichever grid is showing. -->
+{#snippet gridPane()}
   <div
     class="workspace-pane"
-    bind:this={matrixPaneElement}
+    bind:this={gridPaneElement}
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixMatrixPane onselect={selectPair} onsurprise={surpriseMe} />
+    <DualSourceCrossfade
+      active={theory ? "second" : "first"}
+      duration={booted ? DURATION.normal : 0}
+      first={matrixGrid}
+      second={theoryGrid}
+    />
+    <ShapeMatrixCustomizeWorkspace />
   </div>
 {/snippet}
 
@@ -281,6 +297,19 @@
   </button>
 {/snippet}
 
+{#snippet matrixDetail()}
+  <div class="pane-source">
+    <ShapeMatrixDetailPane />
+  </div>
+{/snippet}
+
+{#snippet theoryDetail()}
+  <div class="pane-source">
+    <ShapeMatrixTheoryDetail />
+  </div>
+{/snippet}
+
+<!-- One detail pane, the same way: the two details crossfade inside it. -->
 {#snippet detailPane()}
   <div
     class="workspace-pane"
@@ -288,106 +317,11 @@
     inert={appState.compact && appState.activeView !== "detail"}
     aria-hidden={appState.compact && appState.activeView !== "detail"}
   >
-    <ShapeMatrixDetailPane />
-  </div>
-{/snippet}
-
-{#snippet matrixWorkspace()}
-  <!-- The crossfade lays its sources out as absolutely positioned blocks, so a
-       child that fills by flex-grow has nothing to grow inside. Each source
-       gets its own filling stage, the way the viewer's panel workspace does. -->
-  <div class="workspace-source">
-    <PanelGroup
-      direction="horizontal"
-      bind:sizes
-      gap={appState.compact ? 0 : 8}
-      panels={[
-        {
-          id: "matrix",
-          content: matrixPane,
-          defaultSize: 1.28,
-          minSize: 440,
-          fixedSize: appState.compact
-            ? appState.activeView === "matrix"
-              ? "100%"
-              : "0px"
-            : undefined,
-          resizable: !appState.compact,
-        },
-        {
-          id: "realization",
-          content: detailPane,
-          defaultSize: 0.82,
-          minSize: 380,
-          fixedSize: appState.compact
-            ? appState.activeView === "detail"
-              ? "100%"
-              : "0px"
-            : undefined,
-        },
-      ]}
-    />
-  </div>
-{/snippet}
-
-{#snippet theoryPane()}
-  <div
-    class="workspace-pane"
-    bind:this={theoryPaneElement}
-    inert={appState.compact && appState.activeView !== "matrix"}
-    aria-hidden={appState.compact && appState.activeView !== "matrix"}
-  >
-    <ShapeMatrixTheoryPane
-      emphasizedAxis={theoryEditingAxis}
-      onsurprise={surpriseMe}
-    />
-  </div>
-{/snippet}
-
-{#snippet theoryDetail()}
-  <div
-    class="workspace-pane"
-    bind:this={theoryDetailElement}
-    inert={appState.compact && appState.activeView !== "detail"}
-    aria-hidden={appState.compact && appState.activeView !== "detail"}
-  >
-    <ShapeMatrixTheoryDetail />
-  </div>
-{/snippet}
-
-{#snippet theoryWorkspace()}
-  <!-- Same two panes, same split, same compact behaviour as the Matrix. The
-       surface changes what the grid is made of, not how the app works. -->
-  <div class="workspace-source">
-    <PanelGroup
-      direction="horizontal"
-      bind:sizes={theorySizes}
-      gap={appState.compact ? 0 : 8}
-      panels={[
-        {
-          id: "theory-matrix",
-          content: theoryPane,
-          defaultSize: 1.28,
-          minSize: 440,
-          fixedSize: appState.compact
-            ? appState.activeView === "matrix"
-              ? "100%"
-              : "0px"
-            : undefined,
-          resizable: !appState.compact,
-        },
-        {
-          id: "theory-realization",
-          content: theoryDetail,
-          defaultSize: 0.82,
-          minSize: 380,
-          fixedSize: appState.compact
-            ? appState.activeView === "detail"
-              ? "100%"
-              : "0px"
-            : undefined,
-        },
-      ]}
+    <DualSourceCrossfade
+      active={theory ? "second" : "first"}
+      duration={booted ? DURATION.normal : 0}
+      first={matrixDetail}
+      second={theoryDetail}
     />
   </div>
 {/snippet}
@@ -511,12 +445,38 @@
   </header>
 
   <div class="workspace" bind:this={workspaceElement}>
-    <DualSourceCrossfade
-      active={appState.surface === "matrix" ? "first" : "second"}
-      duration={booted ? DURATION.normal : 0}
-      first={matrixWorkspace}
-      second={theoryWorkspace}
-    />
+    <div class="workspace-source">
+      <PanelGroup
+        direction="horizontal"
+        bind:sizes
+        gap={appState.compact ? 0 : 8}
+        panels={[
+          {
+            id: "matrix",
+            content: gridPane,
+            defaultSize: 1.28,
+            minSize: 440,
+            fixedSize: appState.compact
+              ? appState.activeView === "matrix"
+                ? "100%"
+                : "0px"
+              : undefined,
+            resizable: !appState.compact,
+          },
+          {
+            id: "realization",
+            content: detailPane,
+            defaultSize: 0.82,
+            minSize: 380,
+            fixedSize: appState.compact
+              ? appState.activeView === "detail"
+                ? "100%"
+                : "0px"
+              : undefined,
+          },
+        ]}
+      />
+    </div>
   </div>
 
   <!-- Compact hosts show one pane at a time, so the grid pane that carries
@@ -899,11 +859,20 @@
   }
 
   .workspace-pane {
+    /* The customize workspace covers the grid pane from here. */
+    position: relative;
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .pane-source {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
   /* The compact seam. ShapeMatrixApp decides `compact` in script from the

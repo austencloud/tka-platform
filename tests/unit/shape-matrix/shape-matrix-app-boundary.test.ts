@@ -233,12 +233,18 @@ describe("Shape Matrix app boundary", () => {
     // You are not choosing a shape while you tune its animation, so that is
     // the one region that can be covered while the hero, the relationships,
     // the carousel and the dock stay put.
-    expect(matrixPaneSource).toContain(
-      '<ShapeMatrixCustomizeWorkspace surface="matrix" />'
-    );
-    expect(theoryPaneSource).toContain(
-      '<ShapeMatrixCustomizeWorkspace surface="theory" />'
-    );
+    // Once, in the shell, beside the crossfading grids: switching surfaces
+    // with it open keeps the same workspace rather than swapping it for a
+    // second instance.
+    expect(shellSource).toContain("<ShapeMatrixCustomizeWorkspace />");
+    expect(matrixPaneSource).not.toContain("ShapeMatrixCustomizeWorkspace");
+    expect(theoryPaneSource).not.toContain("ShapeMatrixCustomizeWorkspace");
+    // One split and one pair of panes for both surfaces; the grids and the
+    // details crossfade inside the panes, not two whole workspaces.
+    expect(shellSource.match(/<PanelGroup/g)).toHaveLength(1);
+    expect(shellSource).toContain("first={matrixGrid}");
+    expect(shellSource).toContain("first={matrixDetail}");
+    expect(shellSource).not.toContain("theorySizes");
     expect(matrixPaneSource).toContain("inert={workspaceOpen}");
     expect(theoryPaneSource).toContain("inert={workspaceOpen}");
     for (const pane of [matrixPaneSource, theoryPaneSource]) {
@@ -254,15 +260,26 @@ describe("Shape Matrix app boundary", () => {
     // The dock and the rail are two views of one section.
     expect(workspaceSource).toContain("controlledSection={section}");
     expect(workspaceSource).toContain("onActiveSectionChange={selectSection}");
+    // Whether it is open is decided once, for the workspace, the panes that
+    // go inert under it and the shell that rebalances the split for it.
+    const customizeSource = read(
+      "src/lib/shared/shape-matrix/app/state/shape-matrix-customize.ts"
+    );
+    expect(customizeSource).toContain(
+      'animation.activeSection ?? (app.propPickerOpen ? "props" : null)'
+    );
+    expect(customizeSource).toContain("if (app.compact || !surfaceHasPair(app)) return null;");
     expect(workspaceSource).toContain(
-      'animationState.activeSection ?? (appState.propPickerOpen ? "props" : null)'
+      "customizeSection(appState, animationState)"
+    );
+    expect(matrixPaneSource).toContain("customizeSection(state, animationState)");
+    expect(theoryPaneSource).toContain(
+      "customizeSection(appState, animationState)"
     );
     // A labelled way back, and Escape through the shared layer manager.
     expect(workspaceSource).toContain("Back to grid");
     expect(workspaceSource).toContain('role="dialog"');
-    expect(workspaceSource).toContain(
-      "id: `shape-matrix:${surface}-customize`"
-    );
+    expect(workspaceSource).toContain('id: "shape-matrix:customize"');
 
     // A wide host shows every ability in the workspace, so its dock is one
     // Customize button and the transport; five pills under the animation
@@ -307,9 +324,8 @@ describe("Shape Matrix app boundary", () => {
       "Math.min(need, width * 0.45, width - STAGE_MIN)"
     );
     expect(shellSource).toContain("restingSizes = [...sizes]");
-    expect(shellSource).toContain("restingTheorySizes = [...theorySizes]");
     expect(shellSource).toMatch(
-      /if \(customizeSurface === "matrix" && restingSizes\) sizes = restingSizes;/
+      /if \(customizeApplied && restingSizes\) sizes = restingSizes;/
     );
 
     // The Props pill shows pressed while the sheet is open, without a tray

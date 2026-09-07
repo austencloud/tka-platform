@@ -18,6 +18,12 @@
   Opening also rebalances the two panes toward the animation (the shell owns
   that), since the pages here need one sidebar-width column, not a grid's.
 
+  One instance, over the grid pane, for both surfaces: the shell mounts it
+  once beside the crossfading grids, so switching surfaces with it open keeps
+  the same workspace, rail, page and scroll rather than swapping it for
+  another. A surface with no pair yet has nothing to customize over, and the
+  workspace closes when it arrives on one.
+
   Wide hosts only. Compact hosts show one pane at a time, so this pane is off
   screen while the dock is; the compact settings sheet and the canonical prop
   sheet take over there. -->
@@ -31,38 +37,23 @@
   import { flyFade } from "$lib/shared/transitions/motion";
   import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
-
-  interface Props {
-    /* Both surfaces stay mounted through the workspace transition, so the one
-       that is showing owns the workspace. The other stays empty rather than
-       registering a second Escape layer. */
-    surface: "matrix" | "theory";
-  }
-
-  let { surface }: Props = $props();
+  import {
+    customizeRequest,
+    customizeSection,
+    surfaceHasPair,
+  } from "../state/shape-matrix-customize";
 
   const appState = getShapeMatrixAppContext();
   const animationState = getShapeMatrixAnimationContext();
 
-  /* The open section is the workspace's page. A prop sheet left open on a
-     compact host arrives here as the Props page when the host widens, so the
-     request is honoured rather than stranded. */
-  const section = $derived<PillId | null>(
-    animationState.activeSection ?? (appState.propPickerOpen ? "props" : null)
-  );
-  /* The pair this surface is playing. A surface with no pair yet shows its
-     empty stage, and there is nothing to customize over it. */
-  const hasPair = $derived(
-    surface === "theory"
-      ? appState.theoryPair !== null
-      : appState.selectedPair !== null
-  );
-  const open = $derived(
-    !appState.compact &&
-      appState.surface === surface &&
-      section !== null &&
-      hasPair
-  );
+  /* The surface changes which effects and marks the pages offer, never the
+     workspace itself. */
+  const theory = $derived(appState.surface === "theory");
+  /* The open page, or null while the workspace is closed: a wide host, a
+     requested page, and a pair on the surface that is showing. One owner
+     decides it for the workspace, the panes under it and the shell. */
+  const section = $derived(customizeSection(appState, animationState));
+  const open = $derived(section !== null);
 
   const theoryEffects = ["trails", ...CANVAS2D_HOSTED_EFFECTS] as const;
   let backButton = $state<HTMLButtonElement | null>(null);
@@ -97,8 +88,8 @@
      grid is what that surface shows first, and the choice to customize is
      made on a pair, not carried over from one that could not translate. */
   $effect(() => {
-    if (appState.compact || appState.surface !== surface) return;
-    if (hasPair || section === null) return;
+    if (appState.compact || surfaceHasPair(appState)) return;
+    if (customizeRequest(appState, animationState) === null) return;
     close();
   });
 
@@ -107,7 +98,7 @@
 
     const restoreTo = document.activeElement;
     const unregister = getEscapeLayerManager().register({
-      id: `shape-matrix:${surface}-customize`,
+      id: "shape-matrix:customize",
       canDismiss: () => true,
       dismiss: close,
     });
@@ -160,8 +151,8 @@
         onPropChange={(propType) => void appState.setPropType(propType)}
         showPathShape={false}
         showMotionVisibility={true}
-        showSequenceMarks={surface !== "theory"}
-        availableEffects={surface === "theory" ? theoryEffects : undefined}
+        showSequenceMarks={!theory}
+        availableEffects={theory ? theoryEffects : undefined}
         regionLabel="Animation settings"
       />
     </div>
@@ -174,6 +165,10 @@
     inset: 0;
     /* Above the grid's sticky headers and corner. */
     z-index: 20;
+    /* It covers the whole grid pane, frame and all, so it draws the frame
+       the pane sections draw: one stroke, the same radius. */
+    border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    border-radius: 16px;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;

@@ -3,7 +3,7 @@
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { getShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
-  import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
+  import { customizeSection } from "../state/shape-matrix-customize";
   import ShapeMatrixGridCorner from "./ShapeMatrixGridCorner.svelte";
   import ShapeMatrixRecipeStrip from "./ShapeMatrixRecipeStrip.svelte";
 
@@ -18,11 +18,11 @@
   const state = getShapeMatrixAppContext();
   const animationState = getShapeMatrixAnimationContext();
   const surprise = $derived(onsurprise ?? (() => state.surpriseMe()));
-  /* The customize workspace covers this pane on wide hosts; the grid
-     underneath is not something to tab into while it does. */
+  /* The customize workspace covers this pane on wide hosts (the shell mounts
+     it over the pane, once for both surfaces); the grid underneath is not
+     something to tab into while it does. */
   const workspaceOpen = $derived(
-    !state.compact &&
-      (state.propPickerOpen || animationState.activeSection !== null)
+    customizeSection(state, animationState) !== null
   );
 </script>
 
@@ -60,7 +60,6 @@
       />
     {/if}
   </div>
-  <ShapeMatrixCustomizeWorkspace surface="matrix" />
 </section>
 
 <style>
