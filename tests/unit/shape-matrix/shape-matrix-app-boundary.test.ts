@@ -444,6 +444,44 @@ describe("Shape Matrix app boundary", () => {
     expect(segmentedSource).toContain("--row: {selectedRow}");
   });
 
+  it("shares one link, in the notation the receiver reads", () => {
+    // The address bar carries every setting; Share copies it with the
+    // notation pinned, so a VTG-raised spinner opens in ratios. The copy is
+    // the shared copy button, not a second clipboard path.
+    const shareSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixShareButton.svelte"),
+      "utf8"
+    );
+    const shellSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixAppShell.svelte"),
+      "utf8"
+    );
+    const popoverSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixTurnPopover.svelte"),
+      "utf8"
+    );
+    const stateSource = readFileSync(
+      resolve(APP_ROOT, "state/shape-matrix-app-state.svelte.ts"),
+      "utf8"
+    );
+    const pageSource = readFileSync(
+      resolve("src/routes/(public)/shape-engine/+page.svelte"),
+      "utf8"
+    );
+    expect(shareSource).toContain("appState.shareLink(notation)");
+    expect(shareSource).toContain("<CopyForAIButton");
+    expect(shareSource).not.toContain("navigator.clipboard");
+    // The route host writes the address; the app only asks for it.
+    expect(stateSource).toContain(
+      "dependencies.link?.({ ...snapshot(), labelMode: notation })"
+    );
+    expect(pageSource).toContain("writeShapeMatrixRouteState(url, snapshot);");
+    expect(shellSource).toContain("{#if appState.canShare}");
+    // The level is a difficulty to whoever opens the link.
+    expect(shellSource).not.toContain("Kinetic Alphabet level");
+    expect(popoverSource).not.toContain("Kinetic Alphabet level");
+  });
+
   it("opens every value of the level from the corner's own value", () => {
     // The corner shows the current rows and columns value; pressing a value
     // opens the level's whole palette, so a far value is one press away.
