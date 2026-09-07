@@ -33,7 +33,19 @@ export function registerShapeMatrixPlaybackShortcut(
   // to register against either way, so `window` answers the same question.
   if (typeof window === "undefined") return () => {};
 
-  return getKeyboardShortcutManager().register({
+  const manager = getKeyboardShortcutManager();
+
+  /* The manager only listens once something calls this, and the thing that
+     normally does is KeyboardShortcutCoordinator inside the signed-in app
+     shell. This app also ships on a public route and as a standalone embed,
+     where that shell never mounts, so a shortcut registered here was accepted
+     and then never heard. `initialize` is idempotent, so on a host that does
+     mount the coordinator this is a no-op. Mounting the coordinator instead
+     would drag the whole global shortcut set -- command palette, module
+     bindings -- onto a public page that asked for one key. */
+  manager.initialize();
+
+  return manager.register({
     id: `shape-matrix.play-pause.${surface}`,
     label: "Play / Pause",
     description: "Toggle the Shape Engine animation",
