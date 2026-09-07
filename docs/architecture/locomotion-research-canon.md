@@ -107,6 +107,25 @@ The owners have deliberately different jobs:
    sprint brakes rather than coasts; and omitting the props means infinite
    acceleration, which reproduces instant response exactly. This is not a gait
    owner and must not acquire clip, contact, or phase knowledge.
+10. **Pelvis height while walking** is owned by `LocomotionAnimator`, not by
+    `FootPlanter`. The pack's locomotion clips are re-anchored at the rig's
+    rest height, which discards the dip a walk is authored with, so the flat
+    foot ended a centimetre or two (four to six on the runs) above the floor
+    and the planter, which never drags the pelvis down, held the toe on the
+    ground instead. `measureBindAnkleFloor()` reads the bind ankle once at
+    `initialize()`; `analyzeClipGait()` records each clip's `pelvisDrop` as the
+    gap between its lowest ankle and that floor; `blendedPelvisDrop()` lowers
+    the pelvis by the effective-weight blend of those dips every `update()`,
+    so a standing body keeps rest height and a crossfade lowers the body on
+    the same curve that brings the legs in. The same change passes the
+    animator's stored `hipsRest` into the gait probe: `createActions()` zeroes
+    the live pelvis before the clips are prepared, so the probe had been
+    measuring every foot a hip height under the floor and reporting sole and
+    toe offsets of 0, which left `FootPlanter` on default offsets that matched
+    no rig. Shipped 2026-09-06; contract in
+    `tests/unit/3d/locomotion-pelvis-drop.test.ts`. The remaining gap at
+    1.7 m/s (about two centimetres, from stride scaling at a fixed pelvis
+    height) is open.
 
 The governing TKA designs are:
 
