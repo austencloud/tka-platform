@@ -1,7 +1,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+const MATRIX_ROOT = resolve("src/lib/shared/shape-matrix");
 const APP_ROOT = resolve("src/lib/shared/shape-matrix/app");
 
 function readTree(directory: string): string {
@@ -15,7 +16,32 @@ function readTree(directory: string): string {
     .join("\n");
 }
 
+function svelteFiles(directory: string): string[] {
+  return readdirSync(directory).flatMap((name) => {
+    const path = resolve(directory, name);
+    if (statSync(path).isDirectory()) return svelteFiles(path);
+    return name.endsWith(".svelte") ? [relative(MATRIX_ROOT, path)] : [];
+  });
+}
+
 describe("Shape Matrix app boundary", () => {
+  it("never shadows the $state rune with a binding named state", () => {
+    // Svelte reads `$state` as a subscription to a variable called `state`
+    // when one is in scope, so a component holding its context in
+    // `const state` compiles and boots happily until the day someone adds a
+    // rune to it, and then throws store_invalid_shape in the user's face. The
+    // About modal did exactly that the moment it needed one node reference.
+    const offenders = svelteFiles(MATRIX_ROOT).filter((file) => {
+      const source = readFileSync(resolve(MATRIX_ROOT, file), "utf8");
+      return (
+        /(?:const|let|var)\s+state\s*=/.test(source) &&
+        source.includes("$state")
+      );
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps route navigation and viewport ownership outside the embeddable app", () => {
     const appSource = readTree(APP_ROOT);
 
@@ -268,7 +294,9 @@ describe("Shape Matrix app boundary", () => {
     expect(customizeSource).toContain(
       'animation.activeSection ?? (app.propPickerOpen ? "props" : null)'
     );
-    expect(customizeSource).toContain("if (app.compact || !surfaceHasPair(app)) return null;");
+    expect(customizeSource).toContain(
+      "if (app.compact || !surfaceHasPair(app)) return null;"
+    );
     // The gear waits for a pair rather than answering Customize with a
     // workspace that closes at once.
     const stageActionsSource = read(
@@ -281,7 +309,9 @@ describe("Shape Matrix app boundary", () => {
     expect(workspaceSource).toContain(
       "customizeSection(appState, animationState)"
     );
-    expect(matrixPaneSource).toContain("customizeSection(state, animationState)");
+    expect(matrixPaneSource).toContain(
+      "customizeSection(state, animationState)"
+    );
     expect(theoryPaneSource).toContain(
       "customizeSection(appState, animationState)"
     );
@@ -324,7 +354,7 @@ describe("Shape Matrix app boundary", () => {
     expect(shortcutSource).toContain('id: "shape-matrix.play-pause"');
     for (const source of [drillSource, theoryDetailSource]) {
       expect(source).toContain("registerShapeMatrixPlaybackShortcut(");
-      expect(source).not.toContain("window.addEventListener(\"keydown\"");
+      expect(source).not.toContain('window.addEventListener("keydown"');
     }
     expect(theoryDetailSource).toContain(
       "onPropPickerRequest={app.togglePropPicker}"
@@ -470,15 +500,11 @@ describe("Shape Matrix app boundary", () => {
     // mandala with the other prop hidden, so the pickers that only mean
     // something for a pair are gone rather than left inert.
     const gridSource = readFileSync(
-      resolve(
-        "src/lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
-      ),
+      resolve("src/lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"),
       "utf8"
     );
     const drillSource = readFileSync(
-      resolve(
-        "src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"
-      ),
+      resolve("src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte"),
       "utf8"
     );
     const shellSource = readFileSync(
@@ -497,7 +523,9 @@ describe("Shape Matrix app boundary", () => {
     // The quiet prop is the canonical per-hand motion visibility, not a
     // second way of hiding a prop.
     expect(shellSource).toContain("new SequenceViewerVisibilityState(true)");
-    expect(shellSource).toContain("setViewerVisibilityContext(motionVisibility)");
+    expect(shellSource).toContain(
+      "setViewerVisibilityContext(motionVisibility)"
+    );
     expect(shellSource).toContain("appState.soloHand");
   });
 

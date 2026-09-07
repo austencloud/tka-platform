@@ -14,7 +14,10 @@
     SPIN_SCIENCE_URL,
   } from "../shape-engine-identity";
 
-  const state = getShapeMatrixAppContext();
+  /* Named for what it is rather than `state`: a binding called `state` makes
+     `$state` in this file a store read of it, which is how this modal came to
+     throw store_invalid_shape the moment it gained a rune. */
+  const appState = getShapeMatrixAppContext();
 
   let levelsSection = $state<HTMLElement | null>(null);
 
@@ -22,7 +25,7 @@
      question rather than being browsed, so it goes to the answer. The modal
      mounts its body on open, hence the frame's wait for the node. */
   $effect(() => {
-    if (state.aboutFocus !== "levels" || !state.aboutOpen) return;
+    if (appState.aboutFocus !== "levels" || !appState.aboutOpen) return;
     const frame = requestAnimationFrame(() => {
       levelsSection?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
@@ -37,13 +40,13 @@
     subtitle="Vulcan Tech Gospel, Lorq’s matrix, and Austen’s Shape Engine"
     icon="fa-table-cells-large"
     iconColor="#d9901a"
-    onClose={state.closeAbout}
+    onClose={appState.closeAbout}
   />
 {/snippet}
 
 <BaseModal
-  open={state.aboutOpen}
-  onclose={state.closeAbout}
+  open={appState.aboutOpen}
+  onclose={appState.closeAbout}
   size="xl"
   labelledBy="shape-matrix-about-title"
   {header}
