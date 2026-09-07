@@ -12,9 +12,15 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
   import { getShapeMatrixAppContext } from "../app/context/shape-matrix-app-context";
+  import { surfaceHasPair } from "../app/state/shape-matrix-customize";
 
   const appState = getShapeMatrixAppContext();
   const animationState = getShapeMatrixAnimationContext();
+
+  /* A surface with no pair yet shows its empty stage: there is nothing to
+     play, and a workspace opened over it would close at once. Both buttons
+     wait for a pair rather than answering a press with nothing. */
+  const hasPair = $derived(surfaceHasPair(appState));
 
   /* A prop sheet left open on a compact host arrives on the wide host as the
      workspace's Props page, so it counts as open here too. */
@@ -39,6 +45,7 @@
   <PanelButton
     variant={open ? "primary" : "secondary"}
     ariaPressed={open}
+    disabled={!hasPair}
     onclick={toggle}
   >
     <i class="fas fa-sliders" aria-hidden="true"></i>
@@ -46,6 +53,7 @@
   </PanelButton>
   <PanelButton
     ariaLabel={animationState.playing ? "Pause" : "Play"}
+    disabled={!hasPair}
     onclick={animationState.togglePlaying}
   >
     <i

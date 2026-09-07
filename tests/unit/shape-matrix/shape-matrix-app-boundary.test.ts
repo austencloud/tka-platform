@@ -269,6 +269,15 @@ describe("Shape Matrix app boundary", () => {
       'animation.activeSection ?? (app.propPickerOpen ? "props" : null)'
     );
     expect(customizeSource).toContain("if (app.compact || !surfaceHasPair(app)) return null;");
+    // The dock waits for a pair rather than answering Customize with a
+    // workspace that closes at once.
+    const customizeDockSource = read(
+      "src/lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte"
+    );
+    expect(customizeDockSource).toContain(
+      "const hasPair = $derived(surfaceHasPair(appState));"
+    );
+    expect(customizeDockSource.match(/disabled=\{!hasPair\}/g)).toHaveLength(2);
     expect(workspaceSource).toContain(
       "customizeSection(appState, animationState)"
     );
