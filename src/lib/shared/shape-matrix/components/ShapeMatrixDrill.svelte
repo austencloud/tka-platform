@@ -43,7 +43,7 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
   import WordHeader from "$lib/shared/animation-engine/components/layers/WordHeader.svelte";
-  import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+  import { levelForTurns } from "$lib/shared/create/services/level-turn-values";
   import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { MANDALA_GUIDE_FLOOR_OPACITY } from "$lib/shared/mandala/domain/mandala-overlay-types";
   import ElementChipRow from "./ElementChipRow.svelte";
@@ -587,9 +587,12 @@
     return () => visibility.unregisterObserver(sync);
   });
   const headerSequence = $derived(captionRealization?.seq ?? null);
+  /* The badge names the level the pair sits on in this engine, one to four.
+     The browse calculator knows three levels and read every quarter-turn pair
+     as level 3. */
   const headerDifficulty = $derived(
-    headerSequence?.steps?.length
-      ? calculateDifficultyLevel([...headerSequence.steps])
+    headerSequence?.steps?.length && pair
+      ? levelForTurns(pair.left.turns, pair.right.turns)
       : null
   );
   const headerLoopDisplay = $derived.by(() => {
