@@ -96,11 +96,18 @@ export interface ShapeMatrixAppSnapshot {
 export interface ShapeMatrixAppPersistence {
   restore: () => ShapeMatrixAppSnapshot | null;
   persist: (state: ShapeMatrixAppSnapshot) => void;
+  /**
+   * The address that would restore this snapshot, for sharing. The host owns
+   * the route, so only a host that persists to one can answer; an embedded
+   * host without a route leaves it out and the app offers no link.
+   */
+  link?: (state: ShapeMatrixAppSnapshot) => string;
 }
 
 interface ShapeMatrixAppDependencies {
   loadMatrix: (propType: PropType) => Promise<ShapeMatrixData>;
   syncState: (state: ShapeMatrixAppSnapshot) => void;
+  link?: (state: ShapeMatrixAppSnapshot) => string;
 }
 
 type SemanticVariant = 0 | 1 | 2 | 3;
@@ -803,8 +810,8 @@ export function createShapeMatrixAppState(
     mandalaHandoff = false;
   }
 
-  function syncState(): void {
-    dependencies.syncState({
+  function snapshot(): ShapeMatrixAppSnapshot {
+    return {
       surface,
       theoryLeftRatio,
       theoryRightRatio,
@@ -820,7 +827,18 @@ export function createShapeMatrixAppState(
       pair: selectedPair,
       mode: selectedMode,
       propMode: selectedPropMode,
-    });
+    };
+  }
+
+  function syncState(): void {
+    dependencies.syncState(snapshot());
+  }
+
+  /* A link to the view on screen, opening in the given notation. The
+     notation is the one setting a sender chooses for the receiver; every
+     other setting is the view itself. Null when the host has no route. */
+  function shareLink(notation: MatrixLabelMode): string | null {
+    return dependencies.link?.({ ...snapshot(), labelMode: notation }) ?? null;
   }
 
   return {
@@ -945,6 +963,10 @@ export function createShapeMatrixAppState(
     closePropPicker,
     beginMandalaHandoff,
     endMandalaHandoff,
+    get canShare() {
+      return dependencies.link !== undefined;
+    },
+    shareLink,
   };
 }
 

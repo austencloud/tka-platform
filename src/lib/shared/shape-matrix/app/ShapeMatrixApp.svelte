@@ -29,6 +29,7 @@
     {
       loadMatrix: loadShapeMatrix,
       syncState: (snapshot) => persistence?.persist(snapshot),
+      link: persistence?.link,
     },
     {
       surface: "matrix",

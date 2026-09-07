@@ -19,6 +19,7 @@
   import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
+  import ShapeMatrixShareButton from "./ShapeMatrixShareButton.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
   import ShapeMatrixSurfaceControl from "./ShapeMatrixSurfaceControl.svelte";
   import ShapeMatrixTheoryDetail from "./ShapeMatrixTheoryDetail.svelte";
@@ -390,7 +391,7 @@
                 describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
                 onchange={appState.setLevel}
                 compact={true}
-                ariaLabel="Kinetic Alphabet level"
+                ariaLabel="Difficulty level"
               />
             </div>
             <!-- The axis values themselves are edited in the recipe bar above
@@ -431,6 +432,24 @@
             <i class="fas fa-arrow-right" aria-hidden="true"></i>
           </button>
         {/if}
+      {/if}
+      <!-- The link to this view, in the notation the receiver reads. Only a
+           host with a route has one. -->
+      {#if appState.canShare}
+        <ShapeMatrixShareButton>
+        {#snippet trigger(props, shareOpen)}
+          <button
+            {...props}
+            class="top-action"
+            class:open={shareOpen}
+            type="button"
+            aria-label="Share this view"
+          >
+            <i class="fas fa-share-nodes" aria-hidden="true"></i>
+            {#if !appState.compact}<span>Share</span>{/if}
+          </button>
+        {/snippet}
+        </ShapeMatrixShareButton>
       {/if}
       <button
         class="top-action"
@@ -575,7 +594,8 @@
     text-overflow: ellipsis;
   }
 
-  .top-action:hover {
+  .top-action:hover,
+  .top-action.open {
     color: var(--theme-text, #fff);
     border-color: color-mix(
       in srgb,

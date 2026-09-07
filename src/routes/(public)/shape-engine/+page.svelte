@@ -48,6 +48,13 @@
     persist: (snapshot: ShapeMatrixAppSnapshot): void => {
       mutateCurrentUrl((url) => writeShapeMatrixRouteState(url, snapshot));
     },
+    // The share link is the same address the app keeps current, written for
+    // the snapshot the app asks for (its notation may differ from the bar).
+    link: (snapshot: ShapeMatrixAppSnapshot): string => {
+      const url = new URL(window.location.href);
+      writeShapeMatrixRouteState(url, snapshot);
+      return url.href;
+    },
   };
 </script>
 
