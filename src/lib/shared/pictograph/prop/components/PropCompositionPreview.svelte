@@ -19,7 +19,7 @@
     getCompositionRecipe,
     type CompositionRecipe,
   } from "../domain/prop-composition-recipes";
-  import { propTileArtwork } from "../domain/prop-look";
+  import { propTileArtwork, type PropTileArtwork } from "../domain/prop-look";
   import { onMount } from "svelte";
 
   let {
@@ -119,6 +119,42 @@
   const imgOffset = -(imgSize / 2);
 </script>
 
+{#snippet propImage(art: PropTileArtwork, red: boolean)}
+  {#if art.crop}
+    <!-- A capture of the whole box: draw only the window that holds the
+         prop, fitted to the glyph square, so a one-sided prop is not half
+         margin. -->
+    <svg
+      x={imgOffset}
+      y={imgOffset}
+      width={imgSize}
+      height={imgSize}
+      viewBox="{art.crop.x} {art.crop.y} {art.crop.width} {art.crop.height}"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <image
+        class:red-prop={red}
+        class:prelit={red && art.prelit}
+        href={art.href}
+        x="0"
+        y="0"
+        width={art.crop.imageWidth}
+        height={art.crop.imageHeight}
+      />
+    </svg>
+  {:else}
+    <image
+      class:red-prop={red}
+      class:prelit={red && art.prelit}
+      href={art.href}
+      x={imgOffset}
+      y={imgOffset}
+      width={imgSize}
+      height={imgSize}
+    />
+  {/if}
+{/snippet}
+
 {#if neutral}
   <svg
     class="prop-composition-preview neutral"
@@ -151,13 +187,7 @@
       </svg>
     {:else}
       <g transform={leftTransform}>
-        <image
-          href={leftArt.href}
-          x={imgOffset}
-          y={imgOffset}
-          width={imgSize}
-          height={imgSize}
-        />
+        {@render propImage(leftArt, false)}
       </g>
     {/if}
   </svg>
@@ -193,25 +223,11 @@
       </svg>
     {:else}
       <g transform={leftTransform}>
-        <image
-          href={leftArt.href}
-          x={imgOffset}
-          y={imgOffset}
-          width={imgSize}
-          height={imgSize}
-        />
+        {@render propImage(leftArt, false)}
       </g>
 
       <g transform={rightTransform}>
-        <image
-          class="red-prop"
-          class:prelit={rightArt.prelit}
-          href={rightArt.href}
-          x={imgOffset}
-          y={imgOffset}
-          width={imgSize}
-          height={imgSize}
-        />
+        {@render propImage(rightArt, true)}
       </g>
     {/if}
   </svg>

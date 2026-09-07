@@ -12,6 +12,13 @@ const MANIFEST_TS = join(
   "src/lib/shared/pictograph/prop/domain/prop-model-sprites.generated.ts"
 );
 
+interface PaintedBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface ManifestEntry {
   width: number;
   height: number;
@@ -19,7 +26,21 @@ interface ManifestEntry {
   capturedAt: string;
   extent?: { x: number; y: number; z: number };
   gripOffset?: { x: number; y: number };
+  /** Painted window of the capture in box units (see painted-bounds.ts). */
+  bounds?: PaintedBounds;
   colors?: string[];
+}
+
+function isPaintedBounds(value: unknown): value is PaintedBounds {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return ["x", "y", "width", "height"].every(
+    (key) => typeof record[key] === "number" && Number.isFinite(record[key])
+  );
+}
+
+function boundsLiteral(bounds: PaintedBounds): string {
+  return `bounds: { x: ${bounds.x}, y: ${bounds.y}, width: ${bounds.width}, height: ${bounds.height} }`;
 }
 
 function readManifest(): Record<string, ManifestEntry> {
@@ -56,10 +77,16 @@ function writeGeneratedModule(manifest: Record<string, ManifestEntry>): void {
       entry.colors?.includes("blue") && entry.colors?.includes("red")
   );
   const rows = complete
-    .map(
-      ([prop, entry]) =>
-        `  ${JSON.stringify(prop)}: { width: ${entry.width}, height: ${entry.height}, fit: ${Number(entry.fit.toFixed(3))}, capturedAt: ${JSON.stringify(entry.capturedAt)} },`
-    )
+    .map(([prop, entry]) => {
+      const fields = [
+        `width: ${entry.width}`,
+        `height: ${entry.height}`,
+        `fit: ${Number(entry.fit.toFixed(3))}`,
+        `capturedAt: ${JSON.stringify(entry.capturedAt)}`,
+      ];
+      if (entry.bounds) fields.push(boundsLiteral(entry.bounds));
+      return `  ${JSON.stringify(prop)}: { ${fields.join(", ")} },`;
+    })
     .join("\n");
   const ts = `/**
  * AUTO-WRITTEN by /test/prop-3d-studio/sprites. Do not edit by hand.
@@ -69,6 +96,13 @@ function writeGeneratedModule(manifest: Record<string, ManifestEntry>): void {
  * same pictograph box PROP_DIMENSIONS already uses for that prop, so tip
  * points, trails, and mandala reach are unchanged by the look.
  */
+export interface PropModelSpriteBounds {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface PropModelSpriteEntry {
   readonly width: number;
   readonly height: number;
@@ -76,6 +110,11 @@ export interface PropModelSpriteEntry {
   readonly fit: number;
   /** ISO timestamp of the capture that wrote the sprite pair. */
   readonly capturedAt: string;
+  /**
+   * Where the prop paints inside the grip-centred box, in box units. A
+   * one-sided prop fills only half its box; picker tiles crop to this.
+   */
+  readonly bounds?: PropModelSpriteBounds;
 }
 
 export const PROP_MODEL_SPRITES: Readonly<
@@ -108,7 +147,8 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ ok: true });
   }
 
-  const { prop, color, width, height, fit, dataUrl, extent, gripOffset } = body;
+  const { prop, color, width, height, fit, dataUrl, extent, gripOffset, bounds } =
+    body;
   if (
     typeof prop !== "string" ||
     !/^[a-z0-9_]+$/.test(prop) ||
@@ -152,6 +192,7 @@ export const POST: RequestHandler = async ({ request }) => {
         gripOffset && typeof gripOffset === "object"
           ? (gripOffset as ManifestEntry["gripOffset"])
           : previous?.gripOffset,
+      bounds: isPaintedBounds(bounds) ? bounds : previous?.bounds,
       colors: [...colors].sort(),
     };
     writeManifest(manifest);
