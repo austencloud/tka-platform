@@ -1,7 +1,7 @@
 /**
- * Headless playtest of the Earth Room: Fire's east door → the corridor → the
- * grass gully and its bend → the north ledge → the full rim circuit, clockwise
- * and back → the slab overlook's viewing apron → the exit ramp → the Air door.
+ * Headless playtest of the Root Terrace: Fire's east door → the corridor →
+ * the vestibule → the ramp → the whole terrace → the corner → the landing →
+ * the second descent → the Air door.
  *
  * Drives the REAL stack (buildVulcanCaveFloorPlan + MuseumPhysicsProvider) with
  * repeated movePlayer calls, exactly like the in-game controller does, walking a
@@ -15,12 +15,14 @@ import {
   SOLID_TYPES,
 } from "$lib/features/museum/services/museum-physics-provider";
 import { tileKey } from "$lib/features/museum/domain/museum-grid-types";
-import { TILE_METRES } from "$lib/features/museum/data/drowned-gallery-terrain";
+import { TILE_METRES, inRectClosed } from "$lib/features/museum/data/drowned-gallery-terrain";
 import {
-  buildEarthCanyonLayout,
-  RIM_Y,
-  SLAB_Y,
-} from "$lib/features/museum/data/earth-canyon-layout";
+  BED_Y,
+  DOOR_Y,
+  LANDING_Y,
+  TERRACE_Y,
+  buildEarthRootTerraceLayout,
+} from "$lib/features/museum/data/earth-root-terrace-terrain";
 
 const TILE = TILE_METRES;
 const STANDING_Y = 0.85;
@@ -28,7 +30,7 @@ const STANDING_Y = 0.85;
 const plan = buildVulcanCaveFloorPlan();
 const grid = plan.grid;
 const terrain = grid.terrain!;
-const layout = buildEarthCanyonLayout(grid)!;
+const layout = buildEarthRootTerraceLayout(grid)!;
 
 type TileCoord = { x: number; y: number };
 type WorldPoint = { x: number; z: number };
@@ -48,18 +50,15 @@ function doorCenterTile(
   if (wall === "north" || wall === "south") {
     const wallY = wall === "north" ? y : y + height - 1;
     for (let wx = x; wx < x + width; wx++) {
-      if (grid.tiles.get(tileKey(wx, wallY))?.type === "door")
-        tiles.push({ x: wx, y: wallY });
+      if (grid.tiles.get(tileKey(wx, wallY))?.type === "door") tiles.push({ x: wx, y: wallY });
     }
   } else {
     const wallX = wall === "west" ? x : x + width - 1;
     for (let wy = y; wy < y + height; wy++) {
-      if (grid.tiles.get(tileKey(wallX, wy))?.type === "door")
-        tiles.push({ x: wallX, y: wy });
+      if (grid.tiles.get(tileKey(wallX, wy))?.type === "door") tiles.push({ x: wallX, y: wy });
     }
   }
-  if (tiles.length === 0)
-    throw new Error(`No ${wall} door in cave room "${roomId}"`);
+  if (tiles.length === 0) throw new Error(`No ${wall} door in cave room "${roomId}"`);
   return tiles[Math.floor(tiles.length / 2)]!;
 }
 
@@ -159,10 +158,7 @@ interface Sample {
   elevation: number;
 }
 
-function walkWaypoints(
-  physics: MuseumPhysicsProvider,
-  waypoints: WorldPoint[]
-): Sample[] {
+function walkWaypoints(physics: MuseumPhysicsProvider, waypoints: WorldPoint[]): Sample[] {
   const samples: Sample[] = [];
   for (const wp of waypoints) {
     let guard = 0;
@@ -173,17 +169,9 @@ function walkWaypoints(
       const dist = Math.hypot(dx, dz);
       if (dist < 0.06) break;
       const step = Math.min(0.05, dist);
-      physics.movePlayer(
-        { x: (dx / dist) * step, y: -0.2, z: (dz / dist) * step },
-        1 / 60
-      );
+      physics.movePlayer({ x: (dx / dist) * step, y: -0.2, z: (dz / dist) * step }, 1 / 60);
       const p = physics.getPlayerPosition();
-      samples.push({
-        x: p.x,
-        z: p.z,
-        y: p.y,
-        elevation: terrain.elevationAt(p.x, p.z),
-      });
+      samples.push({ x: p.x, z: p.z, y: p.y, elevation: terrain.elevationAt(p.x, p.z) });
     }
     const finalPos = physics.getPlayerPosition();
     const finalDist = Math.hypot(wp.x - finalPos.x, wp.z - finalPos.z);
@@ -204,62 +192,42 @@ function walk(waypoints: TileCoord[]): Sample[] {
     tilePath.push(...greedyPath(waypoints[i]!, waypoints[i + 1]!).slice(1));
   }
   const start = worldOfTile(tilePath[0]!);
-  const physics = new MuseumPhysicsProvider(grid, TILE, {
-    x: start.x,
-    y: 0,
-    z: start.z,
-  });
+  const physics = new MuseumPhysicsProvider(grid, TILE, { x: start.x, y: 0, z: start.z });
   return walkWaypoints(physics, tilePath.slice(1).map(worldOfTile));
 }
+
+const mid = (r: { minX: number; maxX: number; minZ: number; maxZ: number }) => ({
+  x: (r.minX + r.maxX) / 2,
+  z: (r.minZ + r.maxZ) / 2,
+});
 
 // ── Route waypoints, in walk order ──────────────────────────────────────────
 const fireEastDoor = doorCenterTile("cave-fire", "east");
 const earthWestDoor = doorCenterTile("cave-earth", "west");
 const earthSouthDoor = doorCenterTile("cave-earth", "south");
 
-const ledge = tileOfWorld(layout.probes.northLedge);
-const westRim = tileOfWorld(layout.probes.westRim);
-const southRim = tileOfWorld(layout.probes.southRim);
-const eastRim = tileOfWorld(layout.probes.eastRim);
-/**
- * The apron is a 4 m tongue hanging inside the void, so it is entered and left
- * straight up its ramp — sidling onto it along the drop edge is exactly what
- * the void is there to prevent.
- */
-const slabRamp = tileOfWorld({
-  x: (layout.slabRamp.minX + layout.slabRamp.maxX) / 2,
-  z: (layout.slabRamp.minZ + layout.slabRamp.maxZ) / 2,
-});
-/** The rim tile the ramp comes off, a metre back from the drop. */
-const slabFoot = tileOfWorld({
-  x: (layout.slabRamp.minX + layout.slabRamp.maxX) / 2,
-  z: layout.slabRamp.maxZ + 1.0,
-});
+const opener = tileOfWorld(layout.opener.centre);
+const rampFoot = tileOfWorld({ x: layout.ramp.minX + 0.5, z: mid(layout.ramp).z });
+const rampHead = tileOfWorld({ x: layout.ramp.maxX - 0.5, z: mid(layout.ramp).z });
+const terraceMid = tileOfWorld({ x: mid(layout.terrace).x, z: layout.terrace.maxZ - 0.75 });
+const corner = tileOfWorld({ x: layout.terrace.maxX - 1, z: mid(layout.terrace).z });
+const landing = tileOfWorld(layout.ensemble.eye);
+const exit = tileOfWorld(mid(layout.doorApproach));
 
 const ROUTE: TileCoord[] = [
   fireEastDoor,
   earthWestDoor,
-  tileOfWorld(layout.probes.gullyMouth),
-  tileOfWorld(layout.probes.gullyBend),
-  ledge,
-  // Clockwise round the rim (west → south → east) and back the other way.
-  westRim,
-  southRim,
-  eastRim,
-  ledge,
-  eastRim,
-  southRim,
-  slabFoot,
-  slabRamp,
-  tileOfWorld(layout.probes.slabApron),
-  slabRamp,
-  slabFoot,
-  southRim,
-  tileOfWorld(layout.probes.exitRamp),
+  opener,
+  rampFoot,
+  rampHead,
+  terraceMid,
+  corner,
+  landing,
+  exit,
   earthSouthDoor,
 ];
 
-describe("earth canyon traversal (headless playtest)", () => {
+describe("earth root terrace traversal (headless playtest)", () => {
   let samples: Sample[];
 
   beforeAll(() => {
@@ -273,43 +241,36 @@ describe("earth canyon traversal (headless playtest)", () => {
     expect(Math.hypot(last.x - target.x, last.z - target.z)).toBeLessThan(0.1);
   });
 
-  it("holds the rim datum all the way round the circuit", () => {
-    const onLedge = samples.filter(
-      (s) =>
-        s.x >= layout.northLedge.minX &&
-        s.x <= layout.northLedge.maxX &&
-        s.z >= layout.northLedge.minZ &&
-        s.z <= layout.northLedge.maxZ
-    );
-    expect(onLedge.length).toBeGreaterThan(10);
-    for (const s of onLedge) {
-      expect(s.elevation).toBeCloseTo(RIM_Y, 5);
-      expect(s.y).toBeCloseTo(RIM_Y + STANDING_Y, 5);
+  it("stands on the datum at both doors and in the vestibule", () => {
+    const inVestibule = samples.filter((s) => inRectClosed(layout.vestibule, s.x, s.z));
+    expect(inVestibule.length).toBeGreaterThan(20);
+    for (const s of inVestibule) {
+      expect(s.elevation).toBeCloseTo(DOOR_Y, 5);
+      expect(s.y).toBeCloseTo(DOOR_Y + STANDING_Y, 5);
     }
-    for (const rim of [layout.westRim, layout.eastRim]) {
-      const on = samples.filter(
-        (s) =>
-          s.x >= rim.minX &&
-          s.x <= rim.maxX &&
-          s.z >= rim.minZ &&
-          s.z <= rim.maxZ &&
-          s.z < layout.exitKerb.minZ
-      );
-      expect(on.length).toBeGreaterThan(5);
-      for (const s of on) expect(s.elevation).toBeCloseTo(RIM_Y, 5);
+    const last = samples.at(-1)!;
+    expect(last.elevation).toBeCloseTo(DOOR_Y, 5);
+  });
+
+  it("climbs the ramp and holds the terrace datum the whole way along", () => {
+    const onRamp = samples.filter((s) => inRectClosed(layout.ramp, s.x, s.z));
+    expect(onRamp.length).toBeGreaterThan(50);
+    expect(Math.min(...onRamp.map((s) => s.elevation))).toBeLessThan(0.3);
+    expect(Math.max(...onRamp.map((s) => s.elevation))).toBeGreaterThan(TERRACE_Y - 0.3);
+    const onTerrace = samples.filter((s) => inRectClosed(layout.terrace, s.x, s.z));
+    expect(onTerrace.length).toBeGreaterThan(100);
+    for (const s of onTerrace) {
+      expect(s.elevation).toBeCloseTo(TERRACE_Y, 5);
+      expect(s.y).toBeCloseTo(TERRACE_Y + STANDING_Y, 5);
     }
   });
 
-  it("stands on the slab's viewing apron, 0.3 m above the rim", () => {
-    const onApron = samples.filter(
-      (s) =>
-        s.x >= layout.slabApron.minX &&
-        s.x <= layout.slabApron.maxX &&
-        s.z >= layout.slabApron.minZ &&
-        s.z <= layout.slabApron.maxZ
-    );
-    expect(onApron.length).toBeGreaterThan(3);
-    for (const s of onApron) expect(s.elevation).toBeCloseTo(SLAB_Y, 5);
+  it("stands on the landing at 1.2 m, on the row's axis", () => {
+    const onLanding = samples.filter((s) => inRectClosed(layout.landing, s.x, s.z));
+    expect(onLanding.length).toBeGreaterThan(5);
+    for (const s of onLanding) expect(s.elevation).toBeCloseTo(LANDING_Y, 5);
+    const axis = layout.stations[0]!.centre.z;
+    expect(onLanding.some((s) => Math.abs(s.z - axis) < 0.3)).toBe(true);
   });
 
   it("never pops the floor more than 0.6 m between successive steps", () => {
@@ -325,67 +286,21 @@ describe("earth canyon traversal (headless playtest)", () => {
     }
   });
 
-  it("never walks into the void, the parapet or the slab's fractured nose", () => {
+  it("never walks onto the bed or into the cleft, and never shares the performers' floor", () => {
     for (const s of samples) {
       expect(terrain.blockedAt(s.x, s.z)).toBe(false);
+      expect(inRectClosed(layout.bed, s.x, s.z)).toBe(false);
+      expect(inRectClosed(layout.cleft, s.x, s.z)).toBe(false);
+      expect(s.elevation).toBeGreaterThan(BED_Y + 2);
     }
   });
 
-  it("reaches the Air door at museum datum elevation (~0)", () => {
-    const exit = worldOfTile(earthSouthDoor);
-    expect(terrain.elevationAt(exit.x, exit.z)).toBeCloseTo(0, 1);
-  });
-
-  it("keeps the void a barrier: walking at the performers stops at the rim", () => {
-    const start = layout.probes.northLedge;
-    const physics = new MuseumPhysicsProvider(grid, TILE, {
-      x: start.x,
-      y: 0,
-      z: start.z,
-    });
-    const target = layout.stations[1]!;
-    for (let i = 0; i < 600; i++) {
-      const pos = physics.getPlayerPosition();
-      const dx = target.x - pos.x;
-      const dz = target.z - pos.z;
-      const dist = Math.hypot(dx, dz);
-      if (dist < 0.1) break;
-      const step = Math.min(0.05, dist);
-      physics.movePlayer(
-        { x: (dx / dist) * step, y: -0.2, z: (dz / dist) * step },
-        1 / 60
-      );
-      const p = physics.getPlayerPosition();
-      expect(terrain.blockedAt(p.x, p.z)).toBe(false);
-    }
-    const end = physics.getPlayerPosition();
-    expect(
-      Math.hypot(end.x - layout.void_.center.x, end.z - layout.void_.center.z)
-    ).toBeGreaterThan(layout.void_.radius - 0.6);
-  });
-
-  it("keeps every performer unreachable from the rim — there is no stair", () => {
-    const from = tileOfWorld(layout.probes.northLedge);
-    for (const station of layout.stations) {
-      expect(() => bfsPath(from, tileOfWorld(station))).toThrow();
-    }
-  });
-
-  it("closes the rim circuit: every rim probe reaches every other", () => {
-    const probes = [ledge, westRim, southRim, eastRim];
-    for (const a of probes) {
-      for (const b of probes) {
-        expect(() => bfsPath(a, b)).not.toThrow();
-      }
-    }
-  });
-
-  it("reaches the exit ramp and the slab apron from the arrival ledge", () => {
-    for (const target of [
-      tileOfWorld(layout.probes.exitRamp),
-      tileOfWorld(layout.probes.slabApron),
-    ]) {
-      expect(() => bfsPath(ledge, target)).not.toThrow();
-    }
+  it("cannot step off the terrace rail onto the bed", () => {
+    const start = { x: mid(layout.terrace).x, z: layout.terrace.maxZ - 0.3 };
+    const physics = new MuseumPhysicsProvider(grid, TILE, { x: start.x, y: 0, z: start.z });
+    for (let i = 0; i < 80; i++) physics.movePlayer({ x: 0, y: -0.2, z: 0.05 }, 1 / 60);
+    const pos = physics.getPlayerPosition();
+    expect(pos.z).toBeLessThan(layout.bed.minZ + 0.5);
+    expect(pos.y).toBeCloseTo(TERRACE_Y + STANDING_Y, 3);
   });
 });
