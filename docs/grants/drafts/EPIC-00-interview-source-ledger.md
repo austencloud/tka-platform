@@ -159,6 +159,103 @@ This is the primary source for the Epic full-project-details response. Its
 source comparison, feasibility boundaries, and proposed angle are recorded in
 `EPIC-06-full-project-details-source-map.md`.
 
+### What makes The Kinetic Archive unique
+
+**Austen, August 30, 2026:**
+
+> OK so in the Kinetic archive what could they do 0 man well I guess this is
+> going to be the first time that flow arts will be properly rendered in a 3D
+> environment umm in a believable form which for me plants a very large and
+> very virulent seed which will potentially grow because right now Buffalo
+> artist has no semblance of their being a canonical learning path or like a
+> recognition of their particular style and how delightful it would be for the
+> technique of flow arts to be so well understood and well decoded that a
+> practitioner could have fun with discovery and then discover that their
+> discoveries have already been discovered and that there's more that was
+> discovered surrounding those discoveries I think that's a curiosity
+> enhancing machine and as visual creatures we need to be able to see these
+> things in 3D to understand them Terraria Gay at is what they can do in the
+> Kinetic Archive is fucking just see see it from all angles understand what it
+> looks like and internalize the notion that from here on out this could be
+> represented digitally which also allows for floor arts to be represented in
+> stories and as umm in other games the sky's the limit in terms of what people
+> could create in terms of games or just visualizations in mainstream media the
+> thing that becomes possible when they all share the same movement data is not
+> just a realization of the kinetic alphabet itself in 3D space but a mapping of
+> the finite number of elements that it takes to go through a given pathway so
+> the kinetic alphabet is a bounded space which means it has a finite number of
+> possibilities of how you can combine any of the elements in the kinetic
+> alphabet to achieve what you're trying to achieve that space is limited and
+> cannot be you know each level increases the boundary by a certain degree but
+> the space is still limited at every single level which means that the number
+> of possible transitions that the human body has to parse in order to achieve
+> any given combination under any given circumstance is itself also limited
+> that cannot be impossible and through my own practice I've already confirmed
+> how finite it is when I do a specific sequence there's usually two given
+> options at any juncture and every there are certain rules such as how there's
+> always an awkward point which is usually corresponding with when we have to go
+> through negative space or do some sort of real in order to achieve a motion
+> without bonking in yourself or intersecting furthermore there are several
+> props like fans and triads and many others that truly have totally different
+> rip related properties to double Staffs and these props themselves need a
+> level of detail that can only be achieved through finite finger control
+> through the acquisition of the data required to actually manipulate these
+> props we can develop a map of the finite number of ways a human hand can wrap
+> its hand around it or at least the finite number of ways there were people are
+> practicing it now so you can have a springboard to develop more technique on
+> I just love data i'm all about it I think it's valuable because it's
+> historical and there are so many people with amazing technique that come and
+> go and circus arts has so much room to improve and like so many Hu like so
+> many human activities it will be mapped out and understood thoroughly in time
+> but only if people like me can can Nanaka lie So what already exists I want an
+> epic reviewer to remember that the kinetic alphabet is itself a complex and
+> dynamic language that allows you to do something impossible before which is
+> to read something that you do with your body off of a sheet of paper in the
+> same way that a musician reads sheet music This sounds like an obvious thing
+> that should already exist because it is a thing that should already exists and
+> yet it didn't until the kinetic alphabet came along the Fluorides composer is
+> the bridge between the theory and uh the application of it and the connection
+> between others that has been possible through a shared web ecosystem
+
+This is the primary interview source for the Epic unique-features response.
+The phrases “Buffalo artist,” “floor arts,” and “Fluorides composer” appear to
+be voice-transcription errors for “flow artists,” “flow arts,” and “Flow Arts
+Composer.” “Real” appears to mean “reel.” The phrases “Terraria Gay at” and
+“Nanaka lie” are unresolved and must not enter application prose.
+
+The worldwide-first claim is not established by this interview. Preserve the
+specific novelty without claiming that no previous 3D flow-arts work exists.
+The finite notation space is verified; the stronger claim that every bodily
+transition or prop grip is already enumerated is Austen's research thesis, not
+a shipped fact.
+
+### Funding scale and outside help
+
+**Austen, August 30, 2026:**
+
+> I mean that sounds fucking awesome As soon as you say that my brain thinks 0
+> God am I able to actually do all of that like or am I lying Maybe it's because
+> that seems like an astronaut money to me but if I have that money it would be
+> a major fucking difference I would love to get paid 30K and it would be a
+> Rococo based seven most likely I don't think I have the money for the other
+> one unless you really think I should ask for it I mean I could also just state
+> the more money I get the more I could get I love an accent so I would just
+> need the ability to I would have to I can't reliably suggest how much that's
+> gonna cost without requesting the direct quote I would love outside help, but
+> I was mostly planning on using artificial intelligence to help me bridge the
+> gaps but yeah anybody who can help be fucking fantastic
+
+“Rococo based seven” appears to be a voice-transcription error for “Rokoko-based
+system.” “I love an accent” is unresolved and must not enter application prose.
+
+Austen approves paying himself $30,000 for funded development time, expects a
+Rokoko-based capture setup unless a stronger system becomes credibly affordable,
+and welcomes outside Unreal and animation help. He has not selected or hired a
+contractor. The budget must present specialist support as a planned allocation,
+not a confirmed team member. Artificial-intelligence tools may assist his work
+but do not replace the need for technical animation, cleanup, or retargeting
+expertise in the budget.
+
 ## Verified equipment facts
 
 - Rokoko lists the Creator Bundle at a temporary sale price of $2,495 through

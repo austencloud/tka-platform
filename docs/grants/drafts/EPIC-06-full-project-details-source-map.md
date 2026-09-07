@@ -194,6 +194,7 @@ Current official Unreal references supporting this implementation direction:
 ## Gate status
 
 Austen approved the original angle and the cold-reader revision on August 30,
-2026. The response may now be redrafted from this source map. Exact portal prose
-still requires authorship review and Austen's approval before it is saved or
-entered.
+2026. The final response passed authorship review, and Austen explicitly
+authorized saving and entering the approved wording on August 30, 2026. The
+saved response is `EPIC-07-full-project-details.md`. Final application submission
+remains under Austen's control after Fable's review.
