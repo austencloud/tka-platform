@@ -444,6 +444,28 @@ describe("Shape Matrix app boundary", () => {
     expect(segmentedSource).toContain("--row: {selectedRow}");
   });
 
+  it("opens every value of the level from the corner's own value", () => {
+    // The corner shows the current rows and columns value; pressing a value
+    // opens the level's whole palette, so a far value is one press away.
+    const stepperSource = readFileSync(
+      resolve(APP_ROOT, "components/ShapeMatrixAxisStepper.svelte"),
+      "utf8"
+    );
+    expect(stepperSource).toContain("<Popover.Root bind:open>");
+    expect(stepperSource).toContain("options={choices}");
+    expect(stepperSource).toContain(
+      "appState.setTurnFor(hand, keyToTurnValue(key))"
+    );
+    // Every value of the level, wrapped past six as the compact palette is.
+    expect(stepperSource).toContain(
+      "turns.length > 6 ? Math.ceil(turns.length / 2) : undefined"
+    );
+    // Arrow keys still step in place.
+    expect(stepperSource).toContain(
+      'event.key === "ArrowUp" || event.key === "ArrowRight"'
+    );
+  });
+
   it("keeps each elemental button's visible mode and name in its accessible name", () => {
     const elementChipSource = readFileSync(
       resolve("src/lib/shared/shape-matrix/components/ElementChipRow.svelte"),
