@@ -6,14 +6,13 @@
 	.st0{fill:url(#SVGID_1_);stroke:#231F20;stroke-width:0.25;stroke-miterlimit:10;}
 	.st1{fill:#F6E5B6;stroke:#231F20;stroke-width:0.25;stroke-miterlimit:10;}
 	.st2{clip-path:url(#SVGID_00000023279025978628566540000009473935934925121194_);}
-	.st3{fill:#231F20;}
-	.st4{fill:#231F20;stroke:#666666;stroke-width:0.3;stroke-linecap:square;stroke-linejoin:bevel;}
+	.st3{fill:#4B5060;}
+	.st4{fill:#4B5060;stroke:#666666;stroke-width:0.3;stroke-linecap:square;stroke-linejoin:bevel;}
 	.st5{clip-path:url(#SVGID_00000113328138578354004930000008794776601141426821_);}
 	.st6{fill:none;stroke:#231F20;stroke-width:0.25;}
 	.st7{fill:#FFFFFF;stroke:#231F20;stroke-width:0.25;stroke-miterlimit:10;}
 	.st8{fill:#FFFFFF;stroke:#231F20;stroke-width:0.5;stroke-miterlimit:10;}
 	.st9{fill:#FFFFFF;}
-	.st10{fill:#2E3192;}
 </style>
 <g>
 	<g>
@@ -535,7 +534,4 @@
 		</g>
 	</g>
 </g>
-<path class="st10" d="M102.3,164h-92c-1.1,5.8-6.6,5-7.7,5c-8,0-8.2-6.7-8.2-10.3v-6.3c0-3.6,0.1-10.3,8.2-10.3c1.1,0,6.6-0.7,7.7,5
-	h92c0,0,62.3-23.2,72.7-23.4c10.7-0.4,15.9-0.2,23.9,1.7l43.9,19c0,0,0.7,1.9,1.1,5.2c0.6,3,0.6,5.2,0.6,6c0,0.7,0,3-0.6,6
-	c-0.4,3.4-1.1,5.2-1.1,5.2L199,185.7c-8,1.9-13.3,2.1-23.9,1.7C164.6,187.2,102.3,164,102.3,164L102.3,164z"/>
 </svg>
