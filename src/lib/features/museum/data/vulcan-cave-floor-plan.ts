@@ -34,17 +34,21 @@ import {
   SUN_PILLAR_TOP_Y,
 } from "./sundial-layout";
 import {
-  buildFirstFireLayout,
-  createFirstFireTerrain,
-  firstFireStationOffsets,
-  SHORE_Y as FIRE_SHORE_Y,
-} from "./first-fire-layout";
+  buildFirstFireProcessionBay,
+  createFirstFireProcessionTerrain,
+  CINDER_FLOOR_Y,
+} from "./first-fire-procession-terrain";
 import {
-  buildEarthCanyonLayout,
-  createEarthCanyonTerrain,
-  earthCanyonStationOffsets,
-  BOSS_Y as EARTH_BOSS_Y,
-} from "./earth-canyon-layout";
+  buildFirstFireProcessionPlan,
+  FIRST_FIRE_PROCESSION_AUTHORING_MINIMUM,
+  FIRST_FIRE_SHRINE_ORDER,
+} from "./first-fire-procession-plan";
+import {
+  buildEarthRootTerraceLayout,
+  createEarthRootTerraceTerrain,
+  earthRootTerraceStationOffsets,
+  BED_Y as EARTH_BED_Y,
+} from "./earth-root-terrace-terrain";
 import {
   buildAirChimneyLayout,
   createAirChimneyTerrain,
@@ -256,23 +260,44 @@ const grottoPerformers = ALCOVE_X_FRACTIONS.map((fraction, index) => ({
 
 /**
  * The First Fire chamber's authored shell. Declared before VULCAN_CAVE_ROOMS
- * for the same reason the grotto's is: the three fire-pit stations come off
+ * for the same reason the grotto's is: the three shrine stations come off
  * the SAME compiled dimensions the layout engine uses, so a performer cannot
- * drift off the pit rendered under it.
+ * drift off the court carved around it.
  *
- * Interior metres = minInterior × ROOM_SCALE (1.5) × TILE (0.5) = ×0.75, so
- * 62 × 27 compiles to ≈ 46.5 × 20.5 m: the design's 26 × 20 m amphitheatre
- * plus the 17.5 m bridge-and-crack approach and the 3 m exit stair.
+ * The room is sized by the Cinder Court procession plan's authoring minimum
+ * (77 × 59 tiles → 58 × 44.5 m interior): a 58 × 44 m S-route of corridors
+ * and three rock-isolated shrine courts, with the extra half metre of depth
+ * split as margin either side.
  */
-const FIRE_MIN_INTERIOR_WIDTH = 62;
-const FIRE_MIN_INTERIOR_HEIGHT = 27;
+const FIRE_MIN_INTERIOR_WIDTH = FIRST_FIRE_PROCESSION_AUTHORING_MINIMUM.width;
+const FIRE_MIN_INTERIOR_HEIGHT = FIRST_FIRE_PROCESSION_AUTHORING_MINIMUM.height;
+
+/**
+ * Wall tiles kept between the Earth door and the south corner of the east
+ * wall. Wall content is scaled by ROOM_SCALE when it sizes the room, so the
+ * gap is declared as the trailing margin of an "end"-aligned wall rather
+ * than as the leading offset: 17 tiles after the 4-tile door leaves the door
+ * on wing rows 70..73 (world z 34.75..36.75), inside the nominal plan's
+ * (depth - 12 .. depth - 8) window, and 2 + 4 + 17 tiles stays under the
+ * 59-tile interior minimum so the room keeps its authored size.
+ */
+const FIRE_EAST_DOOR_SOUTH_GAP_TILES = 17;
 
 const fireWalls = {
   north: torchWall("start"),
   south: EMPTY_WALL,
-  // The Earth door sits at the south end of the east wall, which is where the
-  // top bench terrace (and therefore the exit stair) is.
-  east: doorWall(EDGE_IDS.fireToEarth, "end"),
+  // The Earth door sits three quarters of the way down the east wall, where
+  // the plan's green growth path leaves the FL court. A gap holds it off the
+  // south corner so the growth carve keeps its rock margin to the outdoors
+  // (the amphitheatre-era "end" alignment put it 2 m from the corner).
+  east: {
+    segments: [
+      { type: "door", edgeId: EDGE_IDS.fireToEarth, width: 4 },
+      { type: "gap", minTiles: FIRE_EAST_DOOR_SOUTH_GAP_TILES },
+    ],
+    minMargin: 1,
+    alignment: "end",
+  },
   west: doorWall(EDGE_IDS.waterToFire, "center"),
 } satisfies Record<WallName, WallDefinition>;
 
@@ -282,35 +307,59 @@ const fireDimensions = computeRoomDimensions({
   minInteriorHeight: FIRE_MIN_INTERIOR_HEIGHT,
 });
 
-const FIRE_STATION_SUFFIXES = ["dj", "ek", "fl"] as const;
+/**
+ * The procession plan laid out on the compiled interior, origin at the
+ * room's NW corner. Door spans only need to satisfy the plan's fit check
+ * here; the live plan (buildFirstFireProcessionPlanForGrid) re-reads them
+ * from the stamped door tiles, and the shrine centres depend only on the
+ * room frame.
+ */
+const fireInteriorMetres = {
+  width: (fireDimensions.w - 2) * TILE_METRES,
+  depth: (fireDimensions.h - 2) * TILE_METRES,
+};
+const fireAuthoringPlan = buildFirstFireProcessionPlan({
+  room: { minX: 0, maxX: fireInteriorMetres.width, minZ: 0, maxZ: fireInteriorMetres.depth },
+  westDoor: { min: fireInteriorMetres.depth / 2 - 2, max: fireInteriorMetres.depth / 2 + 2 },
+  eastDoor: { min: fireInteriorMetres.depth - 12, max: fireInteriorMetres.depth - 8 },
+});
 
-const firePerformers = firstFireStationOffsets(
-  (fireDimensions.w - 2) * TILE_METRES
-).map((offset, index) => ({
-  offsetX: interiorOffsetFraction(
-    offset.xMetres,
-    fireDimensions.w,
-    fireDimensions.w - 2
-  ),
-  offsetY: interiorOffsetFraction(
-    offset.zMetres,
-    fireDimensions.h,
-    fireDimensions.h - 2
-  ),
-  facing: "south" as const,
-  refId: `cave-fire-automaton-${FIRE_STATION_SUFFIXES[index]}`,
-  collisionRadiusTiles: 2,
-  elevation: FIRE_SHORE_Y,
-}));
+/** The shrine performer faces the mouth the visitor arrives through. */
+function shrineFacing(shrine: { centre: { x: number; z: number }; entry: { x: number; z: number } }) {
+  const dx = shrine.entry.x - shrine.centre.x;
+  const dz = shrine.entry.z - shrine.centre.z;
+  if (Math.abs(dx) >= Math.abs(dz)) return dx >= 0 ? ("east" as const) : ("west" as const);
+  return dz >= 0 ? ("south" as const) : ("north" as const);
+}
+
+const firePerformers = FIRST_FIRE_SHRINE_ORDER.map((shrineId) => {
+  const shrine = fireAuthoringPlan.shrines.find((candidate) => candidate.id === shrineId)!;
+  return {
+    offsetX: interiorOffsetFraction(
+      shrine.centre.x,
+      fireDimensions.w,
+      fireDimensions.w - 2
+    ),
+    offsetY: interiorOffsetFraction(
+      shrine.centre.z,
+      fireDimensions.h,
+      fireDimensions.h - 2
+    ),
+    facing: shrineFacing(shrine),
+    refId: `cave-fire-automaton-${shrineId}`,
+    collisionRadiusTiles: 2,
+    elevation: CINDER_FLOOR_Y,
+  };
+});
 
 /**
- * The Earth canyon overlook's authored shell, declared before VULCAN_CAVE_ROOMS
- * for the same reason Water's and Fire's are: the three boss stations come off
- * the SAME compiled dimensions the layout engine uses.
+ * The Earth wing's authored shell (the Root Terrace), declared before
+ * VULCAN_CAVE_ROOMS for the same reason Water's and Fire's are: the three
+ * case stations come off the SAME compiled dimensions the layout engine uses.
  *
  * Interior metres = ceil(minInterior × 1.5) × 0.5, so 45 × 32 compiles to
- * 34 × 24 m: a 12.5 m grass gully plus a 21.5 × 24 m canyon chamber holding a
- * ⌀14 m void with its rim ring.
+ * 34 × 24 m: a 6 m vestibule, a 10 m ramp and an 18 m terrace along the north
+ * wall, the rootbed 5.2 m below the terrace, and the east descent to Air.
  */
 // Interior metres = ceil(minInterior × 1.5) × 0.5, the same compile the Earth
 // note above describes. 23 × 27 gives 17.5 × 20.5 m.
@@ -328,11 +377,11 @@ const EARTH_MIN_INTERIOR_WIDTH = 45;
 const EARTH_MIN_INTERIOR_HEIGHT = 32;
 
 const earthWalls = {
-  // The canyon is open north. The compiled wall stays for collision; the
-  // graybox omits its visual and renders the boulder parapet just inside it.
+  // The terrace runs along the north wall; the carved shell is that wall.
+  // The compiled wall stays for collision and the room suppresses its tiles.
   north: EMPTY_WALL,
-  // The Air door sits at the east end of the south wall, at the top of the
-  // exit ramp that climbs east along the south rim.
+  // The Air door sits at the east end of the south wall, at the foot of the
+  // descent that comes down the east wall from the terrace.
   south: doorWall(EDGE_IDS.earthToAir, "end"),
   east: torchWall("start"),
   west: doorWall(EDGE_IDS.fireToEarth, "center"),
@@ -346,9 +395,7 @@ const earthDimensions = computeRoomDimensions({
 
 const EARTH_STATION_SUFFIXES = ["g", "h", "i"] as const;
 
-const earthPerformers = earthCanyonStationOffsets(
-  (earthDimensions.w - 2) * TILE_METRES
-).map((offset, index) => ({
+const earthPerformers = earthRootTerraceStationOffsets().map((offset, index) => ({
   offsetX: interiorOffsetFraction(
     offset.xMetres,
     earthDimensions.w,
@@ -359,12 +406,11 @@ const earthPerformers = earthCanyonStationOffsets(
     earthDimensions.h,
     earthDimensions.h - 2
   ),
-  // Up and out toward the south rim and the slab overlook, where the visitor
-  // stands six metres above them.
-  facing: "south" as const,
+  // Up toward the terrace rail, where the visitor stands 5.2 m above them.
+  facing: "north" as const,
   refId: `cave-earth-automaton-${EARTH_STATION_SUFFIXES[index]}`,
   collisionRadiusTiles: 2,
-  elevation: EARTH_BOSS_Y,
+  elevation: EARTH_BED_Y,
 }));
 
 const airWalls = {
@@ -634,20 +680,20 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     minInteriorWidth: FIRE_MIN_INTERIOR_WIDTH,
     minInteriorHeight: FIRE_MIN_INTERIOR_HEIGHT,
     description:
-      "A basalt bridge over a lava stream, a darkening crack, and a stepped amphitheatre facing three fire-pit stations across a lava fissure.",
+      "The Cinder Court: an S-route of torch-lit basalt corridors threads three rock-isolated shrine courts, each performing DJ, EK or FL inside a horseshoe of fire, until the last flame goes out and green growth leads on to Earth.",
     roomPresentation: { suppressTileGeometry: true },
     walls: fireWalls,
     performers: firePerformers,
   },
   {
     id: "cave-earth",
-    name: "The Canyon Overlook",
+    name: "The Root Terrace",
     material: "stone",
     theme: "cave",
     minInteriorWidth: EARTH_MIN_INTERIOR_WIDTH,
     minInteriorHeight: EARTH_MIN_INTERIOR_HEIGHT,
     description:
-      "A grass gully opens onto the rim of a canyon. Three figures perform six metres below, on a floor there is no way down to; a fallen slab cantilevers over the drop and the shelves beyond recede into haze.",
+      "The Root Terrace: a ramp climbs out of a mossy vestibule onto a brass-railed terrace along the north wall. Three figures perform G, H and I in one row on the rootbed 5.2 m below, in daylight from an aven, with no way down; the descent along the east wall lands on the row's axis before the floor falls away toward Air.",
     roomPresentation: { suppressTileGeometry: true },
     walls: earthWalls,
     performers: earthPerformers,
@@ -849,16 +895,16 @@ const CAVE_SPACE_PROGRAM: readonly CaveSpaceProgram[] = [
   },
   {
     id: "cave-fire",
-    title: "Fire chamber",
+    title: "The cinder court",
     description:
-      "A second isolated figure gains contrast from a harder pulse of light and sound.",
+      "A torch lane threads three shrine courts cut from one basalt mass; each fire darkens behind the visitor until the last goes out and growth leads on.",
     tone: "retail",
   },
   {
     id: "cave-earth",
-    title: "The canyon overlook",
+    title: "The root terrace",
     description:
-      "A grass gully turns once and opens on a canyon rim; three figures work six metres below, past a fallen slab, with no way down.",
+      "A ramp climbs to a railed terrace above a rootbed lit from an aven; three figures work in one row 5.2 m below, and the descent lands on the row's axis.",
     tone: "social",
   },
   {
@@ -1080,12 +1126,12 @@ export function composeCaveTerrainForGrid(
       program: createDrownedGalleryTerrain(grid),
     },
     {
-      footprint: buildFirstFireLayout(grid)?.bayFootprint,
-      program: createFirstFireTerrain(grid),
+      footprint: buildFirstFireProcessionBay(grid)?.bayFootprint,
+      program: createFirstFireProcessionTerrain(grid),
     },
     {
-      footprint: buildEarthCanyonLayout(grid)?.bayFootprint,
-      program: createEarthCanyonTerrain(grid),
+      footprint: buildEarthRootTerraceLayout(grid)?.bayFootprint,
+      program: createEarthRootTerraceTerrain(grid),
     },
     {
       footprint: buildAirChimneyLayout(grid)?.bayFootprint,

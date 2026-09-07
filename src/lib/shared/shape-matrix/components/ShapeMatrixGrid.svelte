@@ -38,6 +38,13 @@
     /** Upper bound on a cell's edge; the actual size shrinks to fit the viewport. */
     maxCellPx?: number;
     onselect: (pair: { left: TAxis; right: TAxis }) => void;
+    /**
+     * A header was activated: that axis item alone, on that hand. Without
+     * this the headers stay the plain labels they have always been.
+     */
+    onsolo?: (hand: "left" | "right", item: TAxis) => void;
+    /** The hand a header chose, so its header reads as the chosen one. */
+    soloHand?: "left" | "right" | null;
     /** Optional externally-owned selection for restored/shared app state. */
     selectedPair?: { left: TAxis; right: TAxis } | null;
     /** Alternative cell/header painter (e.g. the poi trail painter). Defaults to the club-style painter. */
@@ -80,6 +87,8 @@
     colAxis,
     maxCellPx = 100,
     onselect,
+    onsolo,
+    soloHand = null,
     selectedPair,
     painter = CLUB_ARTWORK_PAINTER,
     overlayFor,
@@ -157,11 +166,20 @@
 
   let sel = $state<string | null>(null);
   const selectedKey = $derived(
-    selectedPair === undefined
-      ? sel
-      : selectedPair
-        ? `${keyOf(selectedPair.left)}__${keyOf(selectedPair.right)}`
-        : null
+    soloHand
+      ? null
+      : selectedPair === undefined
+        ? sel
+        : selectedPair
+          ? `${keyOf(selectedPair.left)}__${keyOf(selectedPair.right)}`
+          : null
+  );
+  /* While one hand is on stage the chosen thing is its header, not a cell:
+     the tiles are pairs and none of them is what is playing. */
+  const soloKey = $derived(
+    soloHand && selectedPair
+      ? keyOf(soloHand === "left" ? selectedPair.left : selectedPair.right)
+      : null
   );
 </script>
 
@@ -199,11 +217,28 @@
               scope="col"
               title={labelOf(rf)}
             >
-              <ShapeMatrixMandalaArt
-                paint={headerPaint(rf, "right")}
-                artKey={`right:${keyOf(rf)}`}
-                alt={`right ${labelOf(rf)}`}
-              />
+              {#if onsolo}
+                <button
+                  type="button"
+                  class="head-button"
+                  class:solo={soloHand === "right" && soloKey === keyOf(rf)}
+                  aria-label={`Play right ${labelOf(rf)} on its own`}
+                  aria-pressed={soloHand === "right" && soloKey === keyOf(rf)}
+                  onclick={() => onsolo("right", rf)}
+                >
+                  <ShapeMatrixMandalaArt
+                    paint={headerPaint(rf, "right")}
+                    artKey={`right:${keyOf(rf)}`}
+                    alt={`right ${labelOf(rf)}`}
+                  />
+                </button>
+              {:else}
+                <ShapeMatrixMandalaArt
+                  paint={headerPaint(rf, "right")}
+                  artKey={`right:${keyOf(rf)}`}
+                  alt={`right ${labelOf(rf)}`}
+                />
+              {/if}
             </th>
           {/each}
         </tr>
@@ -218,11 +253,28 @@
               scope="row"
               title={labelOf(bf)}
             >
-              <ShapeMatrixMandalaArt
-                paint={headerPaint(bf, "left")}
-                artKey={`left:${keyOf(bf)}`}
-                alt={`left ${labelOf(bf)}`}
-              />
+              {#if onsolo}
+                <button
+                  type="button"
+                  class="head-button"
+                  class:solo={soloHand === "left" && soloKey === keyOf(bf)}
+                  aria-label={`Play left ${labelOf(bf)} on its own`}
+                  aria-pressed={soloHand === "left" && soloKey === keyOf(bf)}
+                  onclick={() => onsolo("left", bf)}
+                >
+                  <ShapeMatrixMandalaArt
+                    paint={headerPaint(bf, "left")}
+                    artKey={`left:${keyOf(bf)}`}
+                    alt={`left ${labelOf(bf)}`}
+                  />
+                </button>
+              {:else}
+                <ShapeMatrixMandalaArt
+                  paint={headerPaint(bf, "left")}
+                  artKey={`left:${keyOf(bf)}`}
+                  alt={`left ${labelOf(bf)}`}
+                />
+              {/if}
             </th>
             {#each colAxis as rf, colIndex (colIndex)}
               {@const key = `${keyOf(bf)}__${keyOf(rf)}`}
@@ -258,6 +310,13 @@
                       />
                     </span>
                   {/if}
+                  <!-- Colour alone did not name the chosen crossing among
+                       sixteen red and blue mandalas. As on the relationship
+                       chips, the mark sits on the corner of every tile and
+                       shows on the chosen one, so choosing moves nothing. -->
+                  <span class="sel-mark" aria-hidden="true">
+                    <i class="fas fa-check"></i>
+                  </span>
                 </button>
               </td>
             {/each}
@@ -381,6 +440,53 @@
   /* The art fills the header's content box. Sized to the tile itself it sat
      one border wider than its cell and the whole table overflowed its
      viewport by a few pixels, which is a scrollbar under a grid that fits. */
+  /* A header is a button when the host offers the solo: the whole cell, so
+     the artwork is the target, with the pressed ring the tiles use. */
+  .head-button {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+  }
+
+  .head-button:hover {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 45%,
+      transparent
+    );
+    background: color-mix(in srgb, var(--theme-accent, #f59e0b) 8%, transparent);
+  }
+
+  .head-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #f59e0b);
+    outline-offset: -2px;
+  }
+
+  .head-button.solo {
+    border-color: var(--theme-accent, #f59e0b);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 14%,
+      transparent
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .head-button {
+      transition: none;
+    }
+  }
+
   .colhead :global(.mandala-art),
   .rowhead :global(.mandala-art) {
     width: 100%;
@@ -435,27 +541,69 @@
       transform: scale(1.08);
     }
   }
+  /* The chosen crossing advances on four axes at once, as the chosen
+     relationship chip does: ring, wash, glow, mark. A hairline ring alone
+     was lost among sixteen red and blue mandalas. */
   .cell.sel {
     outline: none;
     z-index: 2;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #f59e0b) 16%,
+      transparent
+    );
   }
   .cell.sel::after {
     content: "";
     position: absolute;
-    inset: 2px;
+    inset: 1px;
     z-index: 2;
-    border: 1px solid var(--theme-accent, #f59e0b);
-    border-radius: 2px;
-    box-shadow: inset 0 0 0.8rem
-      color-mix(in srgb, var(--theme-accent, #f59e0b) 16%, transparent);
+    border: 2px solid var(--theme-accent, #f59e0b);
+    border-radius: 3px;
+    box-shadow:
+      inset 0 0 1rem
+        color-mix(in srgb, var(--theme-accent, #f59e0b) 30%, transparent),
+      0 0 0.75rem
+        color-mix(in srgb, var(--theme-accent, #f59e0b) 45%, transparent);
     pointer-events: none;
     transition: opacity var(--duration-fast, 150ms)
       var(--transition-easing, ease);
+  }
+  .sel-mark {
+    position: absolute;
+    top: 0.3rem;
+    inset-inline-end: 0.3rem;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: clamp(0.85rem, calc(var(--cell) * 0.13), 1.5rem);
+    height: clamp(0.85rem, calc(var(--cell) * 0.13), 1.5rem);
+    border-radius: 999px;
+    /* A light tint of the accent, as on the chips: the accent at full
+       strength is mid-dark in several themes and a small mark on it read
+       as a coloured dot rather than a check. */
+    background: color-mix(in srgb, var(--theme-accent, #f59e0b) 32%, white);
+    box-shadow: 0 0 0 2px var(--theme-panel-bg, #101721);
+    color: #06090d;
+    font-size: clamp(0.5rem, calc(var(--cell) * 0.065), 0.8rem);
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+    transition:
+      opacity var(--duration-fast, 150ms) var(--transition-easing, ease),
+      transform var(--duration-fast, 150ms) var(--transition-easing, ease);
+  }
+  .cell.sel .sel-mark {
+    opacity: 1;
+    transform: scale(1);
   }
   /* The selected tile's box is the rectangle that flies to the detail stage.
      Its hairline rings would scale into thick bands mid-flight; the flat
      wash scales cleanly, so only the rings step aside for the morph. */
   :global(html.shape-matrix-morph) .cell.sel::after {
+    opacity: 0;
+  }
+  :global(html.shape-matrix-morph) .cell.sel .sel-mark {
     opacity: 0;
   }
   :global(html.shape-matrix-morph) .cell:hover,
@@ -533,6 +681,7 @@
   @media (prefers-reduced-motion: reduce) {
     .cell,
     .artwork,
+    .sel-mark,
     .colhead,
     .rowhead {
       transition: none;

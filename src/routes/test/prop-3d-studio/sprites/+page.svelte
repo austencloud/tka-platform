@@ -115,6 +115,7 @@
           fit: result.fit,
           extent: result.extent,
           gripOffset: result.gripOffset,
+          bounds: result.bounds,
           dataUrl: result.dataUrl,
         }),
       });

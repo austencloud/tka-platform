@@ -133,8 +133,6 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.TRIQUETRA]: "Q",
   [PropType.TRIQUETRA2]: "q",
   [PropType.SWORD]: "W",
-  // Match the current codec so a sequence keeps its prop across wire formats.
-  [PropType.SICKLES]: "Y",
   // Same two codes the current codec uses, so a sequence keeps its prop when it
   // moves between formats.
   [PropType.ENERGY_SABER]: "3",
@@ -167,6 +165,10 @@ const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(
 // Fractalgeng used R until the prop was retired. Existing cards render it as
 // its base prop, buugeng, just like the current codec's compatibility alias.
 PROP_TYPE_DECODE.R = PropType.BUUGENG;
+
+// Sickles used Y until the prop was retired 2026-09-06. Same treatment: an
+// existing card decodes to its base prop, sword.
+PROP_TYPE_DECODE.Y = PropType.SWORD;
 
 export function detectLegacySequenceFormat(
   encoded: string

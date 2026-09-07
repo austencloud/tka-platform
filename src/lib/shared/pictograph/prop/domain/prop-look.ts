@@ -5,7 +5,10 @@ import {
   resolveFanRenderKey,
   type FanAppearance,
 } from "./fan-appearance";
-import { PROP_MODEL_SPRITES } from "./prop-model-sprites.generated";
+import {
+  PROP_MODEL_SPRITES,
+  type PropModelSpriteEntry,
+} from "./prop-model-sprites.generated";
 
 /**
  * How the 2D animation canvas draws a prop.
@@ -116,6 +119,12 @@ export interface PropTileArtwork {
    * `crop` is the source-pixel window that holds the prop.
    */
   fill?: PropTileCrop;
+  /**
+   * The window of a whole-box capture that holds the prop. The pair recipe
+   * draws this window fitted to the glyph square, so a one-sided prop is not
+   * half empty margin. Notation glyphs are already cropped artwork.
+   */
+  crop?: PropTileCrop;
 }
 
 export interface PropTileCrop {
@@ -170,9 +179,26 @@ export function propTileArtwork(
       href: modelSpriteArtwork(normalized, side),
       styled: true,
       prelit: true,
+      crop: modelSpriteCrop(PROP_MODEL_SPRITES[normalized]!),
     };
   }
   return { href: fallback, styled: false, prelit: false };
+}
+
+/**
+ * The painted window of a model capture as a tile crop. Captures are
+ * grip-centred and mirrored about the hand, so a club or torch paints only
+ * half its box; without measured bounds the whole box is drawn as before.
+ */
+export function modelSpriteCrop(
+  entry: PropModelSpriteEntry
+): PropTileCrop | undefined {
+  if (!entry.bounds) return undefined;
+  return {
+    imageWidth: entry.width,
+    imageHeight: entry.height,
+    ...entry.bounds,
+  };
 }
 
 export interface PropLookOption {

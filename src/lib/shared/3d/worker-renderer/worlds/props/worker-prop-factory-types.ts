@@ -21,6 +21,10 @@ export const CANONICAL_PROP_TYPE = {
   TRIQUETRA: "triquetra",
   TRIQUETRA2: "triquetra2",
   SWORD: "sword",
+  // Retired from the app enum 2026-09-06, like FRACTALGENG before it. The
+  // scene package still enumerates both, and the worker factory contract is to
+  // construct every type that package lists, so the entry stays. Nothing in the
+  // app can select it any more.
   SICKLES: "sickles",
   CHICKEN: "chicken",
   BIGCHICKEN: "bigchicken",

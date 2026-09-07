@@ -39,6 +39,9 @@ export interface VideoExportOptions {
   effectOverrides?: VideoExportEffectOverrides;
   includeStartPosition?: boolean;
   includeEndHold?: boolean;
+  /** Viewer Blue/Red motion toggles; a hand hidden on screen stays hidden in the file. */
+  leftMotionVisible?: boolean;
+  rightMotionVisible?: boolean;
   /**
    * "standard" (default): one render per output frame, native resolution.
    * "cinema": 2× supersampling + 4× temporal motion blur. Roughly 4-8×
@@ -246,6 +249,8 @@ export class SequenceModalExporter {
           effectOverrides: options.effectOverrides,
           includeAnimationStartPosition: options.includeStartPosition,
           includeEndHold: options.includeEndHold,
+          leftMotionVisible: options.leftMotionVisible,
+          rightMotionVisible: options.rightMotionVisible,
           // App mode: the offscreen export engine has no settings wiring, so pass
           // the user's chosen prop explicitly. Without it the export renders the
           // default "staff" instead of the live prop.

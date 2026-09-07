@@ -29,12 +29,18 @@
     type PropType as ScenePropType,
   } from "@austencloud/scene-3d";
   import { getRoomEnvironmentTexture } from "$lib/shared/3d/rendering/room-environment";
+  import {
+    paintedBounds,
+    type PaintedBounds,
+  } from "$lib/shared/pictograph/prop/domain/painted-bounds";
 
   export interface SpriteCaptureResult {
     dataUrl: string;
     fit: number;
     extent: { x: number; y: number; z: number };
     gripOffset: { x: number; y: number };
+    /** Where the prop actually paints inside the grip-centred box. */
+    bounds: PaintedBounds | null;
   }
 
   interface Props {
@@ -188,6 +194,7 @@
       // Where the 3D grip (model origin) lands, in 2D box units from the box
       // center, y down like the canvas.
       gripOffset: { x: -centerX * fit, y: centerY * fit },
+      bounds: paintedBounds(gl.domElement, widthPx, heightPx, pixelsPerUnit),
     });
   });
 </script>

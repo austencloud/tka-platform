@@ -27,6 +27,7 @@ export interface PictographRenderingState {
 import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
 import type { ThemeMode } from "../../../utils/svg-color-utils";
 import type { PropType } from "../../prop/domain/enums/prop-type";
+import type { FanAppearance } from "../../prop/domain/fan-appearance";
 
 // Re-export for convenience
 export type { PreparedPictographData };
@@ -37,6 +38,12 @@ export type { PreparedPictographData };
 export interface PrepareOptions {
   /** Theme mode for color selection ("dark" or "light"). If not provided, uses global state. */
   themeMode?: ThemeMode;
+  /**
+   * Physical fan build drawn for fan-family props. The pictographs draw the
+   * same build the animator and the 3D scene show. Omitted means the
+   * notation fan artwork.
+   */
+  fanAppearance?: FanAppearance;
   /**
    * Explicit prop type for the performer's left hand.
    * When provided, this value is used directly. When omitted, falls back to global settings.

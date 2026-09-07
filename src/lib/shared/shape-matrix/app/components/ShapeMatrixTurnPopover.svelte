@@ -152,7 +152,7 @@
                     describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
                     onchange={applyLevel}
                     compact={true}
-                    ariaLabel="Kinetic Alphabet level"
+                    ariaLabel="Difficulty level"
                   />
                 </div>
               {/if}

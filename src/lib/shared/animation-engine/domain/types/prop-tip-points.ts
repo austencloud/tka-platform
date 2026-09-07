@@ -271,15 +271,6 @@ const SWORD_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 280, dy: 0 }],
 };
 
-// The renderer rotates every prop about its viewBox centre, which for sickles
-// is (220, 130) — not the wrapped grip. Measured from that centre the blade
-// apex sits at (126.5, -116): radius 171.6 at -42.52 degrees. The tracked
-// point is that bearing at radius 166, inside the apex and on the blade. The
-// butt is not tracked.
-const SICKLES_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 122.35, dy: -112.19 }],
-};
-
 // Energy Saber is a sword restyle, so it gets sword's reach exactly: the blade
 // tip sits 280 units from the pivot in a 620-unit box. Single-ended — the hilt
 // end is not tracked (see TWO_ENDED_PROPS in prop-tip-ends.ts, which must
@@ -478,8 +469,6 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
   // Sword
   sword: SWORD_TIP_POINTS,
 
-  // Sickles
-  sickles: SICKLES_TIP_POINTS,
 
   // Energy family (premium cosmetics) — reach copied from each parent
   energy_saber: ENERGY_SABER_TIP_POINTS,

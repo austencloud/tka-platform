@@ -24,8 +24,8 @@
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
   import VulcanCaveScenicLayer from "./VulcanCaveScenicLayer.svelte";
   import DrownedGalleryAuthored from "./DrownedGalleryAuthored.svelte";
-  import FirstFireGraybox from "./FirstFireGraybox.svelte";
-  import EarthCanyonGraybox from "./EarthCanyonGraybox.svelte";
+  import FirstFireAuthored from "./FirstFireAuthored.svelte";
+  import EarthRootTerraceAuthored from "./EarthRootTerraceAuthored.svelte";
   import AirChimneyGraybox from "./AirChimneyGraybox.svelte";
   import SundialGraybox from "./SundialGraybox.svelte";
   import MoonGraybox from "./MoonGraybox.svelte";
@@ -279,8 +279,8 @@
   // Graybox for The First Fire. Remove with the component when its authored
   // GLB shell lands, the way the Drowned Gallery's graybox went.
   const hasFirstFire = grid.wings.some((wing) => wing.id === "cave-fire");
-  // Graybox for the Earth Room (the Canyon Overlook). Same lifetime again.
-  const hasEarthCanyon = grid.wings.some((wing) => wing.id === "cave-earth");
+  // The Earth wing (the Root Terrace) owns its shell and its stations.
+  const hasEarthTerrace = grid.wings.some((wing) => wing.id === "cave-earth");
   const hasAirChimney = grid.wings.some((wing) => wing.id === "cave-air");
   // Graybox for the Sundial (the Sun Chamber). Same lifetime again.
   const hasSundial = grid.wings.some((wing) => wing.id === "cave-sun");
@@ -1138,10 +1138,20 @@
               getPlayerVelocity: () =>
                 physicsProvider?.getVelocity() ?? { x: 0, y: 0, z: 0 },
               isGrounded: () => physicsProvider?.isGrounded() ?? false,
-              movePlayer: (movement, deltaTime) =>
-                physicsProvider?.movePlayer(movement, deltaTime),
-              teleportPlayer: (position) =>
-                physicsProvider?.teleport?.(position),
+              // The bridge drives the physics body directly. The reactive
+              // playerPosition normally follows the body inside the UCC's
+              // movement step, which a bridge move or teleport never enters,
+              // so the avatar, proximity culling and the caves' position-driven
+              // state would stay at the previous spot until the next keypress.
+              // Sync the way the portal and Moon arrivals already do.
+              movePlayer: (movement, deltaTime) => {
+                physicsProvider?.movePlayer(movement, deltaTime);
+                syncPositionFromPhysics();
+              },
+              teleportPlayer: (position) => {
+                physicsProvider?.teleport?.(position);
+                syncPositionFromPhysics();
+              },
               raycast: (origin, direction, maxDistance) =>
                 bridgeRaycast(origin, direction, maxDistance),
             },
@@ -2137,6 +2147,12 @@
   {:else if hasDrownedGallery && performer.id.startsWith("cave-water-")}
     <!-- Skip: the Water wing stands its three cases on pedestals and drives
          them from its consoles (DrownedGalleryAuthored) -->
+  {:else if hasFirstFire && performer.id.startsWith("cave-fire-")}
+    <!-- Skip: the Fire wing stands one automaton per court and lights it by
+         the procession (FirstFireAuthored) -->
+  {:else if hasEarthTerrace && performer.id.startsWith("cave-earth-")}
+    <!-- Skip: the Earth wing stands its three cases on the rootbed below the
+         terrace and its opener in the vestibule (EarthRootTerraceAuthored) -->
   {:else if performer.id.includes("telekinetic-formation")}
     {@const posOverride =
       overrideVersion >= 0
@@ -2266,18 +2282,20 @@
 {/if}
 
 {#if hasFirstFire}
-  <FirstFireGraybox
+  <FirstFireAuthored
     {grid}
     currentRoomId={currentPlayerRoomId}
+    {playerPosition}
     onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />
 {/if}
 
-{#if hasEarthCanyon}
-  <EarthCanyonGraybox
+{#if hasEarthTerrace}
+  <EarthRootTerraceAuthored
     {grid}
     currentRoomId={currentPlayerRoomId}
+    {playerPosition}
     onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />

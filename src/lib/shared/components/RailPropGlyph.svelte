@@ -29,8 +29,7 @@
     (isFanPropType(propType)
       ? fanAppearanceArtwork(
           resolvedFanAppearance.build,
-          resolvedFanAppearance.cover,
-          resolvedFanAppearance.frameColor
+          resolvedFanAppearance.cover
         )
       : null) ?? getPropTypeDisplayInfo(propType).image
   );

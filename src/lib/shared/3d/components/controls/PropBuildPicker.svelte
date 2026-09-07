@@ -20,13 +20,6 @@
     density = "primary",
   }: Props = $props();
 
-  const hasDesignCredits = $derived(
-    options.some((option) => option.designCredit !== undefined)
-  );
-  const selectedDesignCredit = $derived(
-    options.find((option) => option.id === value)?.designCredit
-  );
-
   function moveSelection(event: KeyboardEvent, index: number): void {
     let nextIndex: number | null = null;
 
@@ -58,32 +51,6 @@
 <section class="picker" class:secondary={density === "secondary"}>
   <div class="picker-heading">
     <span class="picker-label">{label}</span>
-
-    {#if hasDesignCredits}
-      <div class="design-credit" aria-live="polite">
-        <Crossfade
-          key={selectedDesignCredit?.originator ?? "uncredited"}
-          duration={DURATION.fast}
-        >
-          {#if selectedDesignCredit}
-            <span>
-              Original design by
-              <a
-                href={selectedDesignCredit.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                >{selectedDesignCredit.originator}<span
-                  class="external-mark"
-                  aria-hidden="true">↗</span
-                ></a
-              >
-            </span>
-          {:else}
-            <span class="credit-placeholder" aria-hidden="true">&nbsp;</span>
-          {/if}
-        </Crossfade>
-      </div>
-    {/if}
   </div>
 
   <div class="option-grid" role="radiogroup" aria-label={label}>
@@ -97,6 +64,9 @@
         aria-label={option.designCredit
           ? `${option.label}, original design by ${option.designCredit.originator}`
           : option.label}
+        title={option.designCredit
+          ? `Original design by ${option.designCredit.originator}`
+          : undefined}
         tabindex={value === option.id ? 0 : -1}
         onclick={() => onchange(option.id)}
         onkeydown={(event) => moveSelection(event, index)}
@@ -164,50 +134,6 @@
     grid-template-columns: repeat(var(--build-option-count, 3), minmax(0, 1fr));
     gap: clamp(8px, 1.1cqi, 12px);
     min-width: 0;
-  }
-
-  .design-credit {
-    flex: 0 1 auto;
-    min-width: 0;
-    min-height: 1.35em;
-    color: rgba(255, 255, 255, 0.58);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 620;
-    line-height: 1.35;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  .design-credit a {
-    color: color-mix(in srgb, var(--prop-picker-accent) 72%, white);
-    font-weight: 760;
-    text-decoration-color: color-mix(
-      in srgb,
-      var(--prop-picker-accent) 48%,
-      transparent
-    );
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.2em;
-  }
-
-  .design-credit a:hover {
-    color: #fff;
-    text-decoration-color: currentColor;
-  }
-
-  .design-credit a:focus-visible {
-    border-radius: 3px;
-    outline: 2px solid var(--prop-picker-accent);
-    outline-offset: 2px;
-  }
-
-  .external-mark {
-    margin-left: 0.3em;
-    font-size: 0.9em;
-  }
-
-  .credit-placeholder {
-    visibility: hidden;
   }
 
   .option {

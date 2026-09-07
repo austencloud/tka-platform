@@ -129,6 +129,18 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(tunnelArtSettings).toContain("<TunnelEffectsSettings");
   });
 
+  it("seats Tempo and Mode on one row where a host has no Paths page", () => {
+    expect(animationPanel, "solo column is unmarked").toMatch(
+      /\{:else if showTempoControls \|\| onPlaybackModeChange\}\s*<div class="motion-col motion-col-solo">/
+    );
+    expect(animationPanel, "solo column still shares a two-column row").toMatch(
+      /\.motion-col-solo \{\s*grid-column: 1 \/ -1;/
+    );
+    expect(animationPanel, "Tempo and Mode still stack").toMatch(
+      /\.motion-col-solo > :global\(\.playback-rows\) \{\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/
+    );
+  });
+
   it("lets the dock tray size itself around the Display rows", () => {
     // The sidebar hands these rows a height to divide, so they fill it. The
     // dock tray is the other way round: it takes its height FROM the content.

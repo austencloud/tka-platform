@@ -133,12 +133,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
       category: "singles",
     },
 
-    [PropType.SICKLES]: {
-      label: "Sickles",
-      image: "/images/props/buttons/sickles.svg",
-      category: "singles",
-    },
-
     // === ENERGY FAMILY (premium cosmetics) ===
     // No `category` on purpose. The category taxonomy feeds getBasePropsByCategory(),
     // which the 3D prop controls expand without an access check. Leaving these two
@@ -356,8 +350,6 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGDOUBLESTAR,
   // Eightrings family
   PropType.BIGEIGHTRINGS,
-  // Sword family
-  PropType.SICKLES,
   // Contact ball family (DOUBLECONTACTBALL is now standalone)
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
@@ -378,7 +370,10 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.TORCH]: PropType.CLUB,
   [PropType.BIGCLUB]: PropType.CLUB,
   [PropType.BIGTORCH]: PropType.CLUB,
-  // Fan variations
+  // Fan variations. The fan build (DoodleGrip Fire, Lotus, Day, Moon LED,
+  // Pictograph) stays a look setting on top of whichever size is current --
+  // it is not a variant. Big Fan maps here so the grid folds it into the Fan
+  // tile; the size dock, not the family drill-down, is what reaches it.
   [PropType.BIGFAN]: PropType.FAN,
   // Triad variations
   [PropType.TRIGENG]: PropType.TRIAD,
@@ -397,8 +392,6 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGDOUBLESTAR]: PropType.DOUBLESTAR,
   // Eightrings variations
   [PropType.BIGEIGHTRINGS]: PropType.EIGHTRINGS,
-  // Weapon variations
-  [PropType.SICKLES]: PropType.SWORD,
   // Contact ball variations (CONTACTBALL, BIGCONTACTBALL, BIGDOUBLECONTACTBALL deactivated)
   [PropType.BIGCONTACTBALL]: PropType.CONTACTBALL,
   [PropType.BIGDOUBLECONTACTBALL]: PropType.CONTACTBALL,
@@ -432,7 +425,6 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
-  [PropType.SWORD]: [PropType.SICKLES],
   [PropType.CONTACTBALL]: [
     PropType.BIGCONTACTBALL,
     PropType.BIGDOUBLECONTACTBALL,
@@ -598,6 +590,8 @@ const STANDARD_TO_BIG: Partial<Record<PropType, PropType>> = {
   [PropType.TORCH]: PropType.BIGTORCH,
   [PropType.CHICKEN]: PropType.BIGCHICKEN,
   [PropType.DOUBLESTAR]: PropType.BIGDOUBLESTAR,
+  [PropType.CONTACTBALL]: PropType.BIGCONTACTBALL,
+  [PropType.DOUBLECONTACTBALL]: PropType.BIGDOUBLECONTACTBALL,
 };
 
 const BIG_TO_STANDARD: Partial<Record<PropType, PropType>> = Object.fromEntries(
@@ -663,7 +657,6 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.DOUBLECONTACTBALL,
       PropType.TORCH,
       PropType.SWORD,
-      PropType.SICKLES,
     ],
   },
   {

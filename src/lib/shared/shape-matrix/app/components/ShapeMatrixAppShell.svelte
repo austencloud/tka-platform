@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -8,13 +8,19 @@
   import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import { KINETIC_SHAPE_ENGINE_NAME } from "../shape-engine-identity";
+  import { shareOrCopyLink } from "$lib/shared/share/services/link-share";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
   import { createShapeMatrixAnimationState } from "../state/shape-matrix-animation-state.svelte";
+  import { customizeSection } from "../state/shape-matrix-customize";
   import { setShapeMatrixAnimationContext } from "../context/shape-matrix-animation-context";
   import { setAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
   import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { SequenceViewerVisibilityState } from "$lib/shared/sequence-viewer/state/viewer-visibility-state.svelte";
+  import { setViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import ShapeMatrixCustomizeWorkspace from "./ShapeMatrixCustomizeWorkspace.svelte";
   import ShapeMatrixDetailPane from "./ShapeMatrixDetailPane.svelte";
   import ShapeMatrixMatrixPane from "./ShapeMatrixMatrixPane.svelte";
   import ShapeMatrixTurnPopover from "./ShapeMatrixTurnPopover.svelte";
@@ -35,6 +41,21 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
+
+  /* Share hands the address on directly, on the press itself: the phone's own
+     share sheet where there is one, the clipboard everywhere else. Both need
+     that gesture, so nothing may await before the call. The app never builds
+     the address; the route host does, through appState.shareLink(). */
+  async function shareThisView(): Promise<void> {
+    const url = appState.shareLink();
+    if (url === null) return;
+    const outcome = await shareOrCopyLink({
+      url,
+      title: KINETIC_SHAPE_ENGINE_NAME,
+    });
+    if (outcome === "copied") toast.success("Link copied");
+    else if (outcome === "failed") toast.error("Could not copy the link");
+  }
   // The hero's animation state lives here, above both panes, so both surfaces
   // share one animation scope while their workspaces crossfade.
   const animationState = setShapeMatrixAnimationContext(
@@ -42,6 +63,21 @@
   );
   setAnimationScopeContext(animationState.scope);
   setAnimationVisibilityContext(animationState.scope.visibility);
+
+  /* Which hands the canvas draws. The animator already owns per-hand motion
+     visibility for the viewer; the Shape Engine scopes its own instance so a
+     header's solo hides the other prop and its trail through that owner
+     rather than a second mechanism. It follows the solo and nothing else, so
+     the Display page can still change it afterwards. */
+  const motionVisibility = new SequenceViewerVisibilityState(true);
+  setViewerVisibilityContext(motionVisibility);
+  $effect(() => {
+    const solo = appState.soloHand;
+    untrack(() => {
+      motionVisibility.leftMotion = solo !== "right";
+      motionVisibility.rightMotion = solo !== "left";
+    });
+  });
   setEffectsConfigContext(animationState.scope.effects);
   import {
     SHAPE_MATRIX_LEVELS,
@@ -72,21 +108,97 @@
     { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
     { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
   ];
+  /* One split for both surfaces. The panes stay where they are while the
+     grid and the detail inside them crossfade, so a split set on one surface
+     is the split on the other. */
   let sizes = $state([1.28, 0.82]);
-  let theorySizes = $state([1.28, 0.82]);
-  let matrixPaneElement: HTMLDivElement;
+  let gridPaneElement: HTMLDivElement;
   let detailPaneElement: HTMLDivElement;
-  let theoryPaneElement: HTMLDivElement;
-  let theoryDetailElement: HTMLDivElement;
   let theoryEditingAxis = $state<"left" | "right" | "both" | null>(null);
+  let workspaceElement: HTMLDivElement;
 
   $effect(() => {
     if (!theory) theoryEditingAxis = null;
   });
 
+  /* Customizing rebalances the split toward the animation. The grid pane
+     leads while a pair is being chosen; once the workspace covers it, the
+     pages inside need only a rail and one sidebar-width column, and the
+     animation is what every change is judged against. So the workspace pane
+     takes what its pages use and never more than 45% of the room, the stage
+     takes the rest, and the split the user had comes back on the way out.
+     The panel group already eases flex shares, so both moves are animated. */
+  const PANE_GAP = 8;
+  const STAGE_MIN = 380;
+  const CUSTOMIZE_MIN = 440;
+  const customizeOpen = $derived(
+    customizeSection(appState, animationState) !== null
+  );
+  let restingSizes: number[] | null = null;
+  let customizeApplied = false;
+
+  function customizeSplit(): number[] | null {
+    if (!workspaceElement) return null;
+    const styles = getComputedStyle(workspaceElement);
+    const width =
+      workspaceElement.clientWidth -
+      parseFloat(styles.paddingLeft) -
+      parseFloat(styles.paddingRight) -
+      PANE_GAP;
+    if (!(width > CUSTOMIZE_MIN + STAGE_MIN)) return null;
+
+    // The workspace has mounted by the time this runs, so its rail and page
+    // are measured rather than guessed from the inspector's breakpoints.
+    const rail = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .icon-rail"
+    );
+    const scroll = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .panel-scroll"
+    );
+    const page = workspaceElement.querySelector<HTMLElement>(
+      ".customize-workspace .panel-center-inner"
+    );
+    const railWidth = rail?.offsetWidth ?? 136;
+    const pageWidth =
+      (page ? parseFloat(getComputedStyle(page).maxWidth) : 0) || 560;
+    const scrollStyles = scroll ? getComputedStyle(scroll) : null;
+    const gutters = scrollStyles
+      ? parseFloat(scrollStyles.paddingLeft) +
+        parseFloat(scrollStyles.paddingRight)
+      : 32;
+    const need = railWidth + pageWidth + gutters;
+
+    const customize = Math.max(
+      CUSTOMIZE_MIN,
+      Math.min(need, width * 0.45, width - STAGE_MIN)
+    );
+    return [customize, width - customize];
+  }
+
+  $effect(() => {
+    const target = customizeOpen;
+    if (target === customizeApplied) return;
+    untrack(() => {
+      if (customizeApplied && restingSizes) sizes = restingSizes;
+      if (target) {
+        restingSizes = [...sizes];
+        const split = customizeSplit();
+        if (split) sizes = split;
+      }
+      customizeApplied = target;
+    });
+  });
+
   // Compact navigation runs as a shared-element morph between the selected
   // tile and the hero. Wide layouts show both panes at once, so the same
   // calls fall through to the plain state mutation.
+  /* A header, on a wide host, changes what the hero plays without leaving
+     the grid; a compact host still has to travel to the detail view, and
+     there is no tile to fly, so it goes there plainly. */
+  function selectSolo(hand: "left" | "right", flower: Flower): void {
+    appState.selectSolo(hand, flower);
+  }
+
   function selectPair(pair: { left: Flower; right: Flower }): void {
     if (!appState.compact) {
       appState.selectPair(pair);
@@ -133,7 +245,7 @@
     const previous = revealedToken;
     revealedToken = token;
     if (previous === null || previous === token) return;
-    const pane = theory ? theoryDetailElement : detailPaneElement;
+    const pane = detailPaneElement;
     if (!pane) return;
     void tick().then(() => {
       runShapeMatrixDetailReveal(pane, { hero: !appState.compact });
@@ -149,13 +261,8 @@
     void tick().then(() => {
       if (cancelled) return;
       frame = requestAnimationFrame(() => {
-        const pane = theory
-          ? request.target === "matrix"
-            ? theoryPaneElement
-            : theoryDetailElement
-          : request.target === "matrix"
-            ? matrixPaneElement
-            : detailPaneElement;
+        const pane =
+          request.target === "matrix" ? gridPaneElement : detailPaneElement;
         if (!pane) return;
         const focusTarget =
           request.target === "matrix"
@@ -176,14 +283,46 @@
   });
 </script>
 
-{#snippet matrixPane()}
+{#snippet matrixGrid()}
+  <!-- The crossfade lays its sources out as absolutely positioned blocks. Each
+       pane root fills by height, so each source gets one block that is the
+       source's whole box for the root to fill. -->
+  <div class="pane-source">
+    <ShapeMatrixMatrixPane
+      onselect={selectPair}
+      onsolo={selectSolo}
+      onsurprise={surpriseMe}
+    />
+  </div>
+{/snippet}
+
+{#snippet theoryGrid()}
+  <div class="pane-source">
+    <ShapeMatrixTheoryPane
+      emphasizedAxis={theoryEditingAxis}
+      onsurprise={surpriseMe}
+    />
+  </div>
+{/snippet}
+
+<!-- One grid pane for both surfaces. The surface changes what the grid is
+     made of, not where it is: the Matrix grid and the Theory grid crossfade
+     inside the pane, and the customize workspace covers the pane once,
+     whichever grid is showing. -->
+{#snippet gridPane()}
   <div
     class="workspace-pane"
-    bind:this={matrixPaneElement}
+    bind:this={gridPaneElement}
     inert={appState.compact && appState.activeView !== "matrix"}
     aria-hidden={appState.compact && appState.activeView !== "matrix"}
   >
-    <ShapeMatrixMatrixPane onselect={selectPair} onsurprise={surpriseMe} />
+    <DualSourceCrossfade
+      active={theory ? "second" : "first"}
+      duration={booted ? DURATION.normal : 0}
+      first={matrixGrid}
+      second={theoryGrid}
+    />
+    <ShapeMatrixCustomizeWorkspace />
   </div>
 {/snippet}
 
@@ -203,6 +342,19 @@
   </button>
 {/snippet}
 
+{#snippet matrixDetail()}
+  <div class="pane-source">
+    <ShapeMatrixDetailPane />
+  </div>
+{/snippet}
+
+{#snippet theoryDetail()}
+  <div class="pane-source">
+    <ShapeMatrixTheoryDetail />
+  </div>
+{/snippet}
+
+<!-- One detail pane, the same way: the two details crossfade inside it. -->
 {#snippet detailPane()}
   <div
     class="workspace-pane"
@@ -210,106 +362,11 @@
     inert={appState.compact && appState.activeView !== "detail"}
     aria-hidden={appState.compact && appState.activeView !== "detail"}
   >
-    <ShapeMatrixDetailPane />
-  </div>
-{/snippet}
-
-{#snippet matrixWorkspace()}
-  <!-- The crossfade lays its sources out as absolutely positioned blocks, so a
-       child that fills by flex-grow has nothing to grow inside. Each source
-       gets its own filling stage, the way the viewer's panel workspace does. -->
-  <div class="workspace-source">
-    <PanelGroup
-      direction="horizontal"
-      bind:sizes
-      gap={appState.compact ? 0 : 8}
-      panels={[
-        {
-          id: "matrix",
-          content: matrixPane,
-          defaultSize: 1.28,
-          minSize: 440,
-          fixedSize: appState.compact
-            ? appState.activeView === "matrix"
-              ? "100%"
-              : "0px"
-            : undefined,
-          resizable: !appState.compact,
-        },
-        {
-          id: "realization",
-          content: detailPane,
-          defaultSize: 0.82,
-          minSize: 380,
-          fixedSize: appState.compact
-            ? appState.activeView === "detail"
-              ? "100%"
-              : "0px"
-            : undefined,
-        },
-      ]}
-    />
-  </div>
-{/snippet}
-
-{#snippet theoryPane()}
-  <div
-    class="workspace-pane"
-    bind:this={theoryPaneElement}
-    inert={appState.compact && appState.activeView !== "matrix"}
-    aria-hidden={appState.compact && appState.activeView !== "matrix"}
-  >
-    <ShapeMatrixTheoryPane
-      emphasizedAxis={theoryEditingAxis}
-      onsurprise={surpriseMe}
-    />
-  </div>
-{/snippet}
-
-{#snippet theoryDetail()}
-  <div
-    class="workspace-pane"
-    bind:this={theoryDetailElement}
-    inert={appState.compact && appState.activeView !== "detail"}
-    aria-hidden={appState.compact && appState.activeView !== "detail"}
-  >
-    <ShapeMatrixTheoryDetail />
-  </div>
-{/snippet}
-
-{#snippet theoryWorkspace()}
-  <!-- Same two panes, same split, same compact behaviour as the Matrix. The
-       surface changes what the grid is made of, not how the app works. -->
-  <div class="workspace-source">
-    <PanelGroup
-      direction="horizontal"
-      bind:sizes={theorySizes}
-      gap={appState.compact ? 0 : 8}
-      panels={[
-        {
-          id: "theory-matrix",
-          content: theoryPane,
-          defaultSize: 1.28,
-          minSize: 440,
-          fixedSize: appState.compact
-            ? appState.activeView === "matrix"
-              ? "100%"
-              : "0px"
-            : undefined,
-          resizable: !appState.compact,
-        },
-        {
-          id: "theory-realization",
-          content: theoryDetail,
-          defaultSize: 0.82,
-          minSize: 380,
-          fixedSize: appState.compact
-            ? appState.activeView === "detail"
-              ? "100%"
-              : "0px"
-            : undefined,
-        },
-      ]}
+    <DualSourceCrossfade
+      active={theory ? "second" : "first"}
+      duration={booted ? DURATION.normal : 0}
+      first={matrixDetail}
+      second={theoryDetail}
     />
   </div>
 {/snippet}
@@ -378,7 +435,7 @@
                 describe={(level) => SHAPE_MATRIX_LEVEL_DESCRIPTIONS[level]}
                 onchange={appState.setLevel}
                 compact={true}
-                ariaLabel="Kinetic Alphabet level"
+                ariaLabel="Difficulty level"
               />
             </div>
             <!-- The axis values themselves are edited in the recipe bar above
@@ -420,6 +477,20 @@
           </button>
         {/if}
       {/if}
+      <!-- The link to this view. One press: the phone's own share sheet
+           where there is one, the clipboard everywhere else. Only a host with
+           a route has a link at all. -->
+      {#if appState.canShare}
+        <button
+          class="top-action"
+          type="button"
+          aria-label="Share this view"
+          onclick={shareThisView}
+        >
+          <i class="fas fa-share-nodes" aria-hidden="true"></i>
+          {#if !appState.compact}<span>Share</span>{/if}
+        </button>
+      {/if}
       <button
         class="top-action"
         type="button"
@@ -432,13 +503,39 @@
     </div>
   </header>
 
-  <div class="workspace">
-    <DualSourceCrossfade
-      active={appState.surface === "matrix" ? "first" : "second"}
-      duration={booted ? DURATION.normal : 0}
-      first={matrixWorkspace}
-      second={theoryWorkspace}
-    />
+  <div class="workspace" bind:this={workspaceElement}>
+    <div class="workspace-source">
+      <PanelGroup
+        direction="horizontal"
+        bind:sizes
+        gap={appState.compact ? 0 : 8}
+        panels={[
+          {
+            id: "matrix",
+            content: gridPane,
+            defaultSize: 1.28,
+            minSize: 440,
+            fixedSize: appState.compact
+              ? appState.activeView === "matrix"
+                ? "100%"
+                : "0px"
+              : undefined,
+            resizable: !appState.compact,
+          },
+          {
+            id: "realization",
+            content: detailPane,
+            defaultSize: 0.82,
+            minSize: 380,
+            fixedSize: appState.compact
+              ? appState.activeView === "detail"
+                ? "100%"
+                : "0px"
+              : undefined,
+          },
+        ]}
+      />
+    </div>
   </div>
 
   <!-- Compact hosts show one pane at a time, so the grid pane that carries
@@ -537,7 +634,8 @@
     text-overflow: ellipsis;
   }
 
-  .top-action:hover {
+  .top-action:hover,
+  .top-action.open {
     color: var(--theme-text, #fff);
     border-color: color-mix(
       in srgb,
@@ -821,11 +919,20 @@
   }
 
   .workspace-pane {
+    /* The customize workspace covers the grid pane from here. */
+    position: relative;
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .pane-source {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
   /* The compact seam. ShapeMatrixApp decides `compact` in script from the

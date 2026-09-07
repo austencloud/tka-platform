@@ -301,22 +301,22 @@
         "evidenceRetained": true,
         "note": "Second rejection at this gate. The carve evidence below stays as the record of what was built on 2026-08-09; it is superseded only by the bare-shell walk.",
         "supersedes": {
-        "rejectedBy": "Austen Cloud",
-        "rejectedAt": "2026-08-09T22:10:00Z",
-        "quote": "the floor is all fucked up doesn't connect to the walls The walls are kind of randomly spaced I just don't really feel a sense of great cohesion here maybe it's because it's meant to be a tunnel system it's going to have textures replacing the walls If so we should just build it that way",
-        "museumTrackerItem": "1bUBNo26hJpRq4Bf36gh",
-        "supersedes": {
-          "approvedBy": "Austen Cloud",
-          "approvedAt": "2026-08-09T18:40:00Z",
-          "quote": "I think we're really on the right track and I'm pretty happy with the Gray box now. What's the next major phase?",
-          "visualComprehensionConfirmed": true
-        },
-        "finding": "The shell is a navigation blockout, not a room section. scripts/build-first-fire-graybox.py lays one flat 58 by 44 metre slab (FF_Shell_Floor), four perimeter boxes at the bounding box, and no ceiling object of any kind - the script contains no roof, no solidify and no boolean. Every interior wall is a free-standing prism from contract.basalt set down on that slab, so no floor meets any wall. Nine of those prisms are named fill-* and exist only to occupy the floor the route does not use, which is what reads as randomly spaced. The route, widths, sightlines and occlusion that Gate 1 measured are unaffected and stand.",
-        "remedy": "Rebuild the shell by carving rather than stacking: sweep the walked section along each contract centreline, dome the courts where corridors meet, union those volumes and subtract them from a solid mass. Floor, wall and ceiling then share one continuous surface by construction, the fill-* masses cease to exist because leftover floor becomes impossible, and the plan contract is consumed unchanged.",
-        "evidenceRetained": true,
-        "note": "Rejection returns the scene to Gate 2 without discarding its evidence: the artifacts below remain the record of what was walked and approved on 2026-08-09, and are superseded only when the carved shell replaces them.",
-        "remediatedAt": "2026-08-09T23:55:00Z",
-        "remediation": "The shell is carved. scripts/build-first-fire-graybox.py now sweeps a mitred tunnel section along every contract path centreline, revolves a per-court chamber where corridors meet, joins those 25 volumes into one negative and subtracts it from a single rock mass with an exact boolean. FF_Shell_Floor, FF_Shell_North, FF_Shell_South and all 27 free-standing FF_Basalt_ prisms - including the nine fill-* masses - no longer exist as geometry. The GLB carries one FF_Shell_Rock object of 1585 faces, and the verifier fails the build if a basalt prism ever returns.",
+          "rejectedBy": "Austen Cloud",
+          "rejectedAt": "2026-08-09T22:10:00Z",
+          "quote": "the floor is all fucked up doesn't connect to the walls The walls are kind of randomly spaced I just don't really feel a sense of great cohesion here maybe it's because it's meant to be a tunnel system it's going to have textures replacing the walls If so we should just build it that way",
+          "museumTrackerItem": "1bUBNo26hJpRq4Bf36gh",
+          "supersedes": {
+            "approvedBy": "Austen Cloud",
+            "approvedAt": "2026-08-09T18:40:00Z",
+            "quote": "I think we're really on the right track and I'm pretty happy with the Gray box now. What's the next major phase?",
+            "visualComprehensionConfirmed": true
+          },
+          "finding": "The shell is a navigation blockout, not a room section. scripts/build-first-fire-graybox.py lays one flat 58 by 44 metre slab (FF_Shell_Floor), four perimeter boxes at the bounding box, and no ceiling object of any kind - the script contains no roof, no solidify and no boolean. Every interior wall is a free-standing prism from contract.basalt set down on that slab, so no floor meets any wall. Nine of those prisms are named fill-* and exist only to occupy the floor the route does not use, which is what reads as randomly spaced. The route, widths, sightlines and occlusion that Gate 1 measured are unaffected and stand.",
+          "remedy": "Rebuild the shell by carving rather than stacking: sweep the walked section along each contract centreline, dome the courts where corridors meet, union those volumes and subtract them from a solid mass. Floor, wall and ceiling then share one continuous surface by construction, the fill-* masses cease to exist because leftover floor becomes impossible, and the plan contract is consumed unchanged.",
+          "evidenceRetained": true,
+          "note": "Rejection returns the scene to Gate 2 without discarding its evidence: the artifacts below remain the record of what was walked and approved on 2026-08-09, and are superseded only when the carved shell replaces them.",
+          "remediatedAt": "2026-08-09T23:55:00Z",
+          "remediation": "The shell is carved. scripts/build-first-fire-graybox.py now sweeps a mitred tunnel section along every contract path centreline, revolves a per-court chamber where corridors meet, joins those 25 volumes into one negative and subtracts it from a single rock mass with an exact boolean. FF_Shell_Floor, FF_Shell_North, FF_Shell_South and all 27 free-standing FF_Basalt_ prisms - including the nine fill-* masses - no longer exist as geometry. The GLB carries one FF_Shell_Rock object of 1585 faces, and the verifier fails the build if a basalt prism ever returns.",
           "remediationIncomplete": "The carve changed the geometry and stopped there. Collision, dressing and the fire guides were all left reading the pre-carve contract, which is what the 2026-08-10 rejection above is about."
         }
       }
@@ -331,9 +331,64 @@
     {
       "id": "production-slice",
       "status": "pending",
-      "evidence": [],
-      "checks": [],
-      "approval": null
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "scripts/build-first-fire-production.py",
+          "sha256": "aa206fc871980145e1d65d13e27920b972af058a3826216b30625dd9e5a7dc4e",
+          "note": "Headless Blender production build: remesh and skin the measured carve, split the rock by court, unwrap, bake one lightmap per piece from the fire itself, re-seat the torches by ray cast, export and optimise."
+        },
+        {
+          "kind": "production-glb",
+          "path": "static/models/museum/cave/first-fire-cinder-court.glb",
+          "sha256": "24c2cac8fa336e34acc331999f470566223bd00fa751065aeb7dddc1b85b26e0",
+          "note": "2850208 bytes. Four lightmapped rock pieces, three court stones, three trench rings with their own materials, 60 named flame guides, water threshold and coal memory."
+        },
+        {
+          "kind": "build-report",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-production-report.json",
+          "sha256": "f3312c26f13f2419c8c4410aed21d1da0463a104c833fdac9e8e06f92f01b848",
+          "note": "Written by the build: source digest of the plan JSON, per-piece triangle counts and lightmap sizes, torch placement, export and optimise settings."
+        },
+        {
+          "kind": "runtime-owner",
+          "path": "src/lib/features/museum/components/game/FirstFireAuthored.svelte",
+          "sha256": "0159525a6a205e033f7090d61cbcd5921921232f56f9fbb8660ddcd543bb3327",
+          "note": "Museum runtime for the shell: phase-driven court emissive, three authored point lights, shader flames on the hidden guides, per-node trench materials, dev seam window.__firstFire."
+        },
+        {
+          "kind": "decision-record",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/2026-09-06-first-fire-production-decision.md",
+          "sha256": "f73074a099f722e28bd877a4f0991d810b526ea466d28a5082f83e713fda9c20",
+          "note": "Why the build and runtime are shaped the way they are, and what the verification pass found."
+        },
+        {
+          "kind": "procession-owner",
+          "path": "src/lib/features/museum/data/first-fire-procession-review.ts",
+          "sha256": "a46d3eb32cdcccd06e3d3cb7968e6e67063d6a0149b0c6204aa1cdfc4c914a2e",
+          "note": "The procession state machine the museum feeds, moved from the graybox test route unchanged in behaviour and still covered by its unit tests."
+        },
+        {
+          "kind": "bridge-driven-walk",
+          "path": "session transcript 2026-09-06 (be270ac6)",
+          "sha256": null,
+          "note": "Full /museum grid on the worktree server. Phase read from the dev seam at each station: approach -> dj-active at the DJ mouth -> dj-complete at its far mouth -> ek-active at the EK mouth -> ek-complete -> fl-active -> fire-extinguished at the FL exit (all three lights 0) -> growth-complete after 2.2 s. Screenshots in the transcript, as the Water production gate did."
+        }
+      ],
+      "checks": [
+        {
+          "id": "unit-tests",
+          "command": "pnpm vitest run --config tests/config/vitest.config.ts tests/unit/museum/first-fire-*.test.ts tests/unit/museum/museum-rendering-performance-contract.test.ts tests/unit/museum/earth-canyon-terrain.test.ts",
+          "result": "9 files, 86 tests passed (2026-09-06)"
+        },
+        {
+          "id": "glb-materials",
+          "command": "node: parse GLB JSON chunk",
+          "result": "18 materials, FF Trench Ember DJ/EK/FL distinct; 145 nodes; 60 FF_FlameGuide_* nodes"
+        }
+      ],
+      "approval": null,
+      "note": "Technical slice complete; awaiting Austen's walk. No approval is recorded here."
     },
     {
       "id": "integrated-room",

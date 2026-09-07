@@ -17,6 +17,8 @@
     rightTurns = 0,
     shownCount = 0,
     hiddenCount = 0,
+    settledWidth = undefined,
+    settleMs = 450,
   } = $props<{
     width?: number;
     height?: number;
@@ -29,14 +31,35 @@
     rightTurns?: number;
     shownCount?: number;
     hiddenCount?: number;
+    /** Width the box eases to, standing in for the workspace expansion. */
+    settledWidth?: number;
+    settleMs?: number;
   }>();
 
   const currentSequence = $derived(
     Array.from({ length: sequenceLength }, () => ({}) as PictographData)
   );
+
+  // Reproduces the real mount condition: StandardWorkspaceLayout is already
+  // easing its grid columns when the picker appears, so the box the picker
+  // measures on its first frame is not the box it will live in.
+  let harnessElement: HTMLDivElement | null = $state(null);
+  $effect(() => {
+    if (settledWidth === undefined || !harnessElement) return;
+    const animation = harnessElement.animate(
+      [{ width: `${width}px` }, { width: `${settledWidth}px` }],
+      {
+        duration: settleMs,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        fill: "forwards",
+      }
+    );
+    return () => animation.cancel();
+  });
 </script>
 
 <div
+  bind:this={harnessElement}
   class="harness"
   style:width={`${width}px`}
   style:height={`${height}px`}

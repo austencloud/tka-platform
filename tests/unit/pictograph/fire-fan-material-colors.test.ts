@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyFanFrameColor } from "$lib/shared/animation-engine/services/svg-generator";
+import { applyFanFrameColor } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 describe("physical fire-fan material colors", () => {
   it("colors the marked frame without repainting wicks or fitted covers", () => {

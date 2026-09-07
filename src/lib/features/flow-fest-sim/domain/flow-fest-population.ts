@@ -13,7 +13,9 @@
  *
  * Movement is delegated to `flow-fest-corridor-graph`, which only ever routes
  * along registered person legs and registered zone envelopes. This module never
- * touches a raw coordinate of its own.
+ * authors a coordinate of its own: the spots people settle on and stroll to are
+ * seeded draws inside a registered envelope, checked against the same coverage
+ * the routes are.
  */
 
 import type { FlowFestMoment } from "../state/flow-fest-progress";
@@ -22,6 +24,7 @@ import {
   clampInsideFlowFestClearing,
   flowFestCorridorAnchorNode,
   isFlowFestCorridorCovered,
+  isFlowFestHopCovered,
   routeFlowFestCorridor,
   type FlowFestCorridorGraph,
   type FlowFestCorridorRouteStep,
@@ -301,7 +304,9 @@ function blockStart(
 ): number {
   const window = FLOW_FEST_DAY_PHASE_WINDOWS[phase];
   const span = window.endMinute - window.startMinute;
-  return window.startMinute + span * Math.max(0, Math.min(0.96, fraction + jitter));
+  return (
+    window.startMinute + span * Math.max(0, Math.min(0.96, fraction + jitter))
+  );
 }
 
 function buildSchedule(
@@ -506,23 +511,126 @@ interface AgentState {
   routeAnchorId: string;
   path: FlowFestCorridorRouteStep[] | null;
   pathIndex: number;
+  /** Metres per second the live path is walked at. */
+  pathSpeed: number;
   routed: boolean;
   interruptUntilMinute: number;
   interruptFacing: number;
   nextInterruptCheckSeconds: number;
-  offsetX: number;
-  offsetZ: number;
-  wanderPhase: number;
+  /** Elapsed seconds after which a settled person may stroll to a new spot. */
+  dwellUntilSeconds: number;
+  /** Where they turn to once they have arrived; NaN once they are facing it. */
+  settleFacing: number;
+  /** Unit direction that breaks the tie when two people share one point. */
+  biasX: number;
+  biasZ: number;
   rng: () => number;
 }
 
-const SEPARATION_INTERVAL_SECONDS = 0.1;
-const SEPARATION_RADIUS_METERS = 1.15;
+/**
+ * Room a standing person keeps around them. Inside it people lean apart until
+ * they have it; it is the difference between a crowd and a stack.
+ */
+const STANDING_SPACE_METERS = 1.1;
+/**
+ * Room a walker claims from someone standing. Narrower than standing space
+ * because the registered person legs are 0.8 m wide and a walker has to get
+ * past whoever is on one.
+ */
+const WALKING_SPACE_METERS = 0.7;
+/**
+ * Two walkers start leaning apart this far out. They close at a combined
+ * walking pace, and the lean is capped at a few millimetres a frame, so they
+ * need the head start to be at the corridor edges by the time they meet.
+ */
+const PASSING_SPACE_METERS = 1.2;
+/** A walker falls in behind someone this close ahead in their lane. */
+const FOLLOW_RANGE_METERS = 1.4;
+/**
+ * The lane widens from half a walking space at the walker to this, so someone
+ * right in front counts and someone beside them does not.
+ */
+const FOLLOW_LANE_HALF_WIDTH_METERS = 0.6;
+/** The gap a follower keeps: they slow inside it and speed up beyond it. */
+const FOLLOW_GAP_METERS = 0.9;
+/** How quickly a follower closes or opens the gap, per metre of error. */
+const FOLLOW_GAP_SECONDS = 0.5;
+/**
+ * The slowest a walker goes while following or arriving. Nobody stops dead
+ * for someone ahead of them; they creep, and the geometry resolves itself.
+ */
+const CREEP_FRACTION = 0.25;
+/** Separation is a lean, never a step: the most it may move anyone. */
+const SEPARATION_SPEED_METERS_PER_SECOND = 0.45;
+/**
+ * A walker steps sideways out of the way at this rate. Two people meeting on
+ * a trail close at a combined walking pace, so they need the quicker step to
+ * be at the trail edges by the time they pass.
+ */
+const SIDESTEP_SPEED_METERS_PER_SECOND = 0.9;
+/** Someone this far behind a walker is not in their way. */
+const BEHIND_METERS = 0.1;
+/** Someone this close to dead ahead is treated as being on one fixed side. */
+const DEAD_AHEAD_METERS = 0.05;
+/**
+ * A lean never takes anyone closer than this to the edge of registered
+ * ground: the same 5 cm the coverage audit allows.
+ */
+const LEAN_COVERAGE_MARGIN_METERS = 0.05;
+/** Closer than this two people count as one point and the tie-break applies. */
+const COINCIDENT_METERS = 0.05;
 const ARRIVAL_EASE_METERS = 2.2;
-const ARRIVAL_SNAP_METERS = 0.35;
+/**
+ * How far from an anchor's registered point people settle. Everyone routes to
+ * the point; nobody stands on it. Gatherings spread wide because Middle Earth
+ * measured 35 by 28 m open; camps stay close because their dressing owns the
+ * rest of the envelope.
+ */
+const SETTLE_RADIUS_METERS: Record<FlowFestAnchorKind, number> = {
+  gate: 2.5,
+  camp: 4,
+  parking: 4,
+  gathering: 8,
+  practice: 3,
+  fire: 3,
+};
+/** Real seconds a settled person stands before strolling to a new spot. */
+const DWELL_MIN_SECONDS = 20;
+const DWELL_SPAN_SECONDS = 50;
+/** A stroll is a few steps to a new spot, not a lap of the field. */
+const STROLL_MIN_METERS = 2;
+const STROLL_MAX_METERS = 6;
+/**
+ * Slowest speed the gait still reads as walking. Below it the animator scales
+ * the stride down until the person creeps.
+ */
+const STROLL_SPEED_FLOOR_METERS_PER_SECOND = 0.85;
+const STROLL_SPEED_FRACTION = 0.75;
+/** Radians per second a standing person pivots. */
+const SETTLE_TURN_RATE = 1.2;
+const INTERRUPT_TURN_RATE = 1.5;
+/** Walking turns ease toward the path direction at this rate per second. */
+const WALK_TURN_RATE = 5.5;
+/** A conversation needs someone within earshot, not across a field. */
+const CHAT_RANGE_METERS = 3.5;
+const SOCIAL_FACING_RANGE_METERS = 3;
+const SPOT_ATTEMPTS = 10;
 
 function shortestAngleTo(from: number, to: number): number {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
+
+interface LateralAllowance {
+  fromX: number;
+  fromZ: number;
+  normalX: number;
+  normalZ: number;
+  allowanceMeters: number;
+}
+
+function pivotToward(state: AgentState, facing: number, maxStep: number): void {
+  const gap = shortestAngleTo(state.facingAngle, facing);
+  state.facingAngle += Math.max(-maxStep, Math.min(maxStep, gap));
 }
 
 export class FlowFestPopulationSimulation {
@@ -532,9 +640,17 @@ export class FlowFestPopulationSimulation {
   private readonly states: AgentState[] = [];
   private readonly frameAgents: FlowFestPopulationAgentFrame[] = [];
   private readonly frameValue: FlowFestPopulationFrame;
-  private separationAccumulator = 0;
+  private readonly leanX: Float64Array;
+  private readonly leanZ: Float64Array;
   private elapsedSeconds = 0;
   private readonly scratch = { x: 0, z: 0 };
+  private readonly lateralScratch: LateralAllowance = {
+    fromX: 0,
+    fromZ: 0,
+    normalX: 0,
+    normalZ: 0,
+    allowanceMeters: 0,
+  };
 
   constructor(site: FlowFestPopulationSite, npcs: FlowFestNpc[]) {
     this.site = site;
@@ -543,14 +659,11 @@ export class FlowFestPopulationSimulation {
     for (const npc of npcs) {
       const anchor = requireAnchor(site, npc.schedule[0]!.anchorId);
       const rng = makeRng(childSeed(npc.seed, "motion"));
-      const spread = 1.6;
-      const startX = anchor.x + (rng() - 0.5) * spread;
-      const startZ = anchor.z + (rng() - 0.5) * spread;
-      const covered = isFlowFestCorridorCovered(site.graph, startX, startZ);
+      const biasAngle = rng() * Math.PI * 2;
       const state: AgentState = {
         npc,
-        x: covered ? startX : anchor.x,
-        z: covered ? startZ : anchor.z,
+        x: anchor.x,
+        z: anchor.z,
         facingAngle: rng() * Math.PI * 2,
         speed: 0,
         activity: npc.schedule[0]!.activity,
@@ -558,15 +671,22 @@ export class FlowFestPopulationSimulation {
         routeAnchorId: anchor.id,
         path: null,
         pathIndex: 0,
+        pathSpeed: npc.walkSpeedMetersPerSecond,
         routed: true,
         interruptUntilMinute: -1,
         interruptFacing: 0,
         nextInterruptCheckSeconds: rng() * 3,
-        offsetX: 0,
-        offsetZ: 0,
-        wanderPhase: rng() * Math.PI * 2,
+        dwellUntilSeconds: rng() * DWELL_SPAN_SECONDS,
+        settleFacing: Number.NaN,
+        biasX: Math.cos(biasAngle),
+        biasZ: Math.sin(biasAngle),
         rng,
       };
+      const spot = this.pickSpot(state, anchor, anchor.x, anchor.z, 0);
+      if (spot) {
+        state.x = spot.x;
+        state.z = spot.z;
+      }
       this.states.push(state);
       this.frameAgents.push({
         id: npc.id,
@@ -586,9 +706,12 @@ export class FlowFestPopulationSimulation {
         routed: true,
       });
     }
+    this.leanX = new Float64Array(npcs.length);
+    this.leanZ = new Float64Array(npcs.length);
 
     this.frameValue = {
-      minuteOfDay: FLOW_FEST_DAY_PHASE_WINDOWS["thursday-afternoon"].startMinute,
+      minuteOfDay:
+        FLOW_FEST_DAY_PHASE_WINDOWS["thursday-afternoon"].startMinute,
       dayPhase: "thursday-afternoon",
       agents: this.frameAgents,
       fireJamAttendeeCount: 0,
@@ -607,8 +730,9 @@ export class FlowFestPopulationSimulation {
    * Run the world forward without rendering, so a phase the player joins
    * mid-stream starts where it would honestly be. This is simulated time, not a
    * pose: everyone walks the same corridors, just faster than the frame rate.
-   * Interrupts and separation are skipped — both are cosmetic, and skipping
-   * them leaves the seeded stream untouched so determinism holds.
+   * Interrupts are skipped — they are cosmetic and they draw on the seeded
+   * stream. Separation runs, because it is a pure function of where people
+   * stand and it is what keeps them out of each other on arrival.
    */
   warmStart(
     moment: FlowFestMoment,
@@ -618,17 +742,20 @@ export class FlowFestPopulationSimulation {
   ): void {
     const span = Math.max(0, toElapsedSeconds - fromElapsedSeconds);
     const steps = Math.min(4000, Math.ceil(span / stepSeconds));
+    const start = this.elapsedSeconds;
     for (let step = 0; step < steps; step += 1) {
       const clock = flowFestSimClock(
         moment,
         fromElapsedSeconds + step * stepSeconds
       );
+      this.elapsedSeconds = start + Math.min(span, (step + 1) * stepSeconds);
       for (const state of this.states) {
         this.applySchedule(state, clock);
         this.integrate(state, stepSeconds, clock);
       }
+      this.applySeparation(stepSeconds);
     }
-    this.elapsedSeconds += span;
+    this.elapsedSeconds = start + span;
   }
 
   /**
@@ -642,20 +769,13 @@ export class FlowFestPopulationSimulation {
   ): FlowFestPopulationFrame {
     const delta = Math.max(0, Math.min(0.25, deltaSeconds));
     this.elapsedSeconds += delta;
-    this.separationAccumulator += delta;
-    const runSeparation =
-      this.separationAccumulator >= SEPARATION_INTERVAL_SECONDS;
-    if (runSeparation) {
-      this.separationAccumulator %= SEPARATION_INTERVAL_SECONDS;
-    }
 
     for (const state of this.states) {
       this.applySchedule(state, clock);
       this.considerInterrupt(state, clock);
       this.integrate(state, delta, clock);
     }
-
-    if (runSeparation) this.applySeparation();
+    this.applySeparation(delta);
 
     let fireJamAttendeeCount = 0;
     let fireJamPerformerCount = 0;
@@ -666,11 +786,9 @@ export class FlowFestPopulationSimulation {
     for (let index = 0; index < this.states.length; index += 1) {
       const state = this.states[index]!;
       const agent = this.frameAgents[index]!;
-      const x = state.x + state.offsetX;
-      const z = state.z + state.offsetZ;
-      agent.x = x;
-      agent.z = z;
-      agent.y = this.site.groundY(x, z);
+      agent.x = state.x;
+      agent.z = state.z;
+      agent.y = this.site.groundY(state.x, state.z);
       agent.facingAngle = state.facingAngle;
       agent.isMoving = state.speed > 0.08;
       agent.speedMetersPerSecond = state.speed;
@@ -682,8 +800,7 @@ export class FlowFestPopulationSimulation {
       // The fire circle only takes over once they have actually arrived, so the
       // walk to the fire stays visible instead of vanishing at the schedule
       // boundary.
-      agent.atFireJam =
-        state.path === null && FLOW_FEST_FIRE_JAM_ACTIVITIES.has(state.activity);
+      agent.atFireJam = this.isHandedToFire(state);
       agent.routed = state.routed;
 
       if (agent.atFireJam) {
@@ -705,6 +822,12 @@ export class FlowFestPopulationSimulation {
     return this.frameValue;
   }
 
+  private isHandedToFire(state: AgentState): boolean {
+    return (
+      state.path === null && FLOW_FEST_FIRE_JAM_ACTIVITIES.has(state.activity)
+    );
+  }
+
   private applySchedule(state: AgentState, clock: FlowFestSimClock): void {
     const block = resolveFlowFestScheduleBlock(
       state.npc.schedule,
@@ -719,6 +842,7 @@ export class FlowFestPopulationSimulation {
   private routeTo(state: AgentState, anchorId: string): void {
     const anchor = requireAnchor(this.site, anchorId);
     state.routeAnchorId = anchorId;
+    state.settleFacing = Number.NaN;
     if (!anchor.routable) {
       // No registered corridor reaches it. Stand where the plan last put them
       // rather than walking through canopy to keep a promise the site cannot
@@ -730,23 +854,81 @@ export class FlowFestPopulationSimulation {
     }
     const node = flowFestCorridorAnchorNode(this.site.graph, anchorId);
     const path = routeFlowFestCorridor(this.site.graph, state.x, state.z, node);
+    if (path) {
+      // Everyone routes to the registered point; nobody stands on it. The last
+      // hop goes to a spot of their own inside the same envelope.
+      const end = path[path.length - 1]!;
+      const spot = this.pickSpot(state, anchor, end.x, end.z, 0);
+      if (spot) {
+        path.push({
+          x: spot.x,
+          z: spot.z,
+          allowanceMeters: end.allowanceMeters,
+          clearingIndex: end.clearingIndex,
+        });
+      }
+    }
     state.path = path;
     state.pathIndex = 1;
+    state.pathSpeed = state.npc.walkSpeedMetersPerSecond;
     state.routed = path !== null;
   }
 
-  private considerInterrupt(
+  /**
+   * A place of their own near an anchor: inside its envelope, inside
+   * registered coverage, and reachable from `originX/Z` by a straight covered
+   * hop. Candidates are seeded draws over the settle disc, so the same person
+   * takes the same spot every run. Null when ten draws find nothing, in which
+   * case the caller keeps the point it already had. `minimumHopMeters` turns a
+   * settle into a stroll: a spot at least that far from where they stand.
+   */
+  private pickSpot(
     state: AgentState,
-    clock: FlowFestSimClock
-  ): void {
+    anchor: FlowFestPopulationAnchor,
+    originX: number,
+    originZ: number,
+    minimumHopMeters: number,
+    maximumHopMeters = Number.POSITIVE_INFINITY
+  ): { x: number; z: number } | null {
+    const radius = SETTLE_RADIUS_METERS[anchor.kind];
+    const clearing =
+      anchor.clearingIndex >= 0
+        ? this.site.graph.clearings[anchor.clearingIndex]
+        : undefined;
+    for (let attempt = 0; attempt < SPOT_ATTEMPTS; attempt += 1) {
+      const angle = state.rng() * Math.PI * 2;
+      const reach = radius * Math.sqrt(state.rng());
+      let x = anchor.x + Math.cos(angle) * reach;
+      let z = anchor.z + Math.sin(angle) * reach;
+      if (clearing) {
+        clampInsideFlowFestClearing(clearing, x, z, this.scratch, 1);
+        x = this.scratch.x;
+        z = this.scratch.z;
+      }
+      const hop = Math.hypot(x - originX, z - originZ);
+      if (hop < minimumHopMeters || hop > maximumHopMeters) continue;
+      if (!isFlowFestCorridorCovered(this.site.graph, x, z)) continue;
+      if (!isFlowFestHopCovered(this.site.graph, originX, originZ, x, z)) {
+        continue;
+      }
+      return { x, z };
+    }
+    return null;
+  }
+
+  private considerInterrupt(state: AgentState, clock: FlowFestSimClock): void {
     if (state.interruptUntilMinute > clock.minuteOfDay) return;
     if (this.elapsedSeconds < state.nextInterruptCheckSeconds) return;
-    state.nextInterruptCheckSeconds =
-      this.elapsedSeconds + 1 + state.rng() * 2;
+    state.nextInterruptCheckSeconds = this.elapsedSeconds + 1 + state.rng() * 2;
+    // People finish their walk before they stop for anything. Stopping
+    // mid-corridor for every passer-by is what made the crowd stutter.
+    if (state.path) return;
+    // The circle owns whoever has reached the fire.
+    if (FLOW_FEST_FIRE_JAM_ACTIVITIES.has(state.activity)) return;
 
     // Utility scoring over a handful of candidates. Continuing the plan is the
     // baseline; the alternatives have to beat it.
-    const continueScore = 0.55 + (state.path ? 0.2 : 0);
+    const continueScore = 0.55;
 
     let watchScore = 0;
     let watchFacing = state.facingAngle;
@@ -766,7 +948,13 @@ export class FlowFestPopulationSimulation {
     for (const other of this.states) {
       if (other === state) continue;
       const distance = Math.hypot(other.x - state.x, other.z - state.z);
-      if (distance >= nearest || distance > 5) continue;
+      if (
+        distance >= nearest ||
+        distance > CHAT_RANGE_METERS ||
+        distance < COINCIDENT_METERS
+      ) {
+        continue;
+      }
       nearest = distance;
       chatFacing = Math.atan2(other.x - state.x, other.z - state.z);
     }
@@ -780,7 +968,8 @@ export class FlowFestPopulationSimulation {
 
     const holdMinutes = 0.4 + state.rng() * 1.6;
     state.interruptUntilMinute = clock.minuteOfDay + holdMinutes;
-    state.interruptFacing = best === watchScore * roll ? watchFacing : chatFacing;
+    state.interruptFacing =
+      best === watchScore * roll ? watchFacing : chatFacing;
   }
 
   private integrate(
@@ -790,31 +979,32 @@ export class FlowFestPopulationSimulation {
   ): void {
     if (state.interruptUntilMinute > clock.minuteOfDay) {
       state.speed = 0;
-      state.facingAngle +=
-        shortestAngleTo(state.facingAngle, state.interruptFacing) *
-        Math.min(1, delta * 3.4);
-      this.applyIdleDrift(state, delta, 0.05);
+      pivotToward(state, state.interruptFacing, INTERRUPT_TURN_RATE * delta);
       return;
     }
 
     const path = state.path;
     if (!path || state.pathIndex >= path.length) {
       state.speed = 0;
-      this.applyAmbient(state, delta);
+      this.settle(state, delta);
       return;
     }
 
-    let remaining = state.npc.walkSpeedMetersPerSecond * delta;
+    const target = path[state.pathIndex]!;
+    let remaining =
+      Math.min(state.pathSpeed, this.leaderSpeed(state, target)) * delta;
     const finalStep = path[path.length - 1]!;
     const distanceToEnd = Math.hypot(
       finalStep.x - state.x,
       finalStep.z - state.z
     );
     if (distanceToEnd < ARRIVAL_EASE_METERS) {
-      remaining *= Math.max(0.25, distanceToEnd / ARRIVAL_EASE_METERS);
+      remaining *= Math.max(
+        CREEP_FRACTION,
+        distanceToEnd / ARRIVAL_EASE_METERS
+      );
     }
-    state.speed =
-      delta > 0 ? remaining / delta : state.npc.walkSpeedMetersPerSecond;
+    state.speed = delta > 0 ? remaining / delta : state.pathSpeed;
 
     while (remaining > 0 && state.pathIndex < path.length) {
       const target = path[state.pathIndex]!;
@@ -833,127 +1023,323 @@ export class FlowFestPopulationSimulation {
       state.z += dz * step;
       state.facingAngle +=
         shortestAngleTo(state.facingAngle, Math.atan2(dx, dz)) *
-        Math.min(1, delta * 5.5);
+        Math.min(1, delta * WALK_TURN_RATE);
       remaining = 0;
     }
 
-    if (state.pathIndex >= path.length) {
-      state.path = null;
-      state.speed = 0;
-      if (distanceToEnd < ARRIVAL_SNAP_METERS) {
-        state.offsetX = 0;
-        state.offsetZ = 0;
-      }
-    }
-  }
-
-  private applyAmbient(state: AgentState, delta: number): void {
-    const anchor = this.site.anchors.find(
-      (candidate) => candidate.id === state.routeAnchorId
-    );
-    state.wanderPhase += delta * 0.35;
-    if (!anchor) {
-      this.applyIdleDrift(state, delta, 0.05);
-      return;
-    }
-    const clearing =
-      anchor.clearingIndex >= 0
-        ? this.site.graph.clearings[anchor.clearingIndex]
-        : undefined;
-    // Open-field drift only inside envelopes the survey measured as open. Every
-    // other zone gets a stand-and-shift, which is honest about what is under
-    // the canopy there.
-    if (!clearing || clearing.wanderPolicy !== "measured-open") {
-      this.applyIdleDrift(state, delta, 0.05);
-      return;
-    }
-    const radius = 2.6;
-    const targetX =
-      anchor.x + Math.cos(state.wanderPhase) * radius * 0.9;
-    const targetZ =
-      anchor.z + Math.sin(state.wanderPhase * 0.73) * radius;
-    const dx = targetX - state.x;
-    const dz = targetZ - state.z;
-    const distance = Math.hypot(dx, dz);
-    if (distance < 0.05) return;
-    const step = Math.min(distance, 0.42 * delta);
-    let nextX = state.x + (dx / distance) * step;
-    let nextZ = state.z + (dz / distance) * step;
-    clampInsideFlowFestClearing(clearing, nextX, nextZ, this.scratch);
-    nextX = this.scratch.x;
-    nextZ = this.scratch.z;
-    state.x = nextX;
-    state.z = nextZ;
-    state.speed = delta > 0 ? step / delta : 0;
-    state.facingAngle +=
-      shortestAngleTo(state.facingAngle, Math.atan2(dx, dz)) *
-      Math.min(1, delta * 2.4);
-  }
-
-  private applyIdleDrift(
-    state: AgentState,
-    delta: number,
-    amplitude: number
-  ): void {
-    state.wanderPhase += delta * 0.9;
-    const sway = Math.sin(state.wanderPhase) * amplitude;
-    state.offsetX = Math.cos(state.facingAngle) * sway;
-    state.offsetZ = Math.sin(state.facingAngle) * sway;
+    if (state.pathIndex >= path.length) this.arrive(state);
   }
 
   /**
-   * Small lateral offsets so people do not stand inside each other. Validated
-   * against corridor coverage at 10 Hz; an offset that would leave the corridor
-   * is discarded rather than trimmed, so the guarantee holds exactly.
+   * The speed that keeps a comfortable gap behind whoever is directly ahead
+   * in this person's lane and heading the same way, or Infinity when nobody
+   * is. Overtaking through someone is what a route-following crowd does by
+   * default; falling in behind them is what people do.
    */
-  private applySeparation(): void {
-    for (let index = 0; index < this.states.length; index += 1) {
-      const state = this.states[index]!;
-      let pushX = 0;
-      let pushZ = 0;
-      for (let other = 0; other < this.states.length; other += 1) {
-        if (other === index) continue;
-        const peer = this.states[other]!;
-        const dx = state.x - peer.x;
-        const dz = state.z - peer.z;
-        const squared = dx * dx + dz * dz;
-        if (squared > SEPARATION_RADIUS_METERS * SEPARATION_RADIUS_METERS)
-          continue;
-        const distance = Math.max(0.05, Math.sqrt(squared));
-        const strength = (SEPARATION_RADIUS_METERS - distance) * 0.5;
-        pushX += (dx / distance) * strength;
-        pushZ += (dz / distance) * strength;
-      }
-
-      const allowance = this.currentAllowance(state);
-      const magnitude = Math.hypot(pushX, pushZ);
-      if (magnitude > allowance && magnitude > 0) {
-        pushX = (pushX / magnitude) * allowance;
-        pushZ = (pushZ / magnitude) * allowance;
-      }
-      const candidateX = state.x + pushX;
-      const candidateZ = state.z + pushZ;
-      if (
-        isFlowFestCorridorCovered(this.site.graph, candidateX, candidateZ)
-      ) {
-        state.offsetX = pushX;
-        state.offsetZ = pushZ;
-      } else {
-        state.offsetX = 0;
-        state.offsetZ = 0;
-      }
+  private leaderSpeed(
+    state: AgentState,
+    target: FlowFestCorridorRouteStep
+  ): number {
+    let headingX = target.x - state.x;
+    let headingZ = target.z - state.z;
+    const headingLength = Math.hypot(headingX, headingZ);
+    if (headingLength < 1e-6) return Number.POSITIVE_INFINITY;
+    headingX /= headingLength;
+    headingZ /= headingLength;
+    let slowest = Number.POSITIVE_INFINITY;
+    for (const peer of this.states) {
+      if (peer === state || !peer.path || peer.pathIndex >= peer.path.length)
+        continue;
+      // Someone standing still is an obstacle for the separation pass, not a
+      // leader: matching a stopped speed would stop this walker as well, and
+      // two walkers meeting at a corner could then hold each other in place.
+      if (peer.speed <= 0) continue;
+      const relX = peer.x - state.x;
+      const relZ = peer.z - state.z;
+      const along = relX * headingX + relZ * headingZ;
+      if (along <= 0 || along > FOLLOW_RANGE_METERS) continue;
+      const lateral = Math.abs(relX * headingZ - relZ * headingX);
+      const lane = Math.min(
+        FOLLOW_LANE_HALF_WIDTH_METERS,
+        WALKING_SPACE_METERS / 2 + along
+      );
+      if (lateral > lane) continue;
+      const peerTarget = peer.path[peer.pathIndex]!;
+      const peerHeadingX = peerTarget.x - peer.x;
+      const peerHeadingZ = peerTarget.z - peer.z;
+      const peerHeadingLength = Math.hypot(peerHeadingX, peerHeadingZ);
+      if (peerHeadingLength < 1e-6) continue;
+      const sameWay =
+        (peerHeadingX * headingX + peerHeadingZ * headingZ) / peerHeadingLength;
+      if (sameWay < 0.5) continue;
+      const gapSpeed =
+        peer.speed + (along - FOLLOW_GAP_METERS) / FOLLOW_GAP_SECONDS;
+      if (gapSpeed < slowest) slowest = gapSpeed;
     }
+    return Math.max(slowest, state.pathSpeed * CREEP_FRACTION);
   }
 
-  private currentAllowance(state: AgentState): number {
-    const path = state.path;
-    if (path && state.pathIndex < path.length) {
-      return path[state.pathIndex]!.allowanceMeters;
+  private arrive(state: AgentState): void {
+    state.path = null;
+    state.pathIndex = 0;
+    state.speed = 0;
+    state.dwellUntilSeconds =
+      this.elapsedSeconds +
+      DWELL_MIN_SECONDS +
+      state.rng() * DWELL_SPAN_SECONDS;
+    state.settleFacing = this.socialFacing(state);
+  }
+
+  /** Whoever is nearest within earshot, or NaN when nobody is. */
+  private socialFacing(state: AgentState): number {
+    let nearest = SOCIAL_FACING_RANGE_METERS;
+    let facing = Number.NaN;
+    for (const other of this.states) {
+      if (other === state) continue;
+      const distance = Math.hypot(other.x - state.x, other.z - state.z);
+      if (distance >= nearest || distance < COINCIDENT_METERS) continue;
+      nearest = distance;
+      facing = Math.atan2(other.x - state.x, other.z - state.z);
     }
+    return facing;
+  }
+
+  /**
+   * Standing still is the default. On arrival a person turns to whoever is
+   * near, then stands. Inside an envelope the survey measured as open they
+   * stroll to a new spot every so often; everywhere else they stay put, which
+   * is honest about what is under the canopy there.
+   */
+  private settle(state: AgentState, delta: number): void {
+    if (!Number.isNaN(state.settleFacing)) {
+      if (
+        Math.abs(shortestAngleTo(state.facingAngle, state.settleFacing)) < 0.02
+      ) {
+        state.settleFacing = Number.NaN;
+      } else {
+        pivotToward(state, state.settleFacing, SETTLE_TURN_RATE * delta);
+      }
+    }
+    if (this.elapsedSeconds < state.dwellUntilSeconds) return;
+
     const anchor = this.site.anchors.find(
       (candidate) => candidate.id === state.routeAnchorId
     );
-    return anchor && anchor.clearingIndex >= 0 ? 0.9 : 0.2;
+    const clearing =
+      anchor && anchor.clearingIndex >= 0
+        ? this.site.graph.clearings[anchor.clearingIndex]
+        : undefined;
+    if (
+      !anchor ||
+      clearing?.wanderPolicy !== "measured-open" ||
+      FLOW_FEST_FIRE_JAM_ACTIVITIES.has(state.activity)
+    ) {
+      state.dwellUntilSeconds = Number.POSITIVE_INFINITY;
+      return;
+    }
+
+    const spot = this.pickSpot(
+      state,
+      anchor,
+      state.x,
+      state.z,
+      STROLL_MIN_METERS,
+      STROLL_MAX_METERS
+    );
+    if (!spot) {
+      state.dwellUntilSeconds =
+        this.elapsedSeconds +
+        DWELL_MIN_SECONDS +
+        state.rng() * DWELL_SPAN_SECONDS;
+      return;
+    }
+    state.path = [
+      {
+        x: state.x,
+        z: state.z,
+        allowanceMeters: 0,
+        clearingIndex: anchor.clearingIndex,
+      },
+      {
+        x: spot.x,
+        z: spot.z,
+        allowanceMeters: 0.9,
+        clearingIndex: anchor.clearingIndex,
+      },
+    ];
+    state.pathIndex = 1;
+    state.pathSpeed = Math.max(
+      STROLL_SPEED_FLOOR_METERS_PER_SECOND,
+      state.npc.walkSpeedMetersPerSecond * STROLL_SPEED_FRACTION
+    );
+    state.settleFacing = Number.NaN;
+  }
+
+  /**
+   * People lean away from anyone inside their space, a few millimetres a
+   * frame, until they have it. Integrated into position rather than kept as an
+   * offset, so the rendered person only ever moves continuously. Coverage is
+   * exact: a lean that would leave the registered corridor is halved, then
+   * dropped, never trimmed to a guess. At this speed dropping it is invisible.
+   */
+  private applySeparation(delta: number): void {
+    const states = this.states;
+    const count = states.length;
+    const leanX = this.leanX;
+    const leanZ = this.leanZ;
+    for (let index = 0; index < count; index += 1) {
+      leanX[index] = 0;
+      leanZ[index] = 0;
+      const state = states[index]!;
+      if (this.isHandedToFire(state)) continue;
+      const walking = state.path !== null;
+      // A walker steps sideways out of the way rather than leaning straight
+      // back from whoever is close: two people meeting head-on on a trail lean
+      // along the trail otherwise, and walk through each other.
+      let headingX = 0;
+      let headingZ = 0;
+      if (state.path && state.pathIndex < state.path.length) {
+        const target = state.path[state.pathIndex]!;
+        headingX = target.x - state.x;
+        headingZ = target.z - state.z;
+        const length = Math.hypot(headingX, headingZ);
+        if (length > 1e-6) {
+          headingX /= length;
+          headingZ /= length;
+        } else {
+          headingX = 0;
+          headingZ = 0;
+        }
+      }
+      const sidestep = headingX !== 0 || headingZ !== 0;
+      const normalX = -headingZ;
+      const normalZ = headingX;
+      let pushX = 0;
+      let pushZ = 0;
+      for (let other = 0; other < count; other += 1) {
+        if (other === index) continue;
+        const peer = states[other]!;
+        if (this.isHandedToFire(peer)) continue;
+        const peerWalking = peer.path !== null;
+        const radius =
+          walking && peerWalking
+            ? PASSING_SPACE_METERS
+            : walking || peerWalking
+              ? (WALKING_SPACE_METERS + STANDING_SPACE_METERS) / 2
+              : STANDING_SPACE_METERS;
+        const dx = state.x - peer.x;
+        const dz = state.z - peer.z;
+        const squared = dx * dx + dz * dz;
+        if (squared >= radius * radius) continue;
+        const distance = Math.sqrt(squared);
+        const overlap = 1 - distance / radius;
+        if (distance < COINCIDENT_METERS) {
+          pushX += state.biasX * overlap;
+          pushZ += state.biasZ * overlap;
+        } else if (sidestep) {
+          // dx/dz point from the peer to this walker.
+          const ahead = -(dx * headingX + dz * headingZ);
+          if (ahead < -BEHIND_METERS) continue;
+          let lateral = -(dx * normalX + dz * normalZ);
+          // Everyone treats dead ahead as the same side, so two people
+          // meeting head-on step to opposite edges instead of the same one.
+          if (Math.abs(lateral) < DEAD_AHEAD_METERS)
+            lateral = DEAD_AHEAD_METERS;
+          const side = lateral > 0 ? -1 : 1;
+          pushX += normalX * side * overlap;
+          pushZ += normalZ * side * overlap;
+        } else {
+          pushX += (dx / distance) * overlap;
+          pushZ += (dz / distance) * overlap;
+        }
+      }
+      const magnitude = Math.hypot(pushX, pushZ);
+      if (magnitude === 0) continue;
+      const move =
+        Math.min(1, magnitude) *
+        (sidestep
+          ? SIDESTEP_SPEED_METERS_PER_SECOND
+          : SEPARATION_SPEED_METERS_PER_SECOND) *
+        delta;
+      leanX[index] = (pushX / magnitude) * move;
+      leanZ[index] = (pushZ / magnitude) * move;
+    }
+
+    for (let index = 0; index < count; index += 1) {
+      let moveX = leanX[index]!;
+      let moveZ = leanZ[index]!;
+      if (moveX === 0 && moveZ === 0) continue;
+      const state = states[index]!;
+      const lateral = this.lateralAllowance(state, this.lateralScratch);
+      if (lateral) {
+        // A walker leans only as far off the line of the current route step
+        // as that step allows. Inside a clearing every point is covered, so
+        // without this a crowd could lean a walker well off the trail line
+        // and the trail out of the clearing would then pass beside them.
+        const normalX = lateral.normalX;
+        const normalZ = lateral.normalZ;
+        const offsetNow =
+          (state.x - lateral.fromX) * normalX +
+          (state.z - lateral.fromZ) * normalZ;
+        const offsetNext = offsetNow + moveX * normalX + moveZ * normalZ;
+        const limit = lateral.allowanceMeters;
+        const clamped = Math.max(-limit, Math.min(limit, offsetNext));
+        if (clamped !== offsetNext) {
+          const excess = offsetNext - clamped;
+          moveX -= excess * normalX;
+          moveZ -= excess * normalZ;
+          if (Math.abs(moveX) < 1e-9 && Math.abs(moveZ) < 1e-9) continue;
+        }
+      }
+      if (
+        !isFlowFestCorridorCovered(
+          this.site.graph,
+          state.x + moveX,
+          state.z + moveZ,
+          LEAN_COVERAGE_MARGIN_METERS
+        )
+      ) {
+        moveX *= 0.5;
+        moveZ *= 0.5;
+        if (
+          !isFlowFestCorridorCovered(
+            this.site.graph,
+            state.x + moveX,
+            state.z + moveZ,
+            LEAN_COVERAGE_MARGIN_METERS
+          )
+        ) {
+          continue;
+        }
+      }
+      state.x += moveX;
+      state.z += moveZ;
+    }
+  }
+
+  /**
+   * The line of the route step a walker is on and how far to either side of
+   * it that step allows, or null when they are not walking a line.
+   */
+  private lateralAllowance(
+    state: AgentState,
+    out: LateralAllowance
+  ): LateralAllowance | null {
+    const path = state.path;
+    if (!path || state.pathIndex < 1 || state.pathIndex >= path.length)
+      return null;
+    const from = path[state.pathIndex - 1]!;
+    const target = path[state.pathIndex]!;
+    const segmentX = target.x - from.x;
+    const segmentZ = target.z - from.z;
+    const length = Math.hypot(segmentX, segmentZ);
+    if (length < 1e-6) return null;
+    out.fromX = from.x;
+    out.fromZ = from.z;
+    out.normalX = -segmentZ / length;
+    out.normalZ = segmentX / length;
+    out.allowanceMeters = target.allowanceMeters;
+    return out;
   }
 }
 
@@ -991,7 +1377,8 @@ export function composeFlowFestFireJamLayout(
     (person) => person.behavior === "fire-rotation"
   );
   const continuous = base.people.filter(
-    (person) => person.role !== "spectator" && person.behavior !== "fire-rotation"
+    (person) =>
+      person.role !== "spectator" && person.behavior !== "fire-rotation"
   );
 
   const keptSpectators = spectators.slice(
@@ -1018,10 +1405,7 @@ export function composeFlowFestFireJamLayout(
       ? 0
       : Math.max(
           1,
-          Math.min(
-            keptFire.length - 1,
-            base.activeFirePerformerCount
-          )
+          Math.min(keptFire.length - 1, base.activeFirePerformerCount)
         );
 
   const people = [...keptSpectators, ...keptFire, ...keptContinuous];

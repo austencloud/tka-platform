@@ -1,6 +1,7 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixGridCorner.svelte
   The grid's top-left corner is where rows and columns meet, so it holds the
-  controls that set them: Surprise on top, then the Columns → value (red,
+  controls that set them: Surprise on top, with Theory's Link toggle beside
+  it so the axis rows keep the cell's height, then the Columns → value (red,
   right hand) on the same band as the column headers beside it, then the
   Rows ↓ value (blue, left hand) above the row headers below it. The reveal
   still lands rows before columns, matching the grid. Each value reads in
@@ -100,17 +101,36 @@
     </div>
   {:else}
     <div class="corner-home" role="group" aria-label="Current grid">
-      <button
-        type="button"
-        class="surprise"
-        aria-label="Surprise me with a new grid, crossing, and hand relationship"
-        title="Pick a new grid, crossing, and hand relationship"
-        disabled={!theory && !appState.data}
-        onclick={onsurprise}
-      >
-        <i class="fas fa-dice" aria-hidden="true"></i>
-        <span>Surprise me</span>
-      </button>
+      <div class="top">
+        <button
+          type="button"
+          class="surprise"
+          aria-label="Surprise me with a new grid, crossing, and hand relationship"
+          title="Pick a new grid, crossing, and hand relationship"
+          disabled={!theory && !appState.data}
+          onclick={onsurprise}
+        >
+          <i class="fas fa-dice" aria-hidden="true"></i>
+          <span>Surprise me</span>
+        </button>
+        {#if theory}
+          <button
+            type="button"
+            class="link"
+            class:linked={appState.theoryRatiosLinked}
+            aria-pressed={appState.theoryRatiosLinked}
+            aria-label={appState.theoryRatiosLinked
+              ? "Unlink row and column ratios"
+              : ratiosMatch
+                ? "Link row and column ratios"
+                : "Link column ratio to the row ratio"}
+            title={appState.theoryRatiosLinked ? "Linked" : "Link ratios"}
+            onclick={toggleLink}
+          >
+            <i class="fas fa-link" aria-hidden="true"></i>
+          </button>
+        {/if}
+      </div>
 
       {#key appState.revealToken}
         <div
@@ -153,23 +173,6 @@
       {/key}
 
       <div class="foot">
-        {#if theory}
-          <button
-            type="button"
-            class="link"
-            class:linked={appState.theoryRatiosLinked}
-            aria-pressed={appState.theoryRatiosLinked}
-            aria-label={appState.theoryRatiosLinked
-              ? "Unlink row and column ratios"
-              : ratiosMatch
-                ? "Link row and column ratios"
-                : "Link column ratio to the row ratio"}
-            title={appState.theoryRatiosLinked ? "Linked" : "Link ratios"}
-            onclick={toggleLink}
-          >
-            <i class="fas fa-link" aria-hidden="true"></i>
-          </button>
-        {/if}
         {#if !hasPair}
           <span class="hint">Pick a crossing</span>
         {/if}
@@ -202,13 +205,24 @@
     color: var(--theme-text, #fff);
   }
 
+  /* Surprise and Theory's Link toggle share one band, so the axis rows
+     below keep the cell's height for their steppers. */
+  .top {
+    display: flex;
+    align-items: stretch;
+    gap: clamp(0.2rem, 3cqi, 0.45rem);
+    min-width: 0;
+  }
+
   .surprise {
     display: inline-flex;
+    flex: 1 1 auto;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
+    min-width: 0;
     min-height: clamp(1.75rem, 18cqi, 2.75rem);
-    padding: 0.2rem 0.5rem;
+    padding: 0.2rem clamp(0.3rem, 3.5cqi, 0.6rem);
     border: 1px solid
       color-mix(
         in srgb,
@@ -314,17 +328,22 @@
     white-space: nowrap;
   }
 
+  /* A square as tall as Surprise. The global 44px floor would make it the
+     tallest thing in the cell; this corner is a pointer surface on wide
+     layouts, and compact hosts link from the header. */
   .link {
     display: grid;
-    width: clamp(1.5rem, 14cqi, 2.25rem);
-    height: clamp(1.5rem, 14cqi, 2.25rem);
+    flex: 0 0 auto;
+    width: clamp(1.75rem, 18cqi, 2.75rem);
+    min-width: 0;
+    min-height: clamp(1.75rem, 18cqi, 2.75rem);
     place-items: center;
     padding: 0;
     border: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.14));
-    border-radius: 999px;
+    border-radius: 9px;
     background: transparent;
     color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    font-size: clamp(0.65rem, 7cqi, 0.85rem);
+    font-size: clamp(0.7rem, 8cqi, 0.95rem);
     cursor: pointer;
     transition:
       color var(--duration-fast, 150ms) ease,

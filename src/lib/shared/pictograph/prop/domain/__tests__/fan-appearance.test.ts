@@ -85,10 +85,10 @@ describe("fan appearance", () => {
       "/images/props/appearances/fan-lotus.svg?v=7"
     );
     expect(fanAppearanceArtwork("day")).toBe(
-      "/images/props/appearances/fan-day-black.svg?v=1"
+      "/images/props/appearances/fan-day.svg?v=3"
     );
-    expect(fanAppearanceArtwork("day", "covered", "white")).toBe(
-      "/images/props/appearances/fan-day-white-covered.svg?v=1"
+    expect(fanAppearanceArtwork("day", "covered")).toBe(
+      "/images/props/appearances/fan-day-covered.svg?v=3"
     );
     expect(
       fanBuildPreviewOptions(DEFAULT_FAN_APPEARANCE).find(

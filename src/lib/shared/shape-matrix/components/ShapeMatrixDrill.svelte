@@ -43,7 +43,7 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "./MandalaHeroLayer.svelte";
   import WordHeader from "$lib/shared/animation-engine/components/layers/WordHeader.svelte";
-  import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+  import { levelForTurns } from "$lib/shared/create/services/level-turn-values";
   import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { MANDALA_GUIDE_FLOOR_OPACITY } from "$lib/shared/mandala/domain/mandala-overlay-types";
   import ElementChipRow from "./ElementChipRow.svelte";
@@ -80,12 +80,20 @@
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
   import { getOptionalShapeMatrixAppContext } from "../app/context/shape-matrix-app-context";
+  import ShapeMatrixCustomizeDock from "./ShapeMatrixCustomizeDock.svelte";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
     pair: { left: Flower; right: Flower } | null;
+    /**
+     * One hand on stage, chosen from its own axis header. The other prop is
+     * not drawn (the shell hides it through the viewer's motion visibility),
+     * and the two relationship rows go with it: a mode is an agreement
+     * between two hands, and there is only one here.
+     */
+    solo?: "left" | "right" | null;
     data: ShapeMatrixData;
     /** Optional composing surface action. The public archive remains a viewer;
      *  pickers can receive the exact realization this drill already built. */
@@ -116,6 +124,7 @@
   }
   let {
     pair,
+    solo = null,
     data,
     onselectRealization,
     selectLabel = "Use this realization",
@@ -319,8 +328,16 @@
   const heroPaths = $derived.by<MandalaPaths | null>(() => {
     if (!pair) return null;
     return {
-      left: data.left.get(flowerKey(pair.left))?.left ?? [],
-      right: data.right.get(flowerKey(pair.right))?.right ?? [],
+      // A solo draws the header's own mandala: the other hand's paths are
+      // left out, so the hero is the artwork that was pressed.
+      left:
+        solo === "right"
+          ? []
+          : (data.left.get(flowerKey(pair.left))?.left ?? []),
+      right:
+        solo === "left"
+          ? []
+          : (data.right.get(flowerKey(pair.right))?.right ?? []),
       purple: [],
     };
   });
@@ -586,9 +603,12 @@
     return () => visibility.unregisterObserver(sync);
   });
   const headerSequence = $derived(captionRealization?.seq ?? null);
+  /* The badge names the level the pair sits on in this engine, one to four.
+     The browse calculator knows three levels and read every quarter-turn pair
+     as level 3. */
   const headerDifficulty = $derived(
-    headerSequence?.steps?.length
-      ? calculateDifficultyLevel([...headerSequence.steps])
+    headerSequence?.steps?.length && pair
+      ? levelForTurns(pair.left.turns, pair.right.turns)
       : null
   );
   const headerLoopDisplay = $derived.by(() => {
@@ -1187,6 +1207,7 @@
     ? `--hand-el: ${captionRealization.element.accentColor}; --hand-dark: ${captionRealization.element.darkComplement}; --prop-el: ${captionRealization.propRelationship.element?.accentColor ?? captionRealization.element.accentColor}`
     : undefined}
 >
+  {#if !solo}
   <div
     class="mode-picker"
     data-drill-region="modes"
@@ -1213,6 +1234,7 @@
       ontarget={selectPropMode}
     />
   </div>
+  {/if}
 
   <div
     class="media-stage"
@@ -1385,7 +1407,11 @@
   {/if}
 
   <!-- The control bar is below the stage, not inside it. It settles in as the
-       last frame of the wave rather than arriving complete under the flight. -->
+       last frame of the wave rather than arriving complete under the flight.
+       A wide host keeps every ability in the customize workspace over the
+       grid, so its bar is one Customize button and the transport. Compact
+       hosts keep the pill dock: each pill opens its sheet there, and Props
+       routes to the canonical prop sheet. -->
   <div
     class="animation-controls"
     data-drill-region="controls"
@@ -1395,30 +1421,34 @@
       enabled: morphingFrames,
     }}
   >
-    <AnimationPanel
-      isExporting={false}
-      layout="bottom"
-      presentation={appState ? "navigation" : "full"}
-      controlledSection={appState ? animationState.activeSection : undefined}
-      isPlaying={animationState.playing}
-      bpm={animationState.bpm}
-      playbackMode={animationState.playbackMode}
-      onPlaybackToggle={animationState.togglePlaying}
-      onPlaybackModeChange={animationState.setPlaybackMode}
-      onBpmChange={animationState.setBpm}
-      showEffectsPlayback={false}
-      selectedPropType={propType}
-      onPropChange={onproptypechange}
-      onPropPickerRequest={onproppickertoggle}
-      propPickerActive={propPickerOpen}
-      sequence={captionRealization?.seq ?? null}
-      dockTrailingAction={playbackAction}
-      showPathShape={false}
-      showMotionVisibility={true}
-      onActiveSectionChange={animationState.setActiveSection}
-      closeRequest={animationState.closeRequest}
-      regionLabel="Shape animation controls"
-    />
+    {#if appState && !appState.compact}
+      <ShapeMatrixCustomizeDock />
+    {:else}
+      <AnimationPanel
+        isExporting={false}
+        layout="bottom"
+        presentation={appState ? "navigation" : "full"}
+        controlledSection={appState ? animationState.activeSection : undefined}
+        isPlaying={animationState.playing}
+        bpm={animationState.bpm}
+        playbackMode={animationState.playbackMode}
+        onPlaybackToggle={animationState.togglePlaying}
+        onPlaybackModeChange={animationState.setPlaybackMode}
+        onBpmChange={animationState.setBpm}
+        showEffectsPlayback={false}
+        selectedPropType={propType}
+        onPropChange={onproptypechange}
+        onPropPickerRequest={onproppickertoggle}
+        propPickerActive={propPickerOpen}
+        sequence={captionRealization?.seq ?? null}
+        dockTrailingAction={playbackAction}
+        showPathShape={false}
+        showMotionVisibility={true}
+        onActiveSectionChange={animationState.setActiveSection}
+        closeRequest={animationState.closeRequest}
+        regionLabel="Shape animation controls"
+      />
+    {/if}
   </div>
 
   {#if onselectRealization}

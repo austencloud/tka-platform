@@ -39,6 +39,10 @@ with pre-prepared data for better performance.
   import { describePictograph } from "../domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PropType } from "../../prop/domain/enums/prop-type";
+  import {
+    fanAppearanceSignature,
+    normalizeFanAppearance,
+  } from "../../prop/domain/fan-appearance";
   import { calculatePictographMotionPositions } from "../../prop/services/pictograph-motion-positioner";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
@@ -465,6 +469,11 @@ with pre-prepared data for better performance.
       // no separation), so a flip has to re-prepare.
       leftBuugengFlipped: settings.leftBuugengFlipped ?? false,
       rightBuugengFlipped: settings.rightBuugengFlipped ?? false,
+      // The fan build picks the prop artwork, so choosing DoodleGrip Fire
+      // over the notation fan has to re-prepare every fan pictograph.
+      fanAppearance: fanAppearanceSignature(
+        normalizeFanAppearance(settings.fanAppearance)
+      ),
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
       leftMotion: leftFingerprint,
       rightMotion: rightFingerprint,
@@ -525,6 +534,7 @@ with pre-prepared data for better performance.
           rightPropType: effectiveRightPropType,
           leftBuugengFlipped: getSettings().leftBuugengFlipped ?? false,
           rightBuugengFlipped: getSettings().rightBuugengFlipped ?? false,
+          fanAppearance: normalizeFanAppearance(getSettings().fanAppearance),
           showLeftMotion: preparationShowLeftMotion,
           showRightMotion: preparationShowRightMotion,
         };

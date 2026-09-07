@@ -21,6 +21,11 @@ import {
   Orientation,
 } from "../domain/enums/pictograph-enums";
 import { getPictographGeometryRevision } from "$lib/shared/render/services/pictograph-key-hasher";
+import {
+  fanAppearanceSignature,
+  isFanPropType,
+  normalizeFanAppearance,
+} from "../../prop/domain/fan-appearance";
 // Prop-type defaults used when callers don't pass explicit options.
 // Formerly imported getSettings() from app-state.svelte, but that module chain
 // pulls in Firebase auth which accesses `window` — crashing in Web Workers.
@@ -245,6 +250,12 @@ export class PictographPreparer {
       // unflipped entry.
       options?.leftBuugengFlipped ? "bFlip" : "",
       options?.rightBuugengFlipped ? "rFlip" : "",
+      // The fan build changes the prop artwork, so a build swap must not
+      // reuse the entry prepared for another build.
+      options?.fanAppearance &&
+      (isFanPropType(effectiveLeft) || isFanPropType(effectiveRight))
+        ? fanAppearanceSignature(normalizeFanAppearance(options.fanAppearance))
+        : "",
       pictograph.betaSwapped ? "bs" : "",
       getPictographGeometryRevision(pictograph) ?? "",
       // Visibility is render-relevant: an invisible placeholder hand must not
@@ -330,7 +341,12 @@ export class PictographPreparer {
               motion.propPlacementData,
               motion,
               options?.useGridVersion ?? false,
-              options?.themeMode ? { themeMode: options.themeMode } : undefined
+              options?.themeMode || options?.fanAppearance
+                ? {
+                    themeMode: options.themeMode,
+                    fanAppearance: options.fanAppearance,
+                  }
+                : undefined
             ),
             this.propPlacer.calculatePlacement(
               pictograph,

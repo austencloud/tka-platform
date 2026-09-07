@@ -18,6 +18,8 @@ import {
   type AnimationVisibilityStateManager,
 } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import {
+  applyFanFrameColor,
+  scaleFanAppearanceForBigFan,
   fanAppearanceArtwork,
   parseFanRenderKey,
 } from "$lib/shared/pictograph/prop/domain/fan-appearance";
@@ -252,11 +254,7 @@ export function resolvePropSvgPath(
 ): string {
   const fanRenderKey = parseFanRenderKey(propTypeLower);
   if (fanRenderKey) {
-    return fanAppearanceArtwork(
-      fanRenderKey.build,
-      fanRenderKey.cover,
-      fanRenderKey.frameColor
-    )!;
+    return fanAppearanceArtwork(fanRenderKey.build, fanRenderKey.cover)!;
   }
   const modelRenderKey = parseModelRenderKey(propTypeLower);
   if (modelRenderKey) {
@@ -266,36 +264,10 @@ export function resolvePropSvgPath(
   return `/images/props/${family}/${propTypeLower}.svg`;
 }
 
-/** Scale the regular measured build around its hand pivot into Big Fan's box. */
-function scaleFanAppearanceForBigFan(svg: string): string {
-  const body = svg.replace(/^\s*<svg\b[^>]*>/i, "").replace(/<\/svg>\s*$/i, "");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 566.9"><g transform="translate(60 92.3731) scale(1.8461538)">${body}</g></svg>`;
-}
-
-/**
- * Physical fan artwork owns its material colors. Only the marked frame group
- * follows the motion color: its stroke for the rod-built fire and lotus fans,
- * and its fill for the solid DoodleGrip Day plate. Kevlar wicks, frame tints,
- * and fitted covers stay physical.
- */
-export function applyFanFrameColor(svg: string, color: string): string {
-  return svg.replace(
-    /<g\b(?=[^>]*\bdata-fan-frame=(?:""|''))[^>]*>/i,
-    (tag) => {
-      const filled = tag.replace(
-        /\bfill=(?:"(?!none")[^"]*"|'(?!none')[^']*')/i,
-        `fill="${color}"`
-      );
-      if (/\bstroke=(?:"[^"]*"|'[^']*')/i.test(filled)) {
-        return filled.replace(
-          /\bstroke=(?:"[^"]*"|'[^']*')/i,
-          `stroke="${color}"`
-        );
-      }
-      return filled.replace(/>$/, ` stroke="${color}">`);
-    }
-  );
-}
+// The fan build helpers live with the fan appearance domain so the static
+// pictograph loader and this animator recolor and size the same artwork the
+// same way.
+export { applyFanFrameColor };
 
 /**
  * Model sprites are pre-lit in the blue and red motion colors, so the hand
