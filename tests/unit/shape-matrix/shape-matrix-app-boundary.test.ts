@@ -351,7 +351,20 @@ describe("Shape Matrix app boundary", () => {
       "src/lib/shared/shape-matrix/app/services/shape-matrix-playback-shortcut.ts"
     );
     expect(shortcutSource).toContain("getKeyboardShortcutManager().register(");
-    expect(shortcutSource).toContain('id: "shape-matrix.play-pause"');
+    // Both detail views are mounted at once, so they cannot share one id:
+    // the registry keys by id and the later registration wins outright.
+    expect(shortcutSource).toContain(
+      "id: `shape-matrix.play-pause.${surface}`"
+    );
+    expect(drillSource).toMatch(
+      /registerShapeMatrixPlaybackShortcut\(\s*"matrix"/
+    );
+    expect(theoryDetailSource).toMatch(
+      /registerShapeMatrixPlaybackShortcut\(\s*"theory"/
+    );
+    // ...and each refuses the key while the other surface is the one showing.
+    expect(drillSource).toContain('appState.surface === "matrix"');
+    expect(theoryDetailSource).toContain('app.surface === "theory"');
     // The registry matches the normalized key name. A raw " " registers
     // cleanly, type-checks, and then never fires.
     expect(shortcutSource).toContain('key: "Space"');
