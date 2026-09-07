@@ -11,6 +11,8 @@
  * WebViews, and documents served without a secure context).
  */
 
+import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
+
 export interface LinkShare {
   /** The address to hand on. */
   url: string;
@@ -75,7 +77,13 @@ export async function shareOrCopyLink(
 ): Promise<LinkShareOutcome> {
   const platform = typeof navigator === "undefined" ? null : navigator;
 
-  if (typeof platform?.share === "function") {
+  /* Desktop Chrome on Windows publishes navigator.share and opens an OS
+     sheet, which is a detour for someone who wanted the address on their
+     clipboard. The sheet earns its place on a phone, where it reaches the
+     messaging apps. Same gate the card export already uses. */
+  const onAPhone = detectPlatform() !== "desktop";
+
+  if (onAPhone && typeof platform?.share === "function") {
     const payload = { title: link.title, text: link.text, url: link.url };
     // canShare, where it exists, says whether this payload is acceptable;
     // where it does not, try the sheet and let it refuse.
