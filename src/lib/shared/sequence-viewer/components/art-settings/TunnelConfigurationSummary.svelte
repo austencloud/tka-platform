@@ -1,106 +1,146 @@
 <script lang="ts">
-  import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
 
   interface Props {
     controller: TunnelViewController;
-    bpm: number;
-    playbackMode: PlaybackMode;
     dense: boolean;
   }
 
-  let { controller, bpm, playbackMode, dense }: Props = $props();
+  let { controller, dense }: Props = $props();
 
-  const recipeLabel = $derived(
-    controller.presetRecipe
-      ? `${controller.presetRecipe.name} recipe`
-      : "Custom configuration"
+  const presetName = $derived(controller.presetRecipe?.name ?? "Custom");
+  const renderedSummary = $derived(
+    `${controller.performerCount} ${controller.performerCount === 1 ? "instance" : "instances"} · ${controller.propCount} props`
   );
-  const formationLabel = $derived(
-    [
-      `${controller.fold}-fold`,
-      controller.mirror ? "mirror" : null,
-      controller.flip ? "flip" : null,
-      controller.invert ? "inverted motion" : null,
-      controller.echo ? "echo" : null,
-      controller.staggerSteps > 0
-        ? `${controller.staggerSteps}-step stagger`
-        : null,
-    ]
-      .filter(Boolean)
-      .join(" · ")
-  );
+  // The preset cards already identify an unmodified mobile formation. Reserve
+  // this row for the one state the cards cannot express: edits that can be reset.
+  const visible = $derived(!dense || controller.presetRecipeModified);
 </script>
 
-<section class:compact={dense} class="configuration-summary" aria-label="Tunnel configuration summary">
-  <div class="summary-head">
-    <div>
-      <p class="eyebrow">Tunnel configuration</p>
-      <p class="recipe">
-        {recipeLabel}{controller.presetRecipeModified ? " · modified" : ""}
-      </p>
+{#if visible}
+  <section
+    class:compact={dense}
+    class="configuration-status"
+    aria-label="Tunnel formation status"
+    aria-live="polite"
+    transition:growFade={{ axis: "y" }}
+  >
+    <div class="status-copy">
+      <strong>{presetName}</strong>
+      {#if controller.presetRecipeModified}
+        <span class="modified-badge">Modified</span>
+      {/if}
+      {#if !dense}
+        <span class="rendered-summary">{renderedSummary}</span>
+      {/if}
     </div>
+
     {#if controller.presetRecipe && controller.presetRecipeModified}
-      <button type="button" onclick={() => controller.resetPresetRecipe()}>
-        Reset {controller.presetRecipe.name}
+      <button
+        type="button"
+        class="reset-button"
+        aria-label={`Reset ${controller.presetRecipe.name} formation`}
+        title={`Reset ${controller.presetRecipe.name}`}
+        onclick={() => controller.resetPresetRecipe()}
+      >
+        <i class="fas fa-rotate-left" aria-hidden="true"></i>
+        <span>{dense ? "Reset" : `Reset ${controller.presetRecipe.name}`}</span>
       </button>
     {/if}
-  </div>
-
-  <dl class="summary-grid">
-    <div>
-      <dt>Authored cast</dt>
-      <dd>{controller.authoredPerformerCount} performer{controller.authoredPerformerCount === 1 ? "" : "s"}</dd>
-    </div>
-    <div>
-      <dt>Rendered tunnel</dt>
-      <dd>{controller.performerCount} instance{controller.performerCount === 1 ? "" : "s"} · {controller.propCount} props</dd>
-    </div>
-    <div>
-      <dt>Formation</dt>
-      <dd>{formationLabel}</dd>
-    </div>
-    <div>
-      <dt>Playback</dt>
-      <dd>{playbackMode} · {bpm} BPM</dd>
-    </div>
-    <div>
-      <dt>Loop</dt>
-      <dd>{controller.loopCycles === 1 ? "Returns in one pass" : `Returns in ${controller.loopCycles} passes`}</dd>
-    </div>
-    <div>
-      <dt>Stage colors</dt>
-      <dd>{controller.spectrum ? "Spectrum by generated copy" : "Blue Left · red Right"}</dd>
-    </div>
-  </dl>
-
-  {#if controller.performerCount > controller.authoredPerformerCount}
-    <p class="generated-note">
-      The authored cast drives the extra instances. They are formation copies, not additional choreography cards.
-    </p>
-  {/if}
-</section>
+  </section>
+{/if}
 
 <style>
-  .configuration-summary {
-    --settings-gap: 0.6rem;
-    display: grid;
-    gap: var(--settings-gap);
-    padding: 0.8rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 0.8rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+  .configuration-status {
+    display: flex;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-inline: 4px;
   }
-  .summary-head { display: flex; align-items: start; justify-content: space-between; gap: 0.6rem; }
-  .eyebrow { margin: 0; font-size: var(--font-size-compact, 12px); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--theme-text-dim, rgba(255,255,255,0.58)); }
-  .recipe { margin: 0.15rem 0 0; font-size: var(--font-size-min, 14px); color: var(--theme-text, #fff); }
-  .summary-head button { flex: 0 0 auto; min-height: var(--min-touch-target, 44px); padding: 0.35rem 0.6rem; border: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent); border-radius: 0.55rem; background: color-mix(in srgb, var(--theme-accent) 10%, transparent); color: var(--theme-accent); font-size: var(--font-size-compact, 12px); cursor: pointer; }
-  .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 0.8rem; margin: 0; }
-  .summary-grid div { min-width: 0; }
-  dt { font-size: var(--font-size-compact, 12px); color: var(--theme-text-dim, rgba(255,255,255,0.58)); }
-  dd { margin: 0.12rem 0 0; font-size: var(--font-size-min, 14px); line-height: 1.3; color: var(--theme-text, #fff); }
-  .generated-note { margin: 0; font-size: var(--font-size-compact, 12px); line-height: 1.4; color: var(--theme-text-dim, rgba(255,255,255,0.7)); }
-  .compact { padding: 0.55rem; }
-  .compact .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem 0.55rem; }
-  @container (max-width: 26rem) { .summary-grid, .compact .summary-grid { grid-template-columns: 1fr; } }
+
+  .status-copy {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .status-copy strong {
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
+  .modified-badge {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 16%,
+      transparent
+    );
+    color: var(--theme-accent, #a78bfa);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+  }
+
+  .rendered-summary {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reset-button {
+    display: inline-flex;
+    min-height: var(--min-touch-target, 44px);
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 38%, transparent);
+    border-radius: 9px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 8%,
+      transparent
+    );
+    color: var(--theme-accent, #a78bfa);
+    cursor: pointer;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+  }
+
+  .reset-button:hover {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 58%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 14%,
+      transparent
+    );
+  }
+
+  .reset-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .compact {
+    padding-inline: 2px;
+  }
+
+  @media (forced-colors: active) {
+    .modified-badge,
+    .reset-button {
+      border: 1px solid ButtonText;
+    }
+  }
 </style>

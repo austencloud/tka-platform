@@ -21,7 +21,7 @@ import {
   GridPosition,
 } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -29,7 +29,7 @@ import {
 import { RotatedSwappedLOOPExecutor } from "$lib/features/create/generate/circular/services/rotated-swapped-loop-executor";
 import { Period } from "../../../src/lib/shared/foundation/domain/models/generation/circular-models";
 
-const staticMotion = (color: MotionColor, loc: GridLocation) => ({
+const staticMotion = (color: HandSide, loc: GridLocation) => ({
   motionType: MotionType.STATIC,
   rotationDirection: RotationDirection.NO_ROTATION,
   startLocation: loc,
@@ -41,7 +41,7 @@ const staticMotion = (color: MotionColor, loc: GridLocation) => ({
 });
 
 const dashMotion = (
-  color: MotionColor,
+  color: HandSide,
   from: GridLocation,
   to: GridLocation
 ) => ({
@@ -64,11 +64,11 @@ const alpha1StartBeat: StepData = {
   startPosition: GridPosition.ALPHA1,
   endPosition: GridPosition.ALPHA1,
   motions: {
-    [MotionColor.BLUE]: staticMotion(MotionColor.BLUE, GridLocation.SOUTH),
-    [MotionColor.RED]: staticMotion(MotionColor.RED, GridLocation.NORTH),
+    [HandSide.LEFT]: staticMotion(HandSide.LEFT, GridLocation.SOUTH),
+    [HandSide.RIGHT]: staticMotion(HandSide.RIGHT, GridLocation.NORTH),
   },
-  blueReversal: false,
-  redReversal: false,
+  leftReversal: false,
+  rightReversal: false,
   isBlank: false,
 };
 
@@ -81,19 +81,19 @@ const phiDashForward: StepData = {
   startPosition: GridPosition.ALPHA1,
   endPosition: GridPosition.ALPHA5,
   motions: {
-    [MotionColor.BLUE]: dashMotion(
-      MotionColor.BLUE,
+    [HandSide.LEFT]: dashMotion(
+      HandSide.LEFT,
       GridLocation.SOUTH,
       GridLocation.NORTH
     ),
-    [MotionColor.RED]: dashMotion(
-      MotionColor.RED,
+    [HandSide.RIGHT]: dashMotion(
+      HandSide.RIGHT,
       GridLocation.NORTH,
       GridLocation.SOUTH
     ),
   },
-  blueReversal: false,
-  redReversal: false,
+  leftReversal: false,
+  rightReversal: false,
   isBlank: false,
 };
 
@@ -106,19 +106,19 @@ const phiDashReverse: StepData = {
   startPosition: GridPosition.ALPHA5,
   endPosition: GridPosition.ALPHA1,
   motions: {
-    [MotionColor.BLUE]: dashMotion(
-      MotionColor.BLUE,
+    [HandSide.LEFT]: dashMotion(
+      HandSide.LEFT,
       GridLocation.NORTH,
       GridLocation.SOUTH
     ),
-    [MotionColor.RED]: dashMotion(
-      MotionColor.RED,
+    [HandSide.RIGHT]: dashMotion(
+      HandSide.RIGHT,
       GridLocation.SOUTH,
       GridLocation.NORTH
     ),
   },
-  blueReversal: false,
-  redReversal: false,
+  leftReversal: false,
+  rightReversal: false,
   isBlank: false,
 };
 

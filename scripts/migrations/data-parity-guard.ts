@@ -31,17 +31,27 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { initFirestore } from "../lib/firestore-provider.js";
-import { hydrate, ensureComposition } from "../../src/lib/shared/foundation/services/sequence-hydrator";
+import {
+  hydrate,
+  ensureComposition,
+} from "../../src/lib/shared/foundation/services/sequence-hydrator";
 import { computeHash } from "../../src/lib/shared/library/services/sequence-content-hasher";
 // Import the node-safe classes directly — the getStepSignatureGenerator getter
 // is a browser-only singleton (imports $app/environment and throws when !browser).
 import { StepSignatureGenerator } from "../../src/lib/shared/comparison/services/step-signature-generator";
 import { MotionSignatureGenerator } from "../../src/lib/shared/comparison/services/motion-signature-generator";
-import { encodeSequence, decodeSequence } from "../../src/lib/shared/navigation/services/sequence-encoder";
+import {
+  encodeSequence,
+  decodeSequence,
+} from "../../src/lib/shared/navigation/services/sequence-encoder";
 
 const stepSig = new StepSignatureGenerator(new MotionSignatureGenerator());
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
-import { viewFieldsDigest, riskFieldCoverage, formatCoverage } from "./lib/view-fields-digest.js";
+import {
+  viewFieldsDigest,
+  riskFieldCoverage,
+  formatCoverage,
+} from "./lib/view-fields-digest.js";
 import { buildRiskFixtureRecords } from "./lib/risk-fixtures.js";
 
 if (!(globalThis as { crypto?: { subtle?: unknown } }).crypto?.subtle) {
@@ -65,10 +75,10 @@ const LIMIT = (() => {
 interface Fingerprint {
   word: string;
   identityHash: string; // computeHash(hydrate(seq)) — the phantom-fork sink
-  bluePathHash: string;
-  redPathHash: string;
-  blueSoloHash: string;
-  redSoloHash: string;
+  leftPathHash: string;
+  rightPathHash: string;
+  leftSoloHash: string;
+  rightSoloHash: string;
   stepSignatures: string; // JSON of generateSignatures(steps)
   encoderRoundTripHash: string; // computeHash(hydrate(decode(encode(seq))))
   viewFieldsDigest: string; // direct digest of handPath/skew/pathShape/prefloat/turns/plane
@@ -87,15 +97,17 @@ async function fingerprint(seq: SequenceData): Promise<Fingerprint> {
   return {
     word: seq.word ?? "?",
     identityHash: await safe(() => computeHash(hydrated)),
-    bluePathHash: String(composed["bluePathHash"] ?? ""),
-    redPathHash: String(composed["redPathHash"] ?? ""),
-    blueSoloHash: String(composed["blueSoloHash"] ?? ""),
-    redSoloHash: String(composed["redSoloHash"] ?? ""),
+    leftPathHash: String(composed["leftPathHash"] ?? ""),
+    rightPathHash: String(composed["rightPathHash"] ?? ""),
+    leftSoloHash: String(composed["leftSoloHash"] ?? ""),
+    rightSoloHash: String(composed["rightSoloHash"] ?? ""),
     stepSignatures: await safe(() =>
       JSON.stringify(stepSig.generateSignatures(hydrated.steps ?? []))
     ),
     encoderRoundTripHash: await safe(async () =>
-      computeHash(hydrate(decodeSequence(encodeSequence(hydrated))) as SequenceData)
+      computeHash(
+        hydrate(decodeSequence(encodeSequence(hydrated))) as SequenceData
+      )
     ),
     viewFieldsDigest: await safe(() => viewFieldsDigest(hydrated.steps ?? [])),
   };
@@ -103,10 +115,10 @@ async function fingerprint(seq: SequenceData): Promise<Fingerprint> {
 
 const FIELDS: (keyof Fingerprint)[] = [
   "identityHash",
-  "bluePathHash",
-  "redPathHash",
-  "blueSoloHash",
-  "redSoloHash",
+  "leftPathHash",
+  "rightPathHash",
+  "leftSoloHash",
+  "rightSoloHash",
   "stepSignatures",
   "encoderRoundTripHash",
   "viewFieldsDigest",
@@ -117,8 +129,13 @@ const FIELDS: (keyof Fingerprint)[] = [
 async function capture(): Promise<void> {
   const { db, sdk } = (await initFirestore()) as AnyRec & { db: AnyRec };
   console.log(`via ${sdk} — CAPTURE — freezing up to ${LIMIT} sequences`);
-  const snap = await (db.collection as (p: string) => AnyRec)("publicSequences")["get"]();
-  const docs = (snap.docs as Array<{ id: string; data: () => AnyRec }>).slice(0, LIMIT);
+  const snap = await (db.collection as (p: string) => AnyRec)(
+    "publicSequences"
+  )["get"]();
+  const docs = (snap.docs as Array<{ id: string; data: () => AnyRec }>).slice(
+    0,
+    LIMIT
+  );
   const records: Array<{ raw: SequenceData; fp: Fingerprint }> = [];
   for (const d of docs) {
     const raw = { ...(d.data() as object), id: d.id } as SequenceData;
@@ -133,11 +150,21 @@ async function capture(): Promise<void> {
   for (const raw of buildRiskFixtureRecords(records.map((r) => r.raw))) {
     records.push({ raw, fp: await fingerprint(raw) });
   }
-  const allSteps = records.flatMap((r) => (hydrate(r.raw) as SequenceData).steps ?? []);
-  console.log(`risk-field coverage: ${formatCoverage(riskFieldCoverage(allSteps))}`);
-  if (!existsSync(dirname(SNAPSHOT))) mkdirSync(dirname(SNAPSHOT), { recursive: true });
-  writeFileSync(SNAPSHOT, JSON.stringify({ capturedAt: new Date().toISOString(), records }, null, 2));
-  console.log(`Froze ${records.length} sequences + fingerprints -> ${SNAPSHOT}`);
+  const allSteps = records.flatMap(
+    (r) => (hydrate(r.raw) as SequenceData).steps ?? []
+  );
+  console.log(
+    `risk-field coverage: ${formatCoverage(riskFieldCoverage(allSteps))}`
+  );
+  if (!existsSync(dirname(SNAPSHOT)))
+    mkdirSync(dirname(SNAPSHOT), { recursive: true });
+  writeFileSync(
+    SNAPSHOT,
+    JSON.stringify({ capturedAt: new Date().toISOString(), records }, null, 2)
+  );
+  console.log(
+    `Froze ${records.length} sequences + fingerprints -> ${SNAPSHOT}`
+  );
   console.log(`Now do the migration, then re-run WITHOUT --capture to check.`);
   process.exit(0);
 }
@@ -146,33 +173,54 @@ async function capture(): Promise<void> {
 
 async function check(): Promise<void> {
   if (!existsSync(SNAPSHOT)) {
-    console.error(`No snapshot at ${SNAPSHOT}. Run with --capture first (pre-migration).`);
+    console.error(
+      `No snapshot at ${SNAPSHOT}. Run with --capture first (pre-migration).`
+    );
     process.exit(1);
   }
-  const { capturedAt, records } = JSON.parse(readFileSync(SNAPSHOT, "utf8")) as {
+  const { capturedAt, records } = JSON.parse(
+    readFileSync(SNAPSHOT, "utf8")
+  ) as {
     capturedAt: string;
     records: Array<{ raw: SequenceData; fp: Fingerprint }>;
   };
   console.log(`CHECK vs snapshot ${capturedAt} — ${records.length} sequences`);
-  const drift: Array<{ word: string; field: string; before: string; after: string }> = [];
+  const drift: Array<{
+    word: string;
+    field: string;
+    before: string;
+    after: string;
+  }> = [];
   for (const rec of records) {
     const now = await fingerprint(rec.raw);
     for (const f of FIELDS) {
       if (now[f] !== rec.fp[f]) {
-        drift.push({ word: rec.fp.word, field: f, before: String(rec.fp[f]).slice(0, 24), after: String(now[f]).slice(0, 24) });
+        drift.push({
+          word: rec.fp.word,
+          field: f,
+          before: String(rec.fp[f]).slice(0, 24),
+          after: String(now[f]).slice(0, 24),
+        });
       }
     }
   }
   const byField = new Map<string, number>();
   for (const d of drift) byField.set(d.field, (byField.get(d.field) ?? 0) + 1);
-  console.log(`\n─── result: ${records.length} sequences, ${FIELDS.length} fingerprints each ───`);
+  console.log(
+    `\n─── result: ${records.length} sequences, ${FIELDS.length} fingerprints each ───`
+  );
   if (drift.length === 0) {
-    console.log(`✅ DATA PARITY — 0 fingerprints drifted. No non-render corruption.`);
+    console.log(
+      `✅ DATA PARITY — 0 fingerprints drifted. No non-render corruption.`
+    );
   } else {
-    console.log(`❌ DATA DRIFT — ${drift.length} fingerprints changed across ${new Set(drift.map((d) => d.word)).size} sequences:`);
+    console.log(
+      `❌ DATA DRIFT — ${drift.length} fingerprints changed across ${new Set(drift.map((d) => d.word)).size} sequences:`
+    );
     for (const [field, n] of byField) console.log(`   ${field}: ${n}`);
     console.log(`\nfirst 15:`);
-    for (const d of drift.slice(0, 15)) console.log(`   ${d.word} · ${d.field}: ${d.before} -> ${d.after}`);
+    for (const d of drift.slice(0, 15))
+      console.log(`   ${d.word} · ${d.field}: ${d.before} -> ${d.after}`);
   }
   process.exit(drift.length === 0 ? 0 : 1);
 }

@@ -40,16 +40,17 @@ export function resolveGhost2DAgeVisual(
 /** Blue/red separation belongs to Ghost intent, not to the live prop sprite. */
 export function resolveGhostPropColor(
   propId: number,
-  blueColor: string,
-  redColor: string
+  leftColor: string,
+  rightColor: string
 ): string {
-  return propId % 2 === 0 ? blueColor : redColor;
+  return propId % 2 === 0 ? leftColor : rightColor;
 }
 
 function parseHexColor(color: string): [number, number, number] | null {
   const match = /^#([0-9a-f]{6})$/i.exec(color);
-  if (!match) return null;
-  const value = Number.parseInt(match[1], 16);
+  const digits = match?.[1];
+  if (!digits) return null;
+  const value = Number.parseInt(digits, 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 }
 
@@ -60,8 +61,9 @@ export function resolveGhostRimColor(color: string): string {
   if (!source) return "#e2f9ff";
 
   const amount = 0.68;
-  const channels = source.map((channel, index) =>
-    Math.round(channel + (coldWhite[index] - channel) * amount)
-  );
+  const channels = source.map((channel, index) => {
+    const target = coldWhite[index] ?? channel;
+    return Math.round(channel + (target - channel) * amount);
+  });
   return `#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
 }

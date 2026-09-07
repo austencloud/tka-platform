@@ -24,15 +24,15 @@ export class BetaDetector {
    */
   startsWithBeta(pictographData: PictographData): boolean {
     if (
-      !isVisibleMotion(pictographData.motions.blue) ||
-      !isVisibleMotion(pictographData.motions.red)
+      !isVisibleMotion(pictographData.motions.left) ||
+      !isVisibleMotion(pictographData.motions.right)
     ) {
       return false;
     }
 
     const startPosition = getGridPositionFromLocations(
-      pictographData.motions.blue.startLocation,
-      pictographData.motions.red.startLocation
+      pictographData.motions.left.startLocation,
+      pictographData.motions.right.startLocation
     );
 
     return this.isBetaPosition(startPosition);
@@ -43,19 +43,19 @@ export class BetaDetector {
    */
   endsWithBeta(pictographData: PictographData): boolean {
     if (
-      !isVisibleMotion(pictographData.motions.blue) ||
-      !isVisibleMotion(pictographData.motions.red)
+      !isVisibleMotion(pictographData.motions.left) ||
+      !isVisibleMotion(pictographData.motions.right)
     ) {
       // No motion data = can't end with beta position
       // This is expected in some contexts (static pictographs, loading states)
       return false;
     }
 
-    const redEndLocation = pictographData.motions.red.endLocation;
-    const blueEndLocation = pictographData.motions.blue.endLocation;
+    const rightEndLocation = pictographData.motions.right.endLocation;
+    const leftEndLocation = pictographData.motions.left.endLocation;
 
     // Beta detection: both props end at the same location
-    return redEndLocation === blueEndLocation;
+    return rightEndLocation === leftEndLocation;
   }
 }
 

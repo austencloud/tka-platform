@@ -15,6 +15,8 @@
 /**
  * Single point in the trail path
  */
+import { normalizeLegacyHandPair } from "@tka/tka-types";
+
 export interface TrailPoint {
   x: number;
   y: number;
@@ -72,10 +74,10 @@ export interface TrailSettings {
   maxPoints: number; // Maximum trail points to store
   lineWidth: number;
   glowBlur: number;
-  blueColor: string;
-  redColor: string;
+  leftColor: string;
+  rightColor: string;
   /** Colors for additional tunnel layers (index 0 = layer 1, up to 2 entries for layers 1-3) */
-  additionalLayerColors: Array<{ blue: string; red: string }>;
+  additionalLayerColors: Array<{ left: string; right: string }>;
   minOpacity: number; // Minimum opacity for oldest points
   maxOpacity: number; // Maximum opacity for newest points
   trackingMode: TrackingMode; // Which end(s) to track
@@ -92,8 +94,26 @@ export interface TrailSettings {
   tailLength: number;
 }
 
+/** Restores trail color pairs written before physical hand identity was canonical. */
+export function normalizeLegacyTrailSettings<T>(value: T): T {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+
+  const source = value as Record<string, unknown>;
+  const normalized: Record<string, unknown> = { ...source };
+  normalized.leftColor ??= source.blueColor;
+  normalized.rightColor ??= source.redColor;
+  delete normalized.blueColor;
+  delete normalized.redColor;
+  if (Array.isArray(source.additionalLayerColors)) {
+    normalized.additionalLayerColors = source.additionalLayerColors.map(
+      normalizeLegacyHandPair
+    );
+  }
+  return normalized as T;
+}
+
 import { getMotionColor } from "../../../utils/svg-color-utils";
-import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 
 /**
  * Default trail settings - Hardcoded "Vivid" style
@@ -101,19 +121,24 @@ import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-
  * These are THE trail settings. No presets, no customization.
  * Users can toggle trails on/off, but when ON, these exact settings are used.
  */
+/** Canonical factory width shared by legacy settings and unified effects. */
+export const DEFAULT_TRAIL_LINE_WIDTH = 4;
+/** Canonical halo radius; enough separation without turning the path into a band. */
+export const DEFAULT_TRAIL_GLOW_BLUR = 2.5;
+
 export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   mode: TrailMode.FADE,
   effect: TrailEffect.GLOW,
   fadeDurationMs: 2500,
   maxPoints: 1000,
-  lineWidth: 5,
-  glowBlur: 3,
-  blueColor: getMotionColor(MotionColor.BLUE, "dark"),
-  redColor: getMotionColor(MotionColor.RED, "dark"),
+  lineWidth: DEFAULT_TRAIL_LINE_WIDTH,
+  glowBlur: DEFAULT_TRAIL_GLOW_BLUR,
+  leftColor: getMotionColor(HandSide.LEFT, "dark"),
+  rightColor: getMotionColor(HandSide.RIGHT, "dark"),
   additionalLayerColors: [
-    { blue: "#8b5cf6", red: "#f97316" }, // purple/orange - TUNNEL_LAYER_COLORS[1]
-    { blue: "#10b981", red: "#ec4899" }, // emerald/pink - TUNNEL_LAYER_COLORS[2]
-    { blue: "#06b6d4", red: "#eab308" }, // cyan/yellow - TUNNEL_LAYER_COLORS[3]
+    { left: "#8b5cf6", right: "#f97316" }, // purple/orange - TUNNEL_LAYER_COLORS[1]
+    { left: "#10b981", right: "#ec4899" }, // emerald/pink - TUNNEL_LAYER_COLORS[2]
+    { left: "#06b6d4", right: "#eab308" }, // cyan/yellow - TUNNEL_LAYER_COLORS[3]
   ],
   minOpacity: 0.25,
   maxOpacity: 1.0,

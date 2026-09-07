@@ -1,16 +1,16 @@
 <script lang="ts">
   interface Props {
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     catDogModeEnabled: boolean;
   }
 
-  let { bluePropType, redPropType, catDogModeEnabled }: Props = $props();
+  let { leftPropType, rightPropType, catDogModeEnabled }: Props = $props();
 </script>
 
 <div
   data-testid="prop-aware-preview"
-  data-blue-prop={bluePropType}
-  data-red-prop={redPropType}
+  data-left-prop={leftPropType}
+  data-right-prop={rightPropType}
   data-cat-dog={String(catDogModeEnabled)}
 ></div>

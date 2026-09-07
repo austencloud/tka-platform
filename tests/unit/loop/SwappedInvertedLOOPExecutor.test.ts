@@ -14,7 +14,7 @@ import {
   GridPosition,
 } from "../../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -52,7 +52,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
           startPosition: GridPosition.BETA5,
           endPosition: GridPosition.BETA5,
           motions: {
-            [MotionColor.BLUE]: {
+            [HandSide.LEFT]: {
               motionType: MotionType.STATIC,
               rotationDirection: RotationDirection.NO_ROTATION,
               startLocation: GridLocation.SOUTH,
@@ -60,9 +60,9 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.BLUE,
+              color: HandSide.LEFT,
             },
-            [MotionColor.RED]: {
+            [HandSide.RIGHT]: {
               motionType: MotionType.STATIC,
               rotationDirection: RotationDirection.NO_ROTATION,
               startLocation: GridLocation.SOUTH,
@@ -70,11 +70,11 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.RED,
+              color: HandSide.RIGHT,
             },
           },
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
         },
         // Beat 1: D - beta5 → alpha3
@@ -86,7 +86,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
           startPosition: GridPosition.BETA5,
           endPosition: GridPosition.ALPHA3,
           motions: {
-            [MotionColor.BLUE]: {
+            [HandSide.LEFT]: {
               motionType: MotionType.PRO,
               rotationDirection: RotationDirection.CLOCKWISE,
               startLocation: GridLocation.SOUTH,
@@ -94,9 +94,9 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.BLUE,
+              color: HandSide.LEFT,
             },
-            [MotionColor.RED]: {
+            [HandSide.RIGHT]: {
               motionType: MotionType.PRO,
               rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
               startLocation: GridLocation.SOUTH,
@@ -104,11 +104,11 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.RED,
+              color: HandSide.RIGHT,
             },
           },
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
         },
         // Beat 2: J - alpha3 → beta5
@@ -120,7 +120,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
           startPosition: GridPosition.ALPHA3,
           endPosition: GridPosition.BETA5,
           motions: {
-            [MotionColor.BLUE]: {
+            [HandSide.LEFT]: {
               motionType: MotionType.PRO,
               rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
               startLocation: GridLocation.WEST,
@@ -128,9 +128,9 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.BLUE,
+              color: HandSide.LEFT,
             },
-            [MotionColor.RED]: {
+            [HandSide.RIGHT]: {
               motionType: MotionType.PRO,
               rotationDirection: RotationDirection.CLOCKWISE,
               startLocation: GridLocation.EAST,
@@ -138,11 +138,11 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.RED,
+              color: HandSide.RIGHT,
             },
           },
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
         },
       ];
@@ -163,24 +163,24 @@ describe("SwappedInvertedLOOPExecutor", () => {
 
       // Motion locations should be swapped pattern with inversion:
       // Blue does what Red did (s→e), Red does what Blue did (s→w)
-      expect(beat3!.motions[MotionColor.BLUE]?.startLocation).toBe(
+      expect(beat3!.motions[HandSide.LEFT]?.startLocation).toBe(
         GridLocation.SOUTH
       );
-      expect(beat3!.motions[MotionColor.BLUE]?.endLocation).toBe(
+      expect(beat3!.motions[HandSide.LEFT]?.endLocation).toBe(
         GridLocation.EAST
       );
-      expect(beat3!.motions[MotionColor.RED]?.startLocation).toBe(
+      expect(beat3!.motions[HandSide.RIGHT]?.startLocation).toBe(
         GridLocation.SOUTH
       );
-      expect(beat3!.motions[MotionColor.RED]?.endLocation).toBe(
+      expect(beat3!.motions[HandSide.RIGHT]?.endLocation).toBe(
         GridLocation.WEST
       );
 
       // Motion types should be inverted: PRO → ANTI
-      expect(beat3!.motions[MotionColor.BLUE]?.motionType).toBe(
+      expect(beat3!.motions[HandSide.LEFT]?.motionType).toBe(
         MotionType.ANTI
       );
-      expect(beat3!.motions[MotionColor.RED]?.motionType).toBe(MotionType.ANTI);
+      expect(beat3!.motions[HandSide.RIGHT]?.motionType).toBe(MotionType.ANTI);
 
       // Beat 4 checks
       const beat4 = result[4];
@@ -191,24 +191,24 @@ describe("SwappedInvertedLOOPExecutor", () => {
 
       // Blue should continue from where Blue ended (east → south)
       // Red should continue from where Red ended (west → south)
-      expect(beat4!.motions[MotionColor.BLUE]?.startLocation).toBe(
+      expect(beat4!.motions[HandSide.LEFT]?.startLocation).toBe(
         GridLocation.EAST
       );
-      expect(beat4!.motions[MotionColor.BLUE]?.endLocation).toBe(
+      expect(beat4!.motions[HandSide.LEFT]?.endLocation).toBe(
         GridLocation.SOUTH
       );
-      expect(beat4!.motions[MotionColor.RED]?.startLocation).toBe(
+      expect(beat4!.motions[HandSide.RIGHT]?.startLocation).toBe(
         GridLocation.WEST
       );
-      expect(beat4!.motions[MotionColor.RED]?.endLocation).toBe(
+      expect(beat4!.motions[HandSide.RIGHT]?.endLocation).toBe(
         GridLocation.SOUTH
       );
 
       // Motion types should be inverted: PRO → ANTI
-      expect(beat4!.motions[MotionColor.BLUE]?.motionType).toBe(
+      expect(beat4!.motions[HandSide.LEFT]?.motionType).toBe(
         MotionType.ANTI
       );
-      expect(beat4!.motions[MotionColor.RED]?.motionType).toBe(MotionType.ANTI);
+      expect(beat4!.motions[HandSide.RIGHT]?.motionType).toBe(MotionType.ANTI);
     });
 
     it("should reject sequences that don't return to start position", () => {
@@ -222,7 +222,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
           startPosition: GridPosition.BETA5,
           endPosition: GridPosition.BETA5,
           motions: {
-            [MotionColor.BLUE]: {
+            [HandSide.LEFT]: {
               motionType: MotionType.STATIC,
               rotationDirection: RotationDirection.NO_ROTATION,
               startLocation: GridLocation.SOUTH,
@@ -230,9 +230,9 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.BLUE,
+              color: HandSide.LEFT,
             },
-            [MotionColor.RED]: {
+            [HandSide.RIGHT]: {
               motionType: MotionType.STATIC,
               rotationDirection: RotationDirection.NO_ROTATION,
               startLocation: GridLocation.SOUTH,
@@ -240,11 +240,11 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.RED,
+              color: HandSide.RIGHT,
             },
           },
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
         },
         {
@@ -255,7 +255,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
           startPosition: GridPosition.BETA5,
           endPosition: GridPosition.ALPHA3, // Ends at alpha3, not beta5
           motions: {
-            [MotionColor.BLUE]: {
+            [HandSide.LEFT]: {
               motionType: MotionType.PRO,
               rotationDirection: RotationDirection.CLOCKWISE,
               startLocation: GridLocation.SOUTH,
@@ -263,9 +263,9 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.BLUE,
+              color: HandSide.LEFT,
             },
-            [MotionColor.RED]: {
+            [HandSide.RIGHT]: {
               motionType: MotionType.PRO,
               rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
               startLocation: GridLocation.SOUTH,
@@ -273,11 +273,11 @@ describe("SwappedInvertedLOOPExecutor", () => {
               turns: 0,
               startOrientation: Orientation.IN,
               endOrientation: Orientation.IN,
-              color: MotionColor.RED,
+              color: HandSide.RIGHT,
             },
           },
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
         },
       ];
@@ -294,7 +294,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
     // INVERTED_LOOP_VALIDATION_SET (end === start). Real domain data:
     // Φ- is alpha1→alpha5 (blue s→n dash, red n→s dash) and
     // swap(alpha1) === alpha5.
-    const staticMotion = (color: MotionColor, loc: GridLocation) => ({
+    const staticMotion = (color: HandSide, loc: GridLocation) => ({
       motionType: MotionType.STATIC,
       rotationDirection: RotationDirection.NO_ROTATION,
       startLocation: loc,
@@ -305,7 +305,7 @@ describe("SwappedInvertedLOOPExecutor", () => {
       color,
     });
     const dashMotion = (
-      color: MotionColor,
+      color: HandSide,
       from: GridLocation,
       to: GridLocation
     ) => ({
@@ -326,11 +326,11 @@ describe("SwappedInvertedLOOPExecutor", () => {
       startPosition: GridPosition.ALPHA1,
       endPosition: GridPosition.ALPHA1,
       motions: {
-        [MotionColor.BLUE]: staticMotion(MotionColor.BLUE, GridLocation.SOUTH),
-        [MotionColor.RED]: staticMotion(MotionColor.RED, GridLocation.NORTH),
+        [HandSide.LEFT]: staticMotion(HandSide.LEFT, GridLocation.SOUTH),
+        [HandSide.RIGHT]: staticMotion(HandSide.RIGHT, GridLocation.NORTH),
       },
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: false,
     };
 
@@ -348,19 +348,19 @@ describe("SwappedInvertedLOOPExecutor", () => {
           startPosition: GridPosition.ALPHA1,
           endPosition: GridPosition.ALPHA5,
           motions: {
-            [MotionColor.BLUE]: dashMotion(
-              MotionColor.BLUE,
+            [HandSide.LEFT]: dashMotion(
+              HandSide.LEFT,
               GridLocation.SOUTH,
               GridLocation.NORTH
             ),
-            [MotionColor.RED]: dashMotion(
-              MotionColor.RED,
+            [HandSide.RIGHT]: dashMotion(
+              HandSide.RIGHT,
               GridLocation.NORTH,
               GridLocation.SOUTH
             ),
           },
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
         },
       ];

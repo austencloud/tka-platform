@@ -6,14 +6,14 @@ import {
   savedFilmKey,
 } from "$lib/features/film-director/domain/film-director-link";
 
-import { isLibraryFilmKey } from "../../../src/routes/test/film-director/_films/index";
+import { isLibraryFilmKey } from "../../../src/routes/test/film-director/_capabilities/index";
 
 /** The registry the Director itself passes in. */
 const parse = (raw: string | null) => parseFilmKey(raw, isLibraryFilmKey);
 
 describe("parseFilmKey", () => {
   it("resolves a library key", () => {
-    expect(parse("star")).toEqual({ kind: "library", key: "star" });
+    expect(parse("handheld")).toEqual({ kind: "library", key: "handheld" });
   });
 
   it("resolves a saved id", () => {
@@ -32,7 +32,7 @@ describe("parseFilmKey", () => {
 
   it("keeps a saved id that would otherwise collide with a library key", () => {
     // The prefix is the only thing keeping the two namespaces apart.
-    expect(parse("saved:star")).toEqual({ kind: "saved", id: "star" });
+    expect(parse("saved:handheld")).toEqual({ kind: "saved", id: "handheld" });
   });
 
   it("round-trips a saved id through the key it builds", () => {

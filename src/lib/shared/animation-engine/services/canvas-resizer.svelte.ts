@@ -7,6 +7,9 @@
  * Uses reactive state ownership - service owns $state, component derives from it.
  */
 
+import { motionDuration } from "$lib/shared/transitions/motion";
+import { DURATION } from "$lib/shared/transitions/transitions";
+
 /**
  * Default canvas size
  */
@@ -51,6 +54,8 @@ export class CanvasResizer {
   private resizeObserver: ResizeObserver | null = null;
   private paused = false;
   private settleTimer: ReturnType<typeof setTimeout> | null = null;
+  private visibleSettleTimer: ReturnType<typeof setTimeout> | null = null;
+  private wasObservationSuppressed = false;
   private hasSizedFromObservation = false;
 
   // Bound reference to resize handler for event listener cleanup
@@ -80,6 +85,7 @@ export class CanvasResizer {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.cancelSettle();
+    this.cancelVisibleSettle();
 
     if (typeof window !== "undefined") {
       window.removeEventListener("resize", this.boundResizeHandler);
@@ -108,6 +114,7 @@ export class CanvasResizer {
   dispose(): void {
     this.teardown();
     this.paused = false;
+    this.wasObservationSuppressed = false;
     this.hasSizedFromObservation = false;
     this.container = null;
     this.renderer = null;
@@ -120,6 +127,22 @@ export class CanvasResizer {
     if (this.settleTimer === null) return;
     clearTimeout(this.settleTimer);
     this.settleTimer = null;
+  }
+
+  private cancelVisibleSettle(): void {
+    if (this.visibleSettleTimer === null) return;
+    clearTimeout(this.visibleSettleTimer);
+    this.visibleSettleTimer = null;
+  }
+
+  /**
+   * Keep the last readable raster while an ancestor intentionally removes this
+   * surface from the workspace. Rebuilding against an inert pane's collapsed
+   * geometry leaves a postage-stamp backing store that gets magnified when the
+   * pane returns, making every canvas detail briefly look heavy and soft.
+   */
+  private observationSuppressed(): boolean {
+    return this.container?.closest("[inert]") !== null;
   }
 
   /**
@@ -140,6 +163,28 @@ export class CanvasResizer {
   private handleResize(): void {
     if (this.paused) return;
 
+    if (this.observationSuppressed()) {
+      this.wasObservationSuppressed = true;
+      this.cancelSettle();
+      this.cancelVisibleSettle();
+      return;
+    }
+
+    if (this.wasObservationSuppressed) {
+      this.cancelSettle();
+      if (this.visibleSettleTimer !== null) return;
+
+      const settleAfterReveal =
+        motionDuration(DURATION.emphasis) + RESIZE_SETTLE_MS;
+      this.visibleSettleTimer = setTimeout(() => {
+        this.visibleSettleTimer = null;
+        if (this.paused || this.observationSuppressed()) return;
+        this.wasObservationSuppressed = false;
+        this.performResize();
+      }, settleAfterReveal);
+      return;
+    }
+
     if (!this.hasSizedFromObservation) {
       this.hasSizedFromObservation = true;
       this.performResize();
@@ -149,7 +194,7 @@ export class CanvasResizer {
     this.cancelSettle();
     this.settleTimer = setTimeout(() => {
       this.settleTimer = null;
-      if (this.paused) return;
+      if (this.paused || this.observationSuppressed()) return;
       this.performResize();
     }, RESIZE_SETTLE_MS);
   }

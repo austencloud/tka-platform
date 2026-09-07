@@ -30,8 +30,8 @@ export function computeSpecialOverrideKey(
   motionData = canonicalContext.motionData;
   const displayGrid =
     motionData.gridMode ??
-    (pictographData.motions.blue && pictographData.motions.red
-      ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
+    (pictographData.motions.left && pictographData.motions.right
+      ? _deriveGridMode(pictographData.motions.left, pictographData.motions.right)
       : GridMode.DIAMOND);
   const placementFrame = placementFrameForGridMode(displayGrid);
   const oriFolder = resolveEffectiveOriKey(

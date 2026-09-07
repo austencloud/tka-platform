@@ -376,8 +376,8 @@ export function registerPresetTools(server: McpServer): void {
             variation: constrained.variationIndices[index] || 0,
             startPosition: picto.startPosition,
             endPosition: picto.endPosition,
-            blueMotion: picto.blueMotion,
-            redMotion: picto.redMotion,
+            leftMotion: picto.leftMotion,
+            rightMotion: picto.rightMotion,
             stepNumber: index,
           }));
           sequenceWord = constrained.word;

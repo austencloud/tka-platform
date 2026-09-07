@@ -1,0 +1,46 @@
+{
+  "planId": "blossom-lantern-garden",
+  "status": "technical-checks-passed",
+  "visualAcceptance": "pending-user-review",
+  "checkedAt": "2026-09-06T03:48:51.989Z",
+  "asset": "static/models/blossom/blossom_environment.glb",
+  "assetSha256": "d318b56f5cd430c7e50c2a2a9978b165524217f979efedd062b64ddc7c0e08e3",
+  "assetSizeMiB": 11.69,
+  "renderedTriangles": 3299708,
+  "trees": 26,
+  "lanterns": 8,
+  "hangingLanterns": 4,
+  "geometry": {
+    "valid": true,
+    "failures": [],
+    "testedMeshes": 56,
+    "deckTop": 0.550000011920929,
+    "rootWaterIntersections": [],
+    "groundCoverBounds": {
+      "minX": -71.0479965209961,
+      "maxX": 71.11235046386719,
+      "minY": -71.0862808227539,
+      "maxY": 71.06462860107422
+    },
+    "maximumRouteGradePercent": {
+      "arrival": 3.4999480510343246,
+      "service": 3.4488410288956453
+    },
+    "pathHeadroomMetres": 2.4,
+    "samplingAllowanceMetres": 0.05,
+    "scope": "Actual mesh vertices; path checks exclude objects below 0.25m above walking grade. Root-water checks cover the first 1.4m above each tree base."
+  },
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_meshopt_compression",
+    "EXT_texture_webp",
+    "KHR_materials_emissive_strength",
+    "KHR_materials_specular",
+    "KHR_mesh_quantization"
+  ],
+  "limitations": [
+    "Clearance is a sampled vertex check, not collision certification.",
+    "48 audience places is a design target; seating capacity has not been validated.",
+    "Runtime frame rate must be measured separately."
+  ]
+}

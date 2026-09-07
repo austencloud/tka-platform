@@ -27,6 +27,7 @@ import type { MessageAttachment } from "$lib/shared/messaging/domain/models/mess
 import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
 import { messagingService } from "$lib/shared/messaging/services/messenger";
 import { captureDeviceContext } from "$lib/shared/feedback/utils/device-context-capturer";
+import { trackFeedbackSubmitted } from "$lib/shared/analytics/feedback-events";
 
 // Account that receives the feedback DM thread. This is a Firebase Auth UID, not
 // a credential — it ships in the client bundle, and that's fine: all access is
@@ -166,6 +167,14 @@ export async function submitFeedback(
       console.error("[FeedbackSubmitter] Failed to send message:", err)
     );
   }
+
+  trackFeedbackSubmitted({
+    feedbackId: docRef.id,
+    type: formData.type,
+    module: capturedModule,
+    tab: capturedTab,
+    imageCount: stagedImagePaths?.length ?? images?.length ?? 0,
+  });
 
   return docRef.id;
 }

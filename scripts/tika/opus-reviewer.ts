@@ -13,86 +13,86 @@
  *   npx tsx scripts/tika/opus-reviewer.ts --scenario-id letter-type1-basic
  */
 
-import Anthropic from '@anthropic-ai/sdk';
-import fs from 'fs';
-import path from 'path';
+import Anthropic from "@anthropic-ai/sdk";
+import fs from "fs";
+import path from "path";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types (inline to keep script self-contained)
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface TikaScenario {
-	id: string;
-	name: { en: string };
-	category: string;
-	userLevel: 1 | 2 | 3 | 4;
-	question: { en: string };
-	criteria: {
-		mustInclude: string[];
-		mustNotInclude: string[];
-		expectedTools: string[];
-		keyFacts: Array<{ en: string }>;
-		commonMistakes?: Array<{ en: string }>;
-	};
-	difficulty: string;
+  id: string;
+  name: { en: string };
+  category: string;
+  userLevel: 1 | 2 | 3 | 4;
+  question: { en: string };
+  criteria: {
+    mustInclude: string[];
+    mustNotInclude: string[];
+    expectedTools: string[];
+    keyFacts: Array<{ en: string }>;
+    commonMistakes?: Array<{ en: string }>;
+  };
+  difficulty: string;
 }
 
 interface HaikuResponse {
-	explanation: string;
-	toolsCalled: Array<{
-		name: string;
-		input: Record<string, unknown>;
-		result: unknown;
-	}>;
-	latencyMs: number;
+  explanation: string;
+  toolsCalled: Array<{
+    name: string;
+    input: Record<string, unknown>;
+    result: unknown;
+  }>;
+  latencyMs: number;
 }
 
 interface GradeBreakdown {
-	domainAccuracy: number;
-	levelAppropriateness: number;
-	toolUsage: number;
-	conciseness: number;
-	helpfulness: number;
+  domainAccuracy: number;
+  levelAppropriateness: number;
+  toolUsage: number;
+  conciseness: number;
+  helpfulness: number;
 }
 
 type ReviewRecommendation =
-	| 'exemplary'
-	| 'good'
-	| 'needs-improvement'
-	| 'incorrect'
-	| 'flag-for-human';
+  | "exemplary"
+  | "good"
+  | "needs-improvement"
+  | "incorrect"
+  | "flag-for-human";
 
 interface EvaluationResult {
-	scenarioId: string;
-	language: string;
-	evaluatedAt: Date;
-	haikuResponse: HaikuResponse;
-	grades: GradeBreakdown;
-	overallScore: number;
-	opusNotes: string;
-	recommendation: ReviewRecommendation;
-	suggestedRewrite?: string;
-	errorAnalysis?: {
-		error: string;
-		violatedNode?: string;
-		verificationTools: string[];
-		confidence: number;
-	};
-	uncertaintyReason?: string;
+  scenarioId: string;
+  language: string;
+  evaluatedAt: Date;
+  haikuResponse: HaikuResponse;
+  grades: GradeBreakdown;
+  overallScore: number;
+  opusNotes: string;
+  recommendation: ReviewRecommendation;
+  suggestedRewrite?: string;
+  errorAnalysis?: {
+    error: string;
+    violatedNode?: string;
+    verificationTools: string[];
+    confidence: number;
+  };
+  uncertaintyReason?: string;
 }
 
 interface OpusToolCall {
-	tool: string;
-	input: Record<string, unknown>;
-	result: unknown;
-	reason: string;
+  tool: string;
+  input: Record<string, unknown>;
+  result: unknown;
+  reason: string;
 }
 
 interface OpusReview {
-	result: EvaluationResult;
-	verificationToolCalls: OpusToolCall[];
-	requiredVerification: boolean;
-	reviewDurationMs: number;
+  result: EvaluationResult;
+  verificationToolCalls: OpusToolCall[];
+  requiredVerification: boolean;
+  reviewDurationMs: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -100,94 +100,109 @@ interface OpusReview {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const OPUS_TOOLS: Anthropic.Tool[] = [
-	{
-		name: 'get_letter_explanation',
-		description:
-			'Get authoritative explanation of a TKA letter. Use this to verify if Haiku correctly described a letter.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				letter: { type: 'string', description: 'The letter to look up (A-Z or Greek)' },
-				variation: { type: 'number', description: 'Variation index (0-based, optional)' }
-			},
-			required: ['letter']
-		}
-	},
-	{
-		name: 'get_term_definition',
-		description:
-			'Get authoritative definition of a TKA term. Use this to verify if Haiku correctly defined a term.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				term: { type: 'string', description: 'The term to look up' }
-			},
-			required: ['term']
-		}
-	},
-	{
-		name: 'compare_letters',
-		description:
-			'Get authoritative comparison between two letters. Use this to verify comparison accuracy.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				letter1: { type: 'string', description: 'First letter' },
-				letter2: { type: 'string', description: 'Second letter' }
-			},
-			required: ['letter1', 'letter2']
-		}
-	},
-	{
-		name: 'list_letters_by_type',
-		description: 'Get authoritative list of letters in a type. Use this to verify type claims.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				type: { type: 'number', description: 'Letter type 1-6' }
-			},
-			required: ['type']
-		}
-	},
-	{
-		name: 'get_position_info',
-		description: 'Get authoritative information about a position. Use to verify position claims.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				position: { type: 'string', description: 'Position name (alpha, beta, gamma, etc.)' }
-			},
-			required: ['position']
-		}
-	},
-	{
-		name: 'read_codebase_file',
-		description:
-			'Read a file from the Flow Arts Composer codebase to verify domain rules or implementation details.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				filepath: {
-					type: 'string',
-					description: 'Path relative to project root (e.g., "mcp-server/data/letter-types.json")'
-				}
-			},
-			required: ['filepath']
-		}
-	},
-	{
-		name: 'flag_for_human_review',
-		description:
-			'Flag this evaluation for human review when you cannot confidently determine correctness.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				reason: { type: 'string', description: 'Why human review is needed' },
-				best_guess: { type: 'string', description: 'Your best guess if you have one' }
-			},
-			required: ['reason']
-		}
-	}
+  {
+    name: "get_letter_explanation",
+    description:
+      "Get authoritative explanation of a TKA letter. Use this to verify if Haiku correctly described a letter.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        letter: {
+          type: "string",
+          description: "The letter to look up (A-Z or Greek)",
+        },
+        variation: {
+          type: "number",
+          description: "Variation index (0-based, optional)",
+        },
+      },
+      required: ["letter"],
+    },
+  },
+  {
+    name: "get_term_definition",
+    description:
+      "Get authoritative definition of a TKA term. Use this to verify if Haiku correctly defined a term.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        term: { type: "string", description: "The term to look up" },
+      },
+      required: ["term"],
+    },
+  },
+  {
+    name: "compare_letters",
+    description:
+      "Get authoritative comparison between two letters. Use this to verify comparison accuracy.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        letter1: { type: "string", description: "First letter" },
+        letter2: { type: "string", description: "Second letter" },
+      },
+      required: ["letter1", "letter2"],
+    },
+  },
+  {
+    name: "list_letters_by_type",
+    description:
+      "Get authoritative list of letters in a type. Use this to verify type claims.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        type: { type: "number", description: "Letter type 1-6" },
+      },
+      required: ["type"],
+    },
+  },
+  {
+    name: "get_position_info",
+    description:
+      "Get authoritative information about a position. Use to verify position claims.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        position: {
+          type: "string",
+          description: "Position name (alpha, beta, gamma, etc.)",
+        },
+      },
+      required: ["position"],
+    },
+  },
+  {
+    name: "read_codebase_file",
+    description:
+      "Read a file from the Flow Arts Composer codebase to verify domain rules or implementation details.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        filepath: {
+          type: "string",
+          description:
+            'Path relative to project root (e.g., "mcp-server/data/letter-types.json")',
+        },
+      },
+      required: ["filepath"],
+    },
+  },
+  {
+    name: "flag_for_human_review",
+    description:
+      "Flag this evaluation for human review when you cannot confidently determine correctness.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        reason: { type: "string", description: "Why human review is needed" },
+        best_guess: {
+          type: "string",
+          description: "Your best guess if you have one",
+        },
+      },
+      required: ["reason"],
+    },
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -198,130 +213,136 @@ const OPUS_TOOLS: Anthropic.Tool[] = [
 const PROJECT_ROOT = process.cwd();
 
 function loadJsonFile(relativePath: string): unknown {
-	const fullPath = path.join(PROJECT_ROOT, relativePath);
-	if (fs.existsSync(fullPath)) {
-		return JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-	}
-	return null;
+  const fullPath = path.join(PROJECT_ROOT, relativePath);
+  if (fs.existsSync(fullPath)) {
+    return JSON.parse(fs.readFileSync(fullPath, "utf-8"));
+  }
+  return null;
 }
 
-const glossary = loadJsonFile('mcp-server/data/tka-glossary.json') as Record<string, unknown> | null;
-const letterTypes = loadJsonFile('mcp-server/data/letter-types.json') as Record<
-	string,
-	unknown
+const glossary = loadJsonFile("mcp-server/data/tka-glossary.json") as Record<
+  string,
+  unknown
+> | null;
+const letterTypes = loadJsonFile("mcp-server/data/letter-types.json") as Record<
+  string,
+  unknown
 > | null;
 
 // Load pictograph dataframe
 function loadPictographs(): Array<Record<string, string>> {
-	const csvPath = path.join(PROJECT_ROOT, 'static/data/pictographs/DiamondPictographDataframe.csv');
-	if (!fs.existsSync(csvPath)) return [];
+  const csvPath = path.join(
+    PROJECT_ROOT,
+    "static/data/pictographs/DiamondPictographDataframe.csv"
+  );
+  if (!fs.existsSync(csvPath)) return [];
 
-	const content = fs.readFileSync(csvPath, 'utf-8');
-	const lines = content.trim().split('\n');
-	if (lines.length < 2) return [];
+  const content = fs.readFileSync(csvPath, "utf-8");
+  const lines = content.trim().split("\n");
+  if (lines.length < 2) return [];
 
-	const headers = lines[0].split(',').map((h) => h.trim());
-	const rows: Array<Record<string, string>> = [];
+  const headers = lines[0].split(",").map((h) => h.trim());
+  const rows: Array<Record<string, string>> = [];
 
-	for (let i = 1; i < lines.length; i++) {
-		const values = lines[i].split(',').map((v) => v.trim());
-		const row: Record<string, string> = {};
-		headers.forEach((h, idx) => (row[h] = values[idx] || ''));
-		rows.push(row);
-	}
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(",").map((v) => v.trim());
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => (row[h] = values[idx] || ""));
+    rows.push(row);
+  }
 
-	return rows;
+  return rows;
 }
 
 const pictographs = loadPictographs();
 
 function executeTool(name: string, input: Record<string, unknown>): string {
-	switch (name) {
-		case 'get_letter_explanation': {
-			const letter = input.letter as string;
-			const variations = pictographs.filter((p) => p.letter === letter);
-			if (variations.length === 0) return `Letter "${letter}" not found.`;
+  switch (name) {
+    case "get_letter_explanation": {
+      const letter = input.letter as string;
+      const variations = pictographs.filter((p) => p.letter === letter);
+      if (variations.length === 0) return `Letter "${letter}" not found.`;
 
-			// Find type
-			let typeNum = '?';
-			let typeName = 'Unknown';
-			if (letterTypes) {
-				for (const [t, info] of Object.entries(letterTypes)) {
-					const typeInfo = info as { letters: string[]; name: string };
-					if (typeInfo.letters?.includes(letter)) {
-						typeNum = t;
-						typeName = typeInfo.name;
-						break;
-					}
-				}
-			}
+      // Find type
+      let typeNum = "?";
+      let typeName = "Unknown";
+      if (letterTypes) {
+        for (const [t, info] of Object.entries(letterTypes)) {
+          const typeInfo = info as { letters: string[]; name: string };
+          if (typeInfo.letters?.includes(letter)) {
+            typeNum = t;
+            typeName = typeInfo.name;
+            break;
+          }
+        }
+      }
 
-			const v = variations[0];
-			return `Letter ${letter}: Type ${typeNum} (${typeName})
-Blue motion: ${v.blueMotionType} (${v.blueStartLocation} → ${v.blueEndLocation})
-Red motion: ${v.redMotionType} (${v.redStartLocation} → ${v.redEndLocation})
+      const v = variations[0];
+      return `Letter ${letter}: Type ${typeNum} (${typeName})
+Left motion: ${v.leftMotionType} (${v.leftStartLocation} → ${v.leftEndLocation})
+Right motion: ${v.rightMotionType} (${v.rightStartLocation} → ${v.rightEndLocation})
 Start position: ${v.startPosition}, End position: ${v.endPosition}
 Total variations: ${variations.length}`;
-		}
+    }
 
-		case 'get_term_definition': {
-			const term = (input.term as string).toLowerCase();
-			if (!glossary) return 'Glossary not loaded.';
-			const entry = glossary[term] as { definition?: string } | undefined;
-			if (!entry) return `Term "${term}" not found in glossary.`;
-			return `${term}: ${entry.definition || 'No definition available'}`;
-		}
+    case "get_term_definition": {
+      const term = (input.term as string).toLowerCase();
+      if (!glossary) return "Glossary not loaded.";
+      const entry = glossary[term] as { definition?: string } | undefined;
+      if (!entry) return `Term "${term}" not found in glossary.`;
+      return `${term}: ${entry.definition || "No definition available"}`;
+    }
 
-		case 'list_letters_by_type': {
-			const type = input.type as number;
-			if (!letterTypes) return 'Letter types data not loaded.';
-			const typeInfo = letterTypes[type.toString()] as {
-				name: string;
-				letters: string[];
-				description: string;
-			};
-			if (!typeInfo) return `Type ${type} not found.`;
-			return `Type ${type} (${typeInfo.name}): ${typeInfo.letters.join(', ')}
+    case "list_letters_by_type": {
+      const type = input.type as number;
+      if (!letterTypes) return "Letter types data not loaded.";
+      const typeInfo = letterTypes[type.toString()] as {
+        name: string;
+        letters: string[];
+        description: string;
+      };
+      if (!typeInfo) return `Type ${type} not found.`;
+      return `Type ${type} (${typeInfo.name}): ${typeInfo.letters.join(", ")}
 Description: ${typeInfo.description}`;
-		}
+    }
 
-		case 'get_position_info': {
-			const pos = (input.position as string).toLowerCase();
-			const positions: Record<string, string> = {
-				alpha: 'Hands at opposite grid points (180° apart)',
-				beta: 'Hands at the same grid point',
-				gamma: 'Hands form a right angle (90°, adjacent points)',
-				zeta: 'Hands form an obtuse angle (Level 5, skewed)',
-				eta: 'Hands form an acute angle (Level 5, skewed)'
-			};
-			return positions[pos] || `Position "${pos}" not recognized.`;
-		}
+    case "get_position_info": {
+      const pos = (input.position as string).toLowerCase();
+      const positions: Record<string, string> = {
+        alpha: "Hands at opposite grid points (180° apart)",
+        beta: "Hands at the same grid point",
+        gamma: "Hands form a right angle (90°, adjacent points)",
+        zeta: "Hands form an obtuse angle (Level 5, skewed)",
+        eta: "Hands form an acute angle (Level 5, skewed)",
+      };
+      return positions[pos] || `Position "${pos}" not recognized.`;
+    }
 
-		case 'compare_letters': {
-			const l1 = input.letter1 as string;
-			const l2 = input.letter2 as string;
+    case "compare_letters": {
+      const l1 = input.letter1 as string;
+      const l2 = input.letter2 as string;
 
-			const result1 = executeTool('get_letter_explanation', { letter: l1 });
-			const result2 = executeTool('get_letter_explanation', { letter: l2 });
+      const result1 = executeTool("get_letter_explanation", { letter: l1 });
+      const result2 = executeTool("get_letter_explanation", { letter: l2 });
 
-			return `=== ${l1} ===\n${result1}\n\n=== ${l2} ===\n${result2}`;
-		}
+      return `=== ${l1} ===\n${result1}\n\n=== ${l2} ===\n${result2}`;
+    }
 
-		case 'read_codebase_file': {
-			const filepath = input.filepath as string;
-			const fullPath = path.join(PROJECT_ROOT, filepath);
-			if (!fs.existsSync(fullPath)) return `File not found: ${filepath}`;
-			return fs.readFileSync(fullPath, 'utf-8').slice(0, 5000); // Limit size
-		}
+    case "read_codebase_file": {
+      const filepath = input.filepath as string;
+      const fullPath = path.join(PROJECT_ROOT, filepath);
+      if (!fs.existsSync(fullPath)) return `File not found: ${filepath}`;
+      return fs.readFileSync(fullPath, "utf-8").slice(0, 5000); // Limit size
+    }
 
-		case 'flag_for_human_review': {
-			// This is a signal tool - just acknowledge it
-			return `Flagged for human review. Reason: ${input.reason}`;
-		}
+    case "flag_for_human_review": {
+      // This is a signal tool - just acknowledge it
+      return `Flagged for human review. Reason: ${input.reason}`;
+    }
 
-		default:
-			return `Unknown tool: ${name}`;
-	}
+    default:
+      return `Unknown tool: ${name}`;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -408,14 +429,14 @@ After your analysis, output a JSON object with this structure:
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function reviewWithOpus(
-	scenario: TikaScenario,
-	haikuResponse: HaikuResponse
+  scenario: TikaScenario,
+  haikuResponse: HaikuResponse
 ): Promise<OpusReview> {
-	const startTime = Date.now();
-	const client = new Anthropic();
-	const toolCalls: OpusToolCall[] = [];
+  const startTime = Date.now();
+  const client = new Anthropic();
+  const toolCalls: OpusToolCall[] = [];
 
-	const userPrompt = `
+  const userPrompt = `
 ## Scenario
 ID: ${scenario.id}
 Category: ${scenario.category}
@@ -429,17 +450,17 @@ Difficulty: ${scenario.difficulty}
 "${haikuResponse.explanation}"
 
 ## Tools Haiku Called
-${haikuResponse.toolsCalled.map((t) => `- ${t.name}(${JSON.stringify(t.input)})`).join('\n') || 'None'}
+${haikuResponse.toolsCalled.map((t) => `- ${t.name}(${JSON.stringify(t.input)})`).join("\n") || "None"}
 
 ## Grading Criteria
-Must Include: ${scenario.criteria.mustInclude.join(', ') || 'None specified'}
-Must NOT Include: ${scenario.criteria.mustNotInclude.join(', ') || 'None specified'}
-Expected Tools: ${scenario.criteria.expectedTools.join(', ') || 'None specified'}
+Must Include: ${scenario.criteria.mustInclude.join(", ") || "None specified"}
+Must NOT Include: ${scenario.criteria.mustNotInclude.join(", ") || "None specified"}
+Expected Tools: ${scenario.criteria.expectedTools.join(", ") || "None specified"}
 
 Key Facts:
-${scenario.criteria.keyFacts.map((f) => `- ${f.en}`).join('\n')}
+${scenario.criteria.keyFacts.map((f) => `- ${f.en}`).join("\n")}
 
-${scenario.criteria.commonMistakes ? `Common Mistakes to Watch For:\n${scenario.criteria.commonMistakes.map((m) => `- ${m.en}`).join('\n')}` : ''}
+${scenario.criteria.commonMistakes ? `Common Mistakes to Watch For:\n${scenario.criteria.commonMistakes.map((m) => `- ${m.en}`).join("\n")}` : ""}
 
 ---
 
@@ -447,133 +468,138 @@ Please analyze Haiku's response. If you're unsure about any domain facts, USE YO
 Output your evaluation as JSON at the end.
 `;
 
-	const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userPrompt }];
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: userPrompt },
+  ];
 
-	let response = await client.messages.create({
-		model: 'claude-sonnet-4-20250514', // Using Sonnet for cost efficiency, Opus for final review
-		max_tokens: 2048,
-		system: OPUS_REVIEW_SYSTEM_PROMPT,
-		tools: OPUS_TOOLS,
-		messages
-	});
+  let response = await client.messages.create({
+    model: "claude-sonnet-4-20250514", // Using Sonnet for cost efficiency, Opus for final review
+    max_tokens: 2048,
+    system: OPUS_REVIEW_SYSTEM_PROMPT,
+    tools: OPUS_TOOLS,
+    messages,
+  });
 
-	// Tool use loop
-	while (response.stop_reason === 'tool_use') {
-		const toolUseBlocks = response.content.filter(
-			(b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
-		);
+  // Tool use loop
+  while (response.stop_reason === "tool_use") {
+    const toolUseBlocks = response.content.filter(
+      (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+    );
 
-		const toolResults: Anthropic.ToolResultBlockParam[] = [];
+    const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
-		for (const toolUse of toolUseBlocks) {
-			const result = executeTool(toolUse.name, toolUse.input as Record<string, unknown>);
+    for (const toolUse of toolUseBlocks) {
+      const result = executeTool(
+        toolUse.name,
+        toolUse.input as Record<string, unknown>
+      );
 
-			toolCalls.push({
-				tool: toolUse.name,
-				input: toolUse.input as Record<string, unknown>,
-				result,
-				reason: 'Verification during review'
-			});
+      toolCalls.push({
+        tool: toolUse.name,
+        input: toolUse.input as Record<string, unknown>,
+        result,
+        reason: "Verification during review",
+      });
 
-			toolResults.push({
-				type: 'tool_result',
-				tool_use_id: toolUse.id,
-				content: result
-			});
-		}
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: toolUse.id,
+        content: result,
+      });
+    }
 
-		messages.push({ role: 'assistant', content: response.content });
-		messages.push({ role: 'user', content: toolResults });
+    messages.push({ role: "assistant", content: response.content });
+    messages.push({ role: "user", content: toolResults });
 
-		response = await client.messages.create({
-			model: 'claude-sonnet-4-20250514',
-			max_tokens: 2048,
-			system: OPUS_REVIEW_SYSTEM_PROMPT,
-			tools: OPUS_TOOLS,
-			messages
-		});
-	}
+    response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      system: OPUS_REVIEW_SYSTEM_PROMPT,
+      tools: OPUS_TOOLS,
+      messages,
+    });
+  }
 
-	// Extract final text
-	const textBlocks = response.content.filter(
-		(b): b is Anthropic.TextBlock => b.type === 'text'
-	);
-	const fullText = textBlocks.map((b) => b.text).join('\n');
+  // Extract final text
+  const textBlocks = response.content.filter(
+    (b): b is Anthropic.TextBlock => b.type === "text"
+  );
+  const fullText = textBlocks.map((b) => b.text).join("\n");
 
-	// Parse JSON from response
-	const jsonMatch = fullText.match(/```json\s*([\s\S]*?)\s*```/);
-	let evaluation: Partial<EvaluationResult> = {};
+  // Parse JSON from response
+  const jsonMatch = fullText.match(/```json\s*([\s\S]*?)\s*```/);
+  let evaluation: Partial<EvaluationResult> = {};
 
-	if (jsonMatch) {
-		try {
-			const parsed = JSON.parse(jsonMatch[1]);
-			evaluation = {
-				grades: parsed.grades,
-				overallScore: parsed.overallScore,
-				recommendation: parsed.recommendation,
-				opusNotes: parsed.notes,
-				suggestedRewrite: parsed.suggestedRewrite,
-				errorAnalysis: parsed.errorAnalysis,
-				uncertaintyReason: parsed.uncertaintyReason
-			};
-		} catch (e) {
-			console.error('Failed to parse Opus JSON response:', e);
-			evaluation = {
-				grades: {
-					domainAccuracy: 5,
-					levelAppropriateness: 5,
-					toolUsage: 5,
-					conciseness: 5,
-					helpfulness: 5
-				},
-				overallScore: 5,
-				recommendation: 'flag-for-human',
-				opusNotes: fullText,
-				uncertaintyReason: 'Failed to parse structured response'
-			};
-		}
-	} else {
-		evaluation = {
-			grades: {
-				domainAccuracy: 5,
-				levelAppropriateness: 5,
-				toolUsage: 5,
-				conciseness: 5,
-				helpfulness: 5
-			},
-			overallScore: 5,
-			recommendation: 'flag-for-human',
-			opusNotes: fullText,
-			uncertaintyReason: 'No structured JSON in response'
-		};
-	}
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[1]);
+      evaluation = {
+        grades: parsed.grades,
+        overallScore: parsed.overallScore,
+        recommendation: parsed.recommendation,
+        opusNotes: parsed.notes,
+        suggestedRewrite: parsed.suggestedRewrite,
+        errorAnalysis: parsed.errorAnalysis,
+        uncertaintyReason: parsed.uncertaintyReason,
+      };
+    } catch (e) {
+      console.error("Failed to parse Opus JSON response:", e);
+      evaluation = {
+        grades: {
+          domainAccuracy: 5,
+          levelAppropriateness: 5,
+          toolUsage: 5,
+          conciseness: 5,
+          helpfulness: 5,
+        },
+        overallScore: 5,
+        recommendation: "flag-for-human",
+        opusNotes: fullText,
+        uncertaintyReason: "Failed to parse structured response",
+      };
+    }
+  } else {
+    evaluation = {
+      grades: {
+        domainAccuracy: 5,
+        levelAppropriateness: 5,
+        toolUsage: 5,
+        conciseness: 5,
+        helpfulness: 5,
+      },
+      overallScore: 5,
+      recommendation: "flag-for-human",
+      opusNotes: fullText,
+      uncertaintyReason: "No structured JSON in response",
+    };
+  }
 
-	const result: EvaluationResult = {
-		scenarioId: scenario.id,
-		language: 'en',
-		evaluatedAt: new Date(),
-		haikuResponse,
-		grades: evaluation.grades || {
-			domainAccuracy: 5,
-			levelAppropriateness: 5,
-			toolUsage: 5,
-			conciseness: 5,
-			helpfulness: 5
-		},
-		overallScore: evaluation.overallScore || 5,
-		opusNotes: evaluation.opusNotes || '',
-		recommendation: evaluation.recommendation || 'flag-for-human',
-		suggestedRewrite: evaluation.suggestedRewrite,
-		errorAnalysis: evaluation.errorAnalysis,
-		uncertaintyReason: evaluation.uncertaintyReason
-	};
+  const result: EvaluationResult = {
+    scenarioId: scenario.id,
+    language: "en",
+    evaluatedAt: new Date(),
+    haikuResponse,
+    grades: evaluation.grades || {
+      domainAccuracy: 5,
+      levelAppropriateness: 5,
+      toolUsage: 5,
+      conciseness: 5,
+      helpfulness: 5,
+    },
+    overallScore: evaluation.overallScore || 5,
+    opusNotes: evaluation.opusNotes || "",
+    recommendation: evaluation.recommendation || "flag-for-human",
+    suggestedRewrite: evaluation.suggestedRewrite,
+    errorAnalysis: evaluation.errorAnalysis,
+    uncertaintyReason: evaluation.uncertaintyReason,
+  };
 
-	return {
-		result,
-		verificationToolCalls: toolCalls,
-		requiredVerification: toolCalls.length > 0,
-		reviewDurationMs: Date.now() - startTime
-	};
+  return {
+    result,
+    verificationToolCalls: toolCalls,
+    requiredVerification: toolCalls.length > 0,
+    reviewDurationMs: Date.now() - startTime,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -581,10 +607,10 @@ Output your evaluation as JSON at the end.
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function main() {
-	const args = process.argv.slice(2);
+  const args = process.argv.slice(2);
 
-	if (args.includes('--help') || args.length === 0) {
-		console.log(`
+  if (args.includes("--help") || args.length === 0) {
+    console.log(`
 Opus Reviewer - Evaluate TIKA responses with tool-backed verification
 
 Usage:
@@ -596,78 +622,82 @@ Options:
   --demo           Run a demo review with sample data
   --output <file>  Output file for results (default: stdout)
 `);
-		return;
-	}
+    return;
+  }
 
-	if (args.includes('--demo')) {
-		console.log('Running demo review...\n');
+  if (args.includes("--demo")) {
+    console.log("Running demo review...\n");
 
-		const demoScenario: TikaScenario = {
-			id: 'demo-misconception',
-			name: { en: 'Demo: Type 1 Misconception' },
-			category: 'misconception-correction',
-			userLevel: 1,
-			question: { en: 'Type 1 is when both hands move, right?' },
-			criteria: {
-				mustInclude: ['shift', 'Type 3', 'Type 5'],
-				mustNotInclude: ['turn', 'skew'],
-				expectedTools: ['list_letters_by_type'],
-				keyFacts: [
-					{ en: 'MUST correct this misconception' },
-					{ en: 'Type 1 is when both hands SHIFT' },
-					{ en: 'Types 3 and 5 also have both hands moving' }
-				],
-				commonMistakes: [{ en: 'Agreeing that Type 1 = both hands move' }]
-			},
-			difficulty: 'hard'
-		};
+    const demoScenario: TikaScenario = {
+      id: "demo-misconception",
+      name: { en: "Demo: Type 1 Misconception" },
+      category: "misconception-correction",
+      userLevel: 1,
+      question: { en: "Type 1 is when both hands move, right?" },
+      criteria: {
+        mustInclude: ["shift", "Type 3", "Type 5"],
+        mustNotInclude: ["turn", "skew"],
+        expectedTools: ["list_letters_by_type"],
+        keyFacts: [
+          { en: "MUST correct this misconception" },
+          { en: "Type 1 is when both hands SHIFT" },
+          { en: "Types 3 and 5 also have both hands moving" },
+        ],
+        commonMistakes: [{ en: "Agreeing that Type 1 = both hands move" }],
+      },
+      difficulty: "hard",
+    };
 
-		// Simulate a BAD Haiku response (for demo purposes)
-		const badHaikuResponse: HaikuResponse = {
-			explanation:
-				"Yes, that's correct! Type 1 letters are characterized by both hands moving. This creates the dynamic, flowing movements that make Type 1 the most common letter type in TKA.",
-			toolsCalled: [],
-			latencyMs: 450
-		};
+    // Simulate a BAD Haiku response (for demo purposes)
+    const badHaikuResponse: HaikuResponse = {
+      explanation:
+        "Yes, that's correct! Type 1 letters are characterized by both hands moving. This creates the dynamic, flowing movements that make Type 1 the most common letter type in TKA.",
+      toolsCalled: [],
+      latencyMs: 450,
+    };
 
-		console.log('Scenario:', demoScenario.question.en);
-		console.log('Haiku said:', badHaikuResponse.explanation);
-		console.log('\nAsking Opus to review...\n');
+    console.log("Scenario:", demoScenario.question.en);
+    console.log("Haiku said:", badHaikuResponse.explanation);
+    console.log("\nAsking Opus to review...\n");
 
-		try {
-			const review = await reviewWithOpus(demoScenario, badHaikuResponse);
+    try {
+      const review = await reviewWithOpus(demoScenario, badHaikuResponse);
 
-			console.log('=== OPUS REVIEW ===');
-			console.log(`Recommendation: ${review.result.recommendation}`);
-			console.log(`Overall Score: ${review.result.overallScore}/10`);
-			console.log(`\nGrades:`);
-			console.log(`  Domain Accuracy: ${review.result.grades.domainAccuracy}/10`);
-			console.log(`  Level Appropriateness: ${review.result.grades.levelAppropriateness}/10`);
-			console.log(`  Tool Usage: ${review.result.grades.toolUsage}/10`);
-			console.log(`  Conciseness: ${review.result.grades.conciseness}/10`);
-			console.log(`  Helpfulness: ${review.result.grades.helpfulness}/10`);
-			console.log(`\nNotes:\n${review.result.opusNotes}`);
+      console.log("=== OPUS REVIEW ===");
+      console.log(`Recommendation: ${review.result.recommendation}`);
+      console.log(`Overall Score: ${review.result.overallScore}/10`);
+      console.log(`\nGrades:`);
+      console.log(
+        `  Domain Accuracy: ${review.result.grades.domainAccuracy}/10`
+      );
+      console.log(
+        `  Level Appropriateness: ${review.result.grades.levelAppropriateness}/10`
+      );
+      console.log(`  Tool Usage: ${review.result.grades.toolUsage}/10`);
+      console.log(`  Conciseness: ${review.result.grades.conciseness}/10`);
+      console.log(`  Helpfulness: ${review.result.grades.helpfulness}/10`);
+      console.log(`\nNotes:\n${review.result.opusNotes}`);
 
-			if (review.verificationToolCalls.length > 0) {
-				console.log(`\nVerification Tools Used:`);
-				review.verificationToolCalls.forEach((tc) => {
-					console.log(`  - ${tc.tool}(${JSON.stringify(tc.input)})`);
-				});
-			}
+      if (review.verificationToolCalls.length > 0) {
+        console.log(`\nVerification Tools Used:`);
+        review.verificationToolCalls.forEach((tc) => {
+          console.log(`  - ${tc.tool}(${JSON.stringify(tc.input)})`);
+        });
+      }
 
-			if (review.result.suggestedRewrite) {
-				console.log(`\nSuggested Rewrite:\n${review.result.suggestedRewrite}`);
-			}
+      if (review.result.suggestedRewrite) {
+        console.log(`\nSuggested Rewrite:\n${review.result.suggestedRewrite}`);
+      }
 
-			if (review.result.errorAnalysis) {
-				console.log(`\nError Analysis:`);
-				console.log(`  Error: ${review.result.errorAnalysis.error}`);
-				console.log(`  Confidence: ${review.result.errorAnalysis.confidence}`);
-			}
-		} catch (error) {
-			console.error('Error during review:', error);
-		}
-	}
+      if (review.result.errorAnalysis) {
+        console.log(`\nError Analysis:`);
+        console.log(`  Error: ${review.result.errorAnalysis.error}`);
+        console.log(`  Confidence: ${review.result.errorAnalysis.confidence}`);
+      }
+    } catch (error) {
+      console.error("Error during review:", error);
+    }
+  }
 }
 
 main().catch(console.error);

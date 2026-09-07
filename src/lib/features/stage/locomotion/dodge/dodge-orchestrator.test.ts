@@ -10,12 +10,12 @@ import type { MotionConfig3D } from "$lib/shared/3d/domain/models/motion-data-3d
 import { planDodge } from "./dodge-orchestrator";
 import { DEFAULT_DODGE_KNOB } from "./dodge-types";
 
-const blue: MotionConfig3D = {
+const left: MotionConfig3D = {
   plane: Plane.WHEEL, startLocation: GridLocation.SOUTH, endLocation: GridLocation.WEST,
   motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, turns: 0,
   startOrientation: Orientation.IN, endOrientation: Orientation.IN, pathShape: "arc",
 };
-const red: MotionConfig3D = {
+const right: MotionConfig3D = {
   plane: Plane.WALL, startLocation: GridLocation.NORTH, endLocation: GridLocation.EAST,
   motionType: MotionType.PRO, rotationDirection: RotationDirection.CLOCKWISE, turns: 0,
   startOrientation: Orientation.IN, endOrientation: Orientation.IN, pathShape: "arc",
@@ -23,7 +23,7 @@ const red: MotionConfig3D = {
 
 describe("planDodge", () => {
   it("returns a DodgePlan with a deterministic placement function", () => {
-    const plan = planDodge(blue, red, 1.8, 24, undefined, DEFAULT_DODGE_KNOB);
+    const plan = planDodge(left, right, 1.8, 24, undefined, DEFAULT_DODGE_KNOB);
     const a = plan.placement(0.5);
     const b = plan.placement(0.5);
     expect(a).toEqual(b);
@@ -34,7 +34,7 @@ describe("planDodge", () => {
   });
 
   it("faces grid center", () => {
-    const plan = planDodge(blue, red, 1.8, 24, undefined, DEFAULT_DODGE_KNOB);
+    const plan = planDodge(left, right, 1.8, 24, undefined, DEFAULT_DODGE_KNOB);
     const p = plan.placement(0.5);
     expect(Math.abs(p.rootYawRad - Math.atan2(-p.footOffsetX, -p.footOffsetZ))).toBeLessThan(1e-6);
   });

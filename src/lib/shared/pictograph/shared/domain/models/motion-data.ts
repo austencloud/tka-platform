@@ -13,13 +13,16 @@
  * as optional for consumers that accept lean engine output.
  *
  * The only narrowed fields are `motionType`/`prefloatMotionType` (the app
- * union omits the canonical "shift" generalization) and `color` (required
+ * union omits the canonical "shift" generalization) and `hand` (required
  * app-side).
  */
 
 // IMPORTANT: Import directly from specific files to avoid circular dependencies
 // DO NOT import from barrel exports (../../../arrow, ../../../prop) as they import MotionData
-import type { Motion } from "@tka/tka-types";
+import {
+  normalizeLegacyHandSide,
+  type Motion,
+} from "@tka/tka-types";
 import { type ArrowPlacementData } from "../../../arrow/positioning/placement/domain/arrow-placement-data";
 import { createArrowPlacementData } from "../../../arrow/positioning/placement/domain/create-arrow-placement-data";
 import { GridLocation, GridMode } from "../../../grid/domain/enums/grid-enums";
@@ -30,7 +33,7 @@ import type {
   HandPath,
   SkewDirection} from "../enums/pictograph-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
   Orientation
@@ -44,7 +47,7 @@ export interface MotionData extends Motion {
   readonly isVisible: boolean;
   readonly propType: PropType;
   readonly arrowLocation: GridLocation;
-  readonly color: MotionColor;
+  readonly hand: HandSide;
   readonly gridMode: GridMode; // CRITICAL: Grid mode for correct positioning
 
   // EMBEDDED PLACEMENT DATA: Everything accessible through motion data
@@ -77,7 +80,7 @@ export interface MotionData extends Motion {
 /**
  * Runtime/rendered form of MotionData - extends domain data with viewer concerns.
  *
- * StepDeriver produces DerivedMotionData by injecting propType, color, and
+ * StepDeriver produces DerivedMotionData by injecting propType, hand, and
  * isVisible from the resolved presentation. All rendering consumers should
  * type their inputs as DerivedMotionData.
  *
@@ -85,7 +88,7 @@ export interface MotionData extends Motion {
  */
 export interface DerivedMotionData extends MotionData {
   readonly propType: PropType;
-  readonly color: MotionColor;
+  readonly hand: HandSide;
   readonly isVisible: boolean;
 }
 
@@ -96,10 +99,16 @@ export interface DerivedMotionData extends MotionData {
  * - motion.propType is stored but ALWAYS overridden by global settings during render
  * - Exception: PropType.HAND (Assembly mode) is never overridden
  * - All pictographs in a sequence MUST use the same global prop settings
- * - Blue vs red CAN differ (catDogMode), but all blues must match, all reds must match
+ * - Left vs right CAN differ (catDogMode), but each hand remains consistent
  * - When global prop settings change, ALL pictographs re-render with new props
  */
-export function createMotionData(data: Partial<MotionData> = {}): MotionData {
+export type MotionDataInput = Partial<Omit<MotionData, "hand">> & {
+  readonly hand?: HandSide;
+  /** Legacy persisted field. Normalized at ingress and never emitted. */
+  readonly color?: HandSide | "blue" | "red";
+};
+
+export function createMotionData(data: MotionDataInput = {}): MotionData {
   return {
     motionType: data.motionType ?? MotionType.STATIC,
     rotationDirection: data.rotationDirection ?? RotationDirection.NO_ROTATION,
@@ -111,7 +120,7 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
     isVisible: data.isVisible ?? true,
     propType: data.propType ?? PropType.STAFF, // Default - services should override with settings.propType for new motions
     arrowLocation: data.arrowLocation ?? GridLocation.NORTH, // Must be calculated by ArrowLocationCalculator - NEVER default to startLocation!
-    color: data.color ?? MotionColor.BLUE, // Single source of truth for color
+    hand: normalizeLegacyHandSide(data.hand ?? data.color) ?? HandSide.LEFT,
     // Normalize to the lowercase canonical enum — serialized/static data (e.g. guide
     // _data JSON) can carry uppercase "DIAMOND"/"BOX", which 404s the placement file fetch.
     gridMode: (data.gridMode
@@ -155,13 +164,13 @@ export function isVisibleMotion<M extends { readonly isVisible?: boolean }>(
 }
 
 export function createPlaceholderMotion(
-  color: MotionColor,
+  hand: HandSide,
   opts: { location?: GridLocation; orientation?: Orientation } = {}
 ): MotionData {
   const location = opts.location ?? GridLocation.NORTH;
   const orientation = opts.orientation ?? Orientation.IN;
   return createMotionData({
-    color,
+    hand,
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
     startLocation: location,

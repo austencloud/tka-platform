@@ -33,6 +33,13 @@
 set -euo pipefail
 
 MODEL="${CODEX_ASK_MODEL:-gpt-5.6-sol}"
+
+# Optional reasoning effort (low|medium|high|xhigh). Unset keeps the CLI
+# default for the model. Set it per task; do not default every run to xhigh.
+EFFORT_ARGS=()
+if [ -n "${CODEX_ASK_EFFORT:-}" ]; then
+	EFFORT_ARGS=(-c "model_reasoning_effort=\"${CODEX_ASK_EFFORT}\"")
+fi
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [ $# -lt 1 ]; then
@@ -67,6 +74,7 @@ STATUS=0
 timeout "${CODEX_ASK_TIMEOUT:-2700}" codex exec \
 	--ignore-user-config \
 	-m "$MODEL" \
+	${EFFORT_ARGS[@]+"${EFFORT_ARGS[@]}"} \
 	-o "$OUT" \
 	--dangerously-bypass-approvals-and-sandbox \
 	-C "$REPO" \

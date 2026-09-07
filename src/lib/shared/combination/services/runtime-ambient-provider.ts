@@ -61,7 +61,7 @@ import type {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridLocationsFromPosition } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -129,10 +129,10 @@ export function snapshotAmbientStats(
  * resolves to "what can start here?".
  */
 function buildSeamProbe(seam: SeamState, gridMode: GridMode): StepData {
-  const [blueLocation, redLocation] = getGridLocationsFromPosition(seam);
-  const stand = (color: MotionColor, location: GridLocation) =>
+  const [leftLocation, rightLocation] = getGridLocationsFromPosition(seam);
+  const stand = (color: HandSide, location: GridLocation) =>
     createMotionData({
-      color,
+      hand: color,
       motionType: MotionType.STATIC,
       rotationDirection: RotationDirection.NO_ROTATION,
       startLocation: location,
@@ -148,8 +148,8 @@ function buildSeamProbe(seam: SeamState, gridMode: GridMode): StepData {
     endPosition: seam,
     gridMode,
     motions: {
-      [MotionColor.BLUE]: stand(MotionColor.BLUE, blueLocation),
-      [MotionColor.RED]: stand(MotionColor.RED, redLocation),
+      [HandSide.LEFT]: stand(HandSide.LEFT, leftLocation),
+      [HandSide.RIGHT]: stand(HandSide.RIGHT, rightLocation),
     },
   });
 }
@@ -248,7 +248,7 @@ export function createRuntimeAmbientProvider(
         stats.letterRejections++;
         continue;
       }
-      if (!option.motions.blue || !option.motions.red) {
+      if (!option.motions.left || !option.motions.right) {
         stats.labelMismatches++;
         continue;
       }

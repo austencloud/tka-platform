@@ -121,8 +121,8 @@
             showTKA: true,
             showGrid: true,
             ...(pictograph.propType && {
-              bluePropType: pictograph.propType,
-              redPropType: pictograph.propType,
+              leftPropType: pictograph.propType,
+              rightPropType: pictograph.propType,
             }),
           },
         }),
@@ -216,8 +216,8 @@
             showTKA: true,
             showGrid: true,
             ...(pictograph.propType && {
-              bluePropType: pictograph.propType,
-              redPropType: pictograph.propType,
+              leftPropType: pictograph.propType,
+              rightPropType: pictograph.propType,
             }),
           },
         }),

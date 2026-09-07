@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { TurnConstraint } from "../../../../src/generation/constraints/style/turn-constraint.js";
 import type { ConstraintContext } from "../../../../src/generation/constraints/types.js";
 
-function makeCandidate(blueTurns?: number | "fl", redTurns?: number | "fl"): ConstraintContext {
+function makeCandidate(leftTurns?: number | "fl", rightTurns?: number | "fl"): ConstraintContext {
   return {
     stepIndex: 0,
     totalSteps: 4,
@@ -14,19 +14,19 @@ function makeCandidate(blueTurns?: number | "fl", redTurns?: number | "fl"): Con
       endPosition: "beta3",
       timing: "together",
       direction: "together",
-      blueMotion: {
+      leftMotion: {
         motionType: "pro",
         startLocation: "n",
         endLocation: "s",
         rotationDirection: "cw",
-        turns: blueTurns,
+        turns: leftTurns,
       },
-      redMotion: {
+      rightMotion: {
         motionType: "pro",
         startLocation: "s",
         endLocation: "n",
         rotationDirection: "ccw",
-        turns: redTurns,
+        turns: rightTurns,
       },
     },
   };

@@ -34,8 +34,8 @@ describe("mandala paths cache", () => {
 
   it("loads through the representative sequence and caches by geometric identity", async () => {
     const paths = {
-      blue: [{ d: "M 0 0 C 0 0, 1 1, 2 2", tipIndex: 0 }],
-      red: [],
+      left: [{ d: "M 0 0 C 0 0, 1 1, 2 2", tipIndex: 0 }],
+      right: [],
       purple: [],
     };
     mocks.getSequence.mockResolvedValue({ steps: [{}] });

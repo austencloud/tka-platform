@@ -155,12 +155,12 @@
 
     if (context) {
       if (context.propType) {
-        svgOptions.bluePropType = context.propType;
-        svgOptions.redPropType = context.propType;
+        svgOptions.leftPropType = context.propType;
+        svgOptions.rightPropType = context.propType;
       }
       if (context.hideArrows) {
-        svgOptions.showBlueMotion = false;
-        svgOptions.showRedMotion = false;
+        svgOptions.showLeftMotion = false;
+        svgOptions.showRightMotion = false;
       }
     }
 

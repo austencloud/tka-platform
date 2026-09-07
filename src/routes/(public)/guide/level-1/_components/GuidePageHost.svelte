@@ -22,7 +22,6 @@
   import { seoForSlug } from "../_data/guide-page-seo";
   import FlowFrame from "./FlowFrame.svelte";
   import GuidePage from "./GuidePage.svelte";
-  import TheGridCompactPage from "./TheGridCompactPage.svelte";
   import GuideCompanionHost from "../../_components/GuideCompanionHost.svelte";
   import { getConceptExperienceForGuideSlug } from "$lib/features/learn/domain/concept-experience-registry";
   import { buildConceptPath } from "$lib/features/learn/domain/concept-routes";
@@ -38,8 +37,7 @@
   const content = $derived(GUIDE_CONTENT[slug] ?? null);
   const Sheet = $derived(BUILT[slug]);
   const canFlow = $derived(hasReflowContent(slug));
-  const isAuthoredGrid = $derived(slug === "the-grid");
-  const useFlow = $derived(canFlow && !isAuthoredGrid);
+  const useFlow = $derived(canFlow);
   const interactiveLesson = $derived(getConceptExperienceForGuideSlug(slug));
 
   const prev = $derived(bodyIndex > 0 ? GUIDE_BODY_PAGES[bodyIndex - 1] : null);
@@ -53,11 +51,7 @@
   // scaled/off-screen sheet needs it). getGuidePrintMode() → light ink-on-white.
   setGuidePrintMode();
 
-  // Sheet scale-to-fit for the few topics that do not have reflow content and
-  // for The Grid, whose fixed authored page is the large-screen source of truth.
-  // The Grid also fits the remaining viewport height so its full composition is
-  // visible at once. Its compact companion takes over before that fit would make
-  // the sheet's type unreadable.
+  // Sheet scale-to-fit for the few topics that do not have reflow content.
   let sheetWrap = $state<HTMLDivElement>();
   let scale = $state(1);
   // .sheet-scale sits centred in .sheet-wrap via `margin: 0 auto` at its OWN
@@ -96,14 +90,7 @@
         parseFloat(cs.paddingLeft) -
         parseFloat(cs.paddingRight);
       const widthScale = inner / 816;
-      const remainingViewportHeight = Math.max(
-        320,
-        window.innerHeight - el.getBoundingClientRect().top - 24
-      );
-      const heightScale = isAuthoredGrid
-        ? remainingViewportHeight / 1056
-        : Number.POSITIVE_INFINITY;
-      scale = Math.min(widthScale, heightScale, 1.9);
+      scale = Math.min(widthScale, 1.9);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -198,60 +185,52 @@
 
 <GuideCompanionHost pageTitle={meta?.title ?? ""} levelLabel="Level 1">
   <main class="guide-page-route">
-    {#if isAuthoredGrid}
-      <!-- The authored page paints the visible title. Keep one semantic route
-           heading without inserting a separate hero or lesson CTA above it. -->
-      <h1 class="route-heading-sr-only">{seo.h1}</h1>
-    {:else}
-      <header class="topic-hero" class:sheet-topic={!canFlow}>
-        <!-- Built sheet fallbacks paint their own title. Reflow pages use this
-             compact title band so the topic begins without a stack of controls. -->
-        <div class="topic-title">
-          <h1 class:visually-hidden={!canFlow}>{seo.h1}</h1>
-          {#if seo.tagline && canFlow}<p class="hero-tagline">
-              {seo.tagline}
-            </p>{/if}
-        </div>
-        {#if interactiveLesson}
-          <a
-            class="interactive-lesson-link"
-            href={buildConceptPath(interactiveLesson.conceptId)}
-          >
-            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
-            Learn this interactively
-          </a>
-        {/if}
-      </header>
-    {/if}
+    <header class="topic-hero" class:sheet-topic={!canFlow}>
+      <!-- Built sheet fallbacks paint their own title. Reflow pages use this
+           compact title band so the topic begins without a stack of controls. -->
+      <div class="topic-title">
+        <h1 class:visually-hidden={!canFlow}>{seo.h1}</h1>
+        {#if seo.tagline && canFlow}<p class="hero-tagline">
+            {seo.tagline}
+          </p>{/if}
+      </div>
+      {#if interactiveLesson}
+        <a
+          class="interactive-lesson-link"
+          href={buildConceptPath(interactiveLesson.conceptId)}
+        >
+          <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+          <span>Learn this interactively</span>
+        </a>
+      {/if}
+    </header>
 
     {#if useFlow && content}
-      <FlowFrame {content} darkMode={isDark} tagline={seo.tagline ?? ""} />
+      <FlowFrame
+        {content}
+        darkMode={isDark}
+        tagline={seo.tagline ?? ""}
+        layout={slug === "the-grid" ? "grid-reference" : "default"}
+      />
     {:else if Sheet}
-      {#if isAuthoredGrid}
-        <div class="grid-compact-view">
-          <TheGridCompactPage />
-        </div>
-      {/if}
-      <div class:grid-sheet-view={isAuthoredGrid}>
-        <!-- Print-friendly layout: the SAME built _pages sheet the book uses,
-             scaled to fit its available screen footprint. -->
+      <!-- Print-friendly fallback: the SAME built _pages sheet the book uses,
+           scaled to fit its available screen footprint. -->
+      <div
+        class="sheet-wrap"
+        bind:this={sheetWrap}
+        style="height: {1056 * scale}px"
+      >
         <div
-          class="sheet-wrap"
-          bind:this={sheetWrap}
-          style="height: {1056 * scale}px"
+          class="sheet-scale"
+          style="transform: translateX(-{sheetShiftPx}px) scale({scale})"
         >
-          <div
-            class="sheet-scale"
-            style="transform: translateX(-{sheetShiftPx}px) scale({scale})"
+          <GuidePage
+            title={meta?.title}
+            pageNumber={bodyIndex >= 0 ? bodyIndex + 1 : undefined}
+            fullBleed={true}
           >
-            <GuidePage
-              title={meta?.title}
-              pageNumber={bodyIndex >= 0 ? bodyIndex + 1 : undefined}
-              fullBleed={true}
-            >
-              <Sheet />
-            </GuidePage>
-          </div>
+            <Sheet />
+          </GuidePage>
         </div>
       </div>
     {/if}
@@ -295,20 +274,6 @@
        route's width (cqw) - using wide/4K screens - while the reading column stays
        narrow. inline-size only: block-size (min-height: 100vh) is unaffected. */
     container-type: inline-size;
-  }
-  .route-heading-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-  .grid-compact-view {
-    display: none;
   }
   .topic-hero {
     max-width: 76rem;
@@ -470,6 +435,7 @@
       grid-template-columns: 1fr;
       gap: 0.65rem;
       padding: 1rem 1rem 0.5rem;
+      position: relative;
       text-align: center;
     }
     .topic-hero h1 {
@@ -477,22 +443,26 @@
     }
     .topic-title {
       display: block;
+      padding-inline: 2.75rem;
     }
     .interactive-lesson-link {
-      justify-self: center;
+      position: absolute;
+      inset-block-start: 1rem;
+      inset-inline-end: 1rem;
+      width: 44px;
+      padding: 0;
+      border-radius: 50%;
     }
-  }
-
-  /* Below this readable-sheet threshold, keep the authored teaching topology
-     but let its prose and labelled diagram reflow. The short-height clause is
-     what keeps the folded landscape viewport from reducing a full page to a
-     thumbnail. */
-  @media (max-width: 719px), (max-height: 699px) {
-    .grid-sheet-view {
-      display: none;
-    }
-    .grid-compact-view {
-      display: block;
+    .interactive-lesson-link span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
   }
 

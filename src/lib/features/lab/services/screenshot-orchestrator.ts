@@ -88,7 +88,7 @@ const ROUTES: RouteNode[] = [
   { label: "about", moduleId: "public", requiresAuth: false },
   { label: "privacy", moduleId: "public", requiresAuth: false },
   { label: "terms", moduleId: "public", requiresAuth: false },
-  { label: "notation", moduleId: "public", requiresAuth: false },
+  { label: "history", moduleId: "public", requiresAuth: false },
   {
     label: "create--construct",
     moduleId: "create",

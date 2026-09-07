@@ -9,14 +9,14 @@ const edge = (over: Partial<CsvEdge>): CsvEdge =>
     endPosition: "alpha3",
     timing: "split",
     direction: "same",
-    blueMotionType: "pro",
-    blueRotationDirection: "cw",
-    blueStartLocation: "s",
-    blueEndLocation: "w",
-    redMotionType: "pro",
-    redRotationDirection: "cw",
-    redStartLocation: "n",
-    redEndLocation: "e",
+    leftMotionType: "pro",
+    leftRotationDirection: "cw",
+    leftStartLocation: "s",
+    leftEndLocation: "w",
+    rightMotionType: "pro",
+    rightRotationDirection: "cw",
+    rightStartLocation: "n",
+    rightEndLocation: "e",
     ...over,
   }) as CsvEdge;
 
@@ -53,8 +53,8 @@ describe("filterRealizations", () => {
 
   it("excludes edges whose motion types don't match the cell styles", () => {
     const edges = [
-      edge({ letter: "A", blueMotionType: "pro", redMotionType: "pro" }),
-      edge({ letter: "Γ", blueMotionType: "anti", redMotionType: "anti" }),
+      edge({ letter: "A", leftMotionType: "pro", rightMotionType: "pro" }),
+      edge({ letter: "Γ", leftMotionType: "anti", rightMotionType: "anti" }),
     ];
     expect(
       filterRealizations(edges, "anti", "anti").map((x) => x.letter)

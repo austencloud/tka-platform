@@ -23,16 +23,20 @@
   import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const logger = createComponentLogger("ArrowLayerModal");
 
   interface Props {
     open: boolean;
     stepData: StepData;
-    arrowColor: "blue" | "red";
+    arrowHand: HandSideValue;
   }
 
-  let { open = $bindable(), stepData, arrowColor }: Props = $props();
+  let { open = $bindable(), stepData, arrowHand }: Props = $props();
 
   // Services
   let adjustmentOrchestrator: ArrowAdjustmentOrchestrator | null = null;
@@ -52,12 +56,12 @@
   let snapshotValue: { x: number; y: number } | null = null;
   let snapshotLayer: 1 | 2 | 3 = 2;
 
-  // Build the SelectedArrowContext from stepData + color. Invisible
+  // Build the SelectedArrowContext from stepData + hand. Invisible
   // placeholder hands keep the modal inert — adjusting a fabricated motion
   // would write special-placement overrides keyed off placeholder data
   // (Wave 0 straggler fix: dead presence gate).
   const selectedArrowContext = $derived.by((): SelectedArrowContext | null => {
-    const motion = stepData.motions?.[arrowColor];
+    const motion = stepData.motions?.[arrowHand];
     if (!isVisibleMotion(motion)) return null;
 
     // Build pictograph data from step
@@ -71,7 +75,7 @@
 
     return {
       motionData: motion,
-      color: arrowColor,
+      hand: arrowHand,
       pictographData,
     };
   });
@@ -80,17 +84,22 @@
   const thisPropType = $derived.by(() => {
     const settings = getSettings();
     const settingsPropType =
-      arrowColor === "blue" ? settings.bluePropType : settings.redPropType;
-    const motion = stepData.motions?.[arrowColor];
+      arrowHand === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
+    const motion = stepData.motions?.[arrowHand];
     return (settingsPropType ?? motion?.propType)?.toLowerCase() || "staff";
   });
 
   const otherPropType = $derived.by(() => {
     const settings = getSettings();
-    const otherColor = arrowColor === "blue" ? "red" : "blue";
+    const otherHand =
+      arrowHand === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     const settingsPropType =
-      otherColor === "blue" ? settings.bluePropType : settings.redPropType;
-    const otherMotion = stepData.motions?.[otherColor];
+      otherHand === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
+    const otherMotion = stepData.motions?.[otherHand];
     return (
       (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
     );
@@ -333,7 +342,7 @@
   }
 
   const modalTitle = $derived(
-    `Adjust ${arrowColor === "blue" ? "Blue" : "Red"} Arrow - ${stepData.letter || "Start"}`
+    `Adjust ${arrowHand === HandSide.LEFT ? "Left" : "Right"} Arrow - ${stepData.letter || "Start"}`
   );
 </script>
 
@@ -351,7 +360,11 @@
   {#snippet header()}
     <div class="modal-header">
       <div class="title-row">
-        <span class="color-dot {arrowColor}"></span>
+        <span
+          class="color-dot"
+          class:blue={arrowHand === HandSide.LEFT}
+          class:red={arrowHand === HandSide.RIGHT}
+        ></span>
         <h3>{modalTitle}</h3>
       </div>
     </div>

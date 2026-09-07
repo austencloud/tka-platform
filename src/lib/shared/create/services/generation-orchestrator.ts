@@ -141,8 +141,8 @@ export class GenerationOrchestrator {
       mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
       turnPattern: options.turnPattern,
-      blueStartOrientation: options.blueStartOrientation,
-      redStartOrientation: options.redStartOrientation,
+      leftStartOrientation: options.leftStartOrientation,
+      rightStartOrientation: options.rightStartOrientation,
     });
 
     return this.transformer.convertToSequenceData(result, options);
@@ -211,8 +211,8 @@ export class GenerationOrchestrator {
       mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
       turnPattern: options.turnPattern,
-      blueStartOrientation: options.blueStartOrientation,
-      redStartOrientation: options.redStartOrientation,
+      leftStartOrientation: options.leftStartOrientation,
+      rightStartOrientation: options.rightStartOrientation,
       loop: {
         type: engineLoopType,
         period,

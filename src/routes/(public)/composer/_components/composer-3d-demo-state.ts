@@ -27,8 +27,8 @@ export const COMPOSER_3D_DEMO_SEED: Viewer3DStateSeed = {
     {
       position: { x: 0, z: 0 },
       facingAngle: 0,
-      customBluePlane: Plane.WALL,
-      customRedPlane: Plane.WALL,
+      customLeftPlane: Plane.WALL,
+      customRightPlane: Plane.WALL,
       name: null,
       settings: {
         prop: PropType.STAFF,

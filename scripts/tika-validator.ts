@@ -30,6 +30,8 @@ const JSON_DUMP_PATTERNS = [
 	/\{[\s\S]*"variation":\s*\d/,
 	/\{[\s\S]*"startPosition":/,
 	/\{[\s\S]*"endPosition":/,
+	/\{[\s\S]*"leftMotion":/,
+	/\{[\s\S]*"rightMotion":/,
 	/\{[\s\S]*"blueMotion":/,
 	/\{[\s\S]*"redMotion":/,
 	/"letter":\s*"[A-Z]"/,

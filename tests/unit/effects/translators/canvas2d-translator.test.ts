@@ -27,8 +27,8 @@ describe("resolveTrails2D", () => {
     expect(out.minOpacity).toBeCloseTo(0.3, 5);
   });
 
-  it("defaults glowBlur to 3 when no override", () => {
-    expect(resolveTrails2D(intent).glowBlur).toBe(3);
+  it("uses the restrained factory glow when no override is supplied", () => {
+    expect(resolveTrails2D(intent).glowBlur).toBe(2.5);
   });
 
   it("override glowBlur wins", () => {
@@ -38,11 +38,11 @@ describe("resolveTrails2D", () => {
   it("preserves color fields from intent", () => {
     const out = resolveTrails2D({
       ...intent,
-      blueColor: "#abc123",
-      redColor: "#def456",
+      leftColor: "#abc123",
+      rightColor: "#def456",
     });
-    expect(out.blueColor).toBe("#abc123");
-    expect(out.redColor).toBe("#def456");
+    expect(out.leftColor).toBe("#abc123");
+    expect(out.rightColor).toBe("#def456");
   });
 });
 
@@ -60,14 +60,14 @@ describe("foldTrailIntentIntoSettings", () => {
       ...intent,
       thickness: 8,
       brightness: 0.9,
-      blueColor: "#abc123",
-      redColor: "#def456",
+      leftColor: "#abc123",
+      rightColor: "#def456",
     });
     expect(out.lineWidth).toBe(8);
     expect(out.maxOpacity).toBe(0.9);
     expect(out.minOpacity).toBeCloseTo(0.27, 5);
-    expect(out.blueColor).toBe("#abc123");
-    expect(out.redColor).toBe("#def456");
+    expect(out.leftColor).toBe("#abc123");
+    expect(out.rightColor).toBe("#def456");
   });
 
   it("preserves rendering params (mode, fade, tailLength, trackingMode) from base", () => {

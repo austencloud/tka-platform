@@ -12,6 +12,7 @@ import hashlib
 import json
 import math
 import random
+import runpy
 import struct
 import sys
 import zlib
@@ -23,6 +24,9 @@ from mathutils import Vector
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if "--midflank-r5" in sys.argv:
+    runpy.run_path(str(PROJECT_ROOT / "scripts/ember-midflank-production.py"), run_name="__main__")
+    raise SystemExit(0)
 SPEC_DIR = PROJECT_ROOT / "docs" / "superpowers" / "specs" / "ember-spatial-directions"
 EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-meshy-r1"
 TEXTURE_DIR = PROJECT_ROOT / "blender" / "ember-volcanic-world-r7-textures"

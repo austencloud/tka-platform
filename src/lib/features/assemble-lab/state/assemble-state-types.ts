@@ -3,7 +3,7 @@ import type {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -40,10 +40,10 @@ export type AssembleDocumentChange =
     };
 
 export interface AssembleStateHydration {
-  readonly blueSteps: readonly BuilderStep[];
-  readonly redSteps: readonly BuilderStep[];
+  readonly leftSteps: readonly BuilderStep[];
+  readonly rightSteps: readonly BuilderStep[];
   readonly gridMode: GridMode;
-  readonly startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
+  readonly startPoses: Partial<Record<HandSide, BuilderStartPose>>;
 }
 
 export interface AssembleStateOptions {
@@ -60,11 +60,11 @@ export interface AssembleStateOptions {
 
 export interface AssembleState {
   readonly phase: BuilderPhase;
-  readonly activeHand: MotionColor;
+  readonly activeHand: HandSide;
   readonly gridMode: GridMode;
-  readonly blueSteps: BuilderStep[];
-  readonly redSteps: BuilderStep[];
-  readonly startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
+  readonly leftSteps: BuilderStep[];
+  readonly rightSteps: BuilderStep[];
+  readonly startPoses: Partial<Record<HandSide, BuilderStartPose>>;
   readonly currentPosition: GridLocation | null;
   readonly currentOrientation: Orientation;
   readonly rotationDirection: RotationDirection;
@@ -112,13 +112,13 @@ export interface AssembleState {
   ): void;
   hydrateFromSequence(snapshot: AssembleStateHydration): void;
   reset(): void;
-  setStartPoses(poses: Record<MotionColor, BuilderStartPose>): void;
+  setStartPoses(poses: Record<HandSide, BuilderStartPose>): void;
   setRotationDirection(dir: RotationDirection): void;
   setTurnCount(turns: number): void;
   setOrientation(ori: Orientation): void;
   setGridMode(mode: GridMode): void;
   setShowCenter(show: boolean): void;
-  switchToHand(hand: MotionColor): void;
+  switchToHand(hand: HandSide): void;
   toggleKeyboardMode(): void;
   setAnimationCallback(
     cb: (step: BuilderStep, durationMs?: number) => Promise<void>
@@ -127,12 +127,12 @@ export interface AssembleState {
 
 export interface AssembleSnapshot {
   readonly phase: Exclude<BuilderPhase, "animating">;
-  readonly activeHand: MotionColor;
+  readonly activeHand: HandSide;
   readonly gridMode: GridMode;
   readonly showCenter: boolean;
-  readonly startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
-  readonly blueSteps: BuilderStep[];
-  readonly redSteps: BuilderStep[];
+  readonly startPoses: Partial<Record<HandSide, BuilderStartPose>>;
+  readonly leftSteps: BuilderStep[];
+  readonly rightSteps: BuilderStep[];
   readonly currentPosition: GridLocation | null;
   readonly currentOrientation: Orientation;
   readonly rotationDirection: RotationDirection;

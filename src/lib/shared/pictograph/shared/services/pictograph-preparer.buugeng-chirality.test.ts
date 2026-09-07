@@ -7,7 +7,7 @@ import { Letter } from "../../../foundation/domain/models/letter";
 import { GridLocation } from "../../grid/domain/enums/grid-enums";
 import { PropType } from "../../prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -23,27 +23,27 @@ import {
 // TYPES only, so the calc read both props as unflipped and the gate could never
 // fire in the app. This test locks the wiring, not the gate.
 
-const blue = createMotionData({
+const left = createMotionData({
   motionType: MotionType.PRO,
   startLocation: GridLocation.EAST,
   endLocation: GridLocation.SOUTH,
   startOrientation: Orientation.IN,
   endOrientation: Orientation.IN,
   rotationDirection: RotationDirection.CLOCKWISE,
-  color: MotionColor.BLUE,
+  hand: HandSide.LEFT,
 });
-const red = createMotionData({
+const right = createMotionData({
   motionType: MotionType.PRO,
   startLocation: GridLocation.WEST,
   endLocation: GridLocation.SOUTH,
   startOrientation: Orientation.IN,
   endOrientation: Orientation.IN,
   rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
-  color: MotionColor.RED,
+  hand: HandSide.RIGHT,
 });
 const pictograph = createPictographData({
   letter: Letter.G,
-  motions: { blue, red },
+  motions: { left, right },
 });
 
 // The preparer only needs arrows and prop SVGs to exist; this test is about the
@@ -67,8 +67,8 @@ const stubPropLoader = {
 } as never;
 
 async function positionsFor(options: {
-  blueBuugengFlipped: boolean;
-  redBuugengFlipped: boolean;
+  leftBuugengFlipped: boolean;
+  rightBuugengFlipped: boolean;
 }) {
   // A fresh preparer per call — the prepare cache is keyed, and a shared
   // instance would let one case's entry answer the other's question.
@@ -78,55 +78,59 @@ async function positionsFor(options: {
     propPlacer
   );
   const prepared = await preparer.prepareSingle(pictograph, {
-    bluePropType: PropType.BUUGENG,
-    redPropType: PropType.BUUGENG,
+    leftPropType: PropType.BUUGENG,
+    rightPropType: PropType.BUUGENG,
     ...options,
   });
-  return prepared._prepared!.propPositions;
+  const positions = prepared._prepared!.propPositions;
+  if (!positions.left || !positions.right) {
+    throw new Error("Expected prepared positions for both hands");
+  }
+  return { left: positions.left, right: positions.right };
 }
 
 describe("PictographPreparer — buugeng chirality reaches the beta offset", () => {
   it("separates two SAME-chirality buugeng", async () => {
     const positions = await positionsFor({
-      blueBuugengFlipped: false,
-      redBuugengFlipped: false,
+      leftBuugengFlipped: false,
+      rightBuugengFlipped: false,
     });
 
     const separation =
-      Math.abs(positions.blue.x - positions.red.x) +
-      Math.abs(positions.blue.y - positions.red.y);
+      Math.abs(positions.left.x - positions.right.x) +
+      Math.abs(positions.left.y - positions.right.y);
     expect(separation).toBeGreaterThan(0.5);
   });
 
   it("nests two OPPOSITE-chirality buugeng at the same point", async () => {
     const positions = await positionsFor({
-      blueBuugengFlipped: false,
-      redBuugengFlipped: true,
+      leftBuugengFlipped: false,
+      rightBuugengFlipped: true,
     });
 
-    expect(positions.blue.x).toBeCloseTo(positions.red.x, 6);
-    expect(positions.blue.y).toBeCloseTo(positions.red.y, 6);
+    expect(positions.left.x).toBeCloseTo(positions.right.x, 6);
+    expect(positions.left.y).toBeCloseTo(positions.right.y, 6);
   });
 
   it("nests when it is the BLUE prop that is reversed", async () => {
     const positions = await positionsFor({
-      blueBuugengFlipped: true,
-      redBuugengFlipped: false,
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: false,
     });
 
-    expect(positions.blue.x).toBeCloseTo(positions.red.x, 6);
-    expect(positions.blue.y).toBeCloseTo(positions.red.y, 6);
+    expect(positions.left.x).toBeCloseTo(positions.right.x, 6);
+    expect(positions.left.y).toBeCloseTo(positions.right.y, 6);
   });
 
   it("separates again when BOTH are reversed (same chirality)", async () => {
     const positions = await positionsFor({
-      blueBuugengFlipped: true,
-      redBuugengFlipped: true,
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: true,
     });
 
     const separation =
-      Math.abs(positions.blue.x - positions.red.x) +
-      Math.abs(positions.blue.y - positions.red.y);
+      Math.abs(positions.left.x - positions.right.x) +
+      Math.abs(positions.left.y - positions.right.y);
     expect(separation).toBeGreaterThan(0.5);
   });
 
@@ -138,24 +142,27 @@ describe("PictographPreparer — buugeng chirality reaches the beta offset", () 
       propPlacer
     );
     const base = {
-      bluePropType: PropType.BUUGENG,
-      redPropType: PropType.BUUGENG,
+      leftPropType: PropType.BUUGENG,
+      rightPropType: PropType.BUUGENG,
     };
 
     const same = await preparer.prepareSingle(pictograph, {
       ...base,
-      blueBuugengFlipped: false,
-      redBuugengFlipped: false,
+      leftBuugengFlipped: false,
+      rightBuugengFlipped: false,
     });
     const opposite = await preparer.prepareSingle(pictograph, {
       ...base,
-      blueBuugengFlipped: false,
-      redBuugengFlipped: true,
+      leftBuugengFlipped: false,
+      rightBuugengFlipped: true,
     });
 
-    expect(opposite._prepared!.propPositions.blue.x).not.toBeCloseTo(
-      same._prepared!.propPositions.blue.x,
-      6
-    );
+    const sameLeft = same._prepared!.propPositions.left;
+    const oppositeLeft = opposite._prepared!.propPositions.left;
+    if (!sameLeft || !oppositeLeft) {
+      throw new Error("Expected prepared left-hand positions");
+    }
+
+    expect(oppositeLeft.x).not.toBeCloseTo(sameLeft.x, 6);
   });
 });

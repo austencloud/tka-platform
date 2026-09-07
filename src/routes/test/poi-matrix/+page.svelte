@@ -33,8 +33,8 @@
 	const store = createPoiLegalVerdicts();
 
 	const filters = $derived(matrixFiltersForSize(size));
-	const rowAxis = $derived(data ? applyFilter(data.axis, filters.blue, filters.collapse) : []);
-	const colAxis = $derived(data ? applyFilter(data.axis, filters.red, filters.collapse) : []);
+	const rowAxis = $derived(data ? applyFilter(data.axis, filters.left, filters.collapse) : []);
+	const colAxis = $derived(data ? applyFilter(data.axis, filters.right, filters.collapse) : []);
 	const cellCount = $derived(rowAxis.length * colAxis.length);
 
 	const judgedInView = $derived.by(() => {
@@ -127,7 +127,7 @@
 				if (view === "illegal") return verdict !== "illegal";
 				return false;
 			}}
-			onselect={(pair) => store.cycle(pair.blue, pair.red)}
+			onselect={(pair) => store.cycle(pair.left, pair.right)}
 		/>
 	{/if}
 </div>

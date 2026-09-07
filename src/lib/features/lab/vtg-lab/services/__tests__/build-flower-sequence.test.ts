@@ -4,7 +4,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 
 // Minimal two-hand archetype: one step, both hands pro, south start, in orientation.
 function proArchetype(): SequenceData {
-  const motion = (color: "blue" | "red") => ({
+  const motion = (color: "left" | "right") => ({
     motionType: "pro",
     rotationDirection: "cw",
     startLocation: "s",
@@ -24,10 +24,10 @@ function proArchetype(): SequenceData {
     id: "step-1",
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
-    motions: { blue: motion("blue"), red: motion("red") },
+    motions: { left: motion("left"), right: motion("right") },
     gridMode: "diamond",
   };
   return {
@@ -41,7 +41,7 @@ function proArchetype(): SequenceData {
       endPos: "alpha",
       letter: null,
       gridMode: "diamond",
-      motions: { blue: motion("blue"), red: motion("red") },
+      motions: { left: motion("left"), right: motion("right") },
     },
     steps: [step as any],
     thumbnails: [],
@@ -61,36 +61,36 @@ describe("buildFlowerSequence", () => {
     const seq = buildFlowerSequence(
       proArchetype(),
       { style: "pro", turns: 1, ori: "in", grid: "diamond", petals: 2 },
-      "blue",
+      "left",
       []
     );
     const m = seq.steps[0]!.motions;
-    expect(m.blue?.isVisible).toBe(true);
-    expect(m.red?.isVisible).toBe(false);
+    expect(m.left?.isVisible).toBe(true);
+    expect(m.right?.isVisible).toBe(false);
   });
 
   it("tags the shown hand's prop as a club", () => {
     const seq = buildFlowerSequence(
       proArchetype(),
       { style: "pro", turns: 1, ori: "in", grid: "diamond", petals: 2 },
-      "blue",
+      "left",
       []
     );
-    expect(seq.steps[0]!.motions.blue?.propType).toBe("club");
+    expect(seq.steps[0]!.motions.left?.propType).toBe("club");
   });
 
   it("repeats a quarter-turn position path until the prop orientation closes", () => {
     const seq = buildFlowerSequence(
       proArchetype(),
       { style: "pro", turns: 0.25, ori: "in", grid: "diamond", petals: 1 },
-      "blue",
+      "left",
       []
     );
 
     expect(seq.orientationCycleCount).toBe(8);
     expect(seq.steps).toHaveLength(8);
-    expect(seq.steps.at(-1)!.motions.blue?.endOrientation).toBe(
-      seq.steps[0]!.motions.blue?.startOrientation
+    expect(seq.steps.at(-1)!.motions.left?.endOrientation).toBe(
+      seq.steps[0]!.motions.left?.startOrientation
     );
   });
 
@@ -98,28 +98,28 @@ describe("buildFlowerSequence", () => {
     const inside = buildFlowerSequence(
       proArchetype(),
       { style: "pro", turns: 0.75, ori: "in", grid: "diamond", petals: 3 },
-      "blue",
+      "left",
       []
     );
     const outside = buildFlowerSequence(
       proArchetype(),
       { style: "pro", turns: 0.75, ori: "out", grid: "diamond", petals: 3 },
-      "blue",
+      "left",
       []
     );
 
-    expect(inside.steps[0]!.motions.blue?.startOrientation).toBe("in");
-    expect(outside.steps[0]!.motions.blue?.startOrientation).toBe("clock");
+    expect(inside.steps[0]!.motions.left?.startOrientation).toBe("in");
+    expect(outside.steps[0]!.motions.left?.startOrientation).toBe("clock");
   });
 
   it("preserves the radial in/out pair for denominator-one flowers", () => {
     const outside = buildFlowerSequence(
       proArchetype(),
       { style: "pro", turns: 1.5, ori: "out", grid: "diamond", petals: 3 },
-      "blue",
+      "left",
       []
     );
 
-    expect(outside.steps[0]!.motions.blue?.startOrientation).toBe("out");
+    expect(outside.steps[0]!.motions.left?.startOrientation).toBe("out");
   });
 });

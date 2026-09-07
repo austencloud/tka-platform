@@ -73,7 +73,7 @@ async function main() {
 			if (!seq.steps || seq.steps.length === 0) return;
 			try {
 				const paths = calculate(seq.steps as never, "staff", "staff");
-				if (paths.blue.length === 0 && paths.red.length === 0 && paths.purple.length === 0) return;
+				if (paths.left.length === 0 && paths.right.length === 0 && paths.purple.length === 0) return;
 				const sk = shapeKey(paths);
 				const ok = orbitKey(paths);
 				const ref: IndexedRef = {

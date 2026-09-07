@@ -11,6 +11,10 @@ import {
 } from "$lib/shared/community/domain/profile-prop-catalog";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
+// Persisted profiles outlive the enum: one saved while Sickles existed still
+// carries "sickles" after its 2026-09-06 removal, and must still be purged.
+const REMOVED_SICKLES = "sickles" as PropType;
+
 describe("profile prop catalog", () => {
   it("folds club and torch assets into one Club skill", () => {
     const club = getProfilePropFamily(PropType.TORCH);
@@ -60,8 +64,8 @@ describe("profile prop catalog", () => {
     expect(representatives).not.toContain(PropType.CHICKEN);
     expect(representatives).not.toContain(PropType.GUITAR);
     expect(representatives).not.toContain(PropType.HAND);
-    expect(representatives).not.toContain(PropType.SICKLES);
-    expect(normalizeProfileSkill(PropType.SICKLES)).toBeNull();
+    expect(representatives).not.toContain(REMOVED_SICKLES);
+    expect(normalizeProfileSkill(REMOVED_SICKLES)).toBeNull();
   });
 
   it("preserves unsupported saved props as legacy values", () => {
@@ -76,7 +80,7 @@ describe("profile prop catalog", () => {
         PropType.BIGSTAFF,
         PropType.TORCH,
         PropType.BIGTRIAD,
-        PropType.SICKLES,
+        REMOVED_SICKLES,
         PropType.CHICKEN,
       ])
     ).toEqual([

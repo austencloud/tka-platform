@@ -49,12 +49,12 @@ export const HAND_MOTION_QUESTIONS = [
   {
     letter: TkaLetter.W,
     prompt:
-      "The red hand follows a curve to the next point. What path is that?",
+      "The right hand follows a curve to the next point. What path is that?",
     answer: HandPath.SHIFT,
   },
   {
     letter: TkaLetter.PHI,
-    prompt: "The red hand cuts straight across the grid. What path is that?",
+    prompt: "The right hand cuts straight across the grid. What path is that?",
     answer: HandPath.DASH,
   },
   {

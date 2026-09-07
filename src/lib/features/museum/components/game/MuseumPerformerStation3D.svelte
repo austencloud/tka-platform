@@ -16,9 +16,9 @@
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    createAvatarInstanceState,
+    createCharacterInstanceState,
     makeStandaloneDeps,
-  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -111,7 +111,7 @@
   // Create the avatar instance once - it persists across sequence swaps.
   // loadSequence() is called reactively whenever sequenceId changes.
   let performerState = $state<ReturnType<
-    typeof createAvatarInstanceState
+    typeof createCharacterInstanceState
   > | null>(null);
 
   // Resolved sequence data (from hardcoded exhibits or Firestore)
@@ -119,7 +119,7 @@
 
   // One-time init: create the avatar instance
   try {
-    performerState = createAvatarInstanceState(
+    performerState = createCharacterInstanceState(
       {
         id: `museum-station-${stationId}`,
         positionX: worldX,
@@ -212,20 +212,20 @@
 
   // Prop type: prefer the sequence's intended prop, fall back to global settings.
   // This way Shift+P cycles the museum performers too.
-  const bluePropType = $derived.by((): PropType => {
-    if (resolvedSequence?.intendedProp?.bluePropType)
-      return resolvedSequence.intendedProp.bluePropType;
+  const leftPropType = $derived.by((): PropType => {
+    if (resolvedSequence?.intendedProp?.leftPropType)
+      return resolvedSequence.intendedProp.leftPropType;
     try {
-      return settingsService.settings.bluePropType ?? PropType.STAFF;
+      return settingsService.settings.leftPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
   });
-  const redPropType = $derived.by((): PropType => {
-    if (resolvedSequence?.intendedProp?.redPropType)
-      return resolvedSequence.intendedProp.redPropType;
+  const rightPropType = $derived.by((): PropType => {
+    if (resolvedSequence?.intendedProp?.rightPropType)
+      return resolvedSequence.intendedProp.rightPropType;
     try {
-      return settingsService.settings.redPropType ?? PropType.STAFF;
+      return settingsService.settings.rightPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
@@ -250,6 +250,15 @@
   {/if}
 
   {#if performerState}
+    <!--
+      @austencloud/scene-3d still speaks its colour-named boundary: the rig
+      reads `avatarState.bluePropState` and renders the effects slot with
+      blue/red names, while the app's instance state has been left/right since
+      the performer-relative migration. Pass the states explicitly, the way
+      LiveSequencePerformer3D does, or the rig sees no prop state, mounts no
+      prop, and the performer stands empty-handed with nothing driving the
+      hands. That was every museum performer from 2026-08-31 until this.
+    -->
     <PerformerRig
       position={{ x: 0, z: 0 }}
       {facingAngle}
@@ -258,8 +267,10 @@
       {showGrid}
       visiblePlanes={new Set([Plane.WALL])}
       gridMode={(resolvedSequence?.gridMode ?? "diamond") as GridMode}
-      bluePropType={toScenePropType(bluePropType)}
-      redPropType={toScenePropType(redPropType)}
+      bluePropType={toScenePropType(leftPropType)}
+      redPropType={toScenePropType(rightPropType)}
+      bluePropState={performerState.leftPropState}
+      redPropState={performerState.rightPropState}
       groundOffset={museumGroundOffset}
       enableLocomotion={true}
       enableFootPlanting={true}
@@ -268,25 +279,25 @@
       isPlaying={performerState.isPlaying}
     >
       {#snippet effectsSlot({
-        bluePropState,
-        redPropState,
-        blueHandPos,
-        redHandPos,
+        bluePropState: leftPropState,
+        redPropState: rightPropState,
+        blueHandPos: leftHandPos,
+        redHandPos: rightHandPos,
         isPlaying: rigPlaying,
         staffHalfLength,
         effectsParentRef,
       })}
         {#if tipEffectMap}
           <EffectOrchestrator3D
-            {bluePropState}
-            {redPropState}
-            bluePropType={toScenePropType(bluePropType)}
-            redPropType={toScenePropType(redPropType)}
+            {leftPropState}
+            {rightPropState}
+            leftPropType={toScenePropType(leftPropType)}
+            rightPropType={toScenePropType(rightPropType)}
             isPlaying={rigPlaying}
             {staffHalfLength}
             {tipEffectMap}
-            {blueHandPos}
-            {redHandPos}
+            {leftHandPos}
+            {rightHandPos}
             {effectsParentRef}
             currentStep={performerState.currentStepIndex +
               performerState.progress}

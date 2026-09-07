@@ -439,9 +439,9 @@ function formatTurn(v: number): string {
  */
 export function getTnDTurnPatternOptions(selectedFamilyBaseSeqs: number): TnDTurnPatternOption[] {
   const opts: TnDTurnPatternOption[] = [];
-  for (const blue of TURN_VALUES) {
-    for (const red of TURN_VALUES) {
-      const tp = `${formatTurn(blue)}|${formatTurn(red)}`;
+  for (const left of TURN_VALUES) {
+    for (const right of TURN_VALUES) {
+      const tp = `${formatTurn(left)}|${formatTurn(right)}`;
       opts.push({ turnPattern: tp, label: tp, sequenceCount: selectedFamilyBaseSeqs });
     }
   }

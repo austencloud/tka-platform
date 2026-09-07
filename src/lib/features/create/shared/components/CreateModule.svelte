@@ -44,12 +44,13 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { CREATE_TABS } from "$lib/shared/navigation/config/tab-definitions";
+  import { handleSectionChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { setSideBySideLayout } from "$lib/shared/application/state/animation-visibility-state.svelte";
   import { onMount, setContext, tick } from "svelte";
   import ErrorBanner from "./ErrorBanner.svelte";
-  import AltHotkeyOverlay from "../../components/AltHotkeyOverlay.svelte";
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
   import type { CreateModuleInitializer } from "../services/create-module-initializer";
   import type { CreateModuleHandlers } from "../services/create-module-handlers";
@@ -63,6 +64,9 @@
   import TransferConfirmDialog from "./TransferConfirmDialog.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import StandardWorkspaceLayout from "./StandardWorkspaceLayout.svelte";
+  import CreateFrontDoor from "./CreateFrontDoor.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { setCreateModuleContext } from "../context/create-module-context";
   import LOOPCoordinator from "./coordinators/LOOPCoordinator.svelte";
   import StartEndCoordinator from "./coordinators/StartEndCoordinator.svelte";
@@ -75,13 +79,15 @@
   import { SessionManager } from "../services/session-manager.svelte";
   import { Autosaver } from "../services/autosaver";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import {
+    featureFlagService,
+    featureFlagState,
+  } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
-  import {
-    resolveAccessTier,
-    getMaxSteps,
-  } from "$lib/shared/auth/domain/access-tier";
+  import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
+  import { isTabAccessible } from "$lib/shared/auth/domain/guest-access-config";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
@@ -94,6 +100,11 @@
   import { createConstructTutorialState } from "../../construct/tutorial/state/construct-tutorial-state.svelte";
   import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
+  import {
+    createSequenceTransformActionDispatcher,
+    type SequenceTransformActionDispatcher,
+  } from "../services/sequence-transform-action-dispatcher";
+  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 
   const logger = createComponentLogger("CreateModule");
   const accountSetupState = tryGetAccountSetupContext();
@@ -117,6 +128,7 @@
   let panelPersistenceService: PanelPersister | null = $state(null);
   let CreateModuleState: CreateModuleState | null = $state(null);
   let constructTabState: ConstructTabState | null = $state(null);
+  let sequenceTransformActions: SequenceTransformActionDispatcher | null = null;
 
   // Session management services
   let sessionManager: SessionManager | null = $state(null);
@@ -145,13 +157,32 @@
       isPremiumOrAbove(authState.role)
     )
   );
+  const availableCreateMethods = $derived.by(() => {
+    // Establish the same reactive flag dependency as the navigation surfaces.
+    void featureFlagState.flagsVersion;
+    return CREATE_TABS.filter(
+      (tab) =>
+        tab.metadata?.isCreationMethod === true &&
+        featureFlagService.canAccessTab("create", tab.id) &&
+        isTabAccessible("create", tab.id, accessTier)
+    );
+  });
+  const lastUsedCreateMode = $derived(
+    navigationState.hasRememberedCreateMode
+      ? navigationState.currentCreateMode
+      : null
+  );
   // Only guests get a step-cap ask — straight to the auth screen, whose
   // contextual copy carries the why; no intermediate nudge (Austen,
   // 2026-08-10). Logged-in users are hard-capped at 64 with no upsell, so the
   // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
   function showStepCapGate() {
     if (accessTier === "guest") {
-      authDrawerState.show("signup", "step-cap-guest");
+      authDrawerState.show(
+        "signup",
+        "step-cap-guest",
+        CreateModuleState?.sequenceState.currentSequence?.id
+      );
     }
   }
 
@@ -209,6 +240,7 @@
     },
     constructTutorialState,
     panelState,
+    getSequenceTransformActions: () => sequenceTransformActions,
     get services() {
       if (!services) {
         throw new Error("Services not yet initialized");
@@ -422,11 +454,22 @@
           );
         }
 
+        sequenceTransformActions = createSequenceTransformActionDispatcher({
+          getSequenceState: () =>
+            CreateModuleState?.getActiveTabSequenceState() ?? null,
+          getCreateMode: () => navigationState.activeTab,
+          pushUndoSnapshot: (type) => CreateModuleState?.pushUndoSnapshot(type),
+          hapticService: getHapticFeedback(),
+          setGridRotationDirection,
+        });
+
         // Set global reference for keyboard shortcuts
         setCreateModuleStateRef({
           CreateModuleState,
           constructTabState,
           panelState,
+          executeSequenceAction: (action, options) =>
+            sequenceTransformActions!.execute(action, options),
           requestClearSequence: () => handleClearSequence(),
         });
 
@@ -477,6 +520,12 @@
           if (loadResult.targetTab) {
             navigationState.setActiveTab(loadResult.targetTab);
           }
+
+          // A deep-linked sequence already carries its start position. Bring
+          // Construct's picker state into line with that sequence immediately,
+          // otherwise the workspace asks for a start position the user has
+          // already chosen and hides the available next pictographs.
+          syncConstructWorkspaceUi();
 
           hasDeepLink = true;
         }
@@ -574,6 +623,7 @@
         window.removeEventListener("resize", checkIsMobile);
       }
       setCreateModuleStateRef(null);
+      sequenceTransformActions = null;
 
       // Cleanup effect coordinator
       if (effectCleanup) {
@@ -615,7 +665,10 @@
     // Enforce tier step cap before adding a new step to the sequence
     const currentSteps =
       CreateModuleState?.sequenceState.getCurrentSteps().length ?? 0;
-    const maxSteps = getMaxSteps(accessTier);
+    const maxSteps = authDrawerState.guestEncore.maxSteps(
+      accessTier,
+      CreateModuleState?.sequenceState.currentSequence?.id
+    );
     if (currentSteps >= maxSteps) {
       showStepCapGate();
       return;
@@ -633,6 +686,10 @@
 
   function clearError() {
     error = null;
+  }
+
+  function handleCreateMethodSelected(methodId: string): void {
+    handleSectionChange(methodId);
   }
 
   function handleOpenExportPanel() {
@@ -861,132 +918,184 @@
   });
 </script>
 
-{#if error}
-  <ErrorBanner message={error} onDismiss={clearError} />
-{:else if CreateModuleState && constructTabState && services}
-  <!-- Alt Hotkey Overlay (desktop only, shows on Alt hold) -->
-  <AltHotkeyOverlay />
-
-  <div class="create-tab">
-    <StandardWorkspaceLayout
-      {shouldUseSideBySideLayout}
-      {CreateModuleState}
-      {panelState}
-      {currentDisplayWord}
-      {currentLetterSources}
-      {isInputMode}
-      bind:animatingStepNumber
-      bind:toolPanelRef
-      bind:buttonPanelElement
-      bind:toolPanelElement
-      onClearSequence={handleClearSequence}
-      onViewSequence={handleOpenExportPanel}
-      onOptionSelected={handleOptionSelected}
-      onOpenFilters={handleOpenFilterPanel}
-      onCloseFilters={() => {
-        panelState.closeFilterPanel();
-      }}
-    />
-  </div>
-
-  <!-- Video Record Coordinator (deferred until first opened) -->
-  <LazyMount
-    loader={() => import("./coordinators/VideoRecordCoordinator.svelte")}
-    active={panelState.isVideoRecordPanelOpen}
+{#snippet frontDoorSurface()}
+  <CreateFrontDoor
+    methods={availableCreateMethods}
+    active={navigationState.isCreateFrontDoorOpen}
+    source={navigationState.createFrontDoorSource}
+    lastUsedMode={lastUsedCreateMode}
+    onSelect={handleCreateMethodSelected}
   />
+{/snippet}
 
-  <!-- Always-mounted launcher (light): owns deep-link open + view-sequence redirect.
+{#snippet workspaceSurface()}
+  <div class="create-workspace-source">
+    <div class="create-workspace-body">
+      {#if error}
+        <ErrorBanner message={error} onDismiss={clearError} />
+      {:else if CreateModuleState && constructTabState && services}
+        <div class="create-tab">
+          <StandardWorkspaceLayout
+            {shouldUseSideBySideLayout}
+            {CreateModuleState}
+            {panelState}
+            {currentDisplayWord}
+            {currentLetterSources}
+            {isInputMode}
+            bind:animatingStepNumber
+            bind:toolPanelRef
+            bind:buttonPanelElement
+            bind:toolPanelElement
+            onClearSequence={handleClearSequence}
+            onViewSequence={handleOpenExportPanel}
+            onOptionSelected={handleOptionSelected}
+            onOpenFilters={handleOpenFilterPanel}
+            onCloseFilters={() => {
+              panelState.closeFilterPanel();
+            }}
+          />
+        </div>
+
+        <!-- Video Record Coordinator (deferred until first opened) -->
+        <LazyMount
+          loader={() => import("./coordinators/VideoRecordCoordinator.svelte")}
+          active={panelState.isVideoRecordPanelOpen}
+        />
+
+        <!-- Always-mounted launcher (light): owns deep-link open + view-sequence redirect.
        The heavy export/animation drawer host is deferred until first open via
        LazyMount, then idle-prefetched so the first open is instant. -->
-  <SequenceDrawerLauncher />
-  <LazyMount
-    loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
-    active={panelState.isExportPanelOpen}
-    prefetch
-  />
+        <SequenceDrawerLauncher />
+        <LazyMount
+          loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
+          active={panelState.isExportPanelOpen}
+          prefetch
+        />
 
-  <!-- Sequence Actions Coordinator (deferred until first opened) -->
-  <LazyMount
-    loader={() => import("./coordinators/SequenceActionsCoordinator.svelte")}
-    active={panelState.isSequenceActionsPanelOpen}
-  />
+        <!-- Sequence Actions Coordinator (deferred until first opened) -->
+        <LazyMount
+          loader={() =>
+            import("./coordinators/SequenceActionsCoordinator.svelte")}
+          active={panelState.isSequenceActionsPanelOpen}
+        />
 
-  <!-- Step Editor Coordinator - Opens when clicking a pictograph (deferred until first opened) -->
-  <LazyMount
-    loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
-    active={panelState.isStepEditorPanelOpen}
-    prefetch
-  />
+        <!-- Step Editor Coordinator - Opens when clicking a pictograph (deferred until first opened) -->
+        <LazyMount
+          loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
+          active={panelState.isStepEditorPanelOpen}
+          prefetch
+        />
 
-  <!-- LOOP Coordinator -->
-  <LOOPCoordinator />
+        <!-- LOOP Coordinator -->
+        <LOOPCoordinator />
 
-  <!-- Start/End Options Coordinator -->
-  <StartEndCoordinator />
+        <!-- Start/End Options Coordinator -->
+        <StartEndCoordinator />
 
-  <!-- Save to Library Panel - Rendered at root level to avoid stacking context
+        <!-- Save to Library Panel - Rendered at root level to avoid stacking context
        issues. Deferred until first opened; keep-alive preserves close animation. -->
-  <LazyMount
-    loader={() => import("./SaveToLibraryPanel.svelte")}
-    active={panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel}
-    props={{
-      show: panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel,
-      word: currentDisplayWord,
-      onClose: () => panelState.closeSaveToLibraryPanel(),
-    }}
-  />
+        <LazyMount
+          loader={() => import("./SaveToLibraryPanel.svelte")}
+          active={panelState.isSaveToLibraryPanelOpen &&
+            canShowSaveToLibraryPanel}
+          props={{
+            show:
+              panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel,
+            word: currentDisplayWord,
+            onClose: () => panelState.closeSaveToLibraryPanel(),
+          }}
+        />
 
-  <!-- Sequence Transfer Confirmation Dialog -->
-  <TransferConfirmDialog
-    bind:isOpen={showTransferConfirmation}
-    {isMobile}
-    onConfirm={handleConfirmTransfer}
-    onCancel={handleCancelTransfer}
-  />
+        <!-- Sequence Transfer Confirmation Dialog -->
+        <TransferConfirmDialog
+          bind:isOpen={showTransferConfirmation}
+          {isMobile}
+          onConfirm={handleConfirmTransfer}
+          onCancel={handleCancelTransfer}
+        />
 
-  <!-- Clear Sequence Confirmation Dialog -->
-  <ConfirmDialog
-    bind:isOpen={showClearSequenceConfirm}
-    title="Clear Sequence?"
-    message="This will remove all steps and the start position. Use undo to restore if needed."
-    confirmText="Clear All"
-    cancelText="Keep"
-    variant="danger"
-    showDontAskAgain={true}
-    ghostConfirm={true}
-    onConfirm={confirmClearSequence}
-    onCancel={cancelClearSequence}
-    onDontAskAgainChange={handleSkipClearConfirmationChange}
-  />
+        <!-- Clear Sequence Confirmation Dialog -->
+        <ConfirmDialog
+          bind:isOpen={showClearSequenceConfirm}
+          title="Clear Sequence?"
+          message="This will remove all steps and the start position. Use undo to restore if needed."
+          confirmText="Clear All"
+          cancelText="Keep"
+          variant="danger"
+          showDontAskAgain={true}
+          ghostConfirm={true}
+          onConfirm={confirmClearSequence}
+          onCancel={cancelClearSequence}
+          onDontAskAgainChange={handleSkipClearConfirmationChange}
+        />
 
-  <!-- LOOP Completion Confirmation Dialog -->
-  <ConfirmDialog
-    bind:isOpen={showLoopConfirm}
-    title="Apply {pendingLoopComponentName} LOOP?"
-    message="This will add {pendingLoopStepCount} steps to your sequence."
-    confirmText="Apply"
-    cancelText="Cancel"
-    variant="info"
-    showDontAskAgain={true}
-    onConfirm={confirmLoopCompletion}
-    onCancel={cancelLoopCompletion}
-    onDontAskAgainChange={handleSkipLoopConfirmationChange}
-  />
+        <!-- LOOP Completion Confirmation Dialog -->
+        <ConfirmDialog
+          bind:isOpen={showLoopConfirm}
+          title="Apply {pendingLoopComponentName} LOOP?"
+          message="This will add {pendingLoopStepCount} steps to your sequence."
+          confirmText="Apply"
+          cancelText="Cancel"
+          variant="info"
+          showDontAskAgain={true}
+          onConfirm={confirmLoopCompletion}
+          onCancel={cancelLoopCompletion}
+          onDontAskAgainChange={handleSkipLoopConfirmationChange}
+        />
 
-  <!-- Prop unlock celebration - opens on milestone or via the prop-button
+        <!-- Prop unlock celebration - opens on milestone or via the prop-button
        redemption badge; renders above module content at the module root. -->
-  <PropUnlockCelebration />
-{:else}
-  <!-- Loading state while async initialization completes -->
-  <div class="create-tab create-loading">
-    <IndeterminateBar height={3} position="top" />
-    {#if initProgress}
-      <p class="init-status">{initProgress}</p>
-    {/if}
+        <PropUnlockCelebration />
+      {:else}
+        <!-- Loading state while async initialization completes -->
+        <div class="create-tab create-loading">
+          <IndeterminateBar height={3} position="top" />
+          {#if initProgress}
+            <p class="init-status">{initProgress}</p>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
-{/if}
+{/snippet}
+
+<div class="create-module-stage">
+  <DualSourceCrossfade
+    active={navigationState.isCreateFrontDoorOpen ? "first" : "second"}
+    first={frontDoorSurface}
+    second={workspaceSurface}
+    duration={DURATION.emphasis}
+  />
+</div>
 
 <style>
+  .create-module-stage,
+  .create-workspace-source,
+  .create-workspace-body {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .create-module-stage {
+    overflow: hidden;
+  }
+
+  .create-workspace-source {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    container-type: inline-size;
+  }
+
+  .create-workspace-body {
+    flex: 1;
+    height: auto;
+    position: relative;
+    overflow: hidden;
+  }
+
   .create-tab {
     display: flex;
     flex-direction: column;

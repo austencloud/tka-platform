@@ -15,7 +15,13 @@
   import type { CellEffect } from "$lib/shared/animation-engine/domain/compose-types";
   import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 
-  const SHIPPED_CELL_EFFECTS = new Set<string>(["none", "fire", "charcoal", "led", "trails"]);
+  const SHIPPED_CELL_EFFECTS = new Set<string>([
+    "none",
+    "fire",
+    "charcoal",
+    "led",
+    "trails",
+  ]);
   function asCellEffect(e: EffectType): CellEffect {
     return SHIPPED_CELL_EFFECTS.has(e) ? (e as CellEffect) : "none";
   }
@@ -27,8 +33,8 @@
     currentEffect,
     currentTrailMode,
     currentMap,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onSetEffect,
     onSetTrailMode,
     onUpdateMap,
@@ -36,8 +42,8 @@
     currentEffect: CellEffect;
     currentTrailMode: TrailMode | undefined;
     currentMap: TipEffectMap;
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     onSetEffect: (effect: CellEffect) => void;
     onSetTrailMode: (mode: TrailMode) => void;
     onUpdateMap: (map: TipEffectMap) => void;
@@ -79,8 +85,8 @@
     localMap = { ...currentMap };
   });
 
-  const blueTipCount = $derived(getTipPoints(bluePropType).points.length);
-  const redTipCount = $derived(getTipPoints(redPropType).points.length);
+  const leftTipCount = $derived(getTipPoints(leftPropType).points.length);
+  const rightTipCount = $derived(getTipPoints(rightPropType).points.length);
 
   interface ChannelRow {
     key: string;
@@ -91,24 +97,24 @@
   const channels: ChannelRow[] = $derived.by(() => {
     if (scope === "hand") {
       return [
-        { key: "0", color: "#3b82f6", label: "Blue" },
-        { key: "1", color: "#ef4444", label: "Red" },
+        { key: "0", color: "#3b82f6", label: "Left" },
+        { key: "1", color: "#ef4444", label: "Right" },
       ];
     }
     if (scope === "tip") {
       const rows: ChannelRow[] = [];
-      for (let t = 0; t < blueTipCount; t++) {
+      for (let t = 0; t < leftTipCount; t++) {
         rows.push({
           key: `0-${t}`,
           color: "#3b82f6",
-          label: `Blue ${getTipLabel(bluePropType, t, blueTipCount)}`,
+          label: `Left ${getTipLabel(leftPropType, t, leftTipCount)}`,
         });
       }
-      for (let t = 0; t < redTipCount; t++) {
+      for (let t = 0; t < rightTipCount; t++) {
         rows.push({
           key: `1-${t}`,
           color: "#ef4444",
-          label: `Red ${getTipLabel(redPropType, t, redTipCount)}`,
+          label: `Right ${getTipLabel(rightPropType, t, rightTipCount)}`,
         });
       }
       return rows;
@@ -132,11 +138,22 @@
   );
 
   function getEffectMeta(effect: EffectType) {
-    if (effect === "none") return { icon: "fa-ban", color: "#9ca3af", label: "None" };
-    return effectGrid.find((e) => e.value === effect) ?? { icon: "fa-ban", color: "#9ca3af", label: "None" };
+    if (effect === "none")
+      return { icon: "fa-ban", color: "#9ca3af", label: "None" };
+    return (
+      effectGrid.find((e) => e.value === effect) ?? {
+        icon: "fa-ban",
+        color: "#9ca3af",
+        label: "None",
+      }
+    );
   }
 
-  function getTipLabel(propType: string, tipIndex: number, tipCount: number): string {
+  function getTipLabel(
+    propType: string,
+    tipIndex: number,
+    tipCount: number
+  ): string {
     if (tipCount === 1) return "Tip";
     if (tipCount === 2) return tipIndex === 0 ? "Thumb" : "Pinky";
     return `Tip ${tipIndex + 1}`;
@@ -169,10 +186,14 @@
       targetKey = "*";
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
-        const blueKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
-        const redKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
-        newMap["0"] = { effect: mostCommonEffect(blueKeys) };
-        newMap["1"] = { effect: mostCommonEffect(redKeys) };
+        const leftKeys = Object.keys(localMap).filter((k) =>
+          k.startsWith("0-")
+        );
+        const rightKeys = Object.keys(localMap).filter((k) =>
+          k.startsWith("1-")
+        );
+        newMap["0"] = { effect: mostCommonEffect(leftKeys) };
+        newMap["1"] = { effect: mostCommonEffect(rightKeys) };
       } else {
         const base = currentEffect as EffectType;
         newMap["0"] = { effect: base };
@@ -180,14 +201,16 @@
       }
       targetKey = "0";
     } else {
-      const base = oldScope === "cell"
-        ? (currentEffect as EffectType)
-        : (localMap["0"]?.effect ?? "none");
-      const redBase = oldScope === "hand"
-        ? (localMap["1"]?.effect ?? "none")
-        : base;
-      for (let t = 0; t < blueTipCount; t++) newMap[`0-${t}`] = { effect: base };
-      for (let t = 0; t < redTipCount; t++) newMap[`1-${t}`] = { effect: redBase };
+      const base =
+        oldScope === "cell"
+          ? (currentEffect as EffectType)
+          : (localMap["0"]?.effect ?? "none");
+      const redBase =
+        oldScope === "hand" ? (localMap["1"]?.effect ?? "none") : base;
+      for (let t = 0; t < leftTipCount; t++)
+        newMap[`0-${t}`] = { effect: base };
+      for (let t = 0; t < rightTipCount; t++)
+        newMap[`1-${t}`] = { effect: redBase };
       targetKey = "0-0";
     }
 
@@ -206,14 +229,18 @@
     let best: EffectType = "none";
     let bestCount = 0;
     for (const [e, c] of Object.entries(counts)) {
-      if (c > bestCount) { best = e as EffectType; bestCount = c; }
+      if (c > bestCount) {
+        best = e as EffectType;
+        bestCount = c;
+      }
     }
     return best;
   }
 
   function inferScope(map: TipEffectMap): Scope {
     const keys = Object.keys(map);
-    if (keys.length === 0 || (keys.length === 1 && keys[0] === "*")) return "cell";
+    if (keys.length === 0 || (keys.length === 1 && keys[0] === "*"))
+      return "cell";
     if (keys.some((k) => k.includes("-"))) return "tip";
     if (keys.includes("0") || keys.includes("1")) return "hand";
     return "cell";
@@ -224,7 +251,11 @@
   <!-- Scope selector -->
   <div class="scope-row">
     <span class="scope-label" id="effect-scope-label">SCOPE</span>
-    <div class="scope-strip" role="radiogroup" aria-labelledby="effect-scope-label">
+    <div
+      class="scope-strip"
+      role="radiogroup"
+      aria-labelledby="effect-scope-label"
+    >
       {#each scopes as s}
         <button
           class="scope-seg"
@@ -242,7 +273,9 @@
 
   <!-- Channel rows (hand/tip only) -->
   {#if scope !== "cell"}
-    <span class="assign-label">ASSIGN PER {scope === "hand" ? "HAND" : "TIP"}</span>
+    <span class="assign-label"
+      >ASSIGN PER {scope === "hand" ? "HAND" : "TIP"}</span
+    >
     <div class="channels">
       {#each channels as ch (ch.key)}
         {@const chEffect = localMap[ch.key]?.effect ?? "none"}
@@ -251,7 +284,9 @@
         <button
           class="ch-row"
           class:target={isTarget}
-          onclick={() => { targetKey = ch.key; }}
+          onclick={() => {
+            targetKey = ch.key;
+          }}
         >
           <span class="ch-dot" style:background={ch.color}></span>
           <span class="ch-label">{ch.label}</span>
@@ -298,7 +333,11 @@
   {#if gridTargetEffect === "trails"}
     <div class="sub-group">
       <span class="sub-label" id="trail-mode-label">TRAIL MODE</span>
-      <div class="trail-chips" role="radiogroup" aria-labelledby="trail-mode-label">
+      <div
+        class="trail-chips"
+        role="radiogroup"
+        aria-labelledby="trail-mode-label"
+      >
         {#each trailModes as mode}
           <button
             class="trail-chip"
@@ -334,8 +373,14 @@
   }
 
   @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .section-header {
@@ -384,22 +429,32 @@
     background: transparent;
     border: none;
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    transition: background 150ms ease, color 150ms ease;
+    transition:
+      background 150ms ease,
+      color 150ms ease;
   }
 
-  .scope-seg:last-child { border-right: none; }
+  .scope-seg:last-child {
+    border-right: none;
+  }
 
   .scope-seg:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .scope-seg.active {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 15%,
+      transparent
+    );
     color: var(--theme-accent-light, #d4b4ff);
     box-shadow: inset 0 -2px 0 var(--theme-accent-strong, #a855f7);
   }
 
-  .scope-seg i { font-size: 11px; }
+  .scope-seg i {
+    font-size: 11px;
+  }
 
   .assign-label {
     font-size: 13px;
@@ -425,7 +480,9 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     cursor: pointer;
-    transition: border-color 150ms ease, background 150ms ease;
+    transition:
+      border-color 150ms ease,
+      background 150ms ease;
   }
 
   .ch-row:hover {
@@ -433,9 +490,18 @@
   }
 
   .ch-row.target {
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent);
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 6%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 40%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 6%,
+      transparent
+    );
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
   }
 
   .ch-dot {
@@ -470,7 +536,9 @@
     color: var(--c);
   }
 
-  .ch-badge i { font-size: 12px; }
+  .ch-badge i {
+    font-size: 12px;
+  }
 
   .ch-badge.none {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -480,14 +548,20 @@
 
   .grid-hint {
     font-size: 12px;
-    color: color-mix(in srgb, var(--theme-accent-light, #a78bfa) 90%, transparent);
+    color: color-mix(
+      in srgb,
+      var(--theme-accent-light, #a78bfa) 90%,
+      transparent
+    );
     text-align: center;
     padding: 2px 0;
     font-weight: 500;
     letter-spacing: 0.3px;
   }
 
-  .grid-hint i { font-size: 10px; }
+  .grid-hint i {
+    font-size: 10px;
+  }
 
   /* ── 4×4 icon-only grid ───────────────────────────────────── */
   .effect-grid {
@@ -506,7 +580,10 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease;
   }
 
   .grid-cell i {
@@ -558,7 +635,9 @@
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: background 150ms ease, color 150ms ease;
+    transition:
+      background 150ms ease,
+      color 150ms ease;
   }
 
   .trail-chip:hover {
@@ -567,8 +646,16 @@
   }
 
   .trail-chip.active {
-    background: color-mix(in srgb, var(--theme-accent, #60a5fa) 14%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #60a5fa) 35%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #60a5fa) 14%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #60a5fa) 35%,
+      transparent
+    );
     color: var(--theme-accent, #60a5fa);
   }
 
@@ -583,7 +670,9 @@
     border-radius: 8px;
     cursor: pointer;
     width: 100%;
-    transition: background 150ms ease, border-color 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease;
   }
 
   .accordion-row:hover {
@@ -605,11 +694,15 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .unified-effects { animation: none; }
+    .unified-effects {
+      animation: none;
+    }
     .grid-cell,
     .trail-chip,
     .accordion-row,
     .scope-seg,
-    .ch-row { transition: none; }
+    .ch-row {
+      transition: none;
+    }
   }
 </style>

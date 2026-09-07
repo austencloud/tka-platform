@@ -33,13 +33,17 @@ describe("ephemeral animation settings", () => {
     const settings = createAnimationSettingsState({ ephemeral: true });
 
     expect(settings.trail.trackingMode).toBe(TrackingMode.BOTH_ENDS);
+    expect(settings.trail.lineWidth).toBe(4);
+    expect(settings.trail.glowBlur).toBe(2.5);
   });
 
   it("seeds from defaults and does not write localStorage", () => {
     let wrote = false;
-    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      wrote = true;
-    });
+    const spy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        wrote = true;
+      });
     const settings = createAnimationSettingsState({ ephemeral: true });
     settings.setBpm(99);
     expect(settings.bpm).toBe(99);
@@ -74,9 +78,34 @@ describe("animation settings migrations", () => {
       },
     };
 
-    const migrated = migrateAnimationSettings(current, ANIMATION_SETTINGS_VERSION);
+    const migrated = migrateAnimationSettings(
+      current,
+      ANIMATION_SETTINGS_VERSION
+    );
 
     expect(migrated.trail.trackingMode).toBe(TrackingMode.RIGHT_END);
+  });
+
+  it("restores literal blue/red trail and overlay colors", () => {
+    const legacy = {
+      ...DEFAULT_ANIMATION_SETTINGS,
+      version: 2,
+      trail: {
+        ...DEFAULT_ANIMATION_SETTINGS.trail,
+        leftColor: undefined,
+        rightColor: undefined,
+        blueColor: "#112233",
+        redColor: "#445566",
+        additionalLayerColors: [{ blue: "#778899", red: "#aabbcc" }],
+      },
+    };
+
+    const migrated = migrateAnimationSettings(legacy as never, legacy.version);
+    expect(migrated.trail).toMatchObject({
+      leftColor: "#112233",
+      rightColor: "#445566",
+      additionalLayerColors: [{ left: "#778899", right: "#aabbcc" }],
+    });
   });
 });
 

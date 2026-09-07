@@ -116,7 +116,7 @@ export async function calculateArrowPoint(
         placementFrame.motionData,
         placementFrame.pictographData.letter || "A",
         placementFrame.location ?? location,
-        motion.color,
+        motion.hand,
         soloMode
       );
       const displayedAdjustment = rotatePlacementVectorToDisplayed(

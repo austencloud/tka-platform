@@ -17,14 +17,14 @@ function deriveBoundaryPosition(
   pictograph: PictographData,
   boundary: "start" | "end"
 ): GridPosition | null {
-  const blue = pictograph.motions.blue;
-  const red = pictograph.motions.red;
-  if (!blue || !red) return null;
+  const left = pictograph.motions.left;
+  const right = pictograph.motions.right;
+  if (!left || !right) return null;
 
   try {
     return getGridPositionFromLocations(
-      boundary === "start" ? blue.startLocation : blue.endLocation,
-      boundary === "start" ? red.startLocation : red.endLocation
+      boundary === "start" ? left.startLocation : left.endLocation,
+      boundary === "start" ? right.startLocation : right.endLocation
     );
   } catch {
     return null;

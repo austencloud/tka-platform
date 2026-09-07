@@ -12,14 +12,14 @@ export function generateOrientationKey(
   pictographData: PictographData
 ): string {
   try {
-    const blueMotion = pictographData.motions.blue;
-    const redMotion = pictographData.motions.red;
+    const leftMotion = pictographData.motions.left;
+    const rightMotion = pictographData.motions.right;
     // Invisible placeholder = hand not really there (both-required Step
     // shape): keep the "in_in" fallback the old absent-hand path produced.
-    if (isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)) {
-      const blueStartOri = blueMotion.startOrientation || "in";
-      const redStartOri = redMotion.startOrientation || "in";
-      return `${blueStartOri}_${redStartOri}`;
+    if (isVisibleMotion(leftMotion) && isVisibleMotion(rightMotion)) {
+      const leftStartOri = leftMotion.startOrientation || "in";
+      const rightStartOri = rightMotion.startOrientation || "in";
+      return `${leftStartOri}_${rightStartOri}`;
     }
   } catch {
     // fallthrough
@@ -29,18 +29,18 @@ export function generateOrientationKey(
 
 export function mapToLegacyBucket(specificOriKey: string): string {
   const separatorIndex = specificOriKey.indexOf("_");
-  const blueOri =
+  const leftOri =
     separatorIndex >= 0
       ? specificOriKey.slice(0, separatorIndex)
       : specificOriKey;
-  const redOri =
+  const rightOri =
     separatorIndex >= 0 ? specificOriKey.slice(separatorIndex + 1) : "in";
-  const blueLayer = getOrientationLayer(blueOri);
-  const redLayer = getOrientationLayer(redOri);
+  const leftLayer = getOrientationLayer(leftOri);
+  const rightLayer = getOrientationLayer(rightOri);
 
-  if (blueLayer === 1 && redLayer === 1) return "from_layer1";
-  if (blueLayer === 2 && redLayer === 2) return "from_layer2";
-  if (blueLayer === 1 && redLayer === 2) return "from_layer3_blue1_red2";
+  if (leftLayer === 1 && rightLayer === 1) return "from_layer1";
+  if (leftLayer === 2 && rightLayer === 2) return "from_layer2";
+  if (leftLayer === 1 && rightLayer === 2) return "from_layer3_blue1_red2";
   return "from_layer3_blue2_red1";
 }
 
@@ -61,12 +61,12 @@ export function resolveEffectiveOriKey(
   specificOriKey: string,
   pictographData: PictographData
 ): string {
-  const blueMotion = pictographData.motions.blue;
-  const redMotion = pictographData.motions.red;
-  const blueProp = blueMotion?.propType?.toLowerCase() || "staff";
-  const redProp = redMotion?.propType?.toLowerCase() || "staff";
+  const leftMotion = pictographData.motions.left;
+  const rightMotion = pictographData.motions.right;
+  const leftProp = leftMotion?.propType?.toLowerCase() || "staff";
+  const rightProp = rightMotion?.propType?.toLowerCase() || "staff";
 
-  if (blueProp === "staff" && redProp === "staff") {
+  if (leftProp === "staff" && rightProp === "staff") {
     return mapToLegacyBucket(specificOriKey);
   }
 

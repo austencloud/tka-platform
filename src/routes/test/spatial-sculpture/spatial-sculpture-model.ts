@@ -7,7 +7,7 @@ import {
 export const PRIMARY_PLANES = [Plane.WALL, Plane.WHEEL, Plane.FLOOR] as const;
 
 export type PrimaryPlane = (typeof PRIMARY_PLANES)[number];
-export type PropSide = "blue" | "red";
+export type PropSide = "left" | "right";
 export type SculpturePreset = "solo" | "mirror" | "acolyte" | "radial";
 export type LayoutMode = "viewport" | "studio";
 export type SculptureMotionMode = "trace" | "undulate";
@@ -17,10 +17,10 @@ export type BeatTurns = "0" | "½" | "1";
 export interface SpatialBeat {
   id: string;
   plane: PrimaryPlane;
-  blueLocation: GridLocationValue;
-  redLocation: GridLocationValue;
-  blueOrientation: BeatOrientation;
-  redOrientation: BeatOrientation;
+  leftLocation: GridLocationValue;
+  rightLocation: GridLocationValue;
+  leftOrientation: BeatOrientation;
+  rightOrientation: BeatOrientation;
   turns: BeatTurns;
 }
 
@@ -63,8 +63,8 @@ export const HAND_OPTIONS: {
   label: string;
   tone: "blue" | "red";
 }[] = [
-  { value: "blue", label: "Blue path", tone: "blue" },
-  { value: "red", label: "Red path", tone: "red" },
+  { value: "left", label: "Left path", tone: "blue" },
+  { value: "right", label: "Right path", tone: "red" },
 ];
 
 export const MOTION_OPTIONS: {
@@ -110,73 +110,73 @@ export const INITIAL_SPATIAL_BEATS: SpatialBeat[] = [
   {
     id: "beat-1",
     plane: Plane.WALL,
-    blueLocation: GridLocation.NORTHEAST,
-    redLocation: GridLocation.SOUTHWEST,
-    blueOrientation: "in",
-    redOrientation: "out",
+    leftLocation: GridLocation.NORTHEAST,
+    rightLocation: GridLocation.SOUTHWEST,
+    leftOrientation: "in",
+    rightOrientation: "out",
     turns: "0",
   },
   {
     id: "beat-2",
     plane: Plane.WHEEL,
-    blueLocation: GridLocation.NORTH,
-    redLocation: GridLocation.SOUTH,
-    blueOrientation: "out",
-    redOrientation: "in",
+    leftLocation: GridLocation.NORTH,
+    rightLocation: GridLocation.SOUTH,
+    leftOrientation: "out",
+    rightOrientation: "in",
     turns: "½",
   },
   {
     id: "beat-3",
     plane: Plane.FLOOR,
-    blueLocation: GridLocation.EAST,
-    redLocation: GridLocation.WEST,
-    blueOrientation: "in",
-    redOrientation: "in",
+    leftLocation: GridLocation.EAST,
+    rightLocation: GridLocation.WEST,
+    leftOrientation: "in",
+    rightOrientation: "in",
     turns: "1",
   },
   {
     id: "beat-4",
     plane: Plane.WALL,
-    blueLocation: GridLocation.SOUTHWEST,
-    redLocation: GridLocation.NORTHEAST,
-    blueOrientation: "out",
-    redOrientation: "out",
+    leftLocation: GridLocation.SOUTHWEST,
+    rightLocation: GridLocation.NORTHEAST,
+    leftOrientation: "out",
+    rightOrientation: "out",
     turns: "½",
   },
   {
     id: "beat-5",
     plane: Plane.WHEEL,
-    blueLocation: GridLocation.WEST,
-    redLocation: GridLocation.EAST,
-    blueOrientation: "in",
-    redOrientation: "out",
+    leftLocation: GridLocation.WEST,
+    rightLocation: GridLocation.EAST,
+    leftOrientation: "in",
+    rightOrientation: "out",
     turns: "0",
   },
   {
     id: "beat-6",
     plane: Plane.FLOOR,
-    blueLocation: GridLocation.NORTHWEST,
-    redLocation: GridLocation.SOUTHEAST,
-    blueOrientation: "out",
-    redOrientation: "in",
+    leftLocation: GridLocation.NORTHWEST,
+    rightLocation: GridLocation.SOUTHEAST,
+    leftOrientation: "out",
+    rightOrientation: "in",
     turns: "1",
   },
   {
     id: "beat-7",
     plane: Plane.WALL,
-    blueLocation: GridLocation.SOUTH,
-    redLocation: GridLocation.NORTH,
-    blueOrientation: "in",
-    redOrientation: "in",
+    leftLocation: GridLocation.SOUTH,
+    rightLocation: GridLocation.NORTH,
+    leftOrientation: "in",
+    rightOrientation: "in",
     turns: "½",
   },
   {
     id: "beat-8",
     plane: Plane.WHEEL,
-    blueLocation: GridLocation.SOUTHEAST,
-    redLocation: GridLocation.NORTHWEST,
-    blueOrientation: "out",
-    redOrientation: "out",
+    leftLocation: GridLocation.SOUTHEAST,
+    rightLocation: GridLocation.NORTHWEST,
+    leftOrientation: "out",
+    rightOrientation: "out",
     turns: "0",
   },
 ];

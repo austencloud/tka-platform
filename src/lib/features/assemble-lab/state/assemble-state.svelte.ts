@@ -67,11 +67,11 @@ export function createAssembleState(
     get gridMode() {
       return document.gridMode;
     },
-    get blueSteps() {
-      return document.blueSteps;
+    get leftSteps() {
+      return document.leftSteps;
     },
-    get redSteps() {
-      return document.redSteps;
+    get rightSteps() {
+      return document.rightSteps;
     },
     get startPoses() {
       return document.startPoses;

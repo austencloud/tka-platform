@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -12,6 +13,27 @@ const vectorReference = fs.readFileSync(
   path.join(root, "scripts", "assets", "lotus-fire-reference.svg"),
   "utf8"
 );
+const appearance = fs.readFileSync(
+  path.join(root, "static", "images", "props", "appearances", "fan-lotus.svg"),
+  "utf8"
+);
+const previewProvenance = JSON.parse(
+  fs.readFileSync(
+    path.join(
+      root,
+      "static",
+      "images",
+      "props",
+      "build-previews",
+      "fan-lotus-bare-complete.provenance.json"
+    ),
+    "utf8"
+  )
+) as {
+  referenceVersion: number;
+  output: { path: string; width: number; height: number };
+  sourceSha256: Record<string, string>;
+};
 const picker = fs.readFileSync(
   path.join(
     root,
@@ -31,6 +53,7 @@ const reference = JSON.parse(
     "utf8"
   )
 ) as {
+  version: number;
   source_image_px: [number, number];
   fan_bbox_px: { left: number; top: number; right: number; bottom: number };
   pivot_px: [number, number];
@@ -164,6 +187,46 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(builder).not.toContain("mirrored_anchor_pair(");
     expect(builder).toContain('f"Fan_Lotus_{readable_name}_Left"');
     expect(builder).toContain('f"Fan_Lotus_{readable_name}_Right"');
+  });
+
+  it("derives the 2D Lotus artwork from the same traced paths as the 3D model", () => {
+    const paths = [
+      ...vectorReference.matchAll(/<path id="([^"]+)" d="([^"]+)"\/>/g),
+    ];
+    expect(appearance).toContain(
+      'data-generated-from="scripts/assets/lotus-fire-reference.svg"'
+    );
+    expect(appearance).toContain(`data-source-version="${reference.version}"`);
+    expect(appearance).toContain('data-fan-frame=""');
+    expect(appearance).toContain('data-fan-wicks=""');
+    expect(appearance).toContain('fill="#f5e6b8"');
+    expect(paths).toHaveLength(10);
+    for (const [, id, pathData] of paths) {
+      expect(appearance).toContain(`data-lotus-rail="${id}" d="${pathData}"`);
+    }
+    expect(appearance.match(/data-lotus-wick="\d"/g)).toHaveLength(5);
+    expect(appearance).toContain('data-lotus-grip-ring=""');
+    expect(appearance).toContain('data-lotus-finger-ring=""');
+    expect(appearance).toContain('data-lotus-lower-cradle=""');
+  });
+
+  it("invalidates the picker preview when its measured model sources change", () => {
+    expect(previewProvenance.referenceVersion).toBe(reference.version);
+    expect(previewProvenance.output).toEqual({
+      path: "static/images/props/build-previews/fan-lotus-bare-complete.webp",
+      width: 640,
+      height: 240,
+    });
+    for (const [source, expectedHash] of Object.entries(
+      previewProvenance.sourceSha256
+    )) {
+      const actualHash = createHash("sha256")
+        .update(fs.readFileSync(path.join(root, source)))
+        .digest("hex");
+      expect(actualHash, `${source} changed without recapturing Lotus`).toBe(
+        expectedHash
+      );
+    }
   });
 
   it("preserves the Russian grip, finger ring, lower cradle, and woven Kevlar", () => {

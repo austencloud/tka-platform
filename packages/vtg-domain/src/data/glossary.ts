@@ -94,14 +94,48 @@ export const VTG_GLOSSARY: FlowArtsGlossaryEntry[] = [
 		term: "pattern",
 		aliases: ["shape"],
 		definition:
-			"The flower shape traced by the prop over a full 360-degree cycle. Categorized by the prop-to-hand rotation ratio (1:1, 1:3, 1:5). The 1:1 set contains 40 patterns; the 1:3 set contains 64.",
+			"The flower shape traced by the prop over a full 360-degree cycle. VTG writes the ratio hand:prop, hand cycles first and prop rotations second, so the classic families are 1:1, 1:3, and 1:5: one hand circle to one, three, or five prop rotations. This app displays the same order. The 1:1 set contains 40 patterns; the 1:3 set contains 64.",
 		source: {
 			claim:
 				"Patterns/Shapes: the shapes made from timing and direction, categorized by rotation ratios",
 			sourceType: "document",
 			sourceRef: "VTG V.1, Pattern/Shape section",
 		},
-		relatedTerms: ["minimal beat shape", "snapshot", "VTG Trinity"],
+		relatedTerms: [
+			"1:0 ratio",
+			"2:1 ratio",
+			"minimal beat shape",
+			"snapshot",
+			"VTG Trinity",
+		],
+		category: "analysis",
+		framework: "VTG",
+	},
+	{
+		term: "1:0 ratio",
+		aliases: ["1:0", "float ratio"],
+		definition:
+			"The VTG hand:prop rotation ratio for TKA Float: the hand completes one cycle while the prop makes zero rotations.",
+		source: {
+			claim: "VTG 1:0 corresponds to TKA Float",
+			sourceType: "community",
+			sourceRef: "Austen Cloud domain correction, 2026-09-02",
+		},
+		relatedTerms: ["2:1 ratio", "pattern"],
+		category: "analysis",
+		framework: "VTG",
+	},
+	{
+		term: "2:1 ratio",
+		aliases: ["2:1"],
+		definition:
+			"The reduced VTG hand:prop rotation ratio corresponding to the TKA -0.25 turn value: two hand cycles for one prop rotation (1:0.5 reduced to 2:1). It is numeric and distinct from Float.",
+		source: {
+			claim: "VTG 2:1 corresponds to TKA -0.25",
+			sourceType: "community",
+			sourceRef: "Austen Cloud domain correction, 2026-09-02",
+		},
+		relatedTerms: ["1:0 ratio", "pattern"],
 		category: "analysis",
 		framework: "VTG",
 	},

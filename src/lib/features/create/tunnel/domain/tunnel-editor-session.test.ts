@@ -7,7 +7,10 @@ import {
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import type { TunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
-import type { TunnelCreatorDraft } from "./tunnel-creator-draft";
+import {
+  TUNNEL_CREATOR_DRAFT_VERSION,
+  type TunnelCreatorDraft,
+} from "./tunnel-creator-draft";
 import {
   tunnelEditorContentKey,
   tunnelEditorSessionStatus,
@@ -33,14 +36,17 @@ const composition = createTunnelComposition([performer], {
   id: "tunnel-1",
   name: "Saved tunnel",
   formation: DEFAULT_CONFIG,
-  now: () => 10,
+  now: 10,
 });
 const snapshot = {
   version: 2,
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: false,
+    colors: {
+      mode: "hands",
+      custom: { left: "#2e8bf0", right: "#ed1c24" },
+    },
     section: "tunnel",
     presetRecipe: null,
   },
@@ -49,15 +55,15 @@ const snapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: true,
-    redPathLines: true,
+    leftPathLines: true,
+    rightPathLines: true,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
   props: {
-    bluePropType: "staff",
-    redPropType: "staff",
-    blueBuugengFlipped: false,
-    redBuugengFlipped: false,
+    leftPropType: "staff",
+    rightPropType: "staff",
+    leftBuugengFlipped: false,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "off" },
 } as unknown as TunnelSnapshot;
@@ -78,7 +84,8 @@ function draft(
   overrides: Partial<TunnelCreatorDraft> = {}
 ): TunnelCreatorDraft {
   return {
-    version: 4,
+    version: TUNNEL_CREATOR_DRAFT_VERSION,
+    workflow: "custom",
     mode: "linked",
     composition: { ...composition, updatedAt: 999 },
     relationship: {

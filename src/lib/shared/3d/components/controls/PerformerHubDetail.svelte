@@ -1,17 +1,18 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { type PropBuild } from "@austencloud/scene-3d";
   import {
-    AVATAR_DEFINITIONS,
-    getAvatarModelPath,
-    prepareAvatarForDisplay,
-    type AvatarId,
-    type PropBuild,
-  } from "@austencloud/scene-3d";
+    CHARACTER_DEFINITIONS,
+    getCharacterModelPath,
+    prepareCharacterForDisplay,
+    type CharacterId,
+  } from "$lib/shared/3d/domain/character-model";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
-  import AvatarSelectWorkspace from "./avatar-select/AvatarSelectWorkspace.svelte";
+  import CharacterSelectWorkspace from "./character-select/CharacterSelectWorkspace.svelte";
+  import { resolveCharacterPreviewPerformer } from "./character-select/character-preview-source";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import PerformerSequencePanel from "./PerformerSequencePanel.svelte";
@@ -51,126 +52,167 @@
   }: Props = $props();
 
   const viewer = getViewer3DContext();
-  const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const isAllMode = $derived(selectedIndex === null);
   const allPerformers = $derived(viewer.performerManager.performers);
+  const selectedIndices = $derived(viewer.selectedPerformerIndices);
+  const selectedPerformers = $derived(
+    selectedIndices.flatMap((index) => {
+      const selected = allPerformers[index];
+      return selected ? [selected] : [];
+    })
+  );
+  const isAllMode = $derived(viewer.isAllPerformersSelected);
+  const isMultiMode = $derived(selectedPerformers.length > 1 && !isAllMode);
   const performer = $derived(
-    selectedIndex !== null ? (allPerformers[selectedIndex] ?? null) : null
+    viewer.primaryPerformerIndex !== null
+      ? (allPerformers[viewer.primaryPerformerIndex] ?? null)
+      : null
+  );
+  const previewPerformer = $derived(
+    resolveCharacterPreviewPerformer(
+      allPerformers,
+      viewer.primaryPerformerIndex
+    )
+  );
+  const previewPerformerNumber = $derived(
+    previewPerformer
+      ? Math.max(1, allPerformers.indexOf(previewPerformer) + 1)
+      : 1
   );
 
   const performerColor = $derived(
-    selectedIndex !== null
-      ? getPerformerColor(selectedIndex)
+    viewer.primaryPerformerIndex !== null
+      ? getPerformerColor(viewer.primaryPerformerIndex)
       : "var(--theme-accent)"
   );
-  const canRemove = $derived(allPerformers.length > 1);
-
-  const avatarDef = $derived(
-    AVATAR_DEFINITIONS.find((a) => a.id === performer?.avatarModelId) ??
-      AVATAR_DEFINITIONS[0]
+  const canRemove = $derived(
+    selectedPerformers.length > 0 &&
+      selectedPerformers.length < allPerformers.length
   );
-  // Resolved performer name: user-assigned override falls back to the avatar
+
+  const characterDefinition = $derived(
+    CHARACTER_DEFINITIONS.find((item) => item.id === performer?.characterId) ??
+      CHARACTER_DEFINITIONS[0]
+  );
+  // Resolved performer name: user-assigned override falls back to the character
   // model's name. This is what the editable header field shows.
   const performerName = $derived(
-    performer?.displayName ?? avatarDef?.name ?? "—"
+    isMultiMode || isAllMode
+      ? `${selectedPerformers.length} performers`
+      : (performer?.displayName ?? characterDefinition?.name ?? "—")
   );
 
-  const sequence = $derived(performer?.loadedSequence ?? null);
-  const sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
+  const sequence = $derived.by(() => {
+    const first = selectedPerformers[0]?.loadedSequence ?? null;
+    return selectedPerformers.every(
+      (item) => item.loadedSequence?.id === first?.id
+    )
+      ? first
+      : null;
+  });
+  const hasAnySequence = $derived(
+    selectedPerformers.some((item) => item.loadedSequence !== null)
+  );
+  const sequenceWord = $derived(
+    sequence?.word ??
+      sequence?.name ??
+      (hasAnySequence ? "Mixed sequences" : null)
+  );
   const sequenceSteps = $derived(sequence?.steps?.length ?? null);
 
-  const currentAvatarId = $derived.by<AvatarId | null>(() => {
-    if (!isAllMode) return performer?.avatarModelId ?? null;
-
-    const first = allPerformers[0]?.avatarModelId;
+  const currentCharacterId = $derived.by<CharacterId | null>(() => {
+    const first = selectedPerformers[0]?.characterId;
     if (!first) return null;
 
-    return allPerformers.every((item) => item.avatarModelId === first)
+    return selectedPerformers.every((item) => item.characterId === first)
       ? first
       : null;
   });
 
-  const avatarScopeKey = $derived(
-    selectedIndex === null ? "all-performers" : `performer-${selectedIndex}`
-  );
+  async function pickCharacter(id: CharacterId): Promise<void> {
+    cancelCharacterSelectionIntent();
+    if (pendingCharacterId === id) return;
+    if (currentCharacterId === id) {
+      characterSelectionRequest++;
+      pendingCharacterId = null;
+      return;
+    }
 
-  async function pickAvatar(id: AvatarId): Promise<void> {
-    cancelAvatarSelectionIntent();
-    if (pendingAvatarId === id || currentAvatarId === id) return;
-
-    const selectionRequest = ++avatarSelectionRequest;
-    pendingAvatarId = id;
+    const selectionRequest = ++characterSelectionRequest;
+    pendingCharacterId = id;
     try {
-      await prepareAvatarSelection(id);
-      if (selectionRequest !== avatarSelectionRequest) return;
-      pendingAvatarId = null;
+      await prepareCharacterSelection(id);
+      if (selectionRequest !== characterSelectionRequest) return;
+      pendingCharacterId = null;
 
-      const previous = currentAvatarId;
-      if (
-        !writeParameter({ field: "avatarId", value: id }, (p) =>
-          p?.setAvatarModel(id)
-        )
-      )
-        return;
+      const previous = currentCharacterId;
+      const applied = onPerformerEdit
+        ? onPerformerEdit({
+            performerIndex: viewer.primaryPerformerIndex,
+            performerIndices: selectedIndices,
+            field: "characterId",
+            value: id,
+          })
+        : viewer.setCharacterScoped(id);
+      if (!applied) return;
       reportViewerControlChange(
         onSettingChange,
         "viewer_3d_performer",
-        "avatar",
+        "character",
         previous,
         id
       );
     } catch (caught) {
-      if (selectionRequest !== avatarSelectionRequest) return;
-      pendingAvatarId = null;
+      if (selectionRequest !== characterSelectionRequest) return;
+      pendingCharacterId = null;
       const failure =
         caught instanceof Error ? caught : new Error(String(caught));
       getErrorHandler().showUserError({
         message:
-          "That avatar could not load. Your current avatar is still active.",
+          "That character could not load. Your current character is still active.",
         technicalDetails: failure.message,
         error: failure,
         severity: "warning",
         context: {
           module: "3d",
-          tab: "performer-avatar",
-          action: "loadAvatar",
+          tab: "performer-character",
+          action: "loadCharacter",
         },
       });
     }
   }
 
-  let pendingAvatarId = $state<AvatarId | null>(null);
-  let avatarSelectionRequest = 0;
-  let avatarIntentTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingCharacterId = $state<CharacterId | null>(null);
+  let characterSelectionRequest = 0;
+  let characterIntentTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function prepareAvatarSelection(id: AvatarId): Promise<void> {
-    return prepareAvatarForDisplay(getAvatarModelPath(id));
+  function prepareCharacterSelection(id: CharacterId): Promise<void> {
+    return prepareCharacterForDisplay(getCharacterModelPath(id));
   }
 
-  function queueAvatarSelectionIntent(id: AvatarId): void {
-    cancelAvatarSelectionIntent();
-    avatarIntentTimer = setTimeout(() => {
-      avatarIntentTimer = null;
-      void prepareAvatarSelection(id).catch(() => {
+  function queueCharacterSelectionIntent(id: CharacterId): void {
+    cancelCharacterSelectionIntent();
+    characterIntentTimer = setTimeout(() => {
+      characterIntentTimer = null;
+      void prepareCharacterSelection(id).catch(() => {
         // Prewarming is opportunistic. A real click reports an earned failure.
       });
     }, 120);
   }
 
-  function cancelAvatarSelectionIntent(): void {
-    if (avatarIntentTimer === null) return;
-    clearTimeout(avatarIntentTimer);
-    avatarIntentTimer = null;
+  function cancelCharacterSelectionIntent(): void {
+    if (characterIntentTimer === null) return;
+    clearTimeout(characterIntentTimer);
+    characterIntentTimer = null;
   }
 
   onDestroy(() => {
-    cancelAvatarSelectionIntent();
-    avatarSelectionRequest++;
+    cancelCharacterSelectionIntent();
+    characterSelectionRequest++;
   });
 
   // ─── Tabs ───
   const ALL_TABS: { id: PerformerHubTab; label: string; icon: string }[] = [
-    { id: "avatar", label: "Avatar", icon: "fa-user" },
+    { id: "character", label: "Character", icon: "fa-user" },
     { id: "sequence", label: "Sequence", icon: "fa-film" },
     { id: "prop", label: "Prop", icon: "fa-shapes" },
     { id: "planes", label: "Planes", icon: "fa-layer-group" },
@@ -178,31 +220,8 @@
     { id: "effects", label: "Effects", icon: "fa-wand-sparkles" },
   ];
 
-  const GLOBAL_TABS: { id: PerformerHubTab; label: string; icon: string }[] = [
-    { id: "avatar", label: "Avatar", icon: "fa-user" },
-    { id: "prop", label: "Prop", icon: "fa-shapes" },
-    { id: "planes", label: "Planes", icon: "fa-layer-group" },
-    { id: "effort", label: "Effort", icon: "fa-gauge-high" },
-    { id: "effects", label: "Effects", icon: "fa-wand-sparkles" },
-  ];
-
-  const TABS = $derived(isAllMode ? GLOBAL_TABS : ALL_TABS);
+  const TABS = ALL_TABS;
   const tabIndex = $derived(TABS.findIndex((t) => t.id === activeTab));
-
-  $effect(() => {
-    if (isAllMode && activeTab === "sequence") {
-      const previous = activeTab;
-      activeTab = "prop";
-      reportViewerControlChange(
-        onSettingChange,
-        "viewer_3d_performer",
-        "tab",
-        previous,
-        "prop",
-        { count: false }
-      );
-    }
-  });
 
   function selectTab(tab: PerformerHubTab): void {
     const previous = activeTab;
@@ -233,30 +252,30 @@
 
   // ─── Prop ───
   const currentProp = $derived.by<PropType | null>(() => {
-    if (!isAllMode) {
-      return performer?.effectiveProp ?? viewer.defaultSettings.prop;
-    }
-
-    const first = allPerformers[0]?.effectiveProp;
+    const first = selectedPerformers[0]?.effectiveProp;
     if (!first) return viewer.defaultSettings.prop;
 
-    return allPerformers.every((item) => item.effectiveProp === first)
+    return selectedPerformers.every((item) => item.effectiveProp === first)
       ? first
       : null;
   });
 
   const currentPropBuild = $derived.by<PropBuild | undefined>(() => {
-    if (!isAllMode) return performer?.effectivePropBuild;
-    return allPerformers[0]?.effectivePropBuild;
+    const first = selectedPerformers[0]?.effectivePropBuild;
+    if (!first) return undefined;
+    const serialized = JSON.stringify(first);
+    return selectedPerformers.every(
+      (item) => JSON.stringify(item.effectivePropBuild) === serialized
+    )
+      ? first
+      : undefined;
   });
-
-  function applyToScope(fn: (p: typeof performer) => void) {
-    if (isAllMode) {
-      for (const p of allPerformers) fn(p);
-    } else {
-      fn(performer);
-    }
-  }
+  const propSizeMixed = $derived.by(() => {
+    const first = selectedPerformers[0]?.settings.staffLengthCm ?? 81;
+    return selectedPerformers.some(
+      (item) => (item.settings.staffLengthCm ?? 81) !== first
+    );
+  });
 
   /**
    * Routes one parameter change to the host when it owns performer state, and
@@ -265,21 +284,25 @@
    */
   function writeParameter(
     edit: Omit<PerformerHubEdit, "performerIndex">,
-    applyDirect: (p: typeof performer) => void
+    applyDirect: () => boolean
   ): boolean {
     if (onPerformerEdit) {
       return onPerformerEdit({
         ...edit,
-        performerIndex: selectedIndex,
+        performerIndex: viewer.primaryPerformerIndex,
+        performerIndices: selectedIndices,
       } as PerformerHubEdit);
     }
-    applyToScope(applyDirect);
-    return true;
+    return applyDirect();
   }
 
   function handlePropSelect(propType: PropType): void {
     const previous = currentProp;
-    if (!writeParameter({ field: "prop", value: propType }, (p) => p?.setProp(propType)))
+    if (
+      !writeParameter({ field: "prop", value: propType }, () =>
+        viewer.setPropScoped(propType)
+      )
+    )
       return;
     reportViewerControlChange(
       onSettingChange,
@@ -291,24 +314,20 @@
   }
 
   function handlePropBuildChange(propBuild: PropBuild): void {
-    writeParameter({ field: "propBuild", value: propBuild }, (p) =>
-      p?.setPropBuild(propBuild)
+    writeParameter({ field: "propBuild", value: propBuild }, () =>
+      viewer.setPropBuildScoped(propBuild)
     );
   }
 
   // ─── Effort ───
   const currentEffort = $derived.by<EffortId | null>(() => {
-    if (!isAllMode) {
-      return performer?.effectiveEffortId ?? viewer.defaultSettings.effortId;
-    }
-
-    const first = allPerformers[0]?.effectiveEffortId;
+    const first = selectedPerformers[0]?.effectiveEffortId;
     if (!first) return viewer.defaultSettings.effortId;
 
     // All Performers writes an override to every performer. The palette must
     // read those effective values too; reading the viewer default left Linear
     // highlighted while every performer visibly used another effort.
-    return allPerformers.every((item) => item.effectiveEffortId === first)
+    return selectedPerformers.every((item) => item.effectiveEffortId === first)
       ? first
       : null;
   });
@@ -316,8 +335,8 @@
   function handleEffortSelect(effortId: EffortId) {
     const previous = currentEffort;
     if (
-      !writeParameter({ field: "effort", value: effortId }, (p) =>
-        p?.setEffort(effortId)
+      !writeParameter({ field: "effort", value: effortId }, () =>
+        viewer.setEffortScoped(effortId)
       )
     )
       return;
@@ -331,8 +350,8 @@
   }
 
   function handlePropSizeChange(cm: number) {
-    writeParameter({ field: "staffLengthCm", value: cm }, (p) =>
-      p?.setStaffLengthCm(cm)
+    writeParameter({ field: "staffLengthCm", value: cm }, () =>
+      viewer.setStaffLengthScoped(cm)
     );
   }
 
@@ -363,7 +382,7 @@
   }
 
   function clearSequence(): void {
-    performer?.clearSequence();
+    viewer.clearSequenceScoped();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -384,6 +403,8 @@
   <PerformerIdentityHeader
     {performer}
     performerCount={allPerformers.length}
+    selectedCount={selectedPerformers.length}
+    {isAllMode}
     {performerColor}
     {sequenceWord}
     {sequenceSteps}
@@ -395,28 +416,29 @@
   <div class="header-divider" aria-hidden="true"></div>
 
   <div class="tab-content">
-    {#if activeTab === "avatar"}
+    {#if activeTab === "character"}
       <div
-        id="hub-panel-avatar"
+        id="hub-panel-character"
         class="tab-pane active"
         role="tabpanel"
-        aria-labelledby="hub-tab-avatar"
+        aria-labelledby="hub-tab-character"
       >
-        <div class="avatar-section">
-          <AvatarSelectWorkspace
-            {currentAvatarId}
-            {pendingAvatarId}
+        <div class="character-section">
+          <CharacterSelectWorkspace
+            {currentCharacterId}
+            {pendingCharacterId}
             {performerColor}
-            scopeKey={avatarScopeKey}
-            onIntent={queueAvatarSelectionIntent}
-            onCancelIntent={cancelAvatarSelectionIntent}
-            onCommit={(id) => void pickAvatar(id)}
+            {previewPerformer}
+            {previewPerformerNumber}
+            onIntent={queueCharacterSelectionIntent}
+            onCancelIntent={cancelCharacterSelectionIntent}
+            onSelect={(id) => void pickCharacter(id)}
           />
         </div>
       </div>
     {/if}
 
-    {#if !isAllMode && activeTab === "sequence"}
+    {#if activeTab === "sequence"}
       <div
         id="hub-panel-sequence"
         class="tab-pane active"
@@ -427,7 +449,7 @@
           {performerName}
           {sequenceWord}
           {sequenceSteps}
-          hasSequence={sequence !== null}
+          hasSequence={hasAnySequence}
           onSelect={chooseSequence}
           onClear={clearSequence}
         />
@@ -454,9 +476,10 @@
                All-Performers mode that is the first. Writing always goes
                through handlePropSizeChange so the scope and the host sink
                apply in both modes. -->
-          {#if performer ?? allPerformers[0]}
+          {#if performer ?? selectedPerformers[0]}
             <PerformerPropSizeSlider
-              performer={performer ?? allPerformers[0]!}
+              performer={performer ?? selectedPerformers[0]!}
+              mixed={propSizeMixed}
               onSizeChange={handlePropSizeChange}
               {onSettingChange}
             />
@@ -503,13 +526,15 @@
       >
         <div class="effects-section">
           <EffectsSettingsPanel
-            performer={isAllMode ? null : performer}
-            performers={isAllMode ? allPerformers : null}
+            performer={selectedPerformers.length === 1 ? performer : null}
+            performers={selectedPerformers.length > 1
+              ? selectedPerformers
+              : null}
             presentation="performer-hub"
-            onEffectEdit={onPerformerEdit
-              ? (effect) =>
-                  writeParameter({ field: "effect", value: effect }, () => {})
-              : undefined}
+            onEffectEdit={(effect) =>
+              writeParameter({ field: "effect", value: effect }, () =>
+                viewer.setEffectScoped(effect)
+              )}
             {onSettingChange}
           />
         </div>
@@ -552,10 +577,18 @@
 
 <ConfirmDialog
   bind:isOpen={removeConfirmOpen}
-  title={`Remove ${performerName}?`}
-  message="This removes the performer from the scene. You can undo the change from the viewer."
-  confirmText="Remove performer"
-  cancelText="Keep performer"
+  title={selectedPerformers.length > 1
+    ? `Remove ${selectedPerformers.length} performers?`
+    : `Remove ${performerName}?`}
+  message={selectedPerformers.length > 1
+    ? "This removes the selected performers from the scene. You can undo the change from the viewer."
+    : "This removes the performer from the scene. You can undo the change from the viewer."}
+  confirmText={selectedPerformers.length > 1
+    ? "Remove performers"
+    : "Remove performer"}
+  cancelText={selectedPerformers.length > 1
+    ? "Keep performers"
+    : "Keep performer"}
   variant="danger"
   onConfirm={removePerformer}
   onCancel={() => (removeConfirmOpen = false)}
@@ -632,7 +665,7 @@
     box-shadow:
       0 1px 4px var(--surface-inset-deep),
       0 0 16px color-mix(in srgb, var(--performer-color) 12%, transparent);
-    transition: left 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: left var(--transition-normal);
     pointer-events: none;
     z-index: 0;
   }
@@ -654,8 +687,8 @@
     font-weight: 600;
     cursor: pointer;
     transition:
-      color 200ms ease,
-      transform 140ms ease;
+      color var(--transition-fast),
+      transform var(--transition-fast);
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -692,7 +725,7 @@
   }
 
   .tab-pane {
-    animation: pane-in 160ms cubic-bezier(0, 0, 0.2, 1);
+    animation: pane-in var(--duration-fast) var(--ease-out);
   }
 
   @keyframes pane-in {
@@ -715,7 +748,7 @@
     margin-bottom: 8px;
   }
 
-  .avatar-section {
+  .character-section {
     container-type: inline-size;
   }
 

@@ -158,7 +158,7 @@
     const step = (position % stepCount) + 1;
     active.orchestrator.calculateState(step);
     const states = active.orchestrator.getCurrentPropStates();
-    active.animState.setPropStates(states.blue, states.red);
+    active.animState.setPropStates(states.left, states.right);
   });
 
   const frame = $derived.by(() => {
@@ -270,8 +270,8 @@
     >
       <div class="stage">
         <AnimatorCanvas
-          blueProp={playback.animState.bluePropState}
-          redProp={playback.animState.redPropState}
+          leftProp={playback.animState.leftPropState}
+          rightProp={playback.animState.rightPropState}
           sequenceData={playback.sequence}
           gridVisible={true}
           gridMode={playback.sequence.gridMode ?? null}

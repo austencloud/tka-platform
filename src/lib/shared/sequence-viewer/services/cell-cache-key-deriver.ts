@@ -27,7 +27,7 @@
  * - lsp4-: Full string key. No hash, no collisions.
  * - lsp5-: Invalidate after LayerKeyDeriver fix (was missing rotationDirection
  *   and orientations from base layer cache key, causing CW/CCW collisions).
- * - lsp6-: Added browseViewMode (subject/granularity/color) so the same
+ * - lsp6-: Added browseViewMode (subject/granularity/hand) so the same
  *   sequence caches separate blobs for props vs hands vs solo views.
  * - lsp7-: Added motion-intrinsic propType to key. Without this, a start
  *   position rendered with PropType.HAND (hand path mode) and one rendered
@@ -50,6 +50,9 @@
  * - lsp12-: Added per-motion isVisible only when a pictograph contains an
  *   invisible placeholder. Fully-visible pictographs intentionally retain
  *   their exact lsp11 identity so the established cloud corpus stays usable.
+ * - Canonical hand-arrow revision: the prefix remains lsp11/lsp12, while
+ *   PictographKeyHasher rekeys visible-motion renders so arrowless blobs made
+ *   by the legacy blue/red compositor cannot survive locally or in the cloud.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -69,7 +72,7 @@ export function deriveCacheKey(
   // Delegate pictograph identity to the single source of truth.
   // PictographKeyHasher captures: letter, all motion fields (motionType,
   // locations, turns, orientations, rotationDirection, propType, gridMode),
-  // and all visibility settings (showTKA, darkMode, bluePropType, etc.).
+  // and all visibility settings (showTKA, darkMode, leftPropType, etc.).
   const visibility = mapToVisibility(options, isDark);
   const pictographHash = pictographKeyHasher.deriveKey(
     pictographData,
@@ -86,13 +89,13 @@ export function deriveCacheKey(
       ? `wm${options.widthMultiplier}`
       : "",
     options.browseViewMode
-      ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}`
+      ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.hand}`
       : "",
   ];
 
   const hasInvisiblePlaceholder =
-    pictographData.motions?.blue?.isVisible === false ||
-    pictographData.motions?.red?.isVisible === false;
+    pictographData.motions?.left?.isVisible === false ||
+    pictographData.motions?.right?.isVisible === false;
   const version = hasInvisiblePlaceholder ? "lsp12" : "lsp11";
 
   return `${version}-${pictographHash}:${cellParts.join("|")}`;
@@ -101,7 +104,7 @@ export function deriveCacheKey(
 /**
  * Maps PreviewCellRenderOptions + isDark to PictographVisibilityOptions.
  *
- * Resolves catDogMode (the hasher receives an already-resolved redPropType).
+ * Resolves catDogMode (the hasher receives an already-resolved rightPropType).
  * VTG/elemental/positions flow from the export visibility toggles (sourced
  * from VisibilityStateManager in ChoreoCard) rather than being hardcoded.
  * printMode is always false (preview cells are never print mode).
@@ -125,19 +128,19 @@ function mapToVisibility(
     showNonRadialPoints: options.showNonRadialPoints ?? true,
     showGrid: options.showGrid ?? true,
     darkMode: isDark,
-    bluePropType: options.bluePropType,
-    redPropType: options.catDogModeEnabled
-      ? options.redPropType
-      : options.bluePropType,
+    leftPropType: options.leftPropType,
+    rightPropType: options.catDogModeEnabled
+      ? options.rightPropType
+      : options.leftPropType,
     handPointVisibility: options.handPointVisibility,
     handPathMode: options.handPathMode,
     // Neutralized in hand-path/hands views for the same reason renderCell
     // neutralizes it there: both props become HANDs, so chirality cannot
     // change a pixel and must not fragment the key.
-    blueBuugengFlipped: handsView ? false : options.blueBuugengFlipped,
-    redBuugengFlipped: handsView ? false : options.redBuugengFlipped,
+    leftBuugengFlipped: handsView ? false : options.leftBuugengFlipped,
+    rightBuugengFlipped: handsView ? false : options.rightBuugengFlipped,
     printMode: false,
-    showBlueMotion: options.showBlueMotion,
-    showRedMotion: options.showRedMotion,
+    showLeftMotion: options.showLeftMotion,
+    showRightMotion: options.showRightMotion,
   };
 }

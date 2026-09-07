@@ -1,6 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { colorSwapSequence } from "$lib/shared/create/services/sequence-transforms";
+import { handSwapSequence } from "$lib/shared/create/services/sequence-transforms";
 import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 /**
  * Pure base-word index for shape-matrix realizations (firebase-free).
@@ -43,25 +44,27 @@ const WORD_MODE: Record<string, VtgMode> = {
 };
 
 /** Per-hand style pair of a base word's first step. null if unreadable. */
-function stylePairOf(seq: SequenceData): { blue: string; red: string } | null {
+function stylePairOf(
+  seq: SequenceData
+): { left: string; right: string } | null {
   const m = seq.steps?.[0]?.motions;
-  const b = m?.blue?.motionType;
-  const r = m?.red?.motionType;
-  return b && r ? { blue: b, red: r } : null;
+  const b = m?.left?.motionType;
+  const r = m?.right?.motionType;
+  return b && r ? { left: b, right: r } : null;
 }
 
 /**
- * Index base words by `${mode}|${blueStyle}|${redStyle}`. Pure over the loaded
+ * Index base words by `${mode}|${leftStyle}|${rightStyle}`. Pure over the loaded
  * sequences so it is unit-testable without the catalog. Modes/styles are read
  * from the real sequences — only the word→mode map is static (and canonical).
  *
  * Most modes seed only ONE of the two mixed-style orders (e.g. tog-opp's FLFL
- * is blue=anti/red=pro; no blue=pro/red=anti word exists). A raw hands-swapped
+ * is left=anti/right=pro; no left=pro/right=anti word exists). A raw hands-swapped
  * lookup used to cover the missing order, but it handed each hand the OTHER
- * hand's style: a blue prospin cell played the antispin word on blue, so the
- * blue prop visibly traced the wrong flower (the "isolation plays antispin"
+ * hand's style: a left prospin cell played the antispin word on the left, so the
+ * left prop visibly traced the wrong flower (the "isolation plays antispin"
  * shape-matrix bug, 2026-07-19). Instead, the second pass fills each missing
- * order with the seeded twin COLOR-SWAPPED, so every hand keeps its own style.
+ * order with the seeded twin hand-swapped, so every hand keeps its own style.
  * Seeded words win: swaps only fill keys no real word claimed.
  */
 export function buildBaseIndex(
@@ -69,10 +72,11 @@ export function buildBaseIndex(
 ): Map<string, SequenceData> {
   const keyed: {
     mode: VtgMode;
-    pair: { blue: string; red: string };
+    pair: { left: string; right: string };
     seq: SequenceData;
   }[] = [];
-  for (const s of seqs) {
+  for (const raw of seqs) {
+    const s = normalizeLegacySequence(raw);
     const mode = WORD_MODE[(s.word ?? "").toUpperCase()];
     if (!mode) continue;
     const pair = stylePairOf(s);
@@ -81,28 +85,28 @@ export function buildBaseIndex(
   }
   const idx = new Map<string, SequenceData>();
   for (const k of keyed) {
-    const key = `${k.mode}|${k.pair.blue}|${k.pair.red}`;
+    const key = `${k.mode}|${k.pair.left}|${k.pair.right}`;
     if (!idx.has(key)) idx.set(key, k.seq);
   }
   for (const k of keyed) {
-    if (k.pair.blue === k.pair.red) continue; // symmetric pair swaps onto its own key
-    const key = `${k.mode}|${k.pair.red}|${k.pair.blue}`;
-    if (!idx.has(key)) idx.set(key, colorSwapSequence(k.seq));
+    if (k.pair.left === k.pair.right) continue; // symmetric pair swaps onto its own key
+    const key = `${k.mode}|${k.pair.right}|${k.pair.left}`;
+    if (!idx.has(key)) idx.set(key, handSwapSequence(k.seq));
   }
   return idx;
 }
 
 /**
- * Resolve the base word for a (mode, blueStyle, redStyle). Every realizable
+ * Resolve the base word for a (mode, leftStyle, rightStyle). Every realizable
  * style order is present in the index directly (mixed orders that lack a seeded
- * word are filled with color-swapped twins at build time), so there is no
+ * word are filled with hand-swapped twins at build time), so there is no
  * fallback here — a miss means the mode genuinely has no word for this pair.
  */
 export function resolveBase(
   idx: Map<string, SequenceData>,
   mode: VtgMode,
-  blueStyle: string,
-  redStyle: string
+  leftStyle: string,
+  rightStyle: string
 ): SequenceData | null {
-  return idx.get(`${mode}|${blueStyle}|${redStyle}`) ?? null;
+  return idx.get(`${mode}|${leftStyle}|${rightStyle}`) ?? null;
 }

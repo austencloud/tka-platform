@@ -727,8 +727,8 @@
             autoPlay: true,
             chrome: "minimal",
             fill: true,
-            bluePropType: propType,
-            redPropType: propType,
+            leftPropType: propType,
+            rightPropType: propType,
           }}
         />
       </div>

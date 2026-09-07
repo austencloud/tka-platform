@@ -16,7 +16,7 @@
     type Figure,
   } from "./_components/VtgFigureCycle.svelte";
   import VtgCorpusWall from "./_components/VtgCorpusWall.svelte";
-  import VtgMinimalBeatShapes from "../../(public)/notation/_components/archive/VtgMinimalBeatShapes.svelte";
+  import VtgMinimalBeatShapes from "../../(public)/history/_components/archive/VtgMinimalBeatShapes.svelte";
 
   type Candidate = {
     id: string;

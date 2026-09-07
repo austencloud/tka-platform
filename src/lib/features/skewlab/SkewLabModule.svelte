@@ -20,7 +20,7 @@
     MotionType,
     RotationDirection,
     Orientation,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -29,8 +29,8 @@
   // State
   let activeTab = $state<"positions" | "categories">("categories");
   let selectedGroup = $state<"all" | "zeta" | "eta">("all");
-  let blueOrientation = $state<Orientation>(Orientation.IN);
-  let redOrientation = $state<Orientation>(Orientation.IN);
+  let leftOrientation = $state<Orientation>(Orientation.IN);
+  let rightOrientation = $state<Orientation>(Orientation.IN);
 
   // Orientation options for the switcher
   const ORIENTATIONS = [
@@ -41,18 +41,24 @@
   ] as const;
 
   // Get user's prop types from reactive settings (responds to Alt+number, P key)
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.leftPropType ??
+      settings.propType ??
+      PropType.STAFF) as PropType;
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     const settings = getSettings();
-    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+    return (settings.rightPropType ??
+      settings.propType ??
+      PropType.STAFF) as PropType;
   });
 
   // Position to hand location mapping (only Zeta and Eta positions for skewed mode)
-  const POSITION_LOCATIONS: Partial<Record<GridPosition, [GridLocation, GridLocation]>> = {
+  const POSITION_LOCATIONS: Partial<
+    Record<GridPosition, [GridLocation, GridLocation]>
+  > = {
     // Zeta positions - 135° obtuse angle
     [GridPosition.ZETA1]: [GridLocation.SOUTHWEST, GridLocation.NORTH],
     [GridPosition.ZETA2]: [GridLocation.WEST, GridLocation.NORTHEAST],
@@ -90,17 +96,41 @@
   };
 
   const ZETA_POSITIONS = [
-    GridPosition.ZETA1, GridPosition.ZETA2, GridPosition.ZETA3, GridPosition.ZETA4,
-    GridPosition.ZETA5, GridPosition.ZETA6, GridPosition.ZETA7, GridPosition.ZETA8,
-    GridPosition.ZETA9, GridPosition.ZETA10, GridPosition.ZETA11, GridPosition.ZETA12,
-    GridPosition.ZETA13, GridPosition.ZETA14, GridPosition.ZETA15, GridPosition.ZETA16,
+    GridPosition.ZETA1,
+    GridPosition.ZETA2,
+    GridPosition.ZETA3,
+    GridPosition.ZETA4,
+    GridPosition.ZETA5,
+    GridPosition.ZETA6,
+    GridPosition.ZETA7,
+    GridPosition.ZETA8,
+    GridPosition.ZETA9,
+    GridPosition.ZETA10,
+    GridPosition.ZETA11,
+    GridPosition.ZETA12,
+    GridPosition.ZETA13,
+    GridPosition.ZETA14,
+    GridPosition.ZETA15,
+    GridPosition.ZETA16,
   ];
 
   const ETA_POSITIONS = [
-    GridPosition.ETA1, GridPosition.ETA2, GridPosition.ETA3, GridPosition.ETA4,
-    GridPosition.ETA5, GridPosition.ETA6, GridPosition.ETA7, GridPosition.ETA8,
-    GridPosition.ETA9, GridPosition.ETA10, GridPosition.ETA11, GridPosition.ETA12,
-    GridPosition.ETA13, GridPosition.ETA14, GridPosition.ETA15, GridPosition.ETA16,
+    GridPosition.ETA1,
+    GridPosition.ETA2,
+    GridPosition.ETA3,
+    GridPosition.ETA4,
+    GridPosition.ETA5,
+    GridPosition.ETA6,
+    GridPosition.ETA7,
+    GridPosition.ETA8,
+    GridPosition.ETA9,
+    GridPosition.ETA10,
+    GridPosition.ETA11,
+    GridPosition.ETA12,
+    GridPosition.ETA13,
+    GridPosition.ETA14,
+    GridPosition.ETA15,
+    GridPosition.ETA16,
   ];
 
   const displayPositions = $derived.by(() => {
@@ -114,36 +144,36 @@
     if (!locations) {
       throw new Error(`No location mapping found for position: ${position}`);
     }
-    const [blueLocation, redLocation] = locations;
+    const [leftLocation, rightLocation] = locations;
     const gridMode = GridMode.SKEWED;
 
-    const blueMotion = createMotionData({
+    const leftMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueLocation,
-      endLocation: blueLocation,
-      startOrientation: blueOrientation,
-      endOrientation: blueOrientation,
+      startLocation: leftLocation,
+      endLocation: leftLocation,
+      startOrientation: leftOrientation,
+      endOrientation: leftOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       isVisible: true,
-      propType: bluePropType,
-      arrowLocation: blueLocation,
+      propType: leftPropType,
+      arrowLocation: leftLocation,
       gridMode,
     });
 
-    const redMotion = createMotionData({
+    const rightMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redLocation,
-      endLocation: redLocation,
-      startOrientation: redOrientation,
-      endOrientation: redOrientation,
+      startLocation: rightLocation,
+      endLocation: rightLocation,
+      startOrientation: rightOrientation,
+      endOrientation: rightOrientation,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       isVisible: true,
-      propType: redPropType,
-      arrowLocation: redLocation,
+      propType: rightPropType,
+      arrowLocation: rightLocation,
       gridMode,
     });
 
@@ -152,8 +182,8 @@
       startPosition: position,
       endPosition: position,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     };
   }
@@ -201,92 +231,93 @@
     </p>
 
     <nav class="filter-chips">
-    <button
-      class="chip"
-      class:active={selectedGroup === "all"}
-      onclick={() => (selectedGroup = "all")}
-    >
-      All
-      <span class="count">{ZETA_POSITIONS.length + ETA_POSITIONS.length}</span>
-    </button>
-    <button
-      class="chip zeta"
-      class:active={selectedGroup === "zeta"}
-      onclick={() => (selectedGroup = "zeta")}
-    >
-      Zeta
-      <span class="angle">135°</span>
-      <span class="count">{ZETA_POSITIONS.length}</span>
-    </button>
-    <button
-      class="chip eta"
-      class:active={selectedGroup === "eta"}
-      onclick={() => (selectedGroup = "eta")}
-    >
-      Eta
-      <span class="angle">45°</span>
-      <span class="count">{ETA_POSITIONS.length}</span>
-    </button>
-  </nav>
+      <button
+        class="chip"
+        class:active={selectedGroup === "all"}
+        onclick={() => (selectedGroup = "all")}
+      >
+        All
+        <span class="count">{ZETA_POSITIONS.length + ETA_POSITIONS.length}</span
+        >
+      </button>
+      <button
+        class="chip zeta"
+        class:active={selectedGroup === "zeta"}
+        onclick={() => (selectedGroup = "zeta")}
+      >
+        Zeta
+        <span class="angle">135°</span>
+        <span class="count">{ZETA_POSITIONS.length}</span>
+      </button>
+      <button
+        class="chip eta"
+        class:active={selectedGroup === "eta"}
+        onclick={() => (selectedGroup = "eta")}
+      >
+        Eta
+        <span class="angle">45°</span>
+        <span class="count">{ETA_POSITIONS.length}</span>
+      </button>
+    </nav>
 
-  <div class="orientation-controls">
-    <div class="orientation-group blue">
-      <span class="group-label">Blue</span>
-      <div class="orientation-chips">
-        {#each ORIENTATIONS as ori}
-          <button
-            class="ori-chip"
-            class:active={blueOrientation === ori.value}
-            onclick={() => (blueOrientation = ori.value)}
-            title={ori.label}
-          >
-            <i class="fas {ori.icon}" aria-hidden="true"></i>
-            <span>{ori.label}</span>
-          </button>
-        {/each}
-      </div>
-    </div>
-    <div class="orientation-group red">
-      <span class="group-label">Red</span>
-      <div class="orientation-chips">
-        {#each ORIENTATIONS as ori}
-          <button
-            class="ori-chip"
-            class:active={redOrientation === ori.value}
-            onclick={() => (redOrientation = ori.value)}
-            title={ori.label}
-          >
-            <i class="fas {ori.icon}" aria-hidden="true"></i>
-            <span>{ori.label}</span>
-          </button>
-        {/each}
-      </div>
-    </div>
-  </div>
-
-  <div class="grid themed-scrollbar">
-    {#each displayPositions as position (position)}
-      {@const pictograph = createStaticPictograph(position)}
-      {@const positionLocations = POSITION_LOCATIONS[position]}
-      {@const blueLoc = positionLocations?.[0] ?? GridLocation.NORTH}
-      {@const redLoc = positionLocations?.[1] ?? GridLocation.SOUTH}
-      <article class="card">
-        <div class="pictograph-area">
-          <PictographContainer
-            pictographData={pictograph}
-            gridMode={GridMode.SKEWED}
-          />
+    <div class="orientation-controls">
+      <div class="orientation-group blue">
+        <span class="group-label">Left</span>
+        <div class="orientation-chips">
+          {#each ORIENTATIONS as ori}
+            <button
+              class="ori-chip"
+              class:active={leftOrientation === ori.value}
+              onclick={() => (leftOrientation = ori.value)}
+              title={ori.label}
+            >
+              <i class="fas {ori.icon}" aria-hidden="true"></i>
+              <span>{ori.label}</span>
+            </button>
+          {/each}
         </div>
-        <footer class="card-footer">
-          <span class="position-name">{formatPosition(position)}</span>
-          <div class="locations">
-            <span class="loc blue">{blueLoc.slice(0, 2).toUpperCase()}</span>
-            <span class="loc red">{redLoc.slice(0, 2).toUpperCase()}</span>
+      </div>
+      <div class="orientation-group red">
+        <span class="group-label">Right</span>
+        <div class="orientation-chips">
+          {#each ORIENTATIONS as ori}
+            <button
+              class="ori-chip"
+              class:active={rightOrientation === ori.value}
+              onclick={() => (rightOrientation = ori.value)}
+              title={ori.label}
+            >
+              <i class="fas {ori.icon}" aria-hidden="true"></i>
+              <span>{ori.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+
+    <div class="themed-scrollbar grid">
+      {#each displayPositions as position (position)}
+        {@const pictograph = createStaticPictograph(position)}
+        {@const positionLocations = POSITION_LOCATIONS[position]}
+        {@const leftLoc = positionLocations?.[0] ?? GridLocation.NORTH}
+        {@const rightLoc = positionLocations?.[1] ?? GridLocation.SOUTH}
+        <article class="card">
+          <div class="pictograph-area">
+            <PictographContainer
+              pictographData={pictograph}
+              gridMode={GridMode.SKEWED}
+            />
           </div>
-        </footer>
-      </article>
-    {/each}
-  </div>
+          <footer class="card-footer">
+            <span class="position-name">{formatPosition(position)}</span>
+            <div class="locations">
+              <span class="loc blue">{leftLoc.slice(0, 2).toUpperCase()}</span>
+              <span class="loc red">{rightLoc.slice(0, 2).toUpperCase()}</span>
+            </div>
+          </footer>
+        </article>
+      {/each}
+    </div>
   {/if}
 </div>
 
@@ -324,7 +355,11 @@
     letter-spacing: 0.05em;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    background: color-mix(in srgb, var(--semantic-warning, #f97316) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #f97316) 15%,
+      transparent
+    );
     color: var(--semantic-warning, #f97316);
   }
 
@@ -436,8 +471,12 @@
   }
 
   /* Zeta/Eta position group accents — scoped to skewlab; no global token exists. */
-  .chip.zeta { --skewlab-zeta-accent: #a78bfa; } /* violet — 135° obtuse */
-  .chip.eta  { --skewlab-eta-accent:  #34d399; } /* emerald — 45° acute */
+  .chip.zeta {
+    --skewlab-zeta-accent: #a78bfa;
+  } /* violet — 135° obtuse */
+  .chip.eta {
+    --skewlab-eta-accent: #34d399;
+  } /* emerald — 45° acute */
 
   .chip.zeta.active {
     border-color: var(--skewlab-zeta-accent);

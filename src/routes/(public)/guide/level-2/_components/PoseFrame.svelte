@@ -23,20 +23,20 @@
    */
   import { poseAt, type HalfwayMotion } from "../_data/halfway-pose";
   import { poseArrow, POSE_ARROW_RED } from "../_data/pose-arrow";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     motion,
     t,
     arrow = null,
-    color = MotionColor.RED,
+    color = HandSide.RIGHT,
   }: {
     motion: HalfwayMotion;
     /** Fraction of the motion to pose the staff at (0 = start, 1 = end). */
     t: number;
     /** End-direction arrow glyph spanning this slice of the motion, or none. */
     arrow?: { tStart: number; tEnd: number } | null;
-    color?: MotionColor;
+    color?: HandSide;
   } = $props();
 
   // The renderer's own staff asset path (static/images/props/staff.svg),
@@ -55,7 +55,7 @@
   ];
 
   const pose = $derived(poseAt(motion, t, color));
-  const staffFill = $derived(color === MotionColor.BLUE ? BLUE_FILL : RED_FILL);
+  const staffFill = $derived(color === HandSide.LEFT ? BLUE_FILL : RED_FILL);
   const arrowGlyph = $derived(arrow ? poseArrow(motion, arrow.tStart, arrow.tEnd) : null);
 </script>
 

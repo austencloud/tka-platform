@@ -13,11 +13,13 @@
     manager: SceneEffectsManager3D;
     parent?: Object3D;
     petalEnvironmentProfile?: PetalEnvironmentProfile3D;
+    onReadyChange?: (ready: boolean) => void;
   }
   let {
     manager,
     parent,
     petalEnvironmentProfile = NEUTRAL_PETAL_ENVIRONMENT_PROFILE,
+    onReadyChange,
   }: Props = $props();
   const { scene, mainStage, renderStage, renderer } =
     useThrelte() as unknown as {
@@ -30,11 +32,12 @@
     after: mainStage,
     before: renderStage,
   });
+  manager.initialize(parent ?? scene, renderer);
+  onReadyChange?.(true);
 
   useTask(
     (delta) => {
       manager.setPetalEnvironmentProfile(petalEnvironmentProfile);
-      manager.initialize(parent ?? scene, renderer);
       manager.update(delta);
     },
     { stage: effectsStage }

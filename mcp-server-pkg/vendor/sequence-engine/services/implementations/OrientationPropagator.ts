@@ -6,9 +6,7 @@
  * orientations through a sequence.
  */
 
-import {
-  calculateEndOrientation as calculateEndOrientationCore,
-} from "@tka/render-core";
+import { calculateEndOrientation as calculateEndOrientationCore } from "@tka/render-core";
 import type {
   IOrientationPropagator,
   IOrientationCalculator,
@@ -41,14 +39,14 @@ export class OrientationCalculator implements IOrientationCalculator {
 
 /**
  * Propagates orientations through a sequence.
- * Each beat's start orientation = previous beat's end orientation.
+ * Each step's start orientation = previous step's end orientation.
  */
 export class OrientationPropagator implements IOrientationPropagator {
   constructor(private readonly calculator: IOrientationCalculator) {}
 
   propagateForColor(
     steps: SequenceStep[],
-    color: "blue" | "red",
+    hand: "left" | "right",
     initialOrientation: Orientation
   ): SequenceStep[] {
     const updatedSteps = [...steps];
@@ -58,7 +56,7 @@ export class OrientationPropagator implements IOrientationPropagator {
       const step = updatedSteps[i];
       if (!step) continue;
 
-      const motion = color === "blue" ? step.blueMotion : step.redMotion;
+      const motion = hand === "left" ? step.leftMotion : step.rightMotion;
       if (!motion) continue;
 
       const newEndOrientation = this.calculator.calculateEndOrientation(
@@ -78,8 +76,8 @@ export class OrientationPropagator implements IOrientationPropagator {
 
       updatedSteps[i] = {
         ...step,
-        blueMotion: color === "blue" ? updatedMotion : step.blueMotion,
-        redMotion: color === "red" ? updatedMotion : step.redMotion,
+        leftMotion: hand === "left" ? updatedMotion : step.leftMotion,
+        rightMotion: hand === "right" ? updatedMotion : step.rightMotion,
       };
 
       previousEndOrientation = newEndOrientation;
@@ -100,11 +98,21 @@ export class OrientationPropagator implements IOrientationPropagator {
 
     let updatedSteps = [...result.steps];
 
-    const blueStartOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
-    updatedSteps = this.propagateForColor(updatedSteps, "blue", blueStartOrientation);
+    const leftStartOrientation = (startPosition.leftMotion.endOrientation ||
+      "in") as Orientation;
+    updatedSteps = this.propagateForColor(
+      updatedSteps,
+      "left",
+      leftStartOrientation
+    );
 
-    const redStartOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
-    updatedSteps = this.propagateForColor(updatedSteps, "red", redStartOrientation);
+    const rightStartOrientation = (startPosition.rightMotion.endOrientation ||
+      "in") as Orientation;
+    updatedSteps = this.propagateForColor(
+      updatedSteps,
+      "right",
+      rightStartOrientation
+    );
 
     return {
       ...result,

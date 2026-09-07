@@ -55,37 +55,99 @@ describe("stage coordinate frame", () => {
     expect(frame.environmentYOffset).toBe(0);
   });
 
-  describe("scenes rendering the canonical <Stage3D>", () => {
-    // A scene that renders Stage3D without a `height` prop gets a deck top at
-    // STAGE.STAGE_DECK_HEIGHT. If it declares any other native surface, the
-    // difference offsets the entire environment and the performers' feet end
-    // up inside the deck. Blossom shipped 0.35 here and sank feet by 0.20 m.
-    const SCENES_DIR = "src/lib/shared/3d/environments/scenes";
-    const SCENE_BACKGROUNDS: Record<string, BackgroundType> = {
-      "ForestScene.svelte": BackgroundType.FOREST,
-      "AutumnScene.svelte": BackgroundType.AUTUMN,
-      "BlossomScene.svelte": BackgroundType.BLOSSOM,
+  describe("scenes building the canonical stage deck", () => {
+    // A scene that builds the canonical deck without overriding its height
+    // gets a deck top at STAGE.STAGE_DECK_HEIGHT. If it declares any other
+    // native surface, the difference offsets the entire environment and the
+    // performers' feet end up inside the deck. Blossom shipped 0.35 here and
+    // sank feet by 0.20 m.
+    //
+    // The 2026-09-04 worker-renderer refactors moved Autumn's and Blossom's
+    // deck out of their Svelte scenes into imperative `worlds/*-stage.ts`
+    // builders, so both kinds of owner are enumerated. A deck owner is any
+    // file under `environments/` that mounts <Stage3D> or reads the canonical
+    // deck height; `domain/` is excluded because it defines that height rather
+    // than standing performers on it.
+    const ENVIRONMENTS_DIR = "src/lib/shared/3d/environments";
+    const DECK_OWNER_BACKGROUNDS: Record<string, BackgroundType> = {
+      "scenes/forest/ForestConfigurableScene.svelte": BackgroundType.FOREST,
+      "scenes/forest/ForestProductionScene.svelte": BackgroundType.FOREST,
+      "worlds/autumn/autumn-stage.ts": BackgroundType.AUTUMN,
+      "worlds/blossom/blossom-stage.ts": BackgroundType.BLOSSOM,
     };
 
-    const rendersStage3D = readdirSync(SCENES_DIR)
-      .filter((file) => file.endsWith("Scene.svelte"))
-      .filter((file) =>
-        /<Stage3D[\s/>]/.test(readFileSync(join(SCENES_DIR, file), "utf8"))
-      );
+    function collectFiles(relativeDir: string): string[] {
+      return readdirSync(join(ENVIRONMENTS_DIR, relativeDir), {
+        withFileTypes: true,
+      }).flatMap((entry) => {
+        const relativePath = relativeDir
+          ? `${relativeDir}/${entry.name}`
+          : entry.name;
+        return entry.isDirectory() ? collectFiles(relativePath) : relativePath;
+      });
+    }
+
+    const environmentFiles = collectFiles("").filter(
+      (file) =>
+        (file.endsWith(".svelte") || file.endsWith(".ts")) &&
+        !file.includes(".test.")
+    );
+
+    const deckOwners = environmentFiles
+      .filter((file) => !file.startsWith("domain/"))
+      .filter((file) => {
+        const source = readFileSync(join(ENVIRONMENTS_DIR, file), "utf8");
+        return (
+          /<Stage3D[\s/>]/.test(source) ||
+          /STAGE_DECK_HEIGHT|CANONICAL_PERFORMER_ANCHOR_Y/.test(source)
+        );
+      });
 
     it("has a known background mapping for each one", () => {
-      expect(rendersStage3D.sort()).toEqual(
-        Object.keys(SCENE_BACKGROUNDS).sort()
+      expect(deckOwners.sort()).toEqual(
+        Object.keys(DECK_OWNER_BACKGROUNDS).sort()
       );
     });
 
-    it.each(rendersStage3D)("declares the deck top for %s", (file) => {
-      const source = readFileSync(join(SCENES_DIR, file), "utf8");
-      const tag = source.match(/<Stage3D[^>]*>/)?.[0] ?? "";
-      // A scene passing its own height would need its own declared surface.
-      expect(tag).not.toMatch(/\bheight=/);
+    it.each(deckOwners)("declares the deck top for %s", (file) => {
+      const source = readFileSync(join(ENVIRONMENTS_DIR, file), "utf8");
 
-      const backgroundType = SCENE_BACKGROUNDS[file];
+      if (file.endsWith(".svelte")) {
+        const tag = source.match(/<Stage3D[^>]*>/)?.[0] ?? "";
+        // A scene passing its own height would need its own declared surface.
+        expect(tag).toContain("<Stage3D");
+        expect(tag).not.toMatch(/\bheight=/);
+      } else {
+        // The imperative builders take their deck top from the canonical
+        // constant. Where one accepts a height override, that override is only
+        // safe while nothing passes it, so every call site is checked too.
+        const deckTopSource = source.match(/deckTop\s*=\s*(\w+)/)?.[1];
+        expect(deckTopSource).toBeDefined();
+        if (deckTopSource !== "CANONICAL_PERFORMER_ANCHOR_Y") {
+          expect(source).toMatch(
+            new RegExp(
+              `${deckTopSource}\\s*=\\s*options\\.height \\?\\? STAGE\\.STAGE_DECK_HEIGHT`
+            )
+          );
+        }
+
+        const creator = source.match(/export function (create\w*Stage)\(/)?.[1];
+        expect(creator).toBeDefined();
+        const callSites = environmentFiles
+          .filter((candidate) => candidate !== file)
+          .flatMap(
+            (candidate) =>
+              readFileSync(join(ENVIRONMENTS_DIR, candidate), "utf8").match(
+                new RegExp(`${creator}\\(\\{[^}]*\\}`, "g")
+              ) ?? []
+          );
+        expect(callSites.length).toBeGreaterThan(0);
+        for (const callSite of callSites) {
+          expect(callSite).not.toMatch(/\bheight\s*:/);
+        }
+      }
+
+      const backgroundType = DECK_OWNER_BACKGROUNDS[file];
       expect(getNativeStageSurfaceY(backgroundType, true)).toBe(
         STAGE.STAGE_DECK_HEIGHT
       );

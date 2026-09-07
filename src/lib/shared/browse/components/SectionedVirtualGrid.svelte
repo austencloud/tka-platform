@@ -69,8 +69,8 @@
     ) => void;
     eager?: boolean;
     handPathMode?: boolean;
-    showBlueMotion?: boolean;
-    showRedMotion?: boolean;
+    showLeftMotion?: boolean;
+    showRightMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
     selectedIds?: ReadonlySet<string>;
@@ -96,8 +96,8 @@
     onAction,
     eager = false,
     handPathMode = false,
-    showBlueMotion = true,
-    showRedMotion = true,
+    showLeftMotion = true,
+    showRightMotion = true,
     addWord = true,
     addDifficultyLevel = true,
     selectedIds,
@@ -113,14 +113,14 @@
 
   // ── Card render context (mirrors VirtualizedSequenceGrid) ──────────────
   const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
+    leftPropType: settingsService.settings.leftPropType,
+    rightPropType: settingsService.settings.rightPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
   const isCatDog = $derived(
     isCatDogMode(
-      propSettings.bluePropType,
-      propSettings.redPropType,
+      propSettings.leftPropType,
+      propSettings.rightPropType,
       propSettings.catDogMode
     )
   );
@@ -664,14 +664,14 @@
                   ? (seq) => handleAction("view-detail", seq, seqVariations)
                   : undefined}
                 onHover={handleHover}
-                bluePropType={propSettings.bluePropType}
-                redPropType={propSettings.redPropType}
+                leftPropType={propSettings.leftPropType}
+                rightPropType={propSettings.rightPropType}
                 catDogModeEnabled={isCatDog}
                 {lightMode}
                 {eager}
                 {handPathMode}
-                {showBlueMotion}
-                {showRedMotion}
+                {showLeftMotion}
+                {showRightMotion}
                 {addWord}
                 {addDifficultyLevel}
                 {selectedIds}

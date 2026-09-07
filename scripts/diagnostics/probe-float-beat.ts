@@ -41,13 +41,13 @@ async function main(): Promise<void> {
     if (embLetters[i] === blobLetters[i]) continue;
     const e = embContent[i] as AnyRec | undefined;
     const b = blobContent[i] as AnyRec | undefined;
-    const eM = e?.motions as { blue?: AnyRec; red?: AnyRec } | undefined;
-    const bM = b?.motions as { blue?: AnyRec; red?: AnyRec } | undefined;
+    const eM = e?.motions as { left?: AnyRec; right?: AnyRec } | undefined;
+    const bM = b?.motions as { left?: AnyRec; right?: AnyRec } | undefined;
     console.log(`\nbeat ${i}: embedded letter ${JSON.stringify(embLetters[i])} (stored ${JSON.stringify(e?.letter ?? null)})  vs blob letter ${JSON.stringify(blobLetters[i])}`);
-    console.log(`  emb blue: ${show(eM?.blue)}`);
-    console.log(`  blb blue: ${show(bM?.blue)}`);
-    console.log(`  emb red:  ${show(eM?.red)}`);
-    console.log(`  blb red:  ${show(bM?.red)}`);
+    console.log(`  emb blue: ${show(eM?.left)}`);
+    console.log(`  blb blue: ${show(bM?.left)}`);
+    console.log(`  emb red:  ${show(eM?.right)}`);
+    console.log(`  blb red:  ${show(bM?.right)}`);
   }
   process.exit(0);
 }

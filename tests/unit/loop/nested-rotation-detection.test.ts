@@ -46,27 +46,27 @@ interface Beat {
   letter: string;
   start: string;
   end: string;
-  blue: ReturnType<typeof M>;
-  red: ReturnType<typeof M>;
+  left: ReturnType<typeof M>;
+  right: ReturnType<typeof M>;
 }
 
 const BEATS: Beat[] = [
-  { letter: "Ω", start: "beta1", end: "gamma9", blue: M("anti", "ccw", "n", "e", "in", "out"), red: M("static", "cw", "n", "n", "in", "out") },
-  { letter: "Z-", start: "gamma9", end: "beta7", blue: M("dash", "ccw", "e", "w", "out", "out"), red: M("anti", "cw", "n", "w", "out", "out") },
-  { letter: "Ω", start: "beta7", end: "gamma15", blue: M("anti", "ccw", "w", "n", "out", "in"), red: M("static", "cw", "w", "w", "out", "in") },
-  { letter: "Z-", start: "gamma15", end: "beta5", blue: M("dash", "ccw", "n", "s", "in", "in"), red: M("anti", "cw", "w", "s", "in", "in") },
-  { letter: "Ω", start: "beta5", end: "gamma13", blue: M("anti", "ccw", "s", "w", "in", "out"), red: M("static", "cw", "s", "s", "in", "out") },
-  { letter: "Z-", start: "gamma13", end: "beta3", blue: M("dash", "ccw", "w", "e", "out", "out"), red: M("anti", "cw", "s", "e", "out", "out") },
-  { letter: "Ω", start: "beta3", end: "gamma11", blue: M("anti", "ccw", "e", "s", "out", "in"), red: M("static", "cw", "e", "e", "out", "in") },
-  { letter: "Z-", start: "gamma11", end: "beta1", blue: M("dash", "ccw", "s", "n", "in", "in"), red: M("anti", "cw", "e", "n", "in", "in") },
-  { letter: "Θ", start: "beta1", end: "gamma1", blue: M("pro", "ccw", "n", "w", "in", "in"), red: M("static", "cw", "n", "n", "in", "out") },
-  { letter: "Y-", start: "gamma1", end: "beta3", blue: M("dash", "ccw", "w", "e", "in", "in"), red: M("pro", "cw", "n", "e", "out", "in") },
-  { letter: "Θ", start: "beta3", end: "gamma3", blue: M("pro", "ccw", "e", "n", "in", "in"), red: M("static", "cw", "e", "e", "in", "out") },
-  { letter: "Y-", start: "gamma3", end: "beta5", blue: M("dash", "ccw", "n", "s", "in", "in"), red: M("pro", "cw", "e", "s", "out", "in") },
-  { letter: "Θ", start: "beta5", end: "gamma5", blue: M("pro", "ccw", "s", "e", "in", "in"), red: M("static", "cw", "s", "s", "in", "out") },
-  { letter: "Y-", start: "gamma5", end: "beta7", blue: M("dash", "ccw", "e", "w", "in", "in"), red: M("pro", "cw", "s", "w", "out", "in") },
-  { letter: "Θ", start: "beta7", end: "gamma7", blue: M("pro", "ccw", "w", "s", "in", "in"), red: M("static", "cw", "w", "w", "in", "out") },
-  { letter: "Y-", start: "gamma7", end: "beta1", blue: M("dash", "ccw", "s", "n", "in", "in"), red: M("pro", "cw", "w", "n", "out", "in") },
+  { letter: "Ω", start: "beta1", end: "gamma9", left: M("anti", "ccw", "n", "e", "in", "out"), right: M("static", "cw", "n", "n", "in", "out") },
+  { letter: "Z-", start: "gamma9", end: "beta7", left: M("dash", "ccw", "e", "w", "out", "out"), right: M("anti", "cw", "n", "w", "out", "out") },
+  { letter: "Ω", start: "beta7", end: "gamma15", left: M("anti", "ccw", "w", "n", "out", "in"), right: M("static", "cw", "w", "w", "out", "in") },
+  { letter: "Z-", start: "gamma15", end: "beta5", left: M("dash", "ccw", "n", "s", "in", "in"), right: M("anti", "cw", "w", "s", "in", "in") },
+  { letter: "Ω", start: "beta5", end: "gamma13", left: M("anti", "ccw", "s", "w", "in", "out"), right: M("static", "cw", "s", "s", "in", "out") },
+  { letter: "Z-", start: "gamma13", end: "beta3", left: M("dash", "ccw", "w", "e", "out", "out"), right: M("anti", "cw", "s", "e", "out", "out") },
+  { letter: "Ω", start: "beta3", end: "gamma11", left: M("anti", "ccw", "e", "s", "out", "in"), right: M("static", "cw", "e", "e", "out", "in") },
+  { letter: "Z-", start: "gamma11", end: "beta1", left: M("dash", "ccw", "s", "n", "in", "in"), right: M("anti", "cw", "e", "n", "in", "in") },
+  { letter: "Θ", start: "beta1", end: "gamma1", left: M("pro", "ccw", "n", "w", "in", "in"), right: M("static", "cw", "n", "n", "in", "out") },
+  { letter: "Y-", start: "gamma1", end: "beta3", left: M("dash", "ccw", "w", "e", "in", "in"), right: M("pro", "cw", "n", "e", "out", "in") },
+  { letter: "Θ", start: "beta3", end: "gamma3", left: M("pro", "ccw", "e", "n", "in", "in"), right: M("static", "cw", "e", "e", "in", "out") },
+  { letter: "Y-", start: "gamma3", end: "beta5", left: M("dash", "ccw", "n", "s", "in", "in"), right: M("pro", "cw", "e", "s", "out", "in") },
+  { letter: "Θ", start: "beta5", end: "gamma5", left: M("pro", "ccw", "s", "e", "in", "in"), right: M("static", "cw", "s", "s", "in", "out") },
+  { letter: "Y-", start: "gamma5", end: "beta7", left: M("dash", "ccw", "e", "w", "in", "in"), right: M("pro", "cw", "s", "w", "out", "in") },
+  { letter: "Θ", start: "beta7", end: "gamma7", left: M("pro", "ccw", "w", "s", "in", "in"), right: M("static", "cw", "w", "w", "in", "out") },
+  { letter: "Y-", start: "gamma7", end: "beta1", left: M("dash", "ccw", "s", "n", "in", "in"), right: M("pro", "cw", "w", "n", "out", "in") },
 ];
 
 function buildSequence(): SequenceData {
@@ -87,8 +87,8 @@ function buildSequence(): SequenceData {
       startPosition: b.start,
       endPosition: b.end,
       motions: {
-        blue: { ...b.blue, color: "blue" },
-        red: { ...b.red, color: "red" },
+        left: { ...b.left, color: "blue" },
+        right: { ...b.right, color: "red" },
       },
     })),
   } as unknown as SequenceData;

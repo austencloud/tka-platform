@@ -2,7 +2,7 @@
  * Viewer 3D State
  *
  * Top-level state factory for the 3D viewer feature.
- * Manages render mode (2D/3D), a single avatar instance, effect toggles,
+ * Manages render mode, character instances, effect toggles,
  * and the last known camera snapshot.
  *
  * WebGL2 availability is detected once at factory creation time so callers
@@ -10,18 +10,21 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { reducedMotion } from "$lib/shared/transitions/motion";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import type {
   DefaultsDomainSnapshot,
+  PerformerDomainSnapshot,
   PerformerPositionSnapshot,
+  SceneUndoOperationType,
   ViewerDomainSnapshot,
   VisibilityDomainSnapshot,
 } from "../undo/scene-undo-types";
-import { Plane, PlaneMode } from "@austencloud/scene-3d";
-import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
-import { derivePlaneModeFromHands } from "./avatar-instance-state.svelte";
+import { Plane, PlaneMode, type PropBuild } from "@austencloud/scene-3d";
+import type { CharacterInstanceState } from "./character-instance-state.svelte";
+import { derivePlaneModeFromHands } from "./character-instance-state.svelte";
 import type {
   DefaultPerformerSettings,
   CascadeCategory,
@@ -33,7 +36,11 @@ import {
   createPerformerManager,
   type PerformerManager,
 } from "./performer-manager.svelte";
-import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
+import {
+  CHARACTER_DEFINITIONS,
+  DEFAULT_CHARACTER_ID,
+  type CharacterId,
+} from "../domain/character-model";
 import { STAGE } from "@austencloud/scene-3d";
 import type { FormationPreset } from "@austencloud/scene-3d";
 import {
@@ -46,6 +53,7 @@ import {
   resolveViewerFormationFacingAngle,
 } from "../domain/viewer-formation-facing";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
+import { getBlossomOpeningCamera } from "../environments/scenes/cherry-blossom/blossom-site";
 import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
@@ -65,6 +73,7 @@ import {
   resolveInitialDefaultProp,
   resolvePlainOpenPerformerSettings,
 } from "../domain/plain-open-policy";
+import { normalizeLegacyPerformerSnapshot } from "./legacy-viewer-3d-snapshots";
 
 // Popover Stack
 
@@ -95,6 +104,12 @@ const STORAGE_KEY_OCEAN_VARIANT = "tka-viewer3d-oceanVariant";
 const STORAGE_KEY_ENVIRONMENT = VIEWER_3D_ENVIRONMENT_STORAGE_KEY;
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
+
+export interface ViewerPerformerAppearanceAssignment {
+  index: number;
+  characterId?: CharacterId;
+  prop?: PropType;
+}
 
 type CameraSnapTo = (
   position: { x: number; y: number; z: number },
@@ -156,6 +171,7 @@ function persistDefaultProp(prop: PropType) {
 const STORAGE_KEY_PERFORMERS = "tka-viewer3d-performers";
 const STORAGE_KEY_ACTIVE_FORMATION = "tka-viewer3d-activeFormation";
 const STORAGE_KEY_SELECTED_INDEX = "tka-viewer3d-selectedIndex";
+const STORAGE_KEY_SELECTED_INDICES = "tka-viewer3d-selectedIndices";
 const STORAGE_KEY_DEFAULT_PROP = "tka-viewer3d-defaultProp";
 
 /** Per-performer cascade overrides; null = inherit the viewer default. */
@@ -168,11 +184,13 @@ export interface StoredPerformerSettings {
 }
 
 export interface StoredPerformerSnapshot {
+  /** The visible character model selected for this performer. */
+  characterId?: CharacterId;
   position: { x: number; z: number };
   facingAngle: number;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
-  /** User-assigned display name; absent/null = inherit the avatar model's name. */
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
+  /** User-assigned display name; absent/null = inherit the character model's name. */
   name?: string | null;
   /** Cascade overrides; absent = no overrides (pre-v2 snapshots). */
   settings?: StoredPerformerSettings;
@@ -283,7 +301,9 @@ function loadPersistedPerformers(): StoredPerformerSnapshot[] | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
-    return parsed as StoredPerformerSnapshot[];
+    return parsed.map(
+      normalizeLegacyPerformerSnapshot
+    ) as StoredPerformerSnapshot[];
   } catch {
     return null;
   }
@@ -298,17 +318,23 @@ function persistPerformers(snapshots: StoredPerformerSnapshot[]): void {
   }
 }
 
-function loadPersistedActiveFormation(): FormationPreset | "manual" | null {
+function loadPersistedActiveFormation():
+  | FormationPreset
+  | "manual"
+  | "custom"
+  | null {
   if (typeof localStorage === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_FORMATION);
-    return raw as FormationPreset | "manual" | null;
+    return raw as FormationPreset | "manual" | "custom" | null;
   } catch {
     return null;
   }
 }
 
-function persistActiveFormation(value: FormationPreset | "manual"): void {
+function persistActiveFormation(
+  value: FormationPreset | "manual" | "custom"
+): void {
   if (typeof localStorage === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY_ACTIVE_FORMATION, value);
@@ -341,8 +367,32 @@ function persistSelectedIndex(value: number | null): void {
   }
 }
 
+function loadPersistedSelectedIndices(): number[] | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SELECTED_INDICES);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter(
+      (value): value is number => Number.isInteger(value) && value >= 0
+    );
+  } catch {
+    return null;
+  }
+}
+
+function persistSelectedIndices(value: readonly number[]): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_SELECTED_INDICES, JSON.stringify(value));
+  } catch {
+    // Quota exceeded or unavailable
+  }
+}
+
 /**
- * One-time migration: if the old single-avatar visiblePlanes key exists and
+ * One-time migration: if the old single-character visiblePlanes key exists and
  * the new per-performer key does not, construct a single-performer snapshot
  * from the old data and save it to the new key. Delete the old key so the
  * migration never runs twice.
@@ -356,14 +406,14 @@ function migrateLegacyPlanesIfNeeded(): void {
     if (!hasOld) return;
 
     const planes = JSON.parse(hasOld) as Plane[];
-    const blue = planes[0] ?? Plane.WALL;
-    const red = planes[1] ?? blue;
+    const left = planes[0] ?? Plane.WALL;
+    const right = planes[1] ?? left;
     const snapshots: StoredPerformerSnapshot[] = [
       {
         position: { x: 0, z: 0 },
         facingAngle: 0,
-        customBluePlane: blue,
-        customRedPlane: red,
+        customLeftPlane: left,
+        customRightPlane: right,
       },
     ];
     localStorage.setItem(STORAGE_KEY_PERFORMERS, JSON.stringify(snapshots));
@@ -425,8 +475,20 @@ const WRITERS = {
   performers: persistPerformers,
   activeFormation: persistActiveFormation,
   selectedIndex: persistSelectedIndex,
+  selectedIndices: persistSelectedIndices,
   effectToggles: persistEffectToggles,
 } as const;
+
+export interface ViewerPerformerSelectionController {
+  getSelectedIndices(): readonly number[];
+  getPrimaryIndex(): number | null;
+  replace(index: number): void;
+  toggle(index: number): void;
+  clear(): void;
+  selectAll(count: number): void;
+  setSelection(indices: readonly number[], primaryIndex?: number): void;
+  removeSelection?(indices: readonly number[]): boolean;
+}
 
 /**
  * Optional construction seed. Every field present here is used INSTEAD OF the
@@ -478,11 +540,34 @@ export interface Viewer3DStateOptions {
   /** Used only when this user has never chosen a 3D environment. */
   firstUseEnvironment?: SceneEnvironmentId;
   /**
-   * The app's current prop (settings.bluePropType). A PLAIN open re-seeds prop
+   * The app's current prop (settings.leftPropType). A PLAIN open re-seeds prop
    * identity from this instead of the persisted viewer prop, so users stop
    * being ambushed by a stale saved prop. A preset-sourced open ignores it.
    */
   appDefaultProp?: string | null;
+  /**
+   * View-only environment, from a shared viewer link (`t3` URL slice). It wins
+   * over the persisted key AND suppresses this instance's environment writes,
+   * so the sender's scene renders without ever reaching the recipient's disk —
+   * the same `initial` + `persist:false` shape `createEffectsConfigState` uses.
+   *
+   * Deliberately NOT expressed by passing a `Viewer3DStateSeed`: a seed marks
+   * the whole instance as a self-contained PREVIEW (it stops persisting camera,
+   * planes, performers and prop, forces verbatim performer restore, and makes
+   * `seededBackgroundType` non-null, which `Viewer3DCamera` reads to pick a
+   * preview-specific distance for Blossom). A link override is a real viewer,
+   * so it narrows the override to the one field the slice actually encodes.
+   */
+  viewOnlyEnvironmentId?: SceneEnvironmentId;
+  /**
+   * View-only scene-feature toggles from the same link. Read by
+   * `Viewer3DCanvas`, which builds an ISOLATED feature state from them — the
+   * shared `tka-scene-features` key is then ignored in both directions.
+   */
+  viewOnlySceneFeatures?: Record<string, boolean>;
+  /** A document host can own performer selection while the shared viewer
+   * exposes the same index-based interaction surface to scene controls. */
+  performerSelection?: ViewerPerformerSelectionController;
 }
 
 function buildViewer3DState(
@@ -490,6 +575,12 @@ function buildViewer3DState(
   options: Viewer3DStateOptions = {}
 ) {
   const sceneUndo = getSceneUndoManager();
+  // The manager is imperative. This revision carries its subscription events
+  // into Svelte so shortcut availability changes in the same frame as history.
+  let undoRevision = $state(0);
+  const unsubscribeFromUndo = sceneUndo.subscribe(() => {
+    undoRevision++;
+  });
   const _webgl2Available = isWebGL2Available();
   /** A seeded field wins over storage; `undefined` means "not seeded". */
   const seeded = <T>(value: T | undefined, fromStorage: () => T): T =>
@@ -520,7 +611,16 @@ function buildViewer3DState(
     persistent && options.appDefaultProp !== undefined
       ? consumeViewer3DPresetIntent()
       : true;
-  const seededEnvironment = seed?.environmentId ?? seed?.backgroundType;
+  const seededEnvironment =
+    seed?.environmentId ??
+    seed?.backgroundType ??
+    options.viewOnlyEnvironmentId;
+  /**
+   * A link override reads its environment from the URL and writes none back.
+   * `loadPersistedEnvironment` is skipped entirely, which also skips its
+   * first-use migration write — the recipient's key stays exactly as it was.
+   */
+  const environmentIsViewOnly = options.viewOnlyEnvironmentId !== undefined;
   let environmentId = $state<SceneEnvironmentId>(
     seededEnvironment !== undefined
       ? normalizeSceneEnvironmentId(seededEnvironment)
@@ -537,8 +637,10 @@ function buildViewer3DState(
   const persistPerformers = persistent ? WRITERS.performers : noop;
   const persistActiveFormation = persistent ? WRITERS.activeFormation : noop;
   const persistSelectedIndex = persistent ? WRITERS.selectedIndex : noop;
+  const persistSelectedIndices = persistent ? WRITERS.selectedIndices : noop;
   const persistEffectToggles = persistent ? WRITERS.effectToggles : noop;
-  const persistSceneEnvironment = persistent ? persistEnvironment : noop;
+  const persistSceneEnvironment =
+    persistent && !environmentIsViewOnly ? persistEnvironment : noop;
   /** The four keys written inline rather than through a `persist*` helper. */
   const writeKey = (key: string, value: string) => {
     if (!persistent) return;
@@ -608,15 +710,15 @@ function buildViewer3DState(
       }) as PropType),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
-    customBluePlane: Plane.WALL,
-    customRedPlane: Plane.WALL,
+    customLeftPlane: Plane.WALL,
+    customRightPlane: Plane.WALL,
   });
 
   // Performer manager - single source of truth for multi-performer state.
   // The viewer passes its viewer-specific cap (8) while realm/museum/duet
   // keep their shared cap (4) by not passing maxPerformers at all.
   const performerManager: PerformerManager = createPerformerManager({
-    initialAvatarId: DEFAULT_AVATAR_ID,
+    initialCharacterId: DEFAULT_CHARACTER_ID,
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
     getDefaults: () => _defaultSettings,
     getFrontStageFacingAngle: () =>
@@ -624,9 +726,74 @@ function buildViewer3DState(
     persistent,
   });
 
-  // Viewer-specific selection scope. Lives on top of PerformerManager so
-  // realm/museum/duet keep their simpler index-only model. null = "All".
-  let selectedPerformerIndex = $state<number | null>(null);
+  // Viewer-specific selection scope. A null local set is explicit All, while
+  // an empty array is explicit None. A document host can inject the same
+  // contract so Stage IDs remain canonical without creating a second store.
+  let localSelectedPerformerIndices = $state<number[] | null>(null);
+  let localPrimaryPerformerIndex = $state<number | null>(null);
+  let performerSelectionMode = $state(false);
+
+  function normalizeSelectedIndices(indices: readonly number[]): number[] {
+    const count = performerManager.performers.length;
+    return [...new Set(indices)].filter(
+      (index) => Number.isInteger(index) && index >= 0 && index < count
+    );
+  }
+
+  function selectedPerformerIndices(): number[] {
+    const controlled = options.performerSelection?.getSelectedIndices();
+    if (controlled) return normalizeSelectedIndices(controlled);
+    if (localSelectedPerformerIndices === null) {
+      return performerManager.performers.map((_, index) => index);
+    }
+    return normalizeSelectedIndices(localSelectedPerformerIndices);
+  }
+
+  function primaryPerformerIndex(): number | null {
+    const selected = selectedPerformerIndices();
+    if (selected.length === 0) return null;
+    const controlled = options.performerSelection?.getPrimaryIndex();
+    if (
+      controlled !== undefined &&
+      controlled !== null &&
+      selected.includes(controlled)
+    ) {
+      return controlled;
+    }
+    if (
+      localPrimaryPerformerIndex !== null &&
+      selected.includes(localPrimaryPerformerIndex)
+    ) {
+      return localPrimaryPerformerIndex;
+    }
+    return selected.at(-1) ?? null;
+  }
+
+  function allPerformersSelected(): boolean {
+    const count = performerManager.performers.length;
+    return count > 0 && selectedPerformerIndices().length === count;
+  }
+
+  function persistLocalSelection(): void {
+    if (options.performerSelection || !_performersPersistReady) return;
+    persistSelectedIndices(selectedPerformerIndices());
+    persistSelectedIndex(
+      allPerformersSelected() ? null : primaryPerformerIndex()
+    );
+  }
+
+  function setLocalSelection(
+    indices: readonly number[],
+    primaryIndex?: number
+  ): void {
+    const selected = normalizeSelectedIndices(indices);
+    localSelectedPerformerIndices = selected;
+    localPrimaryPerformerIndex =
+      primaryIndex !== undefined && selected.includes(primaryIndex)
+        ? primaryIndex
+        : (selected.at(-1) ?? null);
+    persistLocalSelection();
+  }
 
   // Whether prop size is linked (global) or per-performer.
   let propSizeLinked = $state(true);
@@ -649,14 +816,12 @@ function buildViewer3DState(
 
   /**
    * Return the set of performers that should receive scoped writes.
-   * - null selection → every performer
-   * - valid index   → single performer
-   * - bad index     → empty (caller should no-op)
+   * The ordered selection is the edit scope. None is a safe no-op.
    */
-  function scopedPerformers(): AvatarInstanceState[] {
-    if (selectedPerformerIndex === null) return performerManager.performers;
-    const p = performerManager.performers[selectedPerformerIndex];
-    return p ? [p] : [];
+  function scopedPerformers(): CharacterInstanceState[] {
+    return selectedPerformerIndices()
+      .map((index) => performerManager.performers[index])
+      .filter((performer): performer is CharacterInstanceState => !!performer);
   }
 
   function currentViewportAspect(): number {
@@ -697,6 +862,14 @@ function buildViewer3DState(
     performers: readonly PerformerShotSubject[]
   ) {
     const shot = computeViewerFrontStageShot(performers);
+    if (environmentId === "blossom" && performers.length === 1) {
+      const camera = getBlossomOpeningCamera(currentViewportAspect() < 1);
+      const [x, y, z] = camera.position;
+      const [tx, ty, tz] = camera.target;
+      shot.eye = { x, y, z };
+      shot.target = { x: tx, y: ty, z: tz };
+      return shot;
+    }
     const horizontalDistance = Math.hypot(
       shot.eye.x - shot.target.x,
       shot.eye.z - shot.target.z
@@ -713,25 +886,6 @@ function buildViewer3DState(
   }
 
   /**
-   * Keep the complete cast in view after a cast or formation edit. The shot is
-   * calculated from the destination slots, so the camera arrives with the
-   * performers instead of correcting itself after their movement finishes.
-   */
-  function framePerformerGroup(
-    performers: readonly PerformerShotSubject[]
-  ): void {
-    if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
-    const shot = computeViewerFrontStageShot(performers);
-    snapCameraTo(
-      { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-      { x: shot.target.x, y: shot.target.y, z: shot.target.z },
-      undefined,
-      true,
-      performerManager.formationTransitionTiming ?? undefined
-    );
-  }
-
-  /**
    * Refit the complete cast after the viewer gives real width to a dock. The
    * calculated shot supplies the distance and group center, while the live
    * camera supplies its direction. Opening controls therefore keeps the angle
@@ -741,12 +895,32 @@ function buildViewer3DState(
     viewportAspect = currentViewportAspect(),
     preserveViewingDirection = true
   ): void {
-    const performers = performerManager.performers;
+    framePerformers(
+      performerManager.performers,
+      viewportAspect,
+      preserveViewingDirection
+    );
+  }
+
+  function focusSelectedPerformers(): void {
+    const selected = scopedPerformers();
+    framePerformers(
+      selected.length > 0 ? selected : performerManager.performers,
+      currentViewportAspect(),
+      true
+    );
+  }
+
+  function framePerformers(
+    performers: readonly PerformerShotSubject[],
+    viewportAspect: number,
+    preserveViewingDirection: boolean
+  ): void {
     if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
 
     const shot = computeViewerFrontStageShot(performers, viewportAspect);
     const target = shot.target;
-    let position = shot.eye;
+    let position: { x: number; y: number; z: number } = shot.eye;
 
     const liveCamera = cameraSnapshot ?? _persistedCamera;
     if (preserveViewingDirection && liveCamera) {
@@ -775,33 +949,61 @@ function buildViewer3DState(
 
     snapCameraTo(
       { x: position.x, y: position.y, z: position.z },
-      { x: target.x, y: target.y, z: target.z }
+      { x: target.x, y: target.y, z: target.z },
+      undefined,
+      !reducedMotion()
     );
   }
 
-  /**
-   * Set the current selection scope. Pass null for "All".
-   * Out-of-bounds indices are allowed - scopedPerformers() will return []
-   * so individual write helpers no-op cleanly.
-   */
-  function selectPerformerScope(index: number | null): void {
-    selectedPerformerIndex = index;
-    persistSelectedIndex(index);
+  function setPerformerSelection(
+    indices: readonly number[],
+    primaryIndex?: number
+  ): void {
+    if (options.performerSelection) {
+      options.performerSelection.setSelection(indices, primaryIndex);
+      return;
+    }
+    setLocalSelection(indices, primaryIndex);
+  }
 
-    // Selecting a performer changes who the controls affect; it should not
-    // discard the camera angle the user chose while watching the formation.
-    // The light and ground ring in Viewer3DScene make the active performer
-    // visible without moving the view. Returning to All still restores the
-    // group overview promised by that control.
-    if (index !== null || renderMode !== "3d" || !_snapToFn) return;
-    const performers = performerManager.performers;
-    if (performers.length === 0) return;
+  function replacePerformerSelection(index: number): void {
+    if (options.performerSelection) options.performerSelection.replace(index);
+    else setLocalSelection([index], index);
+  }
 
-    const shot = computeViewerFrontStageShot(performers);
-    snapCameraTo(
-      { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-      { x: shot.target.x, y: shot.target.y, z: shot.target.z }
+  function togglePerformerSelection(index: number): void {
+    if (options.performerSelection) {
+      options.performerSelection.toggle(index);
+      return;
+    }
+    const selected = selectedPerformerIndices();
+    setLocalSelection(
+      selected.includes(index)
+        ? selected.filter((candidate) => candidate !== index)
+        : [...selected, index],
+      index
     );
+  }
+
+  function clearPerformerSelection(): void {
+    if (options.performerSelection) options.performerSelection.clear();
+    else setLocalSelection([]);
+  }
+
+  function selectAllPerformers(): void {
+    const count = performerManager.performers.length;
+    if (options.performerSelection) options.performerSelection.selectAll(count);
+    else {
+      localSelectedPerformerIndices = null;
+      localPrimaryPerformerIndex = null;
+      persistLocalSelection();
+    }
+  }
+
+  /** Compatibility adapter: null remains All, a number remains replace. */
+  function selectPerformerScope(index: number | null): void {
+    if (index === null) selectAllPerformers();
+    else replacePerformerSelection(index);
   }
 
   /**
@@ -825,7 +1027,7 @@ function buildViewer3DState(
         }
         propSizeLinked = false;
       } else {
-        const sourceIdx = selectedPerformerIndex ?? 0;
+        const sourceIdx = primaryPerformerIndex() ?? 0;
         const source = performerManager.performers[sourceIdx];
         if (source?.settings.staffLengthCm != null) {
           userProportionsState.setStaffLengthCm(source.settings.staffLengthCm);
@@ -865,16 +1067,16 @@ function buildViewer3DState(
     sceneUndo.commitState();
   }
 
-  function setDefaultHandPlane(hand: "blue" | "red", plane: Plane): void {
+  function setDefaultHandPlane(hand: "left" | "right", plane: Plane): void {
     sceneUndo.captureState(
       "change-default-planes",
       `Default ${hand}: ${plane}`
     );
-    if (hand === "blue") _defaultSettings.customBluePlane = plane;
-    else _defaultSettings.customRedPlane = plane;
+    if (hand === "left") _defaultSettings.customLeftPlane = plane;
+    else _defaultSettings.customRightPlane = plane;
     _defaultSettings.planeMode = derivePlaneModeFromHands(
-      _defaultSettings.customBluePlane,
-      _defaultSettings.customRedPlane
+      _defaultSettings.customLeftPlane,
+      _defaultSettings.customRightPlane
     );
     sceneUndo.commitState();
   }
@@ -919,28 +1121,238 @@ function buildViewer3DState(
     sceneUndo.commitState();
   }
 
-  /**
-   * Fan-out: assign a hand plane on every performer in the current scope.
-   * Used by the Planes tab when "All" is selected or a single performer is picked.
-   */
-  function setHandPlaneScoped(hand: "blue" | "red", plane: Plane): void {
-    const targets = scopedPerformers();
-    if (targets.length <= 1) {
-      for (const p of targets) p.setHandPlane(hand, plane);
-      return;
-    }
-    const beforeSnap = captureViewerSnapshot();
+  type ScopedPerformerSnapshot = {
+    performer: CharacterInstanceState;
+    snapshot: PerformerDomainSnapshot;
+  };
+
+  function captureScopedEditingSnapshots(
+    targets: readonly CharacterInstanceState[]
+  ): ScopedPerformerSnapshot[] {
+    return targets.map((performer) => ({
+      performer,
+      snapshot: performer.captureEditingSnapshot(),
+    }));
+  }
+
+  function restoreScopedEditingSnapshots(
+    snapshots: readonly ScopedPerformerSnapshot[]
+  ): void {
     sceneUndo.withoutUndo(() => {
-      for (const p of targets) p.setHandPlane(hand, plane);
-    });
-    const afterSnap = captureViewerSnapshot();
-    sceneUndo.pushSelfRestoringEntry(
-      "set-hand-plane",
-      `All ${hand}: ${plane}`,
-      {
-        undo: () => restoreViewerSnapshot(beforeSnap),
-        redo: () => restoreViewerSnapshot(afterSnap),
+      for (const { performer, snapshot } of snapshots) {
+        performer.restoreEditingSnapshot(snapshot);
       }
+    });
+  }
+
+  function applyScopedPerformerEdit(
+    type: SceneUndoOperationType,
+    description: string,
+    mutate: (performer: CharacterInstanceState) => void,
+    coalescingKey?: string,
+    sideEffects?: { undo: () => void; redo: () => void }
+  ): boolean {
+    const targets = scopedPerformers();
+    if (targets.length === 0) return false;
+    const before = captureScopedEditingSnapshots(targets);
+    sceneUndo.withoutUndo(() => {
+      for (const performer of targets) mutate(performer);
+    });
+    const after = captureScopedEditingSnapshots(targets);
+    const restore = {
+      undo: () => {
+        restoreScopedEditingSnapshots(before);
+        sideEffects?.undo();
+      },
+      redo: () => {
+        restoreScopedEditingSnapshots(after);
+        sideEffects?.redo();
+      },
+    };
+    if (coalescingKey) {
+      sceneUndo.pushSelfRestoringEntryCoalescing(
+        type,
+        description,
+        restore,
+        `${coalescingKey}:${targets.map((performer) => performer.id).join(",")}`
+      );
+    } else {
+      sceneUndo.pushSelfRestoringEntry(type, description, restore);
+    }
+    return true;
+  }
+
+  function setHandPlaneScoped(hand: "left" | "right", plane: Plane): boolean {
+    const scopeLabel =
+      scopedPerformers().length > 1 ? "Selected performers" : hand;
+    return applyScopedPerformerEdit(
+      "set-hand-plane",
+      `${scopeLabel}: ${plane}`,
+      (performer) => performer.setHandPlane(hand, plane)
+    );
+  }
+
+  function setCharacterScoped(modelId: CharacterId): boolean {
+    const name =
+      CHARACTER_DEFINITIONS.find((definition) => definition.id === modelId)
+        ?.name ?? modelId;
+    return applyScopedPerformerEdit(
+      "change-character",
+      `Character: ${name}`,
+      (performer) => performer.setCharacter(modelId)
+    );
+  }
+
+  function setPropScoped(prop: PropType): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop",
+      `Prop: ${prop}`,
+      (performer) => performer.setProp(prop)
+    );
+  }
+
+  /**
+   * Apply a per-performer cast plan as one viewer history entry. Director
+   * instructions intentionally bypass the current selection: their indices
+   * address the whole live cast that was included in the interpreted scene.
+   */
+  function applyPerformerAppearanceAssignments(
+    assignments: readonly ViewerPerformerAppearanceAssignment[]
+  ): boolean {
+    const byIndex = new Map(
+      assignments.map((assignment) => [assignment.index, assignment])
+    );
+    const targets = [...byIndex]
+      .map(([index, assignment]) => ({
+        performer: performerManager.performers[index],
+        assignment,
+      }))
+      .filter(
+        (
+          target
+        ): target is {
+          performer: CharacterInstanceState;
+          assignment: ViewerPerformerAppearanceAssignment;
+        } => !!target.performer
+      );
+    if (targets.length === 0) return false;
+
+    const before = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.withoutUndo(() => {
+      for (const { performer, assignment } of targets) {
+        if (assignment.characterId) {
+          performer.setCharacter(assignment.characterId);
+        }
+        if (assignment.prop) performer.setProp(assignment.prop);
+      }
+    });
+    const after = captureScopedEditingSnapshots(
+      targets.map((target) => target.performer)
+    );
+    sceneUndo.pushSelfRestoringEntry(
+      targets.some((target) => target.assignment.characterId)
+        ? "change-character"
+        : "change-prop",
+      "TIKA: direct cast",
+      {
+        undo: () => restoreScopedEditingSnapshots(before),
+        redo: () => restoreScopedEditingSnapshots(after),
+      }
+    );
+    return true;
+  }
+
+  function setPropBuildScoped(propBuild: Partial<PropBuild>): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop-build",
+      "Prop build",
+      (performer) => performer.setPropBuild(propBuild)
+    );
+  }
+
+  function setEffortScoped(effortId: EffortId): boolean {
+    return applyScopedPerformerEdit(
+      "change-effort",
+      `Effort: ${effortId}`,
+      (performer) => performer.setEffort(effortId)
+    );
+  }
+
+  function setEffectScoped(effect: EffectType | null): boolean {
+    return applyScopedPerformerEdit(
+      "toggle-effect",
+      `Effect: ${effect ?? "inherit"}`,
+      (performer) => performer.setEffect(effect)
+    );
+  }
+
+  function setHandEffectsScoped(left: EffectType, right: EffectType): boolean {
+    return applyScopedPerformerEdit(
+      "toggle-effect",
+      `Effects: ${left} / ${right}`,
+      (performer) => performer.setHandEffects(left, right)
+    );
+  }
+
+  function setStaffLengthScoped(cm: number | null): boolean {
+    return applyScopedPerformerEdit(
+      "change-staff-length",
+      "Prop size",
+      (performer) => performer.setStaffLengthCm(cm),
+      "selection-staff-length"
+    );
+  }
+
+  function resetPropScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop",
+      "Reset selected props",
+      (p) => p.resetProp()
+    );
+  }
+
+  function resetPropBuildScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-prop-build",
+      "Reset selected prop builds",
+      (performer) => performer.resetPropBuild()
+    );
+  }
+
+  function resetEffortScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-effort",
+      "Reset selected efforts",
+      (performer) => performer.resetEffort()
+    );
+  }
+
+  function resetEffectsScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "toggle-effect",
+      "Reset selected effects",
+      (performer) => performer.resetEffects()
+    );
+  }
+
+  function resetPlanesScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "set-hand-plane",
+      "Reset selected planes",
+      (performer) => {
+        performer.resetPlanes();
+        performer.clearBeatPlaneOverrides();
+      }
+    );
+  }
+
+  function resetAllOverridesScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "reset-all-overrides",
+      "Reset selected performer settings",
+      (performer) => performer.resetAllOverrides()
     );
   }
 
@@ -948,16 +1360,38 @@ function buildViewer3DState(
    * Fan-out: load a sequence onto every performer in the current scope.
    * The viewer's "change sequence for this performer" control routes here.
    */
-  function loadSequenceScoped(sequenceData: SequenceData): void {
+  function loadSequenceScoped(sequenceData: SequenceData): boolean {
+    const previousSequence = _currentSequenceData;
     _currentSequenceData = sequenceData;
-    for (const p of scopedPerformers()) {
-      p.loadSequence(sequenceData);
-    }
+    const applied = applyScopedPerformerEdit(
+      "change-sequence",
+      `Sequence: ${sequenceData.word ?? sequenceData.name ?? "Untitled"}`,
+      (performer) => performer.loadSequence(sequenceData),
+      undefined,
+      {
+        undo: () => {
+          _currentSequenceData = previousSequence;
+        },
+        redo: () => {
+          _currentSequenceData = sequenceData;
+        },
+      }
+    );
+    if (!applied) _currentSequenceData = previousSequence;
+    return applied;
+  }
+
+  function clearSequenceScoped(): boolean {
+    return applyScopedPerformerEdit(
+      "change-sequence",
+      "Clear selected sequences",
+      (performer) => performer.clearSequence()
+    );
   }
 
   // Track the most recently applied formation preset so undo snapshots can
   // record it. Starts as "manual" until the user picks a preset.
-  let activeFormation = $state<FormationPreset | "manual">("manual");
+  let activeFormation = $state<FormationPreset | "manual" | "custom">("manual");
 
   function captureViewerSnapshot(): ViewerDomainSnapshot {
     const performerSnapshots: PerformerPositionSnapshot[] =
@@ -965,13 +1399,16 @@ function buildViewer3DState(
         id: p.id,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
+        customLeftPlane: p.customLeftPlane,
+        customRightPlane: p.customRightPlane,
       }));
 
     return structuredClone({
       performers: performerSnapshots,
-      selectedPerformerIndex,
+      selectedPerformerIndex: allPerformersSelected()
+        ? null
+        : primaryPerformerIndex(),
+      selectedPerformerIndices: selectedPerformerIndices(),
       activeFormation,
     });
   }
@@ -999,16 +1436,21 @@ function buildViewer3DState(
       p.position.x = ps.position.x;
       p.position.z = ps.position.z;
       p.setFacingAngle(ps.facingAngle);
-      p.setHandPlane("blue", ps.customBluePlane);
-      p.setHandPlane("red", ps.customRedPlane);
+      p.setHandPlane("left", ps.customLeftPlane);
+      p.setHandPlane("right", ps.customRightPlane);
       if (_currentSequenceData && !p.totalSteps) {
         p.loadSequence(_currentSequenceData);
       }
     });
 
     activeFormation = snap.activeFormation;
-    selectedPerformerIndex = snap.selectedPerformerIndex;
-    framePerformerGroup(snap.performers);
+    setPerformerSelection(
+      snap.selectedPerformerIndices ??
+        (snap.selectedPerformerIndex === null
+          ? performerManager.performers.map((_, index) => index)
+          : [snap.selectedPerformerIndex]),
+      snap.selectedPerformerIndex ?? undefined
+    );
   }
 
   function restoreVisibilitySnapshot(snap: VisibilityDomainSnapshot): void {
@@ -1017,29 +1459,29 @@ function buildViewer3DState(
     persistPlanes(visiblePlanes);
   }
 
-  function spawnPerformerWithoutUndo(frameAfter = true): boolean {
+  function spawnPerformerWithoutUndo(): boolean {
     if (performerManager.performers.length >= performerManager.maxPerformers)
       return false;
 
-    const sourceIndex = selectedPerformerIndex ?? 0;
+    const sourceIndex = primaryPerformerIndex() ?? 0;
     const source = performerManager.performers[sourceIndex];
 
     const layoutTargets = performerManager.addPerformer();
+    if (!layoutTargets) return false;
 
     const newIndex = performerManager.performers.length - 1;
     const newPerf = performerManager.performers[newIndex];
     sceneUndo.withoutUndo(() => {
       if (newPerf && source && source !== newPerf) {
-        newPerf.setHandPlane("blue", source.customBluePlane);
-        newPerf.setHandPlane("red", source.customRedPlane);
+        newPerf.setHandPlane("left", source.customLeftPlane);
+        newPerf.setHandPlane("right", source.customRightPlane);
       }
       if (newPerf && _currentSequenceData) {
         newPerf.loadSequence(_currentSequenceData);
       }
     });
 
-    selectedPerformerIndex = newIndex;
-    if (frameAfter && layoutTargets) framePerformerGroup(layoutTargets);
+    replacePerformerSelection(newIndex);
     return true;
   }
 
@@ -1052,22 +1494,43 @@ function buildViewer3DState(
     sceneUndo.commitState();
   }
 
-  function removePerformerWithoutUndo(frameAfter = true): boolean {
+  function removePerformerAtIndexWithoutUndo(index: number): boolean {
     if (performerManager.performers.length <= 1) return false;
-    const removedIndex =
-      selectedPerformerIndex ?? performerManager.performers.length - 1;
-    const layoutTargets = performerManager.removePerformer(removedIndex);
-    selectedPerformerIndex = Math.min(
-      removedIndex,
-      performerManager.performers.length - 1
-    );
+    const layoutTargets = performerManager.removePerformer(index);
+    if (!layoutTargets) return false;
+    return true;
+  }
 
-    if (frameAfter && layoutTargets) framePerformerGroup(layoutTargets);
+  function removePerformerWithoutUndo(): boolean {
+    const selected = selectedPerformerIndices();
+    if (
+      selected.length === 0 ||
+      selected.length >= performerManager.performers.length
+    ) {
+      return false;
+    }
+
+    if (options.performerSelection?.removeSelection) {
+      return options.performerSelection.removeSelection(selected);
+    }
+
+    const firstRemoved = Math.min(...selected);
+    for (const index of [...selected].sort((a, b) => b - a)) {
+      if (!removePerformerAtIndexWithoutUndo(index)) return false;
+    }
+    replacePerformerSelection(
+      Math.min(firstRemoved, performerManager.performers.length - 1)
+    );
     return true;
   }
 
   function removePerformerFromUI(): void {
     if (performerManager.performers.length <= 1) return;
+
+    if (options.performerSelection?.removeSelection) {
+      removePerformerWithoutUndo();
+      return;
+    }
 
     sceneUndo.captureState("remove-performer", "Remove performer");
     removePerformerWithoutUndo();
@@ -1093,13 +1556,25 @@ function buildViewer3DState(
       const iterationLimit = Math.abs(boundedTarget - current);
       for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
         const before = performerManager.performers.length;
-        if (before < boundedTarget) spawnPerformerWithoutUndo(false);
-        else if (before > boundedTarget) removePerformerWithoutUndo(false);
+        if (before < boundedTarget) spawnPerformerWithoutUndo();
+        else if (before > boundedTarget) {
+          removePerformerAtIndexWithoutUndo(before - 1);
+          const normalized = normalizeSelectedIndices(
+            selectedPerformerIndices()
+          );
+          if (normalized.length === 0) {
+            replacePerformerSelection(performerManager.performers.length - 1);
+          } else {
+            setPerformerSelection(
+              normalized,
+              primaryPerformerIndex() ?? undefined
+            );
+          }
+        }
         if (performerManager.performers.length === before) break;
       }
     });
     sceneUndo.commitState();
-    framePerformerGroup(performerManager.performers);
   }
 
   function applyFormationFromUI(preset: FormationPreset): void {
@@ -1108,7 +1583,7 @@ function buildViewer3DState(
 
     const beforeSnap = captureViewerSnapshot();
 
-    performerManager.transitionToFormation(preset, 500);
+    performerManager.transitionToFormation(preset);
     activeFormation = preset;
 
     const targetFormation = createFormationFromPreset(preset, count);
@@ -1127,13 +1602,16 @@ function buildViewer3DState(
             ? { x: slot.position.x, z: slot.position.z }
             : { x: p.position.x, z: p.position.z },
           facingAngle: facing,
-          customBluePlane: p.customBluePlane,
-          customRedPlane: p.customRedPlane,
+          customLeftPlane: p.customLeftPlane,
+          customRightPlane: p.customRightPlane,
         };
       });
     const afterSnap: ViewerDomainSnapshot = {
       performers: afterPerformers,
-      selectedPerformerIndex,
+      selectedPerformerIndex: allPerformersSelected()
+        ? null
+        : primaryPerformerIndex(),
+      selectedPerformerIndices: selectedPerformerIndices(),
       activeFormation: preset,
     };
 
@@ -1145,7 +1623,6 @@ function buildViewer3DState(
         redo: () => restoreViewerSnapshot(afterSnap),
       }
     );
-    framePerformerGroup(afterPerformers);
   }
 
   let _spatialBeforeSnapshot: ViewerDomainSnapshot | null = null;
@@ -1174,6 +1651,14 @@ function buildViewer3DState(
     _spatialBeforeSnapshot = null;
   }
 
+  function cancelSpatialEdit(): void {
+    _spatialBeforeSnapshot = null;
+  }
+
+  function markFormationCustom(): void {
+    activeFormation = "custom";
+  }
+
   sceneUndo.registerDomain("viewer", {
     capture: captureViewerSnapshot,
     restore: restoreViewerSnapshot,
@@ -1189,8 +1674,8 @@ function buildViewer3DState(
       prop: _defaultSettings.prop,
       effortId: _defaultSettings.effortId,
       planeMode: _defaultSettings.planeMode,
-      customBluePlane: _defaultSettings.customBluePlane,
-      customRedPlane: _defaultSettings.customRedPlane,
+      customLeftPlane: _defaultSettings.customLeftPlane,
+      customRightPlane: _defaultSettings.customRightPlane,
     };
   }
 
@@ -1198,8 +1683,8 @@ function buildViewer3DState(
     _defaultSettings.prop = snap.prop;
     _defaultSettings.effortId = snap.effortId;
     _defaultSettings.planeMode = snap.planeMode;
-    _defaultSettings.customBluePlane = snap.customBluePlane;
-    _defaultSettings.customRedPlane = snap.customRedPlane;
+    _defaultSettings.customLeftPlane = snap.customLeftPlane;
+    _defaultSettings.customRightPlane = snap.customRightPlane;
   }
 
   sceneUndo.registerDomain("defaults", {
@@ -1284,6 +1769,9 @@ function buildViewer3DState(
   // loop is paused so manual runFrame calls aren't racing with rAF renders.
   let threltePauseAutoLoop = $state<(() => void) | null>(null);
   let threlteResumeAutoLoop = $state<(() => void) | null>(null);
+  // Renderer objects stored in rune state are proxied, so their exposed value
+  // is not a safe identity token for registration ownership.
+  let threlteRegistrationOwner: unknown = null;
 
   // Pause the Threlte render loop when in 2D mode so the hidden 3D canvas
   // doesn't eat CPU/GPU time and stutter the active 2D animation.
@@ -1315,6 +1803,13 @@ function buildViewer3DState(
   // Legacy - kept for any remaining references but no longer used for gating.
   let autoRenderEnabled = $state(true);
 
+  // Camera roll about the view axis, in degrees; positive reads clockwise to
+  // the audience. camera-controls owns the camera's position and lookAt and
+  // rewrites both every frame, so roll cannot be applied once - Viewer3DCamera
+  // re-applies this value after the controls update on every frame. 0 leaves
+  // the controls' own orientation untouched.
+  let cameraRollDeg = $state(0);
+
   // Camera choreography sub-state - tracks the preset selected in the
   // Export popover. The recording driver that consumes this lands in
   // Phase 1 of the camera-choreography plan.
@@ -1338,10 +1833,11 @@ function buildViewer3DState(
   $effect(() => {
     const snapshots: StoredPerformerSnapshot[] =
       performerManager.performers.map((p) => ({
+        characterId: p.characterId,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
+        customLeftPlane: p.customLeftPlane,
+        customRightPlane: p.customRightPlane,
         name: p.displayName,
         settings: {
           prop: p.settings.prop,
@@ -1359,9 +1855,13 @@ function buildViewer3DState(
     persistActiveFormation(activeFormation);
   });
 
-  // Persist which performer is currently selected (null = "All").
+  // Persist the ordered selection and its compatibility primary index.
   $effect(() => {
-    persistSelectedIndex(selectedPerformerIndex);
+    const selected = selectedPerformerIndices();
+    persistSelectedIndices(selected);
+    persistSelectedIndex(
+      allPerformersSelected() ? null : primaryPerformerIndex()
+    );
   });
 
   /**
@@ -1398,8 +1898,9 @@ function buildViewer3DState(
           p.position.x = snap.position.x;
           p.position.z = snap.position.z;
           p.setFacingAngle(snap.facingAngle);
-          p.setHandPlane("blue", snap.customBluePlane);
-          p.setHandPlane("red", snap.customRedPlane);
+          p.setHandPlane("left", snap.customLeftPlane);
+          p.setHandPlane("right", snap.customRightPlane);
+          if (snap.characterId) p.setCharacter(snap.characterId);
           p.setDisplayName(snap.name ?? null);
           // On a plain open the per-performer prop AND staffLengthCm overrides
           // are stripped, so the performer inherits _defaultSettings.prop —
@@ -1437,8 +1938,33 @@ function buildViewer3DState(
     // Restore viewer-level state.
     const savedFormation = loadPersistedActiveFormation();
     if (savedFormation) activeFormation = savedFormation;
-    const savedSelection = loadPersistedSelectedIndex();
-    selectedPerformerIndex = savedSelection;
+    if (!options.performerSelection) {
+      const savedSelection = seeded(
+        seed?.selectedPerformerIndices,
+        loadPersistedSelectedIndices
+      );
+      if (savedSelection !== null) {
+        const savedPrimary =
+          seed?.selectedPerformerIndex ?? loadPersistedSelectedIndex();
+        if (
+          savedPrimary === null &&
+          savedSelection.length === performerManager.performers.length
+        ) {
+          localSelectedPerformerIndices = null;
+          localPrimaryPerformerIndex = null;
+        } else {
+          setLocalSelection(savedSelection, savedPrimary ?? undefined);
+        }
+      } else {
+        const legacySelection = seeded(
+          seed?.selectedPerformerIndex,
+          loadPersistedSelectedIndex
+        );
+        localSelectedPerformerIndices =
+          legacySelection === null ? null : [legacySelection];
+        localPrimaryPerformerIndex = legacySelection;
+      }
+    }
 
     renderMode = "3d";
     persistMode("3d");
@@ -1457,7 +1983,7 @@ function buildViewer3DState(
   }
 
   /**
-   * Return to 2D render mode (avatar instance is kept alive to avoid
+   * Return to 2D render mode (character instance is kept alive to avoid
    * re-allocating WebGL resources if the user flips back).
    */
   function exit3D() {
@@ -1496,10 +2022,11 @@ function buildViewer3DState(
       environmentId,
       camera: cameraSnapshot ?? _persistedCamera,
       performers: performerManager.performers.map((p) => ({
+        characterId: p.characterId,
         position: { x: p.position.x, z: p.position.z },
         facingAngle: p.facingAngle,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
+        customLeftPlane: p.customLeftPlane,
+        customRightPlane: p.customRightPlane,
         name: p.displayName ?? null,
         settings: {
           prop: p.settings.prop,
@@ -1508,7 +2035,10 @@ function buildViewer3DState(
           staffLengthCm: p.settings.staffLengthCm,
         },
       })),
-      selectedPerformerIndex,
+      selectedPerformerIndex: allPerformersSelected()
+        ? null
+        : primaryPerformerIndex(),
+      selectedPerformerIndices: selectedPerformerIndices(),
       activeFormation,
       defaultProp: String(_defaultSettings.prop),
       oceanVariant: String(oceanVariant),
@@ -1563,8 +2093,9 @@ function buildViewer3DState(
           p.position.x = snap.position.x;
           p.position.z = snap.position.z;
           p.setFacingAngle(snap.facingAngle);
-          p.setHandPlane("blue", snap.customBluePlane);
-          p.setHandPlane("red", snap.customRedPlane);
+          p.setHandPlane("left", snap.customLeftPlane);
+          p.setHandPlane("right", snap.customRightPlane);
+          if (snap.characterId) p.setCharacter(snap.characterId);
           p.setDisplayName(snap.name ?? null);
           // Clear all four cascade overrides first. A preset that stores null
           // for a field means "inherit the viewer default", and only a reset
@@ -1598,8 +2129,15 @@ function buildViewer3DState(
 
       if (config.activeFormation !== undefined)
         activeFormation = config.activeFormation;
-      if (config.selectedPerformerIndex !== undefined)
-        selectedPerformerIndex = config.selectedPerformerIndex;
+      if (config.selectedPerformerIndices !== undefined) {
+        setPerformerSelection(
+          config.selectedPerformerIndices,
+          config.selectedPerformerIndex ?? undefined
+        );
+      } else if (config.selectedPerformerIndex !== undefined) {
+        if (config.selectedPerformerIndex === null) selectAllPerformers();
+        else replacePerformerSelection(config.selectedPerformerIndex);
+      }
 
       // `setDefaultProp` is the owner; its undo capture is already suppressed
       // by the enclosing `withoutUndo`, so this is exactly the inline write.
@@ -1675,11 +2213,12 @@ function buildViewer3DState(
   let _disposed = false;
 
   /**
-   * Release all resources held by the avatar instance.
+   * Release all resources held by the character instance.
    * Call when the viewer component is unmounted.
    */
   function dispose() {
     _disposed = true;
+    unsubscribeFromUndo();
     performerManager.destroy();
   }
 
@@ -1704,6 +2243,10 @@ function buildViewer3DState(
     if (_welcomeAnimationPending) {
       requestAnimationFrame(() => _fireWelcome());
     }
+    // An old renderer can unmount after its replacement has registered.
+    return () => {
+      if (_snapToFn === fn) _snapToFn = null;
+    };
   }
 
   /**
@@ -1771,6 +2314,14 @@ function buildViewer3DState(
     get seededSceneFeatures(): Record<string, boolean> | null {
       return seed?.sceneFeatures ?? null;
     },
+    /**
+     * Scene-feature toggles a shared link imposed on this viewer; `null` = use
+     * the shared key. Same effect as `seededSceneFeatures` on the canvas, but
+     * available to a real (non-preview) viewer.
+     */
+    get viewOnlySceneFeatures(): Record<string, boolean> | null {
+      return options.viewOnlySceneFeatures ?? null;
+    },
     setOceanVariant(v: OceanVariant) {
       oceanVariant = v;
       writeKey(STORAGE_KEY_OCEAN_VARIANT, v);
@@ -1784,7 +2335,25 @@ function buildViewer3DState(
       return performerManager;
     },
     get selectedPerformerIndex() {
-      return selectedPerformerIndex;
+      return !options.performerSelection &&
+        localSelectedPerformerIndices === null
+        ? null
+        : primaryPerformerIndex();
+    },
+    get primaryPerformerIndex() {
+      return primaryPerformerIndex();
+    },
+    get selectedPerformerIndices() {
+      return selectedPerformerIndices();
+    },
+    get isAllPerformersSelected() {
+      return allPerformersSelected();
+    },
+    get performerSelectionMode() {
+      return performerSelectionMode;
+    },
+    setPerformerSelectionMode(value: boolean) {
+      performerSelectionMode = value;
     },
     get isCameraDragging() {
       return isCameraDragging;
@@ -1801,17 +2370,40 @@ function buildViewer3DState(
     },
     scopedPerformers,
     selectPerformerScope,
+    setPerformerSelection,
+    replacePerformerSelection,
+    togglePerformerSelection,
+    clearPerformerSelection,
+    selectAllPerformers,
     frameAllPerformers,
+    focusSelectedPerformers,
     get propSizeLinked() {
       return propSizeLinked;
     },
     togglePropSizeLink,
+    setCharacterScoped,
+    setPropScoped,
+    applyPerformerAppearanceAssignments,
+    setPropBuildScoped,
+    setEffortScoped,
+    setEffectScoped,
+    setHandEffectsScoped,
+    setStaffLengthScoped,
     setHandPlaneScoped,
     loadSequenceScoped,
+    clearSequenceScoped,
+    resetPropScoped,
+    resetPropBuildScoped,
+    resetEffortScoped,
+    resetEffectsScoped,
+    resetPlanesScoped,
+    resetAllOverridesScoped,
     get canUndo() {
+      undoRevision;
       return sceneUndo.canUndo;
     },
     get canRedo() {
+      undoRevision;
       return sceneUndo.canRedo;
     },
     get activeFormation() {
@@ -1823,6 +2415,8 @@ function buildViewer3DState(
     applyFormationFromUI,
     beginSpatialEdit,
     endSpatialEdit,
+    cancelSpatialEdit,
+    markFormationCustom,
     sceneUndo,
     undo,
     redo,
@@ -1955,12 +2549,27 @@ function buildViewer3DState(
       pauseAutoLoop: () => void;
       resumeAutoLoop: () => void;
     }) {
+      threlteRegistrationOwner = refs.renderer;
       threlteRenderer = refs.renderer;
       threlteScene = refs.scene;
       threlteCamera = refs.camera;
       threlteRunFrame = refs.runFrame;
       threltePauseAutoLoop = refs.pauseAutoLoop;
       threlteResumeAutoLoop = refs.resumeAutoLoop;
+      return () => {
+        // A replacement legacy canvas can register before the old canvas's
+        // effect cleanup runs. Only the owner of the current handles may clear
+        // them, otherwise Record Scene can get stuck on "Preparing."
+        if (threlteRegistrationOwner !== refs.renderer) return;
+        threlteRegistrationOwner = null;
+        threlteRenderer = null;
+        threlteScene = null;
+        threlteCamera = null;
+        threlteRunFrame = null;
+        threltePauseAutoLoop = null;
+        threlteResumeAutoLoop = null;
+        _loopPausedFor2D = false;
+      };
     },
     get threlteRunFrame() {
       return threlteRunFrame;
@@ -2000,6 +2609,12 @@ function buildViewer3DState(
     },
     get cameraChoreography() {
       return cameraChoreography;
+    },
+    get cameraRollDeg() {
+      return cameraRollDeg;
+    },
+    set cameraRollDeg(value: number) {
+      cameraRollDeg = value;
     },
     get showPerf() {
       return showPerf;
@@ -2088,7 +2703,9 @@ export interface Viewer3DPersistConfig {
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
   selectedPerformerIndex: number | null;
-  activeFormation: FormationPreset | "manual";
+  /** Ordered selection. Optional on scenes saved before multi-selection. */
+  selectedPerformerIndices?: number[];
+  activeFormation: FormationPreset | "manual" | "custom";
   defaultProp: string;
   oceanVariant: string;
   navMode: ViewerNavMode;
@@ -2133,6 +2750,12 @@ export function writeViewer3DConfig(
       config.selectedPerformerIndex === null
         ? "null"
         : String(config.selectedPerformerIndex)
+    );
+  }
+  if (config.selectedPerformerIndices !== undefined) {
+    set(
+      STORAGE_KEY_SELECTED_INDICES,
+      JSON.stringify(config.selectedPerformerIndices)
     );
   }
   if (config.defaultProp !== undefined)

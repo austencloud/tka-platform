@@ -3,11 +3,11 @@ import type { DetectionFrame, DetectionSource } from "./detection-frame";
 
 export interface StepResult {
   stepNumber: number;
-  expected: { blue: GridLocation; red: GridLocation };
-  detected: { blue: GridLocation | null; red: GridLocation | null };
+  expected: { left: GridLocation; right: GridLocation };
+  detected: { left: GridLocation | null; right: GridLocation | null };
   timing: TimingGrade;
   timingDeltaMs: number;
-  positionCorrect: { blue: boolean; red: boolean };
+  positionCorrect: { left: boolean; right: boolean };
 }
 
 export type TimingGrade = "perfect" | "good" | "early" | "late" | "miss";

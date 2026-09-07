@@ -22,6 +22,12 @@ import type { TurnLanes } from "@tka/sequence-engine/generation";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { fitLoopRhythmToLength } from "$lib/shared/create/services/loop-rhythm-gating";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
+import { normalizePersistedGenerationConfig } from "../domain/generator-persistence-normalizer";
+import {
+  DEFAULT_GENERATION_STYLE,
+  type GenerationMotionTypeFilter,
+  type GenerationStyleAxis,
+} from "$lib/shared/create/domain/generation-style";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -44,9 +50,9 @@ interface SerializedConfig {
   reflectionAxis?: ReflectionAxis;
   timestamp: number;
   // 3-axis constraint system
-  constraintPreset?: "smooth" | "mixed" | "choppy";
-  handPathMode?: "smooth" | "mixed" | "choppy";
-  motionTypeFilter?: "no-dash" | "prefer-dash" | null;
+  constraintPreset?: GenerationStyleAxis;
+  handPathMode?: GenerationStyleAxis;
+  motionTypeFilter?: GenerationMotionTypeFilter;
   // Duration rhythm template
   durationTemplateId?: string | null;
   // Spell mode length override
@@ -96,7 +102,9 @@ function loadConfig(): UIGenerationConfig | null {
       return null;
     }
 
-    const data = JSON.parse(stored) as SerializedConfig;
+    const data = normalizePersistedGenerationConfig(
+      JSON.parse(stored)
+    ) as SerializedConfig;
 
     // Validate essential properties
     if (
@@ -214,9 +222,7 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   period: Period.QUARTERED,
   loopType: LOOPType.ROTATED,
   reflectionAxis: "north-south",
-  constraintPreset: "smooth",
-  handPathMode: "mixed",
-  motionTypeFilter: null,
+  ...DEFAULT_GENERATION_STYLE,
   durationTemplateId: null,
   spellTargetLength: null,
 };
@@ -294,12 +300,14 @@ export function createGenerationConfigState(
   const guestOverrides = !savedConfig && isGuest ? GUEST_DEFAULT_OVERRIDES : {};
 
   // Initialize config with priority: initialConfig > savedConfig > guestOverrides > DEFAULT_CONFIG
+  const normalizedInitialConfig =
+    normalizePersistedGenerationConfig(initialConfig);
   let config = $state<UIGenerationConfig>(
     reconcileLoopLength({
       ...DEFAULT_CONFIG,
       ...guestOverrides,
       ...(savedConfig || {}),
-      ...initialConfig,
+      ...normalizedInitialConfig,
     })
   );
 
@@ -321,6 +329,7 @@ export function createGenerationConfigState(
   // newer fields like loopEnabled) can't accidentally overwrite current values.
   // Also migrates legacy "strict_*" loop types to their modern equivalents.
   function updateConfig(updates: Partial<UIGenerationConfig>) {
+    updates = normalizePersistedGenerationConfig(updates);
     const cleaned: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(updates)) {
       if (v !== undefined) cleaned[k] = v;
@@ -371,6 +380,7 @@ export function createGenerationConfigState(
     updateConfig({
       ...DEFAULT_CONFIG,
       ...(guestNow ? GUEST_DEFAULT_OVERRIDES : {}),
+      turnPattern: null,
     });
   }
 

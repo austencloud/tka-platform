@@ -5,19 +5,19 @@ import { PETAL_PALETTES } from "../domain/petal-palettes";
 import type { EmitterTip } from "./emitter-tip";
 
 type PosBag = {
-  bluePosA?: { x: number; y: number };
-  bluePosB?: { x: number; y: number };
-  redPosA?: { x: number; y: number };
-  redPosB?: { x: number; y: number };
+  leftPosA?: { x: number; y: number };
+  leftPosB?: { x: number; y: number };
+  rightPosA?: { x: number; y: number };
+  rightPosB?: { x: number; y: number };
 };
 
 /** Convert the legacy 4-slot bag to the flat emitter contract (base props). */
 function toEmitters(s: PosBag): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (s.bluePosA) out.push({ ...s.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
-  if (s.bluePosB) out.push({ ...s.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
-  if (s.redPosA) out.push({ ...s.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
-  if (s.redPosB) out.push({ ...s.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
+  if (s.leftPosA) out.push({ ...s.leftPosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
+  if (s.leftPosB) out.push({ ...s.leftPosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
+  if (s.rightPosA) out.push({ ...s.rightPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
+  if (s.rightPosB) out.push({ ...s.rightPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
   return out;
 }
 
@@ -82,10 +82,10 @@ function makeParams(overrides: Partial<Petals2DParams> = {}): Petals2DParams {
 }
 
 const ALL_TIPS = toEmitters({
-  bluePosA: { x: 100, y: 100 },
-  bluePosB: { x: 120, y: 100 },
-  redPosA: { x: 200, y: 100 },
-  redPosB: { x: 220, y: 100 },
+  leftPosA: { x: 100, y: 100 },
+  leftPosB: { x: 120, y: 100 },
+  rightPosA: { x: 200, y: 100 },
+  rightPosB: { x: 220, y: 100 },
 });
 
 /** Two base props + one tunnel layer (propIndex 2/3) to prove layer coverage. */
@@ -148,10 +148,10 @@ describe("Petals2DRenderer", () => {
     for (let i = 0; i < 40; i++) {
       rA.render(ctxA, restParams, ALL_TIPS, step);
       const moving = toEmitters({
-        bluePosA: { x: 100 + i * 30, y: 100 },
-        bluePosB: { x: 120 + i * 30, y: 100 },
-        redPosA: { x: 200 + i * 30, y: 100 },
-        redPosB: { x: 220 + i * 30, y: 100 },
+        leftPosA: { x: 100 + i * 30, y: 100 },
+        leftPosB: { x: 120 + i * 30, y: 100 },
+        rightPosA: { x: 200 + i * 30, y: 100 },
+        rightPosB: { x: 220 + i * 30, y: 100 },
       });
       rB.render(ctxB, moveParams, moving, step);
     }

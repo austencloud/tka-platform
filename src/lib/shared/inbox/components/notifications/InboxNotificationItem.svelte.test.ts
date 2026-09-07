@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   getDocFromServer: vi.fn(),
   mapDocToSequence: vi.fn(),
   openSequenceViewer: vi.fn(),
+  openCreatorProfile: vi.fn(),
 }));
 
 vi.mock("$app/navigation", () => ({
@@ -50,6 +51,10 @@ vi.mock(
   "$lib/shared/sequence-viewer/services/sequence-viewer-navigator",
   () => ({ openSequenceViewer: mocks.openSequenceViewer })
 );
+
+vi.mock("$lib/features/creators/state/creators-routing.svelte", () => ({
+  openCreatorProfile: mocks.openCreatorProfile,
+}));
 
 vi.mock(
   "$lib/shared/navigation-coordinator/navigation-coordinator.svelte",
@@ -89,6 +94,53 @@ describe("InboxNotificationItem navigation", () => {
     mocks.getDocFromServer.mockReset();
     mocks.mapDocToSequence.mockReset();
     mocks.openSequenceViewer.mockReset();
+    mocks.openCreatorProfile.mockReset();
+    mocks.openCreatorProfile.mockResolvedValue(undefined);
+  });
+
+  it("opens a follower notification through the canonical creator route", async () => {
+    const notification = {
+      id: "follow-1",
+      userId: "admin-user",
+      type: "user-followed",
+      message: "River followed you",
+      createdAt: new Date("2026-08-19T14:30:20.000Z"),
+      read: true,
+      fromUserId: "river-user",
+    } satisfies UserNotification;
+
+    render(InboxNotificationItem, { notification });
+
+    await page.getByRole("button", { name: "River followed you" }).click();
+
+    await vi.waitFor(() => {
+      expect(mocks.openCreatorProfile).toHaveBeenCalledWith("river-user");
+    });
+    expect(mocks.closeInbox).toHaveBeenCalledOnce();
+    expect(mocks.goto).not.toHaveBeenCalled();
+  });
+
+  it("opens an achievement notification on the signed-in creator profile", async () => {
+    const notification = {
+      id: "achievement-1",
+      userId: "admin-user",
+      type: "achievement-unlocked",
+      message: "You unlocked a new achievement",
+      createdAt: new Date("2026-08-19T14:30:20.000Z"),
+      read: true,
+    } satisfies UserNotification;
+
+    render(InboxNotificationItem, { notification });
+
+    await page
+      .getByRole("button", { name: "You unlocked a new achievement" })
+      .click();
+
+    await vi.waitFor(() => {
+      expect(mocks.openCreatorProfile).toHaveBeenCalledWith("admin-user");
+    });
+    expect(mocks.closeInbox).toHaveBeenCalledOnce();
+    expect(mocks.goto).not.toHaveBeenCalled();
   });
 
   it("opens the user activity page when an older live payload only has fromUserId", async () => {

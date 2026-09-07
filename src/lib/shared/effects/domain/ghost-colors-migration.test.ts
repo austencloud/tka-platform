@@ -6,8 +6,8 @@ describe("Ghost color migration", () => {
     const migrated = migrateEffectsConfig({
       version: 31,
       trails: {
-        blueColor: "#112233",
-        redColor: "#445566",
+        leftColor: "#112233",
+        rightColor: "#445566",
       },
       ghost: {
         intensity: 0.7,
@@ -16,8 +16,8 @@ describe("Ghost color migration", () => {
       },
     });
 
-    expect(migrated.ghost.blueColor).toBe("#3b82f6");
-    expect(migrated.ghost.redColor).toBe("#ef4444");
-    expect(migrated.ghost.blueColor).not.toBe(migrated.trails.blueColor);
+    expect(migrated.ghost.leftColor).toBe("#3b82f6");
+    expect(migrated.ghost.rightColor).toBe("#ef4444");
+    expect(migrated.ghost.leftColor).not.toBe(migrated.trails.leftColor);
   });
 });

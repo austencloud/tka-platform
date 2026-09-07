@@ -26,6 +26,8 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { type SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { isHandPathSequence } from "$lib/shared/foundation/domain/models/sequence-kind";
+import { buildHandPathShortCodePayload } from "./hand-path-short-code-payload";
 import {
   deriveWordStatusFromSteps,
   IncompleteWordError,
@@ -52,8 +54,8 @@ import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-pro
 import type { AuthoredHand } from "$lib/shared/foundation/domain/models/authored-hand";
 import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  extractLeftSoloProp,
+  extractRightSoloProp,
 } from "$lib/shared/foundation/services/sequence-decomposer";
 import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
 import { hashSoloProp } from "$lib/shared/foundation/services/content-hasher";
@@ -394,11 +396,11 @@ export class ShortCodeManager {
     let url = `${baseUrl}/${code}`;
 
     const params = new URLSearchParams();
-    if (options?.bluePropType) {
-      params.set("bp", options.bluePropType);
+    if (options?.leftPropType) {
+      params.set("bp", options.leftPropType);
     }
-    if (options?.redPropType) {
-      params.set("rp", options.redPropType);
+    if (options?.rightPropType) {
+      params.set("rp", options.rightPropType);
     }
     if (options?.viewMode) {
       params.set("vm", options.viewMode);
@@ -425,9 +427,9 @@ export class ShortCodeManager {
     }
     if (motionProfile.kind === "solo") {
       const soloProp =
-        motionProfile.color === "blue"
-          ? (sequence.blueSoloProp ?? extractBlueSoloProp(sequence))
-          : (sequence.redSoloProp ?? extractRedSoloProp(sequence));
+        motionProfile.hand === "left"
+          ? (sequence.leftSoloProp ?? extractLeftSoloProp(sequence))
+          : (sequence.rightSoloProp ?? extractRightSoloProp(sequence));
       const sourceSoloPropId =
         typeof sequence.metadata.sourceSoloPropId === "string" &&
         sequence.metadata.sourceSoloPropId === soloProp.id
@@ -611,8 +613,8 @@ export class ShortCodeManager {
     }
     if (options?.deckId) record.deckId = options.deckId;
     if (options?.deckName) record.deckName = options.deckName;
-    if (options?.bluePropType) record.bluePropType = options.bluePropType;
-    if (options?.redPropType) record.redPropType = options.redPropType;
+    if (options?.leftPropType) record.leftPropType = options.leftPropType;
+    if (options?.rightPropType) record.rightPropType = options.rightPropType;
     if (options?.catDogMode !== undefined) {
       record.catDogMode = options.catDogMode;
     }
@@ -844,10 +846,11 @@ export class ShortCodeManager {
     // partial fallback word would bake a wrong label into an immutable record.
     const payloadSteps = sequence.steps ?? [];
     const wordStatus = deriveWordStatusFromSteps(payloadSteps);
-    if (!wordStatus.complete || wordStatus.word.length === 0) {
+    const handPath = isHandPathSequence(sequence);
+    if (!handPath && (!wordStatus.complete || wordStatus.word.length === 0)) {
       throw new IncompleteWordError(wordStatus);
     }
-    const payloadWord = wordStatus.word;
+    const payloadWord = handPath ? "" : wordStatus.word;
     const record: Record<string, unknown> = {
       // Compatibility aliases during the reader migration — readers prefer
       // payloadWord, then fall back to these.
@@ -877,15 +880,15 @@ export class ShortCodeManager {
     // Persist the deck's prop so the doc is self-describing (the scan URL also
     // carries ?bp/?rp, but storing it lets resolution recover the prop even
     // when a URL is reconstructed without params).
-    if (options?.bluePropType) record.bluePropType = options.bluePropType;
-    if (options?.redPropType) record.redPropType = options.redPropType;
+    if (options?.leftPropType) record.leftPropType = options.leftPropType;
+    if (options?.rightPropType) record.rightPropType = options.rightPropType;
     if (options?.catDogMode !== undefined) {
       record.catDogMode = options.catDogMode;
     }
 
     const shouldEmbed = options?.embedSequenceData || !sequence.ownerId;
     let embeddedSequenceData: Record<string, unknown> | null = null;
-    if (sequence.steps && sequence.steps.length > 0) {
+    if (!handPath && sequence.steps && sequence.steps.length > 0) {
       const seqData: Record<string, unknown> = { steps: sequence.steps };
       // The immutable payload word comes from these steps. A stale mutable
       // sequence.word must not survive inside an otherwise-correct embed.
@@ -899,7 +902,7 @@ export class ShortCodeManager {
     }
 
     let faithfulEncodedPayload: string | null = null;
-    if (sequence.steps && sequence.steps.length > 0) {
+    if (!handPath && sequence.steps && sequence.steps.length > 0) {
       const encodedPayload = await encodeSequenceForQR(sequence);
       try {
         const decodedPayload = await decodeSequenceFromQR(encodedPayload);
@@ -948,6 +951,9 @@ export class ShortCodeManager {
     if ((shouldEmbed || !faithfulEncodedPayload) && embeddedSequenceData) {
       record.sequenceData = embeddedSequenceData;
     }
+
+    if (handPath)
+      Object.assign(record, await buildHandPathShortCodePayload(sequence));
 
     if (!record.encoded && !record.sequenceData) {
       throw new Error(
@@ -1701,8 +1707,8 @@ export class ShortCodeManager {
       deckName?: string | null;
       /** Resolved from the scanned URL before persistence. These values belong
        * to this physical scan, unlike the shared shortcode record. */
-      bluePropType?: string | null;
-      redPropType?: string | null;
+      leftPropType?: string | null;
+      rightPropType?: string | null;
       catDogMode?: boolean | null;
     }
   ): Promise<void> {

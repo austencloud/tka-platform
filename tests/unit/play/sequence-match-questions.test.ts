@@ -32,11 +32,11 @@ const BASE_MOTION: MotionLike = {
   turns: 0,
 };
 
-function step(blue: Partial<MotionLike>, red: Partial<MotionLike>): StepLike {
+function step(left: Partial<MotionLike>, right: Partial<MotionLike>): StepLike {
   return {
     motions: {
-      blue: { ...BASE_MOTION, ...blue },
-      red: { ...BASE_MOTION, ...red },
+      left: { ...BASE_MOTION, ...left },
+      right: { ...BASE_MOTION, ...right },
     },
   };
 }

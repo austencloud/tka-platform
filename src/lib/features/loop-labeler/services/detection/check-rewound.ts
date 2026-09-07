@@ -12,17 +12,17 @@ export function checkRewound(steps: ExtractedStep[]): RewoundResult {
     const forward = steps[i]!;
     const reverse = steps[steps.length - 1 - i]!;
 
-    const blueMatch =
-      forward.blue.startLoc === reverse.blue.endLoc &&
-      forward.blue.endLoc === reverse.blue.startLoc &&
-      forward.blue.motionType === reverse.blue.motionType;
+    const leftMatch =
+      forward.left.startLoc === reverse.left.endLoc &&
+      forward.left.endLoc === reverse.left.startLoc &&
+      forward.left.motionType === reverse.left.motionType;
 
-    const redMatch =
-      forward.red.startLoc === reverse.red.endLoc &&
-      forward.red.endLoc === reverse.red.startLoc &&
-      forward.red.motionType === reverse.red.motionType;
+    const rightMatch =
+      forward.right.startLoc === reverse.right.endLoc &&
+      forward.right.endLoc === reverse.right.startLoc &&
+      forward.right.motionType === reverse.right.motionType;
 
-    if (!blueMatch || !redMatch) {
+    if (!leftMatch || !rightMatch) {
       return { isRewound: false };
     }
   }

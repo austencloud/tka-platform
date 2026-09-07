@@ -1,0 +1,198 @@
+{
+  "revision": "e236eddb79",
+  "checkedAt": "2026-09-06T03:22:19.823Z",
+  "route": "/test/viewer-3d?scene=blossom&perf=1",
+  "scope": "Desktop browser emulation; actual runtime screenshots, not generated concept art.",
+  "observations": [
+    {
+      "name": "runtime-phone-375",
+      "viewport": [
+        375,
+        667
+      ],
+      "canvas": [
+        375,
+        607
+      ],
+      "fps": 60,
+      "p95ms": 23.6,
+      "p99ms": 63.7,
+      "gpu95ms": 5.2,
+      "drawCalls": 160,
+      "submittedTrianglesThousands": 7178.1
+    },
+    {
+      "name": "runtime-phone-390",
+      "viewport": [
+        390,
+        844
+      ],
+      "canvas": [
+        390,
+        783
+      ],
+      "fps": 29,
+      "p95ms": 48,
+      "p99ms": 75.9,
+      "gpu95ms": 4.8,
+      "drawCalls": 156,
+      "submittedTrianglesThousands": 6980.6
+    },
+    {
+      "name": "runtime-phone-landscape",
+      "viewport": [
+        844,
+        390
+      ],
+      "canvas": [
+        844,
+        329
+      ],
+      "fps": 36,
+      "p95ms": 40,
+      "p99ms": 156.8,
+      "gpu95ms": 5.6,
+      "drawCalls": 164,
+      "submittedTrianglesThousands": 7420.2
+    },
+    {
+      "name": "runtime-tablet",
+      "viewport": [
+        768,
+        1024
+      ],
+      "canvas": [
+        768,
+        963
+      ],
+      "fps": 22,
+      "p95ms": 87.3,
+      "p99ms": 250.4,
+      "gpu95ms": 7.5,
+      "drawCalls": 164,
+      "submittedTrianglesThousands": 7420.2
+    },
+    {
+      "name": "runtime-overview",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "canvas": [
+        1440,
+        935
+      ],
+      "fps": 60,
+      "p95ms": 35,
+      "p99ms": 114.6,
+      "gpu95ms": 7.1,
+      "drawCalls": 164,
+      "submittedTrianglesThousands": 7420.2
+    },
+    {
+      "name": "runtime-fullhd",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "canvas": [
+        1920,
+        1015
+      ],
+      "fps": 60,
+      "p95ms": 23.6,
+      "p99ms": 72,
+      "gpu95ms": 6.8,
+      "drawCalls": 164,
+      "submittedTrianglesThousands": 7420.2
+    },
+    {
+      "name": "runtime-4k",
+      "viewport": [
+        3840,
+        2160
+      ],
+      "canvas": [
+        3840,
+        2095
+      ],
+      "fps": 54,
+      "p95ms": 23.7,
+      "p99ms": 88.8,
+      "gpu95ms": 6.4,
+      "drawCalls": 164,
+      "submittedTrianglesThousands": 7420.2
+    },
+    {
+      "name": "runtime-low-reduced",
+      "viewport": [
+        375,
+        667
+      ],
+      "canvas": [
+        375,
+        607
+      ],
+      "fps": 60,
+      "p95ms": 22.8,
+      "p99ms": 35.5,
+      "gpu95ms": 3.1,
+      "drawCalls": 61,
+      "submittedTrianglesThousands": 3336.2
+    },
+    {
+      "name": "runtime-approach",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "canvas": [
+        1440,
+        935
+      ],
+      "fps": 59,
+      "p95ms": 20.3,
+      "p99ms": 75.2,
+      "gpu95ms": 6.2,
+      "drawCalls": 164,
+      "submittedTrianglesThousands": 7420.2
+    },
+    {
+      "name": "runtime-reverse-shore",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "canvas": [
+        1440,
+        935
+      ],
+      "fps": 58,
+      "p95ms": 20.9,
+      "p99ms": 46.5,
+      "gpu95ms": 7.3,
+      "drawCalls": 162,
+      "submittedTrianglesThousands": 7299.2
+    }
+  ],
+  "warnings": [
+    {
+      "level": "warn",
+      "message": "%c[svelte] state_proxy_equality_mismatch\n%cReactive `$state(...)` proxies and the values they proxy have different identities. Because of this, comparisons with `===` will produce unexpected results\nhttps://svelte.dev/e/state_proxy_equality_mismatch font-weight: bold font-weight: normal",
+      "timestamp": "2026-09-06T03:20:47.185Z",
+      "url": "https://localhost:5491/test/viewer-3d?scene=blossom&perf=1&review=verified-4k"
+    },
+    {
+      "level": "warn",
+      "message": "%c[svelte] state_proxy_equality_mismatch\n%cReactive `$state(...)` proxies and the values they proxy have different identities. Because of this, comparisons with `===` will produce unexpected results\nhttps://svelte.dev/e/state_proxy_equality_mismatch font-weight: bold font-weight: normal",
+      "timestamp": "2026-09-06T03:21:10.458Z",
+      "url": "https://localhost:5491/test/viewer-3d?scene=blossom&perf=1&review=verified-low-reduced"
+    }
+  ],
+  "limitations": [
+    "Development-machine samples include startup and concurrent workload; they are not physical-device or production performance benchmarks.",
+    "The 3840x2160 DOM and canvas were verified; the browser screenshot clips the bottom and right edges, so the 4K image is partial visual evidence.",
+    "Reduced-quality mode was selected using a two-core hardware hint; reduced motion was emulated through its media preference.",
+    "Existing Svelte state proxy equality warnings remain."
+  ]
+}

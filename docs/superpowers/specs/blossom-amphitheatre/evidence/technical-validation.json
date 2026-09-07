@@ -1,0 +1,37 @@
+{
+  "planId": "blossom-moonlit-amphitheatre",
+  "status": "technical-checks-passed",
+  "visualAcceptance": "pending-user-review",
+  "checkedAt": "2026-09-06T01:23:11.673Z",
+  "asset": "static/models/blossom/blossom_environment.glb",
+  "assetSha256": "7ceaf37b78a4b71c4b10cda2b82773a2888cf355366fc57ec7c1a9f62bfa6145",
+  "assetSizeMiB": 27.02,
+  "renderedTriangles": 4172730,
+  "trees": 50,
+  "lanterns": 8,
+  "geometry": {
+    "valid": true,
+    "failures": [],
+    "testedMeshes": 107,
+    "deckTop": 0.550000011920929,
+    "maximumRouteGradePercent": {
+      "arrival": 4.699997594255812,
+      "service": 4.699272906886058
+    },
+    "pathHeadroomMetres": 2.4,
+    "samplingAllowanceMetres": 0.05,
+    "scope": "Evaluated mesh vertices; path checks exclude objects below 0.25m above the walking grade."
+  },
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_meshopt_compression",
+    "EXT_texture_webp",
+    "KHR_materials_emissive_strength",
+    "KHR_mesh_quantization"
+  ],
+  "limitations": [
+    "Clearance is a sampled vertex check, not collision certification.",
+    "48 audience places is a design target; seating capacity has not been validated.",
+    "Runtime frame rate must be measured separately."
+  ]
+}

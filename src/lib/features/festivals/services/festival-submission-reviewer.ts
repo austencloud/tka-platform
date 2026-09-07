@@ -23,6 +23,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { FestivalSubmission } from "../domain/models/festival";
 import { create as createFestival } from "./festival-repository";
+import { trackFestivalSubmitted } from "../analytics/festival-events";
 
 export async function getPending(): Promise<FestivalSubmission[]> {
   const db = await getFirestoreInstance();
@@ -95,5 +96,6 @@ export async function submit(
     moderationStatus: "pending",
     submittedAt: serverTimestamp(),
   });
+  trackFestivalSubmitted(ref.id);
   return ref.id;
 }

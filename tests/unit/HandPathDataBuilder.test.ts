@@ -6,7 +6,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   HandPath,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -20,17 +20,17 @@ const STANDARD_ID =
 describe("HandPathDataBuilder.parseHandPathId", () => {
   it("parses 9 blue locations from the standard trace", () => {
     const trace = parseHandPathId(STANDARD_ID);
-    expect(trace.blue).toHaveLength(9);
+    expect(trace.left).toHaveLength(9);
   });
 
   it("parses 9 red locations from the standard trace", () => {
     const trace = parseHandPathId(STANDARD_ID);
-    expect(trace.red).toHaveLength(9);
+    expect(trace.right).toHaveLength(9);
   });
 
   it("maps blue locations to correct GridLocation enum values", () => {
     const trace = parseHandPathId(STANDARD_ID);
-    expect(trace.blue).toEqual([
+    expect(trace.left).toEqual([
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.EAST,
@@ -45,7 +45,7 @@ describe("HandPathDataBuilder.parseHandPathId", () => {
 
   it("maps red locations to correct GridLocation enum values", () => {
     const trace = parseHandPathId(STANDARD_ID);
-    expect(trace.red).toEqual([
+    expect(trace.right).toEqual([
       GridLocation.SOUTH,
       GridLocation.WEST,
       GridLocation.WEST,
@@ -62,14 +62,14 @@ describe("HandPathDataBuilder.parseHandPathId", () => {
     const intercardinalId =
       "ne→se→sw→nw→ne|nw→sw→se→ne→nw";
     const trace = parseHandPathId(intercardinalId);
-    expect(trace.blue).toEqual([
+    expect(trace.left).toEqual([
       GridLocation.NORTHEAST,
       GridLocation.SOUTHEAST,
       GridLocation.SOUTHWEST,
       GridLocation.NORTHWEST,
       GridLocation.NORTHEAST,
     ]);
-    expect(trace.red).toEqual([
+    expect(trace.right).toEqual([
       GridLocation.NORTHWEST,
       GridLocation.SOUTHWEST,
       GridLocation.SOUTHEAST,
@@ -109,14 +109,14 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
   it("sets HAND prop type on all blue motions", () => {
     const beats = buildFromTrace(trace);
     for (const beat of beats) {
-      expect(beat.motions[MotionColor.BLUE]?.propType).toBe(PropType.HAND);
+      expect(beat.motions[HandSide.LEFT]?.propType).toBe(PropType.HAND);
     }
   });
 
   it("sets HAND prop type on all red motions", () => {
     const beats = buildFromTrace(trace);
     for (const beat of beats) {
-      expect(beat.motions[MotionColor.RED]?.propType).toBe(PropType.HAND);
+      expect(beat.motions[HandSide.RIGHT]?.propType).toBe(PropType.HAND);
     }
   });
 
@@ -124,19 +124,19 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
     // Beat 1: blue goes n→e (moves), red goes s→w (moves)
     const beats = buildFromTrace(trace);
     const beat1 = beats[0]!;
-    expect(beat1.motions[MotionColor.BLUE]?.motionType).toBe(MotionType.FLOAT);
+    expect(beat1.motions[HandSide.LEFT]?.motionType).toBe(MotionType.FLOAT);
   });
 
   it("sets 'fl' turns when hand moves", () => {
     const beats = buildFromTrace(trace);
     const beat1 = beats[0]!;
-    expect(beat1.motions[MotionColor.BLUE]?.turns).toBe("fl");
+    expect(beat1.motions[HandSide.LEFT]?.turns).toBe("fl");
   });
 
   it("records correct start and end locations for a float beat", () => {
     // Beat 1: blue n→e
     const beats = buildFromTrace(trace);
-    const blue1 = beats[0]!.motions[MotionColor.BLUE]!;
+    const blue1 = beats[0]!.motions[HandSide.LEFT]!;
     expect(blue1.startLocation).toBe(GridLocation.NORTH);
     expect(blue1.endLocation).toBe(GridLocation.EAST);
   });
@@ -145,26 +145,26 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
     // Beat 2: blue e→e (static), red w→w (static)
     const beats = buildFromTrace(trace);
     const beat2 = beats[1]!;
-    expect(beat2.motions[MotionColor.BLUE]?.motionType).toBe(MotionType.STATIC);
+    expect(beat2.motions[HandSide.LEFT]?.motionType).toBe(MotionType.STATIC);
   });
 
   it("sets 0 turns when hand stays", () => {
     const beats = buildFromTrace(trace);
     const beat2 = beats[1]!;
-    expect(beat2.motions[MotionColor.BLUE]?.turns).toBe(0);
+    expect(beat2.motions[HandSide.LEFT]?.turns).toBe(0);
   });
 
   it("sets STATIC handPath when hand doesn't move", () => {
     // Beat 2: blue e→e
     const beats = buildFromTrace(trace);
     const beat2 = beats[1]!;
-    expect(beat2.motions[MotionColor.BLUE]?.handPath).toBe(HandPath.STATIC);
+    expect(beat2.motions[HandSide.LEFT]?.handPath).toBe(HandPath.STATIC);
   });
 
   it("derives CW handPath for N→E", () => {
     // Beat 1: blue n→e
     const beats = buildFromTrace(trace);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.handPath).toBe(
+    expect(beats[0]!.motions[HandSide.LEFT]?.handPath).toBe(
       HandPath.CLOCKWISE
     );
   });
@@ -172,7 +172,7 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
   it("derives CW handPath for S→W", () => {
     // Beat 1: red s→w
     const beats = buildFromTrace(trace);
-    expect(beats[0]!.motions[MotionColor.RED]?.handPath).toBe(
+    expect(beats[0]!.motions[HandSide.RIGHT]?.handPath).toBe(
       HandPath.CLOCKWISE
     );
   });
@@ -180,52 +180,52 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
   it("derives CCW handPath for E→N", () => {
     // Build a trace where blue goes e→n (counter-clockwise step)
     const ccwTrace = {
-      blue: [GridLocation.EAST, GridLocation.NORTH],
-      red: [GridLocation.WEST, GridLocation.WEST],
+      left: [GridLocation.EAST, GridLocation.NORTH],
+      right: [GridLocation.WEST, GridLocation.WEST],
     };
     const beats = buildFromTrace(ccwTrace);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.handPath).toBe(
+    expect(beats[0]!.motions[HandSide.LEFT]?.handPath).toBe(
       HandPath.COUNTER_CLOCKWISE
     );
   });
 
   it("derives DASH handPath for opposite locations (N→S)", () => {
     const dashTrace = {
-      blue: [GridLocation.NORTH, GridLocation.SOUTH],
-      red: [GridLocation.WEST, GridLocation.WEST],
+      left: [GridLocation.NORTH, GridLocation.SOUTH],
+      right: [GridLocation.WEST, GridLocation.WEST],
     };
     const beats = buildFromTrace(dashTrace);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.handPath).toBe(HandPath.DASH);
+    expect(beats[0]!.motions[HandSide.LEFT]?.handPath).toBe(HandPath.DASH);
   });
 
   it("sets DASH motionType for opposite locations (N→S)", () => {
     const dashTrace = {
-      blue: [GridLocation.NORTH, GridLocation.SOUTH],
-      red: [GridLocation.EAST, GridLocation.EAST],
+      left: [GridLocation.NORTH, GridLocation.SOUTH],
+      right: [GridLocation.EAST, GridLocation.EAST],
     };
     const beats = buildFromTrace(dashTrace);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.motionType).toBe(MotionType.DASH);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.turns).toBe(0);
+    expect(beats[0]!.motions[HandSide.LEFT]?.motionType).toBe(MotionType.DASH);
+    expect(beats[0]!.motions[HandSide.LEFT]?.turns).toBe(0);
   });
 
   it("derives HASH_IN for perimeter → center", () => {
     const hashTrace = {
-      blue: [GridLocation.NORTH, GridLocation.CENTER],
-      red: [GridLocation.SOUTH, GridLocation.SOUTH],
+      left: [GridLocation.NORTH, GridLocation.CENTER],
+      right: [GridLocation.SOUTH, GridLocation.SOUTH],
     };
     const beats = buildFromTrace(hashTrace);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.handPath).toBe(HandPath.HASH_IN);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.motionType).toBe(MotionType.DASH);
+    expect(beats[0]!.motions[HandSide.LEFT]?.handPath).toBe(HandPath.HASH_IN);
+    expect(beats[0]!.motions[HandSide.LEFT]?.motionType).toBe(MotionType.DASH);
   });
 
   it("derives HASH_OUT for center → perimeter", () => {
     const hashTrace = {
-      blue: [GridLocation.CENTER, GridLocation.EAST],
-      red: [GridLocation.SOUTH, GridLocation.SOUTH],
+      left: [GridLocation.CENTER, GridLocation.EAST],
+      right: [GridLocation.SOUTH, GridLocation.SOUTH],
     };
     const beats = buildFromTrace(hashTrace);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.handPath).toBe(HandPath.HASH_OUT);
-    expect(beats[0]!.motions[MotionColor.BLUE]?.motionType).toBe(MotionType.DASH);
+    expect(beats[0]!.motions[HandSide.LEFT]?.handPath).toBe(HandPath.HASH_OUT);
+    expect(beats[0]!.motions[HandSide.LEFT]?.motionType).toBe(MotionType.DASH);
   });
 
   it("generates deterministic beat IDs for the same trace", () => {
@@ -238,7 +238,7 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
 
   it("generates different beat IDs for different traces", () => {
     const altTrace = {
-      blue: [
+      left: [
         GridLocation.EAST,
         GridLocation.SOUTH,
         GridLocation.WEST,
@@ -249,7 +249,7 @@ describe("HandPathDataBuilder.buildFromTrace", () => {
         GridLocation.NORTH,
         GridLocation.EAST,
       ],
-      red: trace.red,
+      right: trace.right,
     };
     const beats1 = buildFromTrace(trace);
     const beats2 = buildFromTrace(altTrace);

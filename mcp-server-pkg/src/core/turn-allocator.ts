@@ -9,13 +9,13 @@
  * - Level 2: 0, 1, 2, 3 (whole numbers)
  * - Level 3: 0, 0.5, 1, 1.5, 2, 2.5, 3, "fl" (all values including float)
  *
- * For each step, blue and red get independently randomized turn values
+ * For each step, left and right get independently randomized turn values
  * filtered by the maxTurnIntensity.
  */
 
 export interface TurnAllocation {
-  blue: (number | "fl")[];
-  red: (number | "fl")[];
+  left: (number | "fl")[];
+  right: (number | "fl")[];
 }
 
 function getPossibleTurnsForLevel(level: number): (number | "fl")[] {
@@ -43,7 +43,7 @@ function randomChoice<T>(array: T[]): T {
  * @param stepCount - Number of steps (excluding start position)
  * @param level - Difficulty level (1-3)
  * @param maxTurnIntensity - Maximum turn intensity allowed (0-3, or undefined for level default)
- * @returns Turn allocations for blue and red props per step
+ * @returns Turn allocations for left and right props per step
  */
 export function allocateTurns(
   stepCount: number,
@@ -65,17 +65,17 @@ export function allocateTurns(
   // If filtering removed everything except possibly "fl", ensure we have at least 0
   const turnsPool = validTurns.length > 0 ? validTurns : [0];
 
-  const turnsBlue: (number | "fl")[] = [];
-  const turnsRed: (number | "fl")[] = [];
+  const turnsLeft: (number | "fl")[] = [];
+  const turnsRight: (number | "fl")[] = [];
 
   for (let i = 0; i < stepCount; i++) {
-    turnsBlue.push(randomChoice(turnsPool));
-    turnsRed.push(randomChoice(turnsPool));
+    turnsLeft.push(randomChoice(turnsPool));
+    turnsRight.push(randomChoice(turnsPool));
   }
 
   return {
-    blue: turnsBlue,
-    red: turnsRed,
+    left: turnsLeft,
+    right: turnsRight,
   };
 }
 

@@ -12,8 +12,8 @@ type VisibilityObserver = () => void;
 
 /** Cached after theme changes to avoid repeated computed-style reads. */
 export interface MotionColorsCache {
-  blue: string;
-  red: string;
+  left: string;
+  right: string;
   grid: string;
 }
 
@@ -25,7 +25,7 @@ export interface AnimationPathPolicy {
   motionAwarePaths: boolean;
 }
 
-interface AnimationVisibilitySettings {
+export interface AnimationVisibilitySettings {
   gridMode: GridMode;
   stepNumbers: boolean;
   props: boolean;
@@ -43,8 +43,8 @@ interface AnimationVisibilitySettings {
   effortPreset: EffortId;
   pathShape: "arc" | "linear" | "concave";
   motionAwarePaths: boolean;
-  bluePathLines: boolean;
-  redPathLines: boolean;
+  leftPathLines: boolean;
+  rightPathLines: boolean;
 
   tipEffortMap: TipEffortMap;
 }
@@ -59,8 +59,8 @@ export class AnimationVisibilityStateManager {
 
   /** Defaults match the light-theme CSS values. */
   private motionColors: MotionColorsCache = {
-    blue: "#3D44B8",
-    red: "#DC2626",
+    left: "#3D44B8",
+    right: "#DC2626",
     grid: "#000000",
   };
 
@@ -69,6 +69,14 @@ export class AnimationVisibilityStateManager {
 
   /** Scoped instances neither persist nor alter the global theme class. */
   private readonly ephemeral: boolean;
+
+  /**
+   * Pauses disk writes without the `ephemeral` side effects. A viewer URL link
+   * session borrows this global instance (see `setPersistenceSuspended`), and
+   * `ephemeral` would also disable `syncDarkModeClass()` - which is exactly the
+   * setting a shared link most needs to render.
+   */
+  private persistenceSuspended: boolean = false;
 
   /**
    * Scoped canvases keep local display flags but share the policy used by the
@@ -108,8 +116,8 @@ export class AnimationVisibilityStateManager {
       effortPreset: "linear",
       pathShape: "arc",
       motionAwarePaths: false,
-      bluePathLines: false,
-      redPathLines: false,
+      leftPathLines: false,
+      rightPathLines: false,
 
       tipEffortMap: {},
     };
@@ -133,8 +141,14 @@ export class AnimationVisibilityStateManager {
         if (!("pathShape" in parsed)) parsed.pathShape = "arc";
         if (!("motionAwarePaths" in parsed)) parsed.motionAwarePaths = false;
         // Migrate the former shared path-line flag.
-        if (!("bluePathLines" in parsed)) parsed.bluePathLines = parsed.pathLines ?? false;
-        if (!("redPathLines" in parsed)) parsed.redPathLines = parsed.pathLines ?? false;
+        if (!("leftPathLines" in parsed)) {
+          parsed.leftPathLines = parsed.bluePathLines ?? parsed.pathLines ?? false;
+        }
+        if (!("rightPathLines" in parsed)) {
+          parsed.rightPathLines = parsed.redPathLines ?? parsed.pathLines ?? false;
+        }
+        delete parsed.bluePathLines;
+        delete parsed.redPathLines;
         delete parsed.pathLines;
 
         // Both retired grid variants map to the current combined grid.
@@ -167,6 +181,7 @@ export class AnimationVisibilityStateManager {
 
   private saveToStorage(): void {
     if (this.ephemeral) return;
+    if (this.persistenceSuspended) return;
     if (typeof window === "undefined") return;
 
     try {
@@ -238,6 +253,31 @@ export class AnimationVisibilityStateManager {
     this.settings = this.getDefaultSettings();
     this.saveToStorage();
     this.notifyObservers();
+  }
+
+  /**
+   * View-only link sessions (viewer URL state). The viewer reads this global
+   * singleton at ~7 call sites with no injection seam, so a shared link borrows
+   * the real instance: snapshot -> suspend -> replaceAll -> (on close)
+   * replaceAll(snapshot) -> resume. The recipient's disk is never written.
+   */
+  setPersistenceSuspended(suspended: boolean): void {
+    this.persistenceSuspended = suspended;
+  }
+
+  /** Deep copy of this instance's OWN settings, ignoring any policy overlay. */
+  snapshot(): AnimationVisibilitySettings {
+    return structuredClone(this.settings);
+  }
+
+  /**
+   * Applies a full settings object through the normal setter path so the theme
+   * class and motion-colour cache follow it. `setDarkMode` is called explicitly
+   * because `updateSettings` assigns the field without running that sync.
+   */
+  replaceAll(next: AnimationVisibilitySettings): void {
+    this.updateSettings(structuredClone(next));
+    this.setDarkMode(next.darkMode);
   }
 
 
@@ -316,8 +356,8 @@ export class AnimationVisibilityStateManager {
     const style = getComputedStyle(document.documentElement);
 
     this.motionColors = {
-      blue: style.getPropertyValue("--dm-motion-blue").trim() || "#3D44B8",
-      red: style.getPropertyValue("--dm-motion-red").trim() || "#DC2626",
+      left: style.getPropertyValue("--dm-motion-blue").trim() || "#3D44B8",
+      right: style.getPropertyValue("--dm-motion-red").trim() || "#DC2626",
       grid: style.getPropertyValue("--dm-grid-color").trim() || "#000000",
     };
 

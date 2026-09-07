@@ -57,7 +57,7 @@
 	<svg
 		viewBox="0 0 {GRID.SIZE} {GRID.SIZE}"
 		class="merge-svg"
-		style="{cssVars} max-width: {maxWidth}px;"
+		style="{cssVars} --grid-merge-default-max-width: {maxWidth}px;"
 	>
 		<GridBackgrounds {phase} />
 		<RotatingGridGroup {phase} {highlightPhase} />
@@ -78,6 +78,10 @@
 	.merge-svg {
 		width: 100%;
 		height: auto;
+		max-width: var(
+			--grid-merge-max-width,
+			var(--grid-merge-default-max-width)
+		);
 		overflow: visible;
 		transition: max-width var(--merge-duration) var(--merge-easing);
 	}

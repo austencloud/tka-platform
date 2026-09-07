@@ -196,6 +196,28 @@ beforeEach(() => {
 });
 
 describe("ShortCodeManager allocation", () => {
+  it("mints a titled hand-path snapshot without requiring TKA letters", async () => {
+    const sequence = {
+      ...SEQUENCE,
+      sequenceKind: "hand-path" as const,
+      displayName: "Tog-Opp",
+      word: "",
+      notes: "Together time, opposite direction.",
+      steps: SEQUENCE.steps.map((step) => ({ ...step, letter: null })),
+    };
+    vi.mocked(decodeSequenceFromQR).mockResolvedValue(sequence);
+    const result = await makeManager().createShortCode(sequence, {});
+    expect(store.get(`shortcodes/${result.code}`)).toMatchObject({
+      payloadKind: "hand-path",
+      payloadWord: "",
+      payloadTitle: "Tog-Opp",
+      sequenceData: {
+        sequenceKind: "hand-path",
+        word: "",
+        displayName: "Tog-Opp",
+      },
+    });
+  });
   it("two concurrent calls with different options mint ONE code (the 2026-07-05 dup-mint race)", async () => {
     const manager = makeManager();
     // Exactly the two production call sites: overlay state (embed, no props)
@@ -204,8 +226,8 @@ describe("ShortCodeManager allocation", () => {
     const [a, b] = await Promise.all([
       manager.createShortCode(SEQUENCE, { embedSequenceData: true }),
       manager.createShortCode(SEQUENCE, {
-        bluePropType: "C",
-        redPropType: "C",
+        leftPropType: "C",
+        rightPropType: "C",
       }),
     ]);
 
@@ -249,7 +271,7 @@ describe("ShortCodeManager allocation", () => {
     const runsAfterFirst = transactionRuns;
 
     const second = await manager.createShortCode(SEQUENCE, {
-      bluePropType: "F",
+      leftPropType: "F",
     });
 
     expect(second.code).toBe(first.code);
@@ -284,7 +306,7 @@ describe("ShortCodeManager allocation", () => {
 
     const [a, b] = await Promise.all([
       manager.createShortCode(SEQUENCE, { embedSequenceData: true }),
-      manager.createShortCode(SEQUENCE, { bluePropType: "C" }),
+      manager.createShortCode(SEQUENCE, { leftPropType: "C" }),
     ]);
 
     expect(a.code).toBe("COMP1");
@@ -443,13 +465,13 @@ describe("ShortCodeManager allocation", () => {
     expect(record?.payloadWord).toBeUndefined();
     expect(getSequenceMotionProfile(resolved!)).toEqual({
       kind: "solo",
-      color: "blue",
+      hand: "left",
       authoredHand: "left",
     });
     expect(resolved?.displayName).toBe("Left-hand choreography");
     expect(resolved?.word).toBe("");
     expect(resolved?.steps.every((step) => step.letter === null)).toBe(true);
-    expect(resolved?.blueSoloProp?.id).toBe(SOLO_PROP.id);
+    expect(resolved?.leftSoloProp?.id).toBe(SOLO_PROP.id);
     expect(resolved?.metadata.sourceSoloPropId).toBe(SOLO_PROP.id);
   });
 
@@ -464,7 +486,7 @@ describe("ShortCodeManager allocation", () => {
 
     expect(record?.sourceSoloPropId).toBeUndefined();
     expect(resolved?.metadata.sourceSoloPropId).toBeUndefined();
-    expect(resolved?.blueSoloProp?.id).toBe(`shortcode-${result.code}`);
+    expect(resolved?.leftSoloProp?.id).toBe(`shortcode-${result.code}`);
   });
 
   it("falls back to canonical soloData when the codec loses the absent hand", async () => {
@@ -486,7 +508,7 @@ describe("ShortCodeManager allocation", () => {
     });
     expect(getSequenceMotionProfile(resolved!)).toEqual({
       kind: "solo",
-      color: "red",
+      hand: "right",
       authoredHand: "right",
     });
     expect(warn).not.toHaveBeenCalled();
@@ -495,7 +517,7 @@ describe("ShortCodeManager allocation", () => {
 
   it("blocks mixed paired and single-hand choreography before minting", async () => {
     const soloSequence = soloPropToSequence(SOLO_PROP, "left");
-    const blueMotion = soloSequence.steps[0]!.motions.blue;
+    const leftMotion = soloSequence.steps[0]!.motions.left;
     const mixed = {
       ...soloSequence,
       steps: [
@@ -503,7 +525,7 @@ describe("ShortCodeManager allocation", () => {
           ...soloSequence.steps[0],
           motions: {
             ...soloSequence.steps[0]!.motions,
-            red: { ...blueMotion, color: "red" },
+            right: { ...leftMotion, hand: "right" },
           },
         },
         {
@@ -552,16 +574,16 @@ describe("ShortCodeManager scan events", () => {
       referrer: null,
       userId: "user-1",
       deviceId: "device-1",
-      bluePropType: "poi",
-      redPropType: "fan",
+      leftPropType: "poi",
+      rightPropType: "fan",
       catDogMode: true,
     });
 
     expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        bluePropType: "poi",
-        redPropType: "fan",
+        leftPropType: "poi",
+        rightPropType: "fan",
         catDogMode: true,
         timestamp: expect.any(String),
       })

@@ -45,6 +45,10 @@ import {
   FollowDocSchema,
 } from "../domain/models/user-firestore-schemas";
 import type { UserFirestoreDataParsed } from "../domain/models/user-firestore-schemas";
+import {
+  trackUserFollowChanged,
+  type UserFollowSource,
+} from "$lib/shared/analytics/social-events";
 
 
 interface FirestoreUserData extends DocumentData {
@@ -675,7 +679,8 @@ export function subscribeToUsers(
 
 export async function followUser(
   currentUserId: string,
-  targetUserId: string
+  targetUserId: string,
+  source: UserFollowSource
 ): Promise<void> {
   if (currentUserId === targetUserId) {
     throw new Error("Users cannot follow themselves");
@@ -683,7 +688,7 @@ export async function followUser(
 
   try {
     const firestore = await getFirestoreInstance();
-    await trackWrite(
+    const changed = await trackWrite(
       () =>
         runTransaction(firestore, async (transaction) => {
           const followingRef = doc(
@@ -703,7 +708,7 @@ export async function followUser(
 
           const followingDoc = await transaction.get(followingRef);
           if (followingDoc.exists()) {
-            return;
+            return false;
           }
 
           const targetUserDoc = await transaction.get(targetUserRef);
@@ -728,9 +733,11 @@ export async function followUser(
           transaction.update(currentUserRef, {
             lastActivityDate: serverTimestamp(),
           });
+          return true;
         }),
       "community"
     );
+    if (changed) trackUserFollowChanged("follow", source, targetUserId);
   } catch (error) {
     console.error(`[UserRepository] Error following user:`, error);
     toast.error("Failed to follow user. Please try again.");
@@ -740,7 +747,8 @@ export async function followUser(
 
 export async function unfollowUser(
   currentUserId: string,
-  targetUserId: string
+  targetUserId: string,
+  source: UserFollowSource
 ): Promise<void> {
   if (currentUserId === targetUserId) {
     throw new Error("Users cannot unfollow themselves");
@@ -748,7 +756,7 @@ export async function unfollowUser(
 
   try {
     const firestore = await getFirestoreInstance();
-    await trackWrite(
+    const changed = await trackWrite(
       () =>
         runTransaction(firestore, async (transaction) => {
           const followingRef = doc(
@@ -767,7 +775,7 @@ export async function unfollowUser(
 
           const followingDoc = await transaction.get(followingRef);
           if (!followingDoc.exists()) {
-            return;
+            return false;
           }
 
           // Delete ONLY the relationship docs. Counts are decremented
@@ -780,9 +788,11 @@ export async function unfollowUser(
           transaction.update(currentUserRef, {
             lastActivityDate: serverTimestamp(),
           });
+          return true;
         }),
       "community"
     );
+    if (changed) trackUserFollowChanged("unfollow", source, targetUserId);
   } catch (error) {
     console.error(`[UserRepository] Error unfollowing user:`, error);
     toast.error("Failed to unfollow user. Please try again.");

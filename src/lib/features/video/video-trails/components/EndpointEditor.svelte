@@ -23,7 +23,17 @@
     redrawTick?: number;
   }
 
-  const { videoElement, width, height, toolMode, selectedIdx, onSelectEndpoint, guidedStep = null, onGuidedPlacement, redrawTick = 0 }: Props = $props();
+  const {
+    videoElement,
+    width,
+    height,
+    toolMode,
+    selectedIdx,
+    onSelectEndpoint,
+    guidedStep = null,
+    onGuidedPlacement,
+    redrawTick = 0,
+  }: Props = $props();
   const { state: trailsState } = getVideoTrailsContext();
 
   const PROP_COLORS = ["#4a90d9", "#d94a4a"] as const;
@@ -38,7 +48,12 @@
   let dragPos = $state<{ x: number; y: number } | null>(null);
 
   // Placement popover state
-  let placementPopover = $state<{ x: number; y: number; canvasX: number; canvasY: number } | null>(null);
+  let placementPopover = $state<{
+    x: number;
+    y: number;
+    canvasX: number;
+    canvasY: number;
+  } | null>(null);
 
   // Redraw whenever frame, endpoints, drag, or selection changes
   $effect(() => {
@@ -90,7 +105,11 @@
       ctx.font = "bold 16px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(`Click to place: ${guidedStep.label}`, width / 2, height - 20);
+      ctx.fillText(
+        `Click to place: ${guidedStep.label}`,
+        width / 2,
+        height - 20
+      );
       ctx.restore();
     }
   }
@@ -100,15 +119,16 @@
     x: number,
     y: number,
     ep: DetectedEndpoint,
-    isSelected: boolean,
+    isSelected: boolean
   ): void {
     const color = PROP_COLORS[ep.propIndex];
     const radius = ENDPOINT_RADIUS;
 
     // Check if this endpoint is occluded
-    const frameCorrectionList = trailsState.corrections[trailsState.currentFrame] ?? [];
+    const frameCorrectionList =
+      trailsState.corrections[trailsState.currentFrame] ?? [];
     const correction = frameCorrectionList.find(
-      (c) => c.propIndex === ep.propIndex && c.tipIndex === ep.tipIndex,
+      (c) => c.propIndex === ep.propIndex && c.tipIndex === ep.tipIndex
     );
     const isOccluded = correction?.status === "occluded";
 
@@ -183,7 +203,10 @@
     };
   }
 
-  function screenCoordsFromCanvas(canvasX: number, canvasY: number): { x: number; y: number } {
+  function screenCoordsFromCanvas(
+    canvasX: number,
+    canvasY: number
+  ): { x: number; y: number } {
     if (!canvasEl) return { x: 0, y: 0 };
     const rect = canvasEl.getBoundingClientRect();
     return {
@@ -215,13 +238,22 @@
     } else if (toolMode === "place") {
       // Manual placement: show popover to pick prop/tip
       const screenPos = screenCoordsFromCanvas(pos.x, pos.y);
-      placementPopover = { x: screenPos.x, y: screenPos.y, canvasX: pos.x, canvasY: pos.y };
+      placementPopover = {
+        x: screenPos.x,
+        y: screenPos.y,
+        canvasX: pos.x,
+        canvasY: pos.y,
+      };
     } else if (toolMode === "occlude") {
       const idx = findEndpointAtPosition(pos.x, pos.y);
       if (idx >= 0) {
         const ep = trailsState.currentEndpoints[idx];
         if (ep) {
-          trailsState.markOccluded(trailsState.currentFrame, ep.propIndex, ep.tipIndex);
+          trailsState.markOccluded(
+            trailsState.currentFrame,
+            ep.propIndex,
+            ep.tipIndex
+          );
         }
       }
     }
@@ -317,7 +349,11 @@
 
     if (e.key === "o" || e.key === "O") {
       e.preventDefault();
-      trailsState.markOccluded(trailsState.currentFrame, ep.propIndex, ep.tipIndex);
+      trailsState.markOccluded(
+        trailsState.currentFrame,
+        ep.propIndex,
+        ep.tipIndex
+      );
       return;
     }
 
@@ -337,7 +373,13 @@
   }
 
   let cursorClass = $derived(
-    toolMode === "guided" ? "cursor-crosshair" : toolMode === "place" ? "cursor-crosshair" : toolMode === "occlude" ? "cursor-occlude" : "",
+    toolMode === "guided"
+      ? "cursor-crosshair"
+      : toolMode === "place"
+        ? "cursor-crosshair"
+        : toolMode === "occlude"
+          ? "cursor-occlude"
+          : ""
   );
 </script>
 
@@ -351,60 +393,60 @@
     role="application"
     aria-label="Endpoint editor canvas. Tab to cycle endpoints, arrows to nudge, O to mark occluded, Enter to accept."
   >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <canvas
-    bind:this={canvasEl}
-    {width}
-    {height}
-    class={cursorClass}
-    onpointerdown={handlePointerDown}
-    onpointermove={handlePointerMove}
-    onpointerup={handlePointerUp}
-  ></canvas>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <canvas
+      bind:this={canvasEl}
+      {width}
+      {height}
+      class={cursorClass}
+      onpointerdown={handlePointerDown}
+      onpointermove={handlePointerMove}
+      onpointerup={handlePointerUp}
+    ></canvas>
 
-  <!-- Placement popover -->
-  {#if placementPopover}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="placement-backdrop"
-      onclick={() => (placementPopover = null)}
-      onkeydown={(e) => e.key === "Escape" && (placementPopover = null)}
-    ></div>
-    <div
-      class="placement-popover"
-      style="left: {placementPopover.x}px; top: {placementPopover.y}px;"
-    >
-      <div class="popover-title">Place endpoint</div>
-      <button
-        class="popover-option blue"
-        onclick={() => handlePlacementSelect(0, 0)}
+    <!-- Placement popover -->
+    {#if placementPopover}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="placement-backdrop"
+        onclick={() => (placementPopover = null)}
+        onkeydown={(e) => e.key === "Escape" && (placementPopover = null)}
+      ></div>
+      <div
+        class="placement-popover"
+        style="left: {placementPopover.x}px; top: {placementPopover.y}px;"
       >
-        <span class="pop-dot" style="background: #4a90d9"></span>
-        Blue tip 0
-      </button>
-      <button
-        class="popover-option blue"
-        onclick={() => handlePlacementSelect(0, 1)}
-      >
-        <span class="pop-dot" style="background: #4a90d9"></span>
-        Blue tip 1
-      </button>
-      <button
-        class="popover-option red"
-        onclick={() => handlePlacementSelect(1, 0)}
-      >
-        <span class="pop-dot" style="background: #d94a4a"></span>
-        Red tip 0
-      </button>
-      <button
-        class="popover-option red"
-        onclick={() => handlePlacementSelect(1, 1)}
-      >
-        <span class="pop-dot" style="background: #d94a4a"></span>
-        Red tip 1
-      </button>
-    </div>
-  {/if}
+        <div class="popover-title">Place endpoint</div>
+        <button
+          class="popover-option blue"
+          onclick={() => handlePlacementSelect(0, 0)}
+        >
+          <span class="pop-dot" style="background: #4a90d9"></span>
+          Left tip 0
+        </button>
+        <button
+          class="popover-option blue"
+          onclick={() => handlePlacementSelect(0, 1)}
+        >
+          <span class="pop-dot" style="background: #4a90d9"></span>
+          Left tip 1
+        </button>
+        <button
+          class="popover-option red"
+          onclick={() => handlePlacementSelect(1, 0)}
+        >
+          <span class="pop-dot" style="background: #d94a4a"></span>
+          Right tip 0
+        </button>
+        <button
+          class="popover-option red"
+          onclick={() => handlePlacementSelect(1, 1)}
+        >
+          <span class="pop-dot" style="background: #d94a4a"></span>
+          Right tip 1
+        </button>
+      </div>
+    {/if}
   </div>
 </div>
 

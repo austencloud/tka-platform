@@ -9,7 +9,7 @@ description: Use when checking premium gating status, deciding if a feature shou
 
 Philosophy: "Play with everything, pay to take it home."
 
-Spec: `docs/superpowers/specs/2026-03-11-premium-gating-system-design.md`
+Spec: `docs/superpowers/specs/shipped/2026-03-11-premium-gating-system-design.md`
 
 ## Audit Mode (no args)
 

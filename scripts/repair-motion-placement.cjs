@@ -15,7 +15,8 @@
  * stored startPosition is passed through verbatim.
  *
  * Not the same defect as repair-broken-start-positions.cjs, which rebuilds a
- * startPosition whose `motions.blue` / `motions.red` are missing ENTIRELY. This
+ * startPosition whose canonical `motions.left` / `motions.right` are missing
+ * entirely. Historical blue/red keys are still accepted at the repair boundary.
  * one handles motions that are present but placement-less. Run both; they are
  * disjoint.
  *
@@ -101,15 +102,15 @@ function repairMotion(motion) {
 /** Returns a repaired copy of a step-shaped record, or null when clean. */
 function repairStepShape(step) {
   if (!step || typeof step !== "object" || !step.motions) return null;
-  const blue = repairMotion(step.motions.blue);
-  const red = repairMotion(step.motions.red);
-  if (!blue && !red) return null;
+  const left = repairMotion(step.motions.left);
+  const right = repairMotion(step.motions.right);
+  if (!left && !right) return null;
   return {
     ...step,
     motions: {
       ...step.motions,
-      ...(blue && { blue }),
-      ...(red && { red }),
+      ...(left && { left }),
+      ...(right && { right }),
     },
   };
 }

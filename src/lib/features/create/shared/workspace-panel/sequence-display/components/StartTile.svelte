@@ -19,10 +19,10 @@
     onDelete,
     animationEpoch = 0,
     isTimelineMode = false,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     onContentReady = undefined,
   } = $props<{
     startPosition: StartPositionData | StepData;
@@ -37,10 +37,10 @@
     isTimelineMode?: boolean;
     /** Prop type overrides for demo/preview rendering (bypasses global
      *  settings) — same convention as StepCell/PictographContainer. */
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
-    blueColorOverride?: string;
-    redColorOverride?: string;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
+    leftColorOverride?: string;
+    rightColorOverride?: string;
     /** Forwarded from the inner cell — see StepCell's onContentReady. */
     onContentReady?: () => void;
   }>();
@@ -85,10 +85,10 @@
     onDelete={() => onDelete?.(0)}
     {isTimelineMode}
     {animationEpoch}
-    {bluePropTypeOverride}
-    {redPropTypeOverride}
-    {blueColorOverride}
-    {redColorOverride}
+    {leftPropTypeOverride}
+    {rightPropTypeOverride}
+    {leftColorOverride}
+    {rightColorOverride}
     {onContentReady}
   />
 </div>

@@ -2,16 +2,27 @@ import type { TrailPoint, TrailSettings } from "./trail-types";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 
 export interface AdditionalLayerProps {
-  blueProp: PropState | null;
-  redProp: PropState | null;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
+  /** Presentation envelope for one overlaid performer. The tunnel transition
+   *  keeps geometry live while copies bloom in/out on the persistent canvas. */
+  opacity?: number;
+  /**
+   * The copy is being composed into or out of its Tunnel formation rather than
+   * performing sequence motion. Its prop remains visible, but this authored
+   * travel must not be recorded as a trail.
+   */
+  trailCaptureSuppressed?: boolean;
+  /** True while this copy is travelling to or from its authored formation. */
+  formationTransitionActive?: boolean;
   /** Per-performer prop type (Performer Set). Absent → the global prop (today). */
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
 }
 
 export interface TrailCapturePropStates {
-  blueProp: PropState | null;
-  redProp: PropState | null;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
   additionalLayers?: AdditionalLayerProps[];
 }
 
@@ -22,11 +33,11 @@ export interface PropDimensions {
 
 export interface TrailCaptureConfig {
   canvasSize: number;
-  bluePropDimensions: PropDimensions;
-  redPropDimensions: PropDimensions;
+  leftPropDimensions: PropDimensions;
+  rightPropDimensions: PropDimensions;
   trailSettings: TrailSettings;
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   isSeamlesslyLoopable?: boolean;
 }
 

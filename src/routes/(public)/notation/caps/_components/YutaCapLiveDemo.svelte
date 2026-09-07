@@ -150,8 +150,8 @@
     chrome: "minimal" as const,
     fill: true,
     beatIndicators: false,
-    bluePropType: "club",
-    redPropType: "club",
+    leftPropType: "club",
+    rightPropType: "club",
     hideTkaGlyph: true,
     hideStepNumbers: true,
     gridVisible,
@@ -228,7 +228,7 @@
         height="500"
       />
     {/if}
-    <MandalaHeroLayer paths={mandalaPaths} {clubTipDx} opacity={ghostOpacity} />
+    <MandalaHeroLayer paths={mandalaPaths} artKey="yuta-cap" opacity={ghostOpacity} />
     {#if !reduceMotion.current}
       <div class="player-layer">
         <LazyMount

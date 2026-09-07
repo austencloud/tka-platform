@@ -77,6 +77,55 @@ The owners have deliberately different jobs:
    controller did not build or query the database. Treat it as unfinished
    infrastructure, not a shipping motion-matching solver and not a reason to
    create a parallel system.
+7. `measureStandingStance` / `planStandingStance` / `applyStandingStance` in
+   `@austencloud/scene-3d` `src/lib/services/leg-geometry.ts` own the **static
+   standing base** a performer holds when nothing is driving its legs. This is
+   not locomotion: it owns no gait clock, no contact schedule, and no footfall
+   plan. `Avatar3D.svelte` calls it once at load, and only when
+   `enableLocomotion` is false. The moment a clip or a planner drives the legs,
+   that owner writes the same bones every frame and the standing pose is gone,
+   which is the intended relationship. Do not add a second stance solver, and do
+   not extend this one into swing, contact, or step planning.
+
+8. The **speed axis** of a gait is owned by `LocomotionAnimator`, not by any
+   caller. `RUN_TIER_KEYS` maps `forward`, `strafeLeft`, and `strafeRight` onto
+   `runForward`, `runStrafeLeft`, and `runStrafeRight`; `runTierFraction()`
+   derives the crossover band from the two clips' own measured `nativeSpeed`
+   (`WALK_TIER_CEILING` 1.15 to `RUN_TIER_FLOOR` 0.8) rather than from a written
+   speed; and `getGaitTier()` reports the blend a viewer can see. Both tiers
+   read the same `gaitSteps` clock, so the crossover is phase-matched by
+   construction and needs no transition state. Reaching a run by multiplying
+   playback rate is forbidden: `updateGaitSplit` caps authored stride at 1.15,
+   so past that everything lands on rate and the result is a speed-walk, which
+   has double support where a run has flight. Shipped 2026-09-03; design in
+   `docs/superpowers/specs/2026-09-03-locomotion-gait-tiers-design.md`.
+9. **How fast a body is allowed to become** is a separate owner:
+   `advanceGroundVelocity()` in `packages/camera-3d/src/lib/ground-velocity.ts`,
+   called by `UnifiedCameraController` through `groundAcceleration` and
+   `groundDeceleration`. It bounds the velocity *vector*, so a hard turn carries
+   through its arc; it selects its rate by comparing magnitudes, so releasing a
+   sprint brakes rather than coasts; and omitting the props means infinite
+   acceleration, which reproduces instant response exactly. This is not a gait
+   owner and must not acquire clip, contact, or phase knowledge.
+10. **Pelvis height while walking** is owned by `LocomotionAnimator`, not by
+    `FootPlanter`. The pack's locomotion clips are re-anchored at the rig's
+    rest height, which discards the dip a walk is authored with, so the flat
+    foot ended a centimetre or two (four to six on the runs) above the floor
+    and the planter, which never drags the pelvis down, held the toe on the
+    ground instead. `measureBindAnkleFloor()` reads the bind ankle once at
+    `initialize()`; `analyzeClipGait()` records each clip's `pelvisDrop` as the
+    gap between its lowest ankle and that floor; `blendedPelvisDrop()` lowers
+    the pelvis by the effective-weight blend of those dips every `update()`,
+    so a standing body keeps rest height and a crossfade lowers the body on
+    the same curve that brings the legs in. The same change passes the
+    animator's stored `hipsRest` into the gait probe: `createActions()` zeroes
+    the live pelvis before the clips are prepared, so the probe had been
+    measuring every foot a hip height under the floor and reporting sole and
+    toe offsets of 0, which left `FootPlanter` on default offsets that matched
+    no rig. Shipped 2026-09-06; contract in
+    `tests/unit/3d/locomotion-pelvis-drop.test.ts`. The remaining gap at
+    1.7 m/s (about two centimetres, from stride scaling at a fixed pelvis
+    height) is open.
 
 The governing TKA designs are:
 
@@ -315,28 +364,28 @@ as authored motion. A beat-alignment score alone is not acceptance.
 `Runtime owner` names where adoption belongs. It does not claim the capability
 already exists there.
 
-| Problem class                                   | Evidence                                                                                                                                                                                                                                                                                                                                                                                                  | Type                                               | TKA decision and status                                                                                            | Runtime owner                                                             | License or asset status                                                                                    | Last verified |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
-| Exact task-specific footprints                  | [Agrawal and van de Panne, 2016](https://www.cs.ubc.ca/~van/papers/2016-TOG-taskBasedLocomotion/index.html)                                                                                                                                                                                                                                                                                               | Peer-reviewed                                      | Adopt footstep-plan semantics; exact arbitrary footprints remain **Adopted**                                       | destination planner, future footprint-plan compiler, `LocomotionAnimator` | Citation only; paper is not an asset grant                                                                 | 2026-08-28    |
-| Exact root progress and bounded correction      | [Epic Distance Matching](https://dev.epicgames.com/documentation/en-us/unreal-engine/distance-matching-in-unreal-engine), [Motion Warping](https://dev.epicgames.com/documentation/en-us/unreal-engine/motion-warping-in-unreal-engine)                                                                                                                                                                   | Production documentation                           | Straight exact-step planner is **Shipped**; bounded target warping is **Evaluate**                                 | `destination-walk-plan.ts`, `LocomotionAnimator`                          | Reference only; no Epic code or assets imported                                                            | 2026-08-28    |
-| Beat-authored gait timing                       | [Auditory gait synchronization review](https://pmc.ncbi.nlm.nih.gov/articles/PMC6028729/)                                                                                                                                                                                                                                                                                                                 | Peer-reviewed systematic review                    | External plant schedule and phase-error metrics are **Adopted**                                                    | `GaitTimingPlan`, score-time host, diagnostics                            | Open-access article; citation does not grant motion assets                                                 | 2026-08-28    |
-| Gait termination                                | [Hase and Stein, 1998](https://pubmed.ncbi.nlm.nih.gov/9658047/), [Crenna et al., 2001](https://pmc.ncbi.nlm.nih.gov/articles/PMC2279001/)                                                                                                                                                                                                                                                                | Peer-reviewed                                      | Remaining-distance, phase-aware terminal step is **Adopted**                                                       | `TerminalStepPlan`, `LocomotionAnimator`                                  | Citation only                                                                                              | 2026-08-28    |
-| Step and spin turns                             | [Hase and Stein, 1999](https://pubmed.ncbi.nlm.nih.gov/10368408/), [Taylor et al., 2005](https://pubmed.ncbi.nlm.nih.gov/16129503/), [Kreter and Fino, 2025](https://pubmed.ncbi.nlm.nih.gov/40876264/)                                                                                                                                                                                                   | Peer-reviewed                                      | Turn-family, support-foot, and phase selection are **Adopted**; current clips are a **Prototype**                  | turn planner, `LocomotionAnimator`                                        | Citation only                                                                                              | 2026-08-28    |
-| Lateral sidestep and crossover                  | [Bilateral lateral gait study](https://pmc.ncbi.nlm.nih.gov/articles/PMC3737798/), [perturbation-evoked lateral steps](https://pmc.ncbi.nlm.nih.gov/articles/PMC6501204/)                                                                                                                                                                                                                                 | Peer-reviewed                                      | Treat as distinct gait classes; grapevine footprint template is **Adopted**, not shipped                           | footprint-plan compiler, asset pipeline, diagnostics                      | Citation only                                                                                              | 2026-08-28    |
-| Ground contact and footskate                    | [Zou et al., WACV 2020](https://openaccess.thecvf.com/content_WACV_2020/html/Zou_Reducing_Footskate_in_Human_Motion_Reconstruction_with_Ground_Contact_Constraints_WACV_2020_paper.html), [UnderPressure](https://diglib.eg.org/items/def192e5-ad91-4409-b078-7d564fbaefb5)                                                                                                                               | Peer-reviewed                                      | Explicit contact labels and contact-constrained cleanup are **Adopted**                                            | asset pipeline, `FootPlanter`, diagnostics                                | Papers are reference material; UnderPressure code/data require separate license review                     | 2026-08-28    |
-| Runtime foot locking                            | [Holden, 2026](https://theorangeduck.com/page/inverse-kinematics-foot-locking), [Epic Speed Planting](https://dev.epicgames.com/documentation/en-us/unreal-engine/fix-foot-sliding-with-ik-retargeter-in-unreal-engine)                                                                                                                                                                                   | Practitioner guidance and production documentation | Toe-aware late correction is **Shipped/Adopted**; IK as motion generator is **Rejected**                           | `FootPlanter`                                                             | Techniques may be studied; verify linked code licenses before copying code                                 | 2026-08-28    |
-| Contact-aware retargeting and self-intersection | [Villegas et al., ICCV 2021](https://openaccess.thecvf.com/content/ICCV2021/html/Villegas_Contact-Aware_Retargeting_of_Skinned_Motion_ICCV_2021_paper.html)                                                                                                                                                                                                                                               | Peer-reviewed                                      | Per-rig self-contact preservation and interpenetration checks are **Adopted**                                      | retarget/import pipeline, diagnostics                                     | Citation only; no model or dataset license inferred                                                        | 2026-08-28    |
-| Paired upper-body IK routing                    | [Unity Two Bone IK Constraint](https://docs.unity3d.com/Packages/com.unity.animation.rigging@1.2/manual/constraints/TwoBoneIKConstraint.html), [Epic Full-Body IK](https://dev.epicgames.com/documentation/unreal-engine/control-rig-full-body-ik-in-unreal-engine)                                                                                                                                              | Production documentation                           | Measured body axes, torso participation, and deterministic over/under elbow corridors are **Shipped**              | `AvatarAnimator`, `SpineTwister`, `ElbowPoleComputer`                     | Reference only; no Unity or Epic code or assets imported                                                    | 2026-08-29    |
-| Motion matching                                 | [Ubisoft GDC 2016](https://www.gdcvault.com/play/1023280/Motion-Matching-and-The-Road), [Epic Motion Matching](https://dev.epicgames.com/documentation/en-us/unreal-engine/motion-matching-in-unreal-engine)                                                                                                                                                                                              | Production talk and documentation                  | Complete existing search owner before adoption; current runtime is **Unfinished/Evaluate**                         | `features/stage/locomotion/motion-matching`                               | Reference only; animation databases require their own licenses                                             | 2026-08-28    |
-| Learned motion control                          | [Learned Motion Matching](https://static-wordpress.ubisoft.com/montreal.ubisoft.com/wp-content/uploads/2020/07/09154101/Learned_Motion_Matching.pdf), [Control Operators](https://theorangeduck.com/media/uploads/other_stuff/ControlOperators.pdf)                                                                                                                                                       | Peer-reviewed                                      | Offline experiment only after deterministic constraints and licensed data; **Evaluate**                            | existing motion-matching owner or a separately approved production owner  | Papers are citation material; reference implementations and training data need separate review             | 2026-08-28    |
-| Terrain adaptation                              | [PFNN](https://theorangeduck.com/page/phase-functioned-neural-networks-character-control), [Epic Pose Warping](https://dev.epicgames.com/documentation/en-us/unreal-engine/pose-warping-in-unreal-engine)                                                                                                                                                                                                 | Peer-reviewed and production documentation         | Flat-stage corrections only; full terrain control is **Reference only**                                            | future environment-aware planner, `LocomotionAnimator`, `FootPlanter`     | Reference only                                                                                             | 2026-08-28    |
-| Environment and crowd-aware pose selection      | [Environment-aware Motion Matching](https://arxiv.org/abs/2510.22632)                                                                                                                                                                                                                                                                                                                                     | Research preprint                                  | Keep pose and trajectory collision constraints coupled if Stage adds crowds; **Evaluate**                          | existing motion-matching owner and Stage path planner                     | Paper reference; official example code reports MIT, data licenses remain separate                          | 2026-08-28    |
-| Music-conditioned dance                         | [AIST++](https://research.google/pubs/ai-choreographer-music-conditioned-3d-dance-generation-with-aist/), [EDGE](https://openaccess.thecvf.com/content/CVPR2023/html/Tseng_EDGE_Editable_Dance_Generation_From_Music_CVPR_2023_paper.html), [FineDance](https://openaccess.thecvf.com/content/ICCV2023/html/Li_FineDance_A_Fine-grained_Choreography_Dataset_for_3D_Full_Body_Dance_ICCV_2023_paper.html) | Peer-reviewed and dataset                          | Candidate generation only; deterministic runtime adoption is **Evaluate**                                          | offline motion pipeline, footprint-plan validator                         | Dataset, video, music, model, and SMPL terms must each be cleared                                          | 2026-08-28    |
-| General mocap coverage                          | [CMU Graphics Lab Mocap Database](https://mocap.cs.cmu.edu/)                                                                                                                                                                                                                                                                                                                                              | Dataset                                            | Suitable candidate for stop, turn, and crossover asset audit; **Evaluate**                                         | asset pipeline                                                            | Site allows commercial use inside products, forbids resale of raw/converted data, and requests attribution | 2026-08-28    |
-| General animation benchmark                     | [LaFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)                                                                                                                                                                                                                                                                                                                                    | Dataset                                            | Research and benchmark only; **Rejected** for commercial product training or redistribution without new permission | offline evaluation                                                        | CC BY-NC-ND 4.0                                                                                            | 2026-08-28    |
-| Large unified human motion corpus               | [AMASS](https://amass.is.tue.mpg.de/register.php)                                                                                                                                                                                                                                                                                                                                                         | Dataset                                            | Research comparison only; **Rejected** for product use under current terms                                         | offline evaluation                                                        | Noncommercial research only, with subset-specific terms                                                    | 2026-08-28    |
-| Dance motion and music                          | [AIST++ download terms](https://google.github.io/aistplusplus_dataset/download.html)                                                                                                                                                                                                                                                                                                                      | Dataset                                            | Do not ingest until each media and annotation right is documented; **Evaluate**                                    | offline motion pipeline                                                   | API code is Apache-2.0; videos and music inherit AIST Dance DB terms; SMPL has separate terms              | 2026-08-28    |
-| Pressure-labelled foot contacts                 | [UnderPressure repository](https://github.com/InterDigitalInc/UnderPressure)                                                                                                                                                                                                                                                                                                                              | Dataset and code                                   | Useful for contact-label evaluation; **Evaluate** after legal and technical review                                 | asset pipeline, diagnostics                                               | Custom InterDigital license and citation requirement; do not assume permissive commercial rights           | 2026-08-28    |
+| Problem class                                   | Evidence                                                                                                                                                                                                                                                                                                                                                                                                  | Type                                               | TKA decision and status                                                                                                                 | Runtime owner                                                             | License or asset status                                                                                    | Last verified |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------- |
+| Exact task-specific footprints                  | [Agrawal and van de Panne, 2016](https://www.cs.ubc.ca/~van/papers/2016-TOG-taskBasedLocomotion/index.html)                                                                                                                                                                                                                                                                                               | Peer-reviewed                                      | Adopt footstep-plan semantics; exact arbitrary footprints remain **Adopted**                                                            | destination planner, future footprint-plan compiler, `LocomotionAnimator` | Citation only; paper is not an asset grant                                                                 | 2026-08-28    |
+| Exact root progress and bounded correction      | [Epic Distance Matching](https://dev.epicgames.com/documentation/en-us/unreal-engine/distance-matching-in-unreal-engine), [Motion Warping](https://dev.epicgames.com/documentation/en-us/unreal-engine/motion-warping-in-unreal-engine)                                                                                                                                                                   | Production documentation                           | Straight exact-step planner is **Shipped**; bounded target warping is **Evaluate**                                                      | `destination-walk-plan.ts`, `LocomotionAnimator`                          | Reference only; no Epic code or assets imported                                                            | 2026-08-28    |
+| Beat-authored gait timing                       | [Auditory gait synchronization review](https://pmc.ncbi.nlm.nih.gov/articles/PMC6028729/)                                                                                                                                                                                                                                                                                                                 | Peer-reviewed systematic review                    | External plant schedule and phase-error metrics are **Adopted**                                                                         | `GaitTimingPlan`, score-time host, diagnostics                            | Open-access article; citation does not grant motion assets                                                 | 2026-08-28    |
+| Gait termination                                | [Hase and Stein, 1998](https://pubmed.ncbi.nlm.nih.gov/9658047/), [Crenna et al., 2001](https://pmc.ncbi.nlm.nih.gov/articles/PMC2279001/)                                                                                                                                                                                                                                                                | Peer-reviewed                                      | Remaining-distance, phase-aware terminal step is **Adopted**                                                                            | `TerminalStepPlan`, `LocomotionAnimator`                                  | Citation only                                                                                              | 2026-08-28    |
+| Step and spin turns                             | [Hase and Stein, 1999](https://pubmed.ncbi.nlm.nih.gov/10368408/), [Taylor et al., 2005](https://pubmed.ncbi.nlm.nih.gov/16129503/), [Kreter and Fino, 2025](https://pubmed.ncbi.nlm.nih.gov/40876264/)                                                                                                                                                                                                   | Peer-reviewed                                      | Turn-family, support-foot, and phase selection are **Adopted**; current clips are a **Prototype**                                       | turn planner, `LocomotionAnimator`                                        | Citation only                                                                                              | 2026-08-28    |
+| Lateral sidestep and crossover                  | [Bilateral lateral gait study](https://pmc.ncbi.nlm.nih.gov/articles/PMC3737798/), [perturbation-evoked lateral steps](https://pmc.ncbi.nlm.nih.gov/articles/PMC6501204/)                                                                                                                                                                                                                                 | Peer-reviewed                                      | Treat as distinct gait classes; grapevine footprint template is **Adopted**, not shipped                                                | footprint-plan compiler, asset pipeline, diagnostics                      | Citation only                                                                                              | 2026-08-28    |
+| Ground contact and footskate                    | [Zou et al., WACV 2020](https://openaccess.thecvf.com/content_WACV_2020/html/Zou_Reducing_Footskate_in_Human_Motion_Reconstruction_with_Ground_Contact_Constraints_WACV_2020_paper.html), [UnderPressure](https://diglib.eg.org/items/def192e5-ad91-4409-b078-7d564fbaefb5)                                                                                                                               | Peer-reviewed                                      | Explicit contact labels and contact-constrained cleanup are **Adopted**                                                                 | asset pipeline, `FootPlanter`, diagnostics                                | Papers are reference material; UnderPressure code/data require separate license review                     | 2026-08-28    |
+| Runtime foot locking                            | [Holden, 2026](https://theorangeduck.com/page/inverse-kinematics-foot-locking), [Epic Speed Planting](https://dev.epicgames.com/documentation/en-us/unreal-engine/fix-foot-sliding-with-ik-retargeter-in-unreal-engine)                                                                                                                                                                                   | Practitioner guidance and production documentation | Toe-aware late correction is **Shipped/Adopted**; IK as motion generator is **Rejected**                                                | `FootPlanter`                                                             | Techniques may be studied; verify linked code licenses before copying code                                 | 2026-08-28    |
+| Contact-aware retargeting and self-intersection | [Villegas et al., ICCV 2021](https://openaccess.thecvf.com/content/ICCV2021/html/Villegas_Contact-Aware_Retargeting_of_Skinned_Motion_ICCV_2021_paper.html)                                                                                                                                                                                                                                               | Peer-reviewed                                      | Per-rig self-contact preservation and interpenetration checks are **Adopted**                                                           | retarget/import pipeline, diagnostics                                     | Citation only; no model or dataset license inferred                                                        | 2026-08-28    |
+| Paired upper-body IK routing                    | [Unity Two Bone IK Constraint](https://docs.unity3d.com/Packages/com.unity.animation.rigging@1.2/manual/constraints/TwoBoneIKConstraint.html), [Epic Full-Body IK](https://dev.epicgames.com/documentation/unreal-engine/control-rig-full-body-ik-in-unreal-engine)                                                                                                                                       | Production documentation                           | Measured body axes, torso participation, deterministic over/under elbow corridors, and production head-threat avoidance are **Shipped** | `AvatarAnimator`, `SpineTwister`, `ElbowPoleComputer`                     | Reference only; no Unity or Epic code or assets imported                                                   | 2026-08-30    |
+| Motion matching                                 | [Ubisoft GDC 2016](https://www.gdcvault.com/play/1023280/Motion-Matching-and-The-Road), [Epic Motion Matching](https://dev.epicgames.com/documentation/en-us/unreal-engine/motion-matching-in-unreal-engine)                                                                                                                                                                                              | Production talk and documentation                  | Complete existing search owner before adoption; current runtime is **Unfinished/Evaluate**                                              | `features/stage/locomotion/motion-matching`                               | Reference only; animation databases require their own licenses                                             | 2026-08-28    |
+| Learned motion control                          | [Learned Motion Matching](https://static-wordpress.ubisoft.com/montreal.ubisoft.com/wp-content/uploads/2020/07/09154101/Learned_Motion_Matching.pdf), [Control Operators](https://theorangeduck.com/media/uploads/other_stuff/ControlOperators.pdf)                                                                                                                                                       | Peer-reviewed                                      | Offline experiment only after deterministic constraints and licensed data; **Evaluate**                                                 | existing motion-matching owner or a separately approved production owner  | Papers are citation material; reference implementations and training data need separate review             | 2026-08-28    |
+| Terrain adaptation                              | [PFNN](https://theorangeduck.com/page/phase-functioned-neural-networks-character-control), [Epic Pose Warping](https://dev.epicgames.com/documentation/en-us/unreal-engine/pose-warping-in-unreal-engine)                                                                                                                                                                                                 | Peer-reviewed and production documentation         | Flat-stage corrections only; full terrain control is **Reference only**                                                                 | future environment-aware planner, `LocomotionAnimator`, `FootPlanter`     | Reference only                                                                                             | 2026-08-28    |
+| Environment and crowd-aware pose selection      | [Environment-aware Motion Matching](https://arxiv.org/abs/2510.22632)                                                                                                                                                                                                                                                                                                                                     | Research preprint                                  | Keep pose and trajectory collision constraints coupled if Stage adds crowds; **Evaluate**                                               | existing motion-matching owner and Stage path planner                     | Paper reference; official example code reports MIT, data licenses remain separate                          | 2026-08-28    |
+| Music-conditioned dance                         | [AIST++](https://research.google/pubs/ai-choreographer-music-conditioned-3d-dance-generation-with-aist/), [EDGE](https://openaccess.thecvf.com/content/CVPR2023/html/Tseng_EDGE_Editable_Dance_Generation_From_Music_CVPR_2023_paper.html), [FineDance](https://openaccess.thecvf.com/content/ICCV2023/html/Li_FineDance_A_Fine-grained_Choreography_Dataset_for_3D_Full_Body_Dance_ICCV_2023_paper.html) | Peer-reviewed and dataset                          | Candidate generation only; deterministic runtime adoption is **Evaluate**                                                               | offline motion pipeline, footprint-plan validator                         | Dataset, video, music, model, and SMPL terms must each be cleared                                          | 2026-08-28    |
+| General mocap coverage                          | [CMU Graphics Lab Mocap Database](https://mocap.cs.cmu.edu/)                                                                                                                                                                                                                                                                                                                                              | Dataset                                            | Suitable candidate for stop, turn, and crossover asset audit; **Evaluate**                                                              | asset pipeline                                                            | Site allows commercial use inside products, forbids resale of raw/converted data, and requests attribution | 2026-08-28    |
+| General animation benchmark                     | [LaFAN1](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)                                                                                                                                                                                                                                                                                                                                    | Dataset                                            | Research and benchmark only; **Rejected** for commercial product training or redistribution without new permission                      | offline evaluation                                                        | CC BY-NC-ND 4.0                                                                                            | 2026-08-28    |
+| Large unified human motion corpus               | [AMASS](https://amass.is.tue.mpg.de/register.php)                                                                                                                                                                                                                                                                                                                                                         | Dataset                                            | Research comparison only; **Rejected** for product use under current terms                                                              | offline evaluation                                                        | Noncommercial research only, with subset-specific terms                                                    | 2026-08-28    |
+| Dance motion and music                          | [AIST++ download terms](https://google.github.io/aistplusplus_dataset/download.html)                                                                                                                                                                                                                                                                                                                      | Dataset                                            | Do not ingest until each media and annotation right is documented; **Evaluate**                                                         | offline motion pipeline                                                   | API code is Apache-2.0; videos and music inherit AIST Dance DB terms; SMPL has separate terms              | 2026-08-28    |
+| Pressure-labelled foot contacts                 | [UnderPressure repository](https://github.com/InterDigitalInc/UnderPressure)                                                                                                                                                                                                                                                                                                                              | Dataset and code                                   | Useful for contact-label evaluation; **Evaluate** after legal and technical review                                                      | asset pipeline, diagnostics                                               | Custom InterDigital license and citation requirement; do not assume permissive commercial rights           | 2026-08-28    |
 
 ## Dataset and asset gate
 
@@ -391,6 +440,40 @@ motion at speed, from useful camera angles, on every supported rig.
 - pattern-specific checks for sidestep, front crossover, back crossover, and
   grapevine.
 
+### Anatomical validity
+
+Every measurement above describes the path a foot traced or how far a joint
+moved. None describes the plane a limb moved in, so a leg posed sideways scores
+identically to a correct one. Two layers cover that, added 2026-09-03:
+
+- **Static intake**, `tests/unit/3d/rig-anatomy-contract.test.ts`. Reads the
+  bind pose of every shipped character and drives nothing: leg completeness,
+  hip line level and square, derived knee hinge within 10 degrees of the body's
+  mediolateral axis, left-right segment symmetry within 2 percent, femur-tibia
+  ratio, and bind bend small enough not to steer the calibration. One GLB parse
+  per rig, no frames, 74 checks in under half a second. This is the layer that
+  catches a small calibration error, where a 10-degree fault is enormous.
+- **Motion grading**, `analyzeKneeAnatomy` in
+  `src/lib/shared/3d/diagnostics/gait/knee-anatomy.ts`, reported as three rows
+  in every maneuver profile and driven with `FootPlanter` in the loop by
+  `tests/unit/3d/locomotion-anatomy.test.ts`. Per frame and per side: how far
+  the plane the knee bends in is turned off the body's frontal normal, the
+  knee's worst departure from the hip-ankle line as a fraction of leg length,
+  and whether the shank ever sits in front of the thigh. Frames below 20 degrees
+  of flexion are excluded, because a near-straight leg has no measurable bend
+  direction, and the excluded share is reported so a projection artefact cannot
+  become a verdict.
+
+Bands come from measurement, not from a guess: all twelve shipped characters,
+walk and run, planted, measure 7.5 to 12.1 degrees of mean plane tilt, which
+independently lands on the clinical figure of 8 to 12 degrees of frontal-plane
+knee travel across a healthy gait cycle. Warn at 16, fail at 25.
+
+The two layers cover different ranges and neither replaces the other. Injected
+hinge error produces about 0.88 degrees of reading per degree at a walk and 0.72
+at a run, on a baseline near 10, so motion grading resolves a 20-degree fault
+and above while the static contract resolves everything smaller.
+
 ### Visual acceptance
 
 Use Walk Lab in the approved in-app browser or Chrome DevTools setup. Inspect
@@ -406,6 +489,62 @@ metric improved.
 
 ## Rejected assumptions
 
+### A single hard-coded rotation can serve as a stance for every rig
+Rejected 2026-09-03, with runtime bone measurements on four rigs.
+
+`Avatar3D.svelte` widened the default stance with a fixed 8-degree rotation
+about each upper leg's **own local Z**. A bone's local axes are a property of
+the export, not of the body, so one constant behaved differently on every rig:
+it abducted the Mixamo-derived catalog rigs (ch18 321 mm -> 549 mm ankle
+separation, ch01 318 -> 564, ch07 326 -> 567) and adducted the intake rig
+(239 mm -> 18 mm), which is the feet-stuck-together silhouette Austen reported
+on `/test/staff-grip`. The rotation also raised the ankles off the bind pose
+that `getFeetOffset()` had already measured, so every affected performer stood
+a centimetre or two above the floor without anything reporting it.
+
+A stance must be measured from the body it belongs to: hip sockets, ankles, and
+the frontal plane they define. The replacement targets ankle separation equal to
+the rig's own hip-socket separation, applies the rotation in world space about a
+measured abduction axis, restores each foot's authored world orientation, and
+returns the ankle height change so the host can re-ground the performer.
+
+Two different upstream shapes feed that measurement, so do not read one rig's
+numbers as the catalog's. The Mixamo-derived catalog rigs arrive at runtime in
+their authored bind pose, ankles about 1.7x hip width apart. The intake rig
+arrives with ankles at exactly 1.0x hip width, which is the signature of a
+Blender intake that baked the GLB's embedded `mixamo.com` action - that clip's
+first frame stands the rig at attention, and `pose.armature_apply()` writes it
+in as the new bind pose (see `clear_imported_pose` in
+`scripts/characters/blender-proportion-rescale.py`, landed 2026-09-03 in
+`40180e87a8`). The runtime stance normalizes both shapes, so fixing the intake
+bake does not invalidate it and it does not excuse leaving the bake in place.
+
+
+### Foot-path and knee-angle metrics can see a leg posed in the wrong plane
+Rejected 2026-09-03, by fault injection against the full gait report.
+
+`ch07` shipped with its left knee's IK hinge axis derived 84 degrees off
+sagittal, so the leg folded sideways under `FootPlanter`. Every row of the gait
+report stayed green through it and Austen found it by looking at the screen.
+
+Rotating `ch01`'s hinge by a controlled amount and re-reading the whole report
+shows why. At 3.9 m/s, between a healthy hinge and one turned 84 degrees, peak
+foot slip holds at 9.2 cm and `kneeJerkRms` holds at 11187.982 -- the two
+readings differ in their eighth significant figure. The foot rows cannot
+respond because the fault does not move the feet; it folds the leg between
+them. `kneeJerkRms` looks like it should, being a knee measurement, but it is
+the second time derivative of `kneeAngle`, and `kneeAngle` is the unsigned
+interior angle at the joint. Turning the plane a knee bends in leaves how far it
+bends exactly where it was.
+
+This is structural, not a threshold that was set too loosely. A metric built
+from unsigned joint angles and foot trajectories is blind to limb orientation by
+construction, and no retuning of one makes it see this class of defect. The
+harness compounded it: it stopped at the animator, and foot IK is where a leg is
+finally posed, so the suite could not have observed the defect even had a metric
+existed. Both are addressed under Anatomical validity above; the blindness
+itself is pinned by an assertion so the claim cannot go stale silently.
+
 | Assumption                                               | Why it is rejected                                                                                                                                     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Root motion eliminates footskate                         | Source root and foot motion can still mismatch the world controller, retargeted rig, warping, blending, or contact anchors.                            |
@@ -419,6 +558,8 @@ metric improved.
 | Exact root endpoint plus step count equals exact arrival | Root mark, terminal plant, and stable two-foot goal stance are different events.                                                                       |
 | A public dataset is product-cleared                      | Code, annotations, video, music, performer data, body models, and derived assets can carry different terms.                                            |
 | A cited technique is implemented                         | Research, adopted architecture, prototypes, and shipped behavior are separate status classes.                                                          |
+| A knee metric detects a knee posed wrong                  | `kneeJerkRms` is the second derivative of an unsigned joint angle, which a rotated bend plane preserves exactly. Grading a limb needs the plane it moved in, not only how far it moved.  |
+| A harness that drives the animator tests the pose         | Foot IK poses the leg after the animator. A harness that stops short of it cannot observe an IK defect at all, whatever it measures.                                                    |
 | Green unit tests prove top-tier motion                   | Tests cannot see twitching, implausible weight transfer, mesh penetration, or a bad silhouette. Live visual evidence is mandatory.                     |
 
 ## Open gaps, in priority order
@@ -429,9 +570,14 @@ metric improved.
 2. **Contact-aware retargeting across shipped rigs.** Measure how one source
    motion changes on short and tall rigs. Preserve intentional self-contact
    while preventing interpenetration.
-3. **Terminal transition coverage.** Complete stop assets or distance-matched
-   profiles for terminal foot, approach speed, remaining distance, and desired
-   facing. Prove that `targetFacing` executes.
+3. **Terminal transition coverage.** The state machine exists and runs
+   (`TerminalKey`, armed/braking/landed/settled, `terminalEntryBlend`, contact
+   curves), but the only shipped assets are `walk-stop-left` and
+   `walk-stop-right`, so **stopping from a run plays a walk stop**. Author a run
+   stop through `static/animations/terminal-stops/build-terminal-stops.py`; this is an asset gap, not a
+   code gap. Also still open: distance-matched profiles for terminal foot,
+   approach speed, remaining distance, and desired facing, and proof that
+   `targetFacing` executes.
 4. **External score-time gait schedule.** Land and prove `GaitTimingPlan` across
    different render-frame partitions without changing the requested plant times.
 5. **Footprint-target runtime seam.** After timing works, add explicit left and
@@ -443,11 +589,22 @@ metric improved.
 7. **Asset provenance inventory.** Record every current locomotion clip's source,
    license, skeleton, root-motion curve, contacts, mirrored status, and supported
    rigs.
-8. **Human evaluation protocol.** Add repeatable blinded comparisons for
+8. **Run-tier clip coverage.** There is no backward run, no jog mid-tier, and
+   no run terminal stop. Each is a missing clip, and each is deliberately left
+   as a gap rather than faked with playback rate. Importing CC0 clips
+   (Quaternius is the candidate) is blocked on retargeting:
+   `remapClipToSkeleton` recognises only `mixamorig1`, `mixamorig:`,
+   `mixamorig`, and `""` bone prefixes. The dataset and asset gate applies
+   before any download, conversion, or commit.
+9. **A straight steady-state pattern for the walk lab.** Every sustained sample
+   rides `CIRCLE_R = 2.6`, which at 3.9 m/s is a 1.5 rad/s turn no runner holds.
+   This confounds `overSupportFraction`, which reads 49% at a walk and 0% at a
+   run, and it cannot be separated without a straight sample.
+10. **Human evaluation protocol.** Add repeatable blinded comparisons for
    grounding, weight, continuity, intent, and preference alongside diagnostics.
-9. **Terrain scope.** Make an explicit product decision before adding slope or
+11. **Terrain scope.** Make an explicit product decision before adding slope or
    obstacle logic to flat-stage locomotion.
-10. **Learned controller threshold.** Define the data volume, web runtime budget,
+12. **Learned controller threshold.** Define the data volume, web runtime budget,
     determinism, editability, and licensing evidence required before training or
     shipping one.
 

@@ -9,7 +9,7 @@
  * Motion data for a single hand/prop in a pictograph.
  */
 export interface MotionData {
-  color: string;
+  hand: HandSide;
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -19,7 +19,7 @@ export interface MotionData {
 }
 
 /**
- * Complete pictograph data representing one beat of motion.
+ * Complete pictograph data representing one step of motion.
  */
 export interface PictographData {
   letter: string;
@@ -27,11 +27,12 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 /**
  * Grid modes supported by the pictograph system.
  */
 export type GridMode = "diamond" | "box" | "skewed";
+import type { HandSide } from "@tka/tka-types";

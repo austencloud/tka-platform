@@ -114,8 +114,8 @@
         {currentStep}
         isPlaying={playing}
         {bpm}
-        bluePropType={data.snapshot.props.bluePropType ?? null}
-        redPropType={data.snapshot.props.redPropType ?? null}
+        leftPropType={data.snapshot.props.leftPropType ?? null}
+        rightPropType={data.snapshot.props.rightPropType ?? null}
         hideOverlays
       />
     {/if}

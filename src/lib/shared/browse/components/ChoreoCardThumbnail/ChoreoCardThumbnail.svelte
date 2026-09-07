@@ -64,14 +64,14 @@ Variation support:
     onPrimaryAction,
     onHover,
     selected = false,
-    bluePropType = undefined,
-    redPropType = undefined,
+    leftPropType = undefined,
+    rightPropType = undefined,
     catDogModeEnabled = false,
     lightMode = false,
     eager = false,
     handPathMode = false,
-    showBlueMotion = true,
-    showRedMotion = true,
+    showLeftMotion = true,
+    showRightMotion = true,
     addWord,
     addDifficultyLevel,
     allowQR = true,
@@ -87,17 +87,17 @@ Variation support:
     /** Fires on pointer enter (debounced 150ms) for cache pre-warming */
     onHover?: (sequence: SequenceData) => void;
     selected?: boolean;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     catDogModeEnabled?: boolean;
     lightMode?: boolean;
     /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
     eager?: boolean;
     handPathMode?: boolean;
     /** Show blue motion (prop + arrow) in thumbnail. Default: true */
-    showBlueMotion?: boolean;
+    showLeftMotion?: boolean;
     /** Show red motion (prop + arrow) in thumbnail. Default: true */
-    showRedMotion?: boolean;
+    showRightMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
     /** Allow a baked-in QR (signed-in only, gated by the user's showQRCode
@@ -488,7 +488,7 @@ Variation support:
   function handleSendTo() {
     const seq = displayedSequence;
     closeContextMenu();
-    const propType = seq.intendedProp?.bluePropType ?? bluePropType ?? "staff";
+    const propType = seq.intendedProp?.leftPropType ?? leftPropType ?? "staff";
     // Cloud thumbnails are keyed by sequence.word (not .name) - matches PropAwareThumbnail
     const thumbnailUrl = buildThumbnailUrl(
       seq.word || seq.name,
@@ -639,14 +639,14 @@ Variation support:
     <PropAwareThumbnail
       bind:this={thumbnailRef}
       sequence={displayedSequence}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       {catDogModeEnabled}
       {lightMode}
       {eager}
       {handPathMode}
-      {showBlueMotion}
-      {showRedMotion}
+      {showLeftMotion}
+      {showRightMotion}
       {addWord}
       {addDifficultyLevel}
       {allowQR}

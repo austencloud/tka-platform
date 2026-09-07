@@ -6,7 +6,7 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -14,12 +14,12 @@ import type { ExtensionAnalysis } from "$lib/features/create/shared/services/seq
 import { COMPACT_LOOP_REVIEW_OPTIONS } from "../loop-picker/loop-picker-review-fixtures";
 
 function motion(
-  color: MotionColor,
+  color: HandSide,
   rotationDirection: RotationDirection,
   visible = true
 ): MotionData {
   return createMotionData({
-    color,
+    hand: color,
     motionType: visible ? MotionType.PRO : MotionType.STATIC,
     rotationDirection: visible
       ? rotationDirection
@@ -34,8 +34,8 @@ export const SEQUENCE_ACTIONS_REVIEW_SEQUENCE = createSequenceData({
   word: "REVIEW",
   steps: Array.from({ length: 40 }, (_, index) => {
     const stepNumber = index + 1;
-    const blueVisible = stepNumber % 7 !== 0;
-    const redVisible = stepNumber % 9 !== 0;
+    const leftVisible = stepNumber % 7 !== 0;
+    const rightVisible = stepNumber % 9 !== 0;
     return createStepData({
       id: `review-step-${stepNumber}`,
       stepNumber,
@@ -43,19 +43,19 @@ export const SEQUENCE_ACTIONS_REVIEW_SEQUENCE = createSequenceData({
       endPosition: GridPosition.GAMMA1,
       duration: stepNumber % 5 === 0 ? 2 : 1,
       motions: {
-        blue: motion(
-          MotionColor.BLUE,
+        left: motion(
+          HandSide.LEFT,
           stepNumber % 2 === 0
             ? RotationDirection.CLOCKWISE
             : RotationDirection.COUNTER_CLOCKWISE,
-          blueVisible
+          leftVisible
         ),
-        red: motion(
-          MotionColor.RED,
+        right: motion(
+          HandSide.RIGHT,
           stepNumber % 3 === 0
             ? RotationDirection.COUNTER_CLOCKWISE
             : RotationDirection.CLOCKWISE,
-          redVisible
+          rightVisible
         ),
       },
     });

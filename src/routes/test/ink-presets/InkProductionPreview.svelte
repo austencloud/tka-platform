@@ -171,10 +171,10 @@
   <div class="stage">
     {#if sequence}
       <AnimatorCanvas
-        blueProp={animationState.bluePropState}
-        redProp={animationState.redPropState}
-        bluePropType={String(PropType.STAFF)}
-        redPropType={String(PropType.STAFF)}
+        leftProp={animationState.leftPropState}
+        rightProp={animationState.rightPropState}
+        leftPropType={String(PropType.STAFF)}
+        rightPropType={String(PropType.STAFF)}
         sequenceData={sequence}
         stepData={currentStepData}
         currentStep={animationState.currentStep}

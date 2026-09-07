@@ -11,6 +11,11 @@
     layout?: "panel" | "tray";
     /** In the tray, tapping the selected effect opens its tuning screen. */
     activeAction?: "disable" | "tune";
+    /** Restrict the roster to the effects this host can actually draw. A host
+     *  with its own renderer (the shape-matrix theory stage) supports a subset;
+     *  offering a chip that renders nothing is worse than not offering it.
+     *  Omit for the full roster. */
+    availableEffects?: readonly string[];
   }
 
   const {
@@ -19,7 +24,14 @@
     onPrewarm,
     layout = "panel",
     activeAction = "disable",
+    availableEffects,
   }: Props = $props();
+
+  const effects = $derived(
+    availableEffects
+      ? EFFECTS.filter((effect) => availableEffects.includes(effect.id))
+      : EFFECTS
+  );
 
   function getActiveLabel(effect: EffectMeta): string {
     return activeAction === "tune"
@@ -35,7 +47,7 @@
     role="radiogroup"
     aria-label="Select effect"
   >
-    {#each EFFECTS as effect (effect.id)}
+    {#each effects as effect (effect.id)}
       {@const isActive = activeEffect === effect.id}
       <button
         type="button"

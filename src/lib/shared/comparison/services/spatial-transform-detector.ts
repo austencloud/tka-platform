@@ -8,7 +8,7 @@
 import type { Step } from "@tka/tka-types";
 import type { SpatialTransform, SpatialTransformResult } from "../domain/models/signatures";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { LOCATION_MAP_EIGHTH_CW } from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
 
 /**
@@ -53,27 +53,27 @@ export class SpatialTransformDetector {
   }
 
   isRotationOf(beatA: Step, beatB: Step, rotationSteps: number): boolean {
-    const blueA = beatA.motions[MotionColor.BLUE];
-    const redA = beatA.motions[MotionColor.RED];
-    const blueB = beatB.motions[MotionColor.BLUE];
-    const redB = beatB.motions[MotionColor.RED];
+    const leftA = beatA.motions[HandSide.LEFT];
+    const rightA = beatA.motions[HandSide.RIGHT];
+    const leftB = beatB.motions[HandSide.LEFT];
+    const rightB = beatB.motions[HandSide.RIGHT];
 
-    if (!blueA || !redA || !blueB || !redB) {
+    if (!leftA || !rightA || !leftB || !rightB) {
       return false;
     }
 
     // Rotate beatA's locations by the specified steps and compare to beatB
-    const rotatedBlueStart = this.rotateLocation(blueA.startLocation, rotationSteps);
-    const rotatedBlueEnd = this.rotateLocation(blueA.endLocation, rotationSteps);
-    const rotatedRedStart = this.rotateLocation(redA.startLocation, rotationSteps);
-    const rotatedRedEnd = this.rotateLocation(redA.endLocation, rotationSteps);
+    const rotatedLeftStart = this.rotateLocation(leftA.startLocation, rotationSteps);
+    const rotatedLeftEnd = this.rotateLocation(leftA.endLocation, rotationSteps);
+    const rotatedRightStart = this.rotateLocation(rightA.startLocation, rotationSteps);
+    const rotatedRightEnd = this.rotateLocation(rightA.endLocation, rotationSteps);
 
     // Check if locations match
     const locationsMatch =
-      rotatedBlueStart === blueB.startLocation &&
-      rotatedBlueEnd === blueB.endLocation &&
-      rotatedRedStart === redB.startLocation &&
-      rotatedRedEnd === redB.endLocation;
+      rotatedLeftStart === leftB.startLocation &&
+      rotatedLeftEnd === leftB.endLocation &&
+      rotatedRightStart === rightB.startLocation &&
+      rotatedRightEnd === rightB.endLocation;
 
     if (!locationsMatch) {
       return false;
@@ -81,8 +81,8 @@ export class SpatialTransformDetector {
 
     // Check if motion types match
     const motionTypesMatch =
-      blueA.motionType === blueB.motionType &&
-      redA.motionType === redB.motionType;
+      leftA.motionType === leftB.motionType &&
+      rightA.motionType === rightB.motionType;
 
     if (!motionTypesMatch) {
       return false;
@@ -90,15 +90,15 @@ export class SpatialTransformDetector {
 
     // Check if rotation directions match
     const rotationDirectionsMatch =
-      blueA.rotationDirection === blueB.rotationDirection &&
-      redA.rotationDirection === redB.rotationDirection;
+      leftA.rotationDirection === leftB.rotationDirection &&
+      rightA.rotationDirection === rightB.rotationDirection;
 
     if (!rotationDirectionsMatch) {
       return false;
     }
 
     // Check if turns match
-    const turnsMatch = blueA.turns === blueB.turns && redA.turns === redB.turns;
+    const turnsMatch = leftA.turns === leftB.turns && rightA.turns === rightB.turns;
 
     if (!turnsMatch) {
       return false;
@@ -106,10 +106,10 @@ export class SpatialTransformDetector {
 
     // Check if orientations match
     const orientationsMatch =
-      blueA.startOrientation === blueB.startOrientation &&
-      blueA.endOrientation === blueB.endOrientation &&
-      redA.startOrientation === redB.startOrientation &&
-      redA.endOrientation === redB.endOrientation;
+      leftA.startOrientation === leftB.startOrientation &&
+      leftA.endOrientation === leftB.endOrientation &&
+      rightA.startOrientation === rightB.startOrientation &&
+      rightA.endOrientation === rightB.endOrientation;
 
     return orientationsMatch;
   }

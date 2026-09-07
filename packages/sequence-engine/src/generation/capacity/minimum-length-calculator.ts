@@ -149,7 +149,7 @@ export function minLengthForSpec(spec: LOOPSpec, level: number): number {
  * - Rotation needs 2 distinct steps to exhibit rotation (can't rotate a
  *   single static step). So base = 2.
  * - Mirror/flip similarly need 2 to distinguish the sides.
- * - Swap needs 1 (single step can have swapped blue/red).
+ * - Swap needs 1 (single step can have swapped left/right).
  * - Inverted needs 1 (single step can have inverted motion).
  * - Rewound needs 1 (time reversal of 1 step is still 1 step).
  */

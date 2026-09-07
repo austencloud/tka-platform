@@ -9,7 +9,6 @@
     PropType.BIGSTAFF,
     PropType.BIGFAN,
     PropType.TORCH,
-    PropType.SICKLES,
   ]);
   let favoriteProp = $state<PropType | null>(PropType.TORCH);
   let favoriteCatdog = $state<CatdogCombo | null>(null);

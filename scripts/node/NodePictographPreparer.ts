@@ -28,8 +28,8 @@ import { PropType } from "../../src/lib/shared/pictograph/prop/domain/enums/Prop
 
 // Default settings for Node.js (no Svelte state dependency)
 const DEFAULT_NODE_SETTINGS = {
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
 };
 
 /**
@@ -121,29 +121,29 @@ export class NodePictographPreparer {
   }
 
   private deriveCacheKey(pictograph: PictographData, options?: PrepareOptions): string {
-    const blue = pictograph.motions?.blue;
-    const red = pictograph.motions?.red;
+    const left = pictograph.motions?.left;
+    const right = pictograph.motions?.right;
 
     // Use default settings for Node.js
     const globalSettings = DEFAULT_NODE_SETTINGS;
 
     const parts = [
-      blue?.motionType ?? "none",
-      blue?.startLocation ?? "",
-      blue?.endLocation ?? "",
-      blue?.rotationDirection ?? "",
-      blue?.turns ?? 0,
-      options?.bluePropType ?? globalSettings.bluePropType ?? blue?.propType ?? "",
-      blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
-      blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
-      red?.motionType ?? "none",
-      red?.startLocation ?? "",
-      red?.endLocation ?? "",
-      red?.rotationDirection ?? "",
-      red?.turns ?? 0,
-      options?.redPropType ?? globalSettings.redPropType ?? red?.propType ?? "",
-      red?.arrowPlacementData?.manualAdjustmentX ?? 0,
-      red?.arrowPlacementData?.manualAdjustmentY ?? 0,
+      left?.motionType ?? "none",
+      left?.startLocation ?? "",
+      left?.endLocation ?? "",
+      left?.rotationDirection ?? "",
+      left?.turns ?? 0,
+      options?.leftPropType ?? globalSettings.leftPropType ?? left?.propType ?? "",
+      left?.arrowPlacementData?.manualAdjustmentX ?? 0,
+      left?.arrowPlacementData?.manualAdjustmentY ?? 0,
+      right?.motionType ?? "none",
+      right?.startLocation ?? "",
+      right?.endLocation ?? "",
+      right?.rotationDirection ?? "",
+      right?.turns ?? 0,
+      options?.rightPropType ?? globalSettings.rightPropType ?? right?.propType ?? "",
+      right?.arrowPlacementData?.manualAdjustmentX ?? 0,
+      right?.arrowPlacementData?.manualAdjustmentY ?? 0,
       options?.themeMode ?? "dark",
     ];
 
@@ -155,13 +155,13 @@ export class NodePictographPreparer {
       return pictograph.gridMode;
     }
 
-    if (!pictograph.motions?.blue || !pictograph.motions?.red) {
+    if (!pictograph.motions?.left || !pictograph.motions?.right) {
       return GridMode.DIAMOND;
     }
     try {
       return this.gridModeDeriver.deriveGridMode(
-        pictograph.motions.blue,
-        pictograph.motions.red
+        pictograph.motions.left,
+        pictograph.motions.right
       );
     } catch {
       return GridMode.DIAMOND;
@@ -224,7 +224,7 @@ export class NodePictographPreparer {
 
   private getMotionsWithOverrides(
     pictograph: PictographData,
-    settings: { bluePropType?: PropType; redPropType?: PropType },
+    settings: { leftPropType?: PropType; rightPropType?: PropType },
     options?: PrepareOptions
   ): [string, MotionData][] {
     return Object.entries(pictograph.motions || {})
@@ -235,7 +235,7 @@ export class NodePictographPreparer {
         }
 
         const explicitPropType =
-          color === "blue" ? options?.bluePropType : options?.redPropType;
+          color === "blue" ? options?.leftPropType : options?.rightPropType;
         if (explicitPropType !== undefined) {
           return [color, { ...motion, propType: explicitPropType }] as [
             string,
@@ -244,7 +244,7 @@ export class NodePictographPreparer {
         }
 
         const settingsPropType =
-          color === "blue" ? settings.bluePropType : settings.redPropType;
+          color === "blue" ? settings.leftPropType : settings.rightPropType;
         if (settingsPropType) {
           return [color, { ...motion, propType: settingsPropType }] as [
             string,

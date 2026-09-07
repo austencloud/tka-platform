@@ -23,7 +23,7 @@ function makePictograph(): PictographData {
   return {
     letter: "P",
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         startOrientation: "in",
         turns: 0,
@@ -31,7 +31,7 @@ function makePictograph(): PictographData {
         color: "blue",
         gridMode: GridMode.DIAMOND,
       },
-      red: {
+      right: {
         motionType: "pro",
         startOrientation: "in",
         turns: 0,
@@ -75,7 +75,7 @@ describe("computeSpecialOverrideKey", () => {
       ...pd,
       motions: {
         ...pd.motions,
-        red: { ...pd.motions.red!, propType: "fan" },
+        right: { ...pd.motions.right!, propType: "fan" },
       },
     };
     const fanKey = computeSpecialOverrideKey(

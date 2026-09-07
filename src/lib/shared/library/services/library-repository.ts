@@ -88,6 +88,7 @@ import {
   captureEvent,
   captureException,
 } from "$lib/shared/analytics/services/posthog";
+import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import {
   isSequenceDeletionIntended,
   markSequenceLocalDeletionComplete,
@@ -338,6 +339,12 @@ export class LibraryRepository {
         id;
     }
 
+    if (
+      data["sequenceKind"] === "hand-path" ||
+      seqData["sequenceKind"] === "hand-path"
+    )
+      word = "";
+
     // Smart date fallbacks for backwards compatibility with older sequences
     // Priority: createdAt → birthday → dateAdded (some sequences only have birthday or dateAdded)
     const createdAt = this.getDateWithFallback(
@@ -381,7 +388,6 @@ export class LibraryRepository {
         : undefined,
     } as LibrarySequence;
   }
-
 
   async saveSequence(
     sequence: SequenceData,
@@ -560,7 +566,7 @@ export class LibraryRepository {
       }
     }
 
-    // Recompute compositional fields (blueSoloProp, redSoloProp, stepPairings,
+    // Recompute compositional fields (leftSoloProp, rightSoloProp, stepPairings,
     // content hashes) from the current steps so Firestore always has fresh
     // compositional data - even if the sequence was modified via the old
     // steps-based mutation API.
@@ -752,6 +758,16 @@ export class LibraryRepository {
       throw error;
     }
 
+    void logSequenceAction(
+      isNewSequence ? "create" : "save",
+      finalSequence.id,
+      {
+        sequenceLength: finalSequence.steps.length,
+        isPublic: finalSequence.visibility === "public",
+        save_kind: isNewSequence ? "created" : "updated",
+      }
+    );
+
     return finalSequence;
   }
 
@@ -789,9 +805,11 @@ export class LibraryRepository {
       name: metadata.name,
       displayName: metadata.displayName,
       word:
-        wordStatus.complete && wordStatus.word.length > 0
-          ? wordStatus.word
-          : (sequence.word ?? ""),
+        sequence.sequenceKind === "hand-path"
+          ? ""
+          : wordStatus.complete && wordStatus.word.length > 0
+            ? wordStatus.word
+            : (sequence.word ?? ""),
       thumbnails,
       tags: metadata.tags,
     };

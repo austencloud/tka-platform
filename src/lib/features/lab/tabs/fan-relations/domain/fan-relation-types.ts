@@ -34,8 +34,8 @@ export interface FanHandConfiguration {
 
 export interface FanRelationConfiguration {
   gridMode: GridMode;
-  blue: FanHandConfiguration;
-  red: FanHandConfiguration;
+  left: FanHandConfiguration;
+  right: FanHandConfiguration;
   presentationPlane: Plane;
   viewpoint: FanViewpoint;
   workingRelation: WorkingFanRelation;

@@ -189,8 +189,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
           sequenceData={animationState.sequenceData}
           currentStep={currentStep}
           isPlaying={isPlaying}
-          blueProp={animationState.bluePropState}
-          redProp={animationState.redPropState}
+          leftProp={animationState.leftPropState}
+          rightProp={animationState.rightPropState}
           gridMode={tutorialSequence.gridMode}
           letter={currentLetter}
           stepData={currentStepData}

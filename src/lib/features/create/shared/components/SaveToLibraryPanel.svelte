@@ -29,6 +29,11 @@
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
+  import CardFooterEditor from "$lib/shared/share/components/CardFooterEditor.svelte";
+  import {
+    cardPresentationFromFooterSettings,
+    resolveCardFooter,
+  } from "$lib/shared/share/domain/models/card-presentation";
 
   // The preview must mirror the artifact the save will actually generate. Both
   // the saved thumbnail (LibrarySaveService.generateAndUploadThumbnail) and this
@@ -98,7 +103,13 @@
     soloPropSaveOrchestrator,
     contentModerator,
     hallOfShameSubmitter,
+    getDefaultCardPresentation: () =>
+      cardPresentationFromFooterSettings(
+        compositionManager.showNotes,
+        compositionManager.customNotesText
+      ),
   });
+  const resolvedCardFooter = $derived(resolveCardFooter(s.cardPresentation));
 
   // Bind props reactively so the state factory can read them
   s.setPropsGetter(() => ({
@@ -187,24 +198,25 @@
               }}
               darkMode={s.darkMode}
               forceContain={true}
-              bluePropType={appSettings.bluePropType}
-              redPropType={appSettings.redPropType}
+              leftPropType={appSettings.leftPropType}
+              rightPropType={appSettings.rightPropType}
               showWord={s.isSolo ? false : compositionManager.addWord}
               showStepNumbers={compositionManager.addStepNumbers}
               showDifficultyLevel={compositionManager.addDifficultyLevel}
               includeStartPosition={compositionManager.includeStartPosition}
-              showNotes={compositionManager.showNotes}
+              showNotes={resolvedCardFooter.show}
+              customNotesText={resolvedCardFooter.text}
               showLoopGlyph={compositionManager.showLoopGlyph}
               showQRCode={compositionManager.showQRCode}
               showMandala={compositionManager.showMandala}
               columnCount={compositionManager.getColumnCountForStepCount(
                 s.sequence.steps?.length ?? 0
               )}
-              browseViewMode={s.isSolo && s.soloColor
+              browseViewMode={s.isSolo && s.soloHand
                 ? {
                     subject: "props",
                     granularity: "solo",
-                    color: s.soloColor,
+                    hand: s.soloHand,
                   }
                 : undefined}
             />
@@ -372,6 +384,17 @@
             mode="select"
             selectedIds={s.selectedCollectionIds}
             onChange={(ids) => (s.selectedCollectionIds = ids)}
+          />
+        </div>
+      {/if}
+
+      {#if !s.isSolo && !s.isMixed}
+        <div class="card-presentation-section">
+          <CardFooterEditor
+            value={s.cardPresentation}
+            onchange={(value) => (s.cardPresentation = value)}
+            description="Saved with this card. Private notes stay private."
+            idBase="save-card-footer"
           />
         </div>
       {/if}
@@ -812,6 +835,13 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
+  }
+
+  .card-presentation-section {
+    padding: 16px;
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 12px;
+    background: var(--theme-card-bg);
   }
 
   .textarea-field {

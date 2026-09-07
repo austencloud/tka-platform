@@ -10,7 +10,7 @@ import {
   ElementalType,
   RotationDirection,
   MotionType,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
@@ -100,14 +100,14 @@ describe("deriveTnD — non-shift → null", () => {
 // deriveTnDFromPictograph reads blue/red start+end, only for pro/anti shifts.
 describe("deriveTnDFromPictograph", () => {
   function pictograph(
-    blue: Partial<Parameters<typeof createMotionData>[0]>,
-    red: Partial<Parameters<typeof createMotionData>[0]>
+    left: Partial<Parameters<typeof createMotionData>[0]>,
+    right: Partial<Parameters<typeof createMotionData>[0]>
   ): PictographData {
     return {
       id: "test",
       motions: {
-        [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE, ...blue }),
-        [MotionColor.RED]: createMotionData({ color: MotionColor.RED, ...red }),
+        [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT, ...left }),
+        [HandSide.RIGHT]: createMotionData({ hand: HandSide.RIGHT, ...right }),
       },
     };
   }
@@ -122,14 +122,24 @@ describe("deriveTnDFromPictograph", () => {
 
   it("returns null when a motion is static (start-position pictograph)", () => {
     const p = pictograph(
-      { motionType: MotionType.STATIC, startLocation: SOUTH, endLocation: SOUTH },
-      { motionType: MotionType.STATIC, startLocation: NORTH, endLocation: NORTH }
+      {
+        motionType: MotionType.STATIC,
+        startLocation: SOUTH,
+        endLocation: SOUTH,
+      },
+      {
+        motionType: MotionType.STATIC,
+        startLocation: NORTH,
+        endLocation: NORTH,
+      }
     );
     expect(deriveTnDFromPictograph(p).tndMode).toBeNull();
   });
 
   it("returns null for missing motions", () => {
-    expect(deriveTnDFromPictograph({ id: "x", motions: {} }).tndMode).toBeNull();
+    expect(
+      deriveTnDFromPictograph({ id: "x", motions: {} }).tndMode
+    ).toBeNull();
   });
 });
 
@@ -196,8 +206,8 @@ describe("golden snapshot: deriveTnD reproduces the calculateTnD table", () => {
         );
         if (got.tndMode !== expected) {
           mismatches.push(
-            `${row.letter} ${row.startPosition}: blue ${row.blueStartLocation}→${row.blueEndLocation} ` +
-              `red ${row.redStartLocation}→${row.redEndLocation} table=${expected} derived=${got.tndMode}`
+            `${row.letter} ${row.startPosition}: left ${row.blueStartLocation}→${row.blueEndLocation} ` +
+              `right ${row.redStartLocation}→${row.redEndLocation} table=${expected} derived=${got.tndMode}`
           );
         }
       }

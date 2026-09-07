@@ -8,7 +8,7 @@ import {
 } from "../deck-composer";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -220,8 +220,8 @@ describe("getTnDTurnPatternOptions (TURN_VALUES²)", () => {
 // classifyTnDSeedForGrid — first rotating step drives the element (diamond)
 describe("classifyTnDSeedForGrid", () => {
   function seqWithFirstStep(
-    blue: { start: GridLocation; end: GridLocation },
-    red: { start: GridLocation; end: GridLocation }
+    left: { start: GridLocation; end: GridLocation },
+    right: { start: GridLocation; end: GridLocation }
   ): SequenceData {
     return {
       id: "seq",
@@ -233,17 +233,17 @@ describe("classifyTnDSeedForGrid", () => {
           stepNumber: 1,
           isBlank: false,
           motions: {
-            [MotionColor.BLUE]: createMotionData({
-              color: MotionColor.BLUE,
+            [HandSide.LEFT]: createMotionData({
+              hand: HandSide.LEFT,
               motionType: MotionType.PRO,
-              startLocation: blue.start,
-              endLocation: blue.end,
+              startLocation: left.start,
+              endLocation: left.end,
             }),
-            [MotionColor.RED]: createMotionData({
-              color: MotionColor.RED,
+            [HandSide.RIGHT]: createMotionData({
+              hand: HandSide.RIGHT,
               motionType: MotionType.PRO,
-              startLocation: red.start,
-              endLocation: red.end,
+              startLocation: right.start,
+              endLocation: right.end,
             }),
           },
         },

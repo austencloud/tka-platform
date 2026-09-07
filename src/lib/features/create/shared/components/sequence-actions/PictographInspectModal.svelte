@@ -6,7 +6,10 @@
 -->
 <script lang="ts">
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { generateOrientationKey } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/special-placement-ori-key-generator";
   import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
@@ -44,40 +47,40 @@
   let pictographDataState = $state<PictographData | null>(null);
   let isCalculating = $state(false);
 
-  // Rotation override status for each color (only applies to STATIC/DASH)
-  let blueRotationOverride = $state<{ hasOverride: boolean } | null>(null);
-  let redRotationOverride = $state<{ hasOverride: boolean } | null>(null);
+  // Rotation override status for each hand (only applies to STATIC/DASH)
+  let leftRotationOverride = $state<{ hasOverride: boolean } | null>(null);
+  let rightRotationOverride = $state<{ hasOverride: boolean } | null>(null);
 
-  let blueDiagnostics = $state<PipelineDiagnostics | null>(null);
-  let redDiagnostics = $state<PipelineDiagnostics | null>(null);
+  let leftDiagnostics = $state<PipelineDiagnostics | null>(null);
+  let rightDiagnostics = $state<PipelineDiagnostics | null>(null);
 
   // Lookup keys for debugging
   let lookupKeys = $state<{
     gridMode: string;
     oriKey: string;
     turnsTuple: string;
-    blueRotationOverrideKey: string | null;
-    redRotationOverrideKey: string | null;
+    leftRotationOverrideKey: string | null;
+    rightRotationOverrideKey: string | null;
   } | null>(null);
 
   // Accordion open state — all collapsed on open (spec: AAA, no overload)
-  let blueOpen = $state(false);
-  let redOpen = $state(false);
+  let leftOpen = $state(false);
+  let rightOpen = $state(false);
 
   // When an arrow is clicked in the live pictograph, expand + edit that section.
   // Driven imperatively via the selection observer (same pattern ArrowSvg uses),
   // NOT a reactive $effect — reading the global selection inside an effect that
   // also writes open-state participates in cross-component update loops.
-  let lastSelectedColor: string | null = null;
+  let lastSelectedHand: HandSideValue | null = null;
   $effect(() => {
     const unsubscribe = selectedArrowState.subscribe(() => {
-      const color = selectedArrowState.selectedArrow?.color ?? null;
-      if (color === lastSelectedColor) return;
-      lastSelectedColor = color;
-      if (color === "blue") {
-        blueOpen = true;
-      } else if (color === "red") {
-        redOpen = true;
+      const hand = selectedArrowState.selectedArrow?.hand ?? null;
+      if (hand === lastSelectedHand) return;
+      lastSelectedHand = hand;
+      if (hand === HandSide.LEFT) {
+        leftOpen = true;
+      } else if (hand === HandSide.RIGHT) {
+        rightOpen = true;
       }
     });
     return unsubscribe;
@@ -93,19 +96,19 @@
     if (show && stepData) {
       calculatedData = null;
       pictographDataState = null;
-      blueRotationOverride = null;
-      redRotationOverride = null;
+      leftRotationOverride = null;
+      rightRotationOverride = null;
       lookupKeys = null;
-      blueDiagnostics = null;
-      redDiagnostics = null;
+      leftDiagnostics = null;
+      rightDiagnostics = null;
       // Wide desktop / 4K: the columns pack side-by-side, so start everything
       // expanded — no reason to make the user click through on a big screen.
       // Narrow: start collapsed to avoid a tall scroll tower.
       const wide =
         typeof window !== "undefined" &&
         window.matchMedia("(min-width: 1600px)").matches;
-      blueOpen = wide;
-      redOpen = wide;
+      leftOpen = wide;
+      rightOpen = wide;
       lastSelectedColor = null;
       calculateArrowPositions();
     }
@@ -117,8 +120,8 @@
   // update cycle.
   function requestClose() {
     selectedArrowState.clearSelection();
-    blueOpen = false;
-    redOpen = false;
+    leftOpen = false;
+    rightOpen = false;
     lastSelectedColor = null;
     onClose();
   }
@@ -147,8 +150,8 @@
       calculatedData = {
         ...stepData,
         motions: {
-          blue: calculated.motions.blue ?? stepData.motions.blue,
-          red: calculated.motions.red ?? stepData.motions.red,
+          left: calculated.motions.left ?? stepData.motions.left,
+          right: calculated.motions.right ?? stepData.motions.right,
         },
       };
 
@@ -164,44 +167,44 @@
   }
 
   async function calculateDiagnostics(pictographData: PictographData) {
-    const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
-    const redMotionData = pictographData.motions?.[MotionColor.RED];
+    const leftMotionData = pictographData.motions?.[HandSide.LEFT];
+    const rightMotionData = pictographData.motions?.[HandSide.RIGHT];
 
-    if (blueMotionData) {
+    if (leftMotionData) {
       try {
         const location = arrowLocationCalculator.calculateLocation(
-          blueMotionData,
+          leftMotionData,
           pictographData
         );
-        blueDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
+        leftDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
           pictographData,
-          blueMotionData,
+          leftMotionData,
           pictographData.letter || "",
           location,
-          "blue"
+          HandSide.LEFT
         );
       } catch (err) {
-        console.error("Blue diagnostics failed:", err);
-        blueDiagnostics = null;
+        console.error("Left diagnostics failed:", err);
+        leftDiagnostics = null;
       }
     }
 
-    if (redMotionData) {
+    if (rightMotionData) {
       try {
         const location = arrowLocationCalculator.calculateLocation(
-          redMotionData,
+          rightMotionData,
           pictographData
         );
-        redDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
+        rightDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
           pictographData,
-          redMotionData,
+          rightMotionData,
           pictographData.letter || "",
           location,
-          "red"
+          HandSide.RIGHT
         );
       } catch (err) {
-        console.error("Red diagnostics failed:", err);
-        redDiagnostics = null;
+        console.error("Right diagnostics failed:", err);
+        rightDiagnostics = null;
       }
     }
   }
@@ -214,39 +217,39 @@
 
   function calculateLookupKeys(pictographData: PictographData) {
     try {
-      const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
-      const redMotionData = pictographData.motions?.[MotionColor.RED];
+      const leftMotionData = pictographData.motions?.[HandSide.LEFT];
+      const rightMotionData = pictographData.motions?.[HandSide.RIGHT];
 
       let gridMode = GridMode.DIAMOND;
-      if (blueMotionData && redMotionData) {
-        gridMode = deriveGridMode(blueMotionData, redMotionData);
+      if (leftMotionData && rightMotionData) {
+        gridMode = deriveGridMode(leftMotionData, rightMotionData);
       }
 
       let oriKey = "unknown";
-      if (blueMotionData) {
-        oriKey = generateOrientationKey(blueMotionData, pictographData);
+      if (leftMotionData) {
+        oriKey = generateOrientationKey(leftMotionData, pictographData);
       }
 
       const turnsTuple = turnsTupleGenerator.generateTurnsTuple(pictographData);
 
-      let blueRotationOverrideKey: string | null = null;
-      let redRotationOverrideKey: string | null = null;
+      let leftRotationOverrideKey = null;
+      let rightRotationOverrideKey = null;
 
-      if (blueMotionData) {
-        const motionType = blueMotionData.motionType?.toLowerCase();
+      if (leftMotionData) {
+        const motionType = leftMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          blueRotationOverrideKey = generateRotationAngleOverrideKey(
-            blueMotionData,
+          leftRotationOverrideKey = generateRotationAngleOverrideKey(
+            leftMotionData,
             pictographData
           );
         }
       }
 
-      if (redMotionData) {
-        const motionType = redMotionData.motionType?.toLowerCase();
+      if (rightMotionData) {
+        const motionType = rightMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          redRotationOverrideKey = generateRotationAngleOverrideKey(
-            redMotionData,
+          rightRotationOverrideKey = generateRotationAngleOverrideKey(
+            rightMotionData,
             pictographData
           );
         }
@@ -256,8 +259,8 @@
         gridMode,
         oriKey,
         turnsTuple,
-        blueRotationOverrideKey,
-        redRotationOverrideKey,
+        leftRotationOverrideKey,
+        rightRotationOverrideKey,
       };
     } catch (err) {
       console.error("Failed to calculate lookup keys:", err);
@@ -267,41 +270,41 @@
 
   async function checkRotationOverrides(pictographData: PictographData) {
     try {
-      const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
-      if (blueMotionData) {
-        const motionType = blueMotionData.motionType?.toLowerCase();
+      const leftMotionData = pictographData.motions?.[HandSide.LEFT];
+      if (leftMotionData) {
+        const motionType = leftMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          const blueKey = generateRotationAngleOverrideKey(
-            blueMotionData,
+          const leftKey = generateRotationAngleOverrideKey(
+            leftMotionData,
             pictographData
           );
-          const blueHasOverride = await specialPlacer.hasRotationAngleOverride(
-            blueMotionData,
+          const leftHasOverride = await specialPlacer.hasRotationAngleOverride(
+            leftMotionData,
             pictographData,
-            blueKey
+            leftKey
           );
-          blueRotationOverride = { hasOverride: blueHasOverride };
+          leftRotationOverride = { hasOverride: leftHasOverride };
         } else {
-          blueRotationOverride = null;
+          leftRotationOverride = null;
         }
       }
 
-      const redMotionData = pictographData.motions?.[MotionColor.RED];
-      if (redMotionData) {
-        const motionType = redMotionData.motionType?.toLowerCase();
+      const rightMotionData = pictographData.motions?.[HandSide.RIGHT];
+      if (rightMotionData) {
+        const motionType = rightMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          const redKey = generateRotationAngleOverrideKey(
-            redMotionData,
+          const rightKey = generateRotationAngleOverrideKey(
+            rightMotionData,
             pictographData
           );
-          const redHasOverride = await specialPlacer.hasRotationAngleOverride(
-            redMotionData,
+          const rightHasOverride = await specialPlacer.hasRotationAngleOverride(
+            rightMotionData,
             pictographData,
-            redKey
+            rightKey
           );
-          redRotationOverride = { hasOverride: redHasOverride };
+          rightRotationOverride = { hasOverride: rightHasOverride };
         } else {
-          redRotationOverride = null;
+          rightRotationOverride = null;
         }
       }
     } catch (err) {
@@ -309,19 +312,17 @@
     }
   }
 
-  // The currently-selected arrow color, used to dim the non-selected motion
+  // The currently-selected arrow hand, used to dim the non-selected motion
   // so focus sits on the one being edited. Pure read — safe in a $derived
   // (the warned-against case is reading selection inside an effect that writes).
-  const selectedColor = $derived(
-    selectedArrowState.selectedArrow?.color ?? null
-  );
+  const selectedHand = $derived(selectedArrowState.selectedArrow?.hand ?? null);
 
   // Select a motion by clicking anywhere in its column — easier than hitting the
   // small arrow in the pictograph. Mirrors what an arrow-click selects (same
   // motionData + pictographData), so isSelected() stays consistent.
-  function selectMotion(color: "blue" | "red") {
+  function selectMotion(hand: HandSideValue) {
     if (!stepData) return;
-    const motion = color === "blue" ? blueMotion : redMotion;
+    const motion = hand === HandSide.LEFT ? leftMotion : rightMotion;
     if (!motion) return;
     const pictographData: PictographData = pictographDataState ?? {
       id: stepData.id,
@@ -330,20 +331,20 @@
       endPosition: stepData.endPosition,
       motions: stepData.motions,
     };
-    selectedArrowState.selectArrow(motion, color, pictographData);
+    selectedArrowState.selectArrow(motion, hand, pictographData);
   }
 
-  function handleRailKeydown(e: KeyboardEvent, color: "blue" | "red") {
+  function handleRailKeydown(e: KeyboardEvent, hand: HandSideValue) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      selectMotion(color);
+      selectMotion(hand);
     }
   }
 
   // Derived display values
   const displayData = $derived(calculatedData ?? stepData);
-  const blueMotion = $derived(displayData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(displayData?.motions?.[MotionColor.RED]);
+  const leftMotion = $derived(displayData?.motions?.[HandSide.LEFT]);
+  const rightMotion = $derived(displayData?.motions?.[HandSide.RIGHT]);
 
   // Prop type for the rendered pictograph. Two callers, opposite needs:
   //  - Choreo-card Fix Arrows (onDone set) stamps the card's EFFECTIVE prop onto
@@ -354,21 +355,21 @@
   //    Passing it would override the live prop (e.g. club). Leave undefined so
   //    PictographContainer falls back to global settings — identical to how the
   //    Step Editor's own PictographContainer resolves the prop.
-  const bluePropTypeForRender = $derived(
-    onDone ? stepData?.motions?.[MotionColor.BLUE]?.propType : undefined
+  const leftPropTypeForRender = $derived(
+    onDone ? stepData?.motions?.[HandSide.LEFT]?.propType : undefined
   );
-  const redPropTypeForRender = $derived(
-    onDone ? stepData?.motions?.[MotionColor.RED]?.propType : undefined
+  const rightPropTypeForRender = $derived(
+    onDone ? stepData?.motions?.[HandSide.RIGHT]?.propType : undefined
   );
 
   // Get formatted data for AI
   async function getCopyAllData(): Promise<string> {
     return await formatAllForAI(
       displayData,
-      blueMotion,
-      redMotion,
-      blueRotationOverride,
-      redRotationOverride,
+      leftMotion,
+      rightMotion,
+      leftRotationOverride,
+      rightRotationOverride,
       pictographDataState ?? undefined
     );
   }
@@ -432,8 +433,8 @@
 
       <BasicInfoBar
         {displayData}
-        {blueMotion}
-        {redMotion}
+        {leftMotion}
+        {rightMotion}
         {lookupKeys}
         {copiedSection}
         onCopy={copyToClipboard}
@@ -447,24 +448,24 @@
                small arrow in the pictograph). -->
           <div
             class="motion-rail"
-            class:dimmed={selectedColor === "red"}
-            class:selected={selectedColor === "blue"}
+            class:dimmed={selectedHand === HandSide.RIGHT}
+            class:selected={selectedHand === HandSide.LEFT}
             role="button"
             tabindex="0"
-            aria-pressed={selectedColor === "blue"}
-            aria-label="Select blue motion"
-            onclick={() => selectMotion("blue")}
-            onkeydown={(e) => handleRailKeydown(e, "blue")}
+            aria-pressed={selectedHand === HandSide.LEFT}
+            aria-label="Select left motion"
+            onclick={() => selectMotion(HandSide.LEFT)}
+            onkeydown={(e) => handleRailKeydown(e, HandSide.LEFT)}
           >
             <MotionColumn
-              color="blue"
-              motion={blueMotion}
-              rotationOverride={blueRotationOverride}
-              diagnostics={blueDiagnostics}
+              hand={HandSide.LEFT}
+              motion={leftMotion}
+              rotationOverride={leftRotationOverride}
+              diagnostics={leftDiagnostics}
               {copiedSection}
               onCopy={copyToClipboard}
-              open={blueOpen}
-              onToggle={(next) => (blueOpen = next)}
+              open={leftOpen}
+              onToggle={(next) => (leftOpen = next)}
             />
           </div>
 
@@ -475,8 +476,8 @@
                   pictographData={displayData}
                   arrowsClickable={true}
                   disableTransitions={true}
-                  bluePropTypeOverride={bluePropTypeForRender}
-                  redPropTypeOverride={redPropTypeForRender}
+                  leftPropTypeOverride={leftPropTypeForRender}
+                  rightPropTypeOverride={rightPropTypeForRender}
                 />
               </div>
             {/if}
@@ -484,24 +485,24 @@
 
           <div
             class="motion-rail"
-            class:dimmed={selectedColor === "blue"}
-            class:selected={selectedColor === "red"}
+            class:dimmed={selectedHand === HandSide.LEFT}
+            class:selected={selectedHand === HandSide.RIGHT}
             role="button"
             tabindex="0"
-            aria-pressed={selectedColor === "red"}
-            aria-label="Select red motion"
-            onclick={() => selectMotion("red")}
-            onkeydown={(e) => handleRailKeydown(e, "red")}
+            aria-pressed={selectedHand === HandSide.RIGHT}
+            aria-label="Select right motion"
+            onclick={() => selectMotion(HandSide.RIGHT)}
+            onkeydown={(e) => handleRailKeydown(e, HandSide.RIGHT)}
           >
             <MotionColumn
-              color="red"
-              motion={redMotion}
-              rotationOverride={redRotationOverride}
-              diagnostics={redDiagnostics}
+              hand={HandSide.RIGHT}
+              motion={rightMotion}
+              rotationOverride={rightRotationOverride}
+              diagnostics={rightDiagnostics}
               {copiedSection}
               onCopy={copyToClipboard}
-              open={redOpen}
-              onToggle={(next) => (redOpen = next)}
+              open={rightOpen}
+              onToggle={(next) => (rightOpen = next)}
             />
           </div>
         </div>
@@ -509,8 +510,8 @@
 
       <PipelineEditorDock
         {stepData}
-        {blueDiagnostics}
-        {redDiagnostics}
+        {leftDiagnostics}
+        {rightDiagnostics}
         onDiagnosticsChanged={refreshDiagnostics}
         {onDone}
       />

@@ -22,8 +22,8 @@ import { hydrateSequence } from "$lib/features/choreo-card/services/sequence-ren
  * app's own deriver — reading that same CSV — is what names it.
  */
 function letterlessStep() {
-  const motion = (color: "blue" | "red") => ({
-    color,
+  const motion = (hand: "left" | "right") => ({
+    hand,
     motionType: "pro",
     rotationDirection: "cw",
     startLocation: "e",
@@ -41,9 +41,9 @@ function letterlessStep() {
     letter: null,
     startPosition: null,
     endPosition: null,
-    blueReversal: false,
-    redReversal: false,
-    motions: { blue: motion("blue"), red: motion("red") },
+    leftReversal: false,
+    rightReversal: false,
+    motions: { left: motion("left"), right: motion("right") },
   };
 }
 

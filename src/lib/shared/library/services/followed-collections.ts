@@ -23,6 +23,10 @@ import {
   getFollowedCollectionsPath,
 } from "$lib/shared/library/data/firestore-paths";
 import { getAuthenticatedUserId } from "$lib/shared/library/services/collection-firestore-mapper";
+import {
+  trackCollectionFollowChanged,
+  type CollectionFollowSource,
+} from "$lib/shared/analytics/social-events";
 
 export interface FollowedCollectionRef {
   readonly ownerId: string;
@@ -31,7 +35,8 @@ export interface FollowedCollectionRef {
 
 export async function followCollection(
   ownerId: string,
-  collectionId: string
+  collectionId: string,
+  source: CollectionFollowSource
 ): Promise<void> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
@@ -39,17 +44,20 @@ export async function followCollection(
     doc(firestore, getFollowedCollectionPath(userId, ownerId, collectionId)),
     { ownerId, collectionId, followedAt: serverTimestamp() }
   );
+  trackCollectionFollowChanged("follow", source, ownerId, collectionId);
 }
 
 export async function unfollowCollection(
   ownerId: string,
-  collectionId: string
+  collectionId: string,
+  source: CollectionFollowSource
 ): Promise<void> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
   await deleteDoc(
     doc(firestore, getFollowedCollectionPath(userId, ownerId, collectionId))
   );
+  trackCollectionFollowChanged("unfollow", source, ownerId, collectionId);
 }
 
 /** Live list of the signed-in user's follow refs (not the collections themselves). */

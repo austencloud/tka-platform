@@ -44,6 +44,18 @@ jobs:
       - name: Type check (svelte-check)
         run: pnpm run check
 
+      # svelte-check is not a substitute for the compiler: it goes through the
+      # Svelte language service and has been observed finishing in ~2 s with
+      # "0 errors" on this repo in CI, which is not a program it actually
+      # checked. A plain tsc pass over the same tsconfig costs about a minute
+      # and is what keeps the type backlog in src/ and tests/ from regrowing.
+      # The gate reports every diagnostic and fails only on files this
+      # tsconfig owns; dependencies and sibling workspace packages resolve to
+      # raw .ts under `moduleResolution: Bundler` and are gated by
+      # `build:packages` instead.
+      - name: Type check (plain tsc)
+        run: pnpm run check:tsc
+
       - name: Unit tests (Vitest)
         run: pnpm run test -- --run
 

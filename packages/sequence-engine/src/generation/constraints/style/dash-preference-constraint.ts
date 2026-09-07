@@ -47,18 +47,18 @@ export class DashPreferenceConstraint implements IVariationConstraint {
   evaluate(context: ConstraintContext): ConstraintScore {
     const { candidate } = context;
 
-    const blueDash = candidate.blueMotion.motionType === "dash";
-    const redDash = candidate.redMotion.motionType === "dash";
-    const blueShift =
-      candidate.blueMotion.motionType === "pro" ||
-      candidate.blueMotion.motionType === "anti";
-    const redShift =
-      candidate.redMotion.motionType === "pro" ||
-      candidate.redMotion.motionType === "anti";
+    const leftDash = candidate.leftMotion.motionType === "dash";
+    const rightDash = candidate.rightMotion.motionType === "dash";
+    const leftShift =
+      candidate.leftMotion.motionType === "pro" ||
+      candidate.leftMotion.motionType === "anti";
+    const rightShift =
+      candidate.rightMotion.motionType === "pro" ||
+      candidate.rightMotion.motionType === "anti";
 
     // Count dashes vs shifts
-    const dashCount = (blueDash ? 1 : 0) + (redDash ? 1 : 0);
-    const shiftCount = (blueShift ? 1 : 0) + (redShift ? 1 : 0);
+    const dashCount = (leftDash ? 1 : 0) + (rightDash ? 1 : 0);
+    const shiftCount = (leftShift ? 1 : 0) + (rightShift ? 1 : 0);
 
     let score: number;
     let satisfied: boolean;
@@ -82,7 +82,7 @@ export class DashPreferenceConstraint implements IVariationConstraint {
           reason = "Both hands dash (dual-dash)";
         } else if (dashCount === 1) {
           score = 0.75;
-          reason = blueDash ? "Blue hand dashes" : "Red hand dashes";
+          reason = leftDash ? "Left hand dashes" : "Right hand dashes";
         } else if (shiftCount === 0) {
           // Static - neutral
           score = 0.5;
@@ -119,8 +119,8 @@ export class DashPreferenceConstraint implements IVariationConstraint {
 
     // For hard mode, check if there's a dash
     return (
-      candidate.blueMotion.motionType === "dash" ||
-      candidate.redMotion.motionType === "dash"
+      candidate.leftMotion.motionType === "dash" ||
+      candidate.rightMotion.motionType === "dash"
     );
   }
 }
@@ -182,17 +182,17 @@ export class DashAvoidanceConstraint implements IVariationConstraint {
   evaluate(context: ConstraintContext): ConstraintScore {
     const { candidate } = context;
 
-    const blueDash = candidate.blueMotion.motionType === "dash";
-    const redDash = candidate.redMotion.motionType === "dash";
-    const blueShift =
-      candidate.blueMotion.motionType === "pro" ||
-      candidate.blueMotion.motionType === "anti";
-    const redShift =
-      candidate.redMotion.motionType === "pro" ||
-      candidate.redMotion.motionType === "anti";
+    const leftDash = candidate.leftMotion.motionType === "dash";
+    const rightDash = candidate.rightMotion.motionType === "dash";
+    const leftShift =
+      candidate.leftMotion.motionType === "pro" ||
+      candidate.leftMotion.motionType === "anti";
+    const rightShift =
+      candidate.rightMotion.motionType === "pro" ||
+      candidate.rightMotion.motionType === "anti";
 
-    const dashCount = (blueDash ? 1 : 0) + (redDash ? 1 : 0);
-    const shiftCount = (blueShift ? 1 : 0) + (redShift ? 1 : 0);
+    const dashCount = (leftDash ? 1 : 0) + (rightDash ? 1 : 0);
+    const shiftCount = (leftShift ? 1 : 0) + (rightShift ? 1 : 0);
 
     let score: number;
     let satisfied: boolean;
@@ -224,7 +224,7 @@ export class DashAvoidanceConstraint implements IVariationConstraint {
           }
         } else if (dashCount === 1) {
           score = 0.5;
-          reason = blueDash ? "Blue hand dashes (avoid)" : "Red hand dashes (avoid)";
+          reason = leftDash ? "Left hand dashes (avoid)" : "Right hand dashes (avoid)";
         } else {
           score = 0.25;
           reason = "Both hands dash (avoid)";
@@ -256,8 +256,8 @@ export class DashAvoidanceConstraint implements IVariationConstraint {
 
     // For hard mode (forbid), check there are no dashes
     return (
-      candidate.blueMotion.motionType !== "dash" &&
-      candidate.redMotion.motionType !== "dash"
+      candidate.leftMotion.motionType !== "dash" &&
+      candidate.rightMotion.motionType !== "dash"
     );
   }
 }

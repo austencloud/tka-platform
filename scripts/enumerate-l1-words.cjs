@@ -25,14 +25,14 @@ for (const line of lines) {
     endPos: parts[2],
     timing: parts[3],
     direction: parts[4],
-    blueMotionType: parts[5],
-    blueRotDir: parts[6],
-    blueStartLoc: parts[7],
-    blueEndLoc: parts[8],
-    redMotionType: parts[9],
-    redRotDir: parts[10],
-    redStartLoc: parts[11],
-    redEndLoc: parts[12].trim(),
+    leftMotionType: parts[5],
+    leftRotDir: parts[6],
+    leftStartLoc: parts[7],
+    leftEndLoc: parts[8],
+    rightMotionType: parts[9],
+    rightRotDir: parts[10],
+    rightStartLoc: parts[11],
+    rightEndLoc: parts[12].trim(),
   });
 }
 
@@ -89,11 +89,11 @@ function getTypeName(type) {
 
 // Hand path description for a letter
 function getHandPath(edge) {
-  const blue = edge.blueMotionType;
-  const red = edge.redMotionType;
+  const left = edge.leftMotionType;
+  const right = edge.rightMotionType;
   const timing = edge.timing;
   const dir = edge.direction;
-  return `${timing}-${dir} (${blue}/${red})`;
+  return `${timing}-${dir} (${left}/${right})`;
 }
 
 // Enumerate all valid Quartered Rotated LOOPs from a starting position
@@ -106,8 +106,8 @@ function enumerateLoops(startPos) {
     const neighbors2 = adj[beat1.endPos] || [];
     for (const beat2 of neighbors2) {
       // Check continuity between beats 1 and 2
-      if (!rotOk(beat1.blueRotDir, beat2.blueRotDir) ||
-          !rotOk(beat1.redRotDir, beat2.redRotDir)) continue;
+      if (!rotOk(beat1.leftRotDir, beat2.leftRotDir) ||
+          !rotOk(beat1.rightRotDir, beat2.rightRotDir)) continue;
 
       // LOOP constraint: beat2 must end at rotatePos90(startPos)
       // so Q2 starts where Q1 ends, and ultimately loops back
@@ -115,11 +115,11 @@ function enumerateLoops(startPos) {
 
       // Continuity across quarter boundaries:
       // Q1.beat2 -> Q2.beat1 (rotated beat1): same rotation dirs as beat1
-      if (!rotOk(beat2.blueRotDir, beat1.blueRotDir) ||
-          !rotOk(beat2.redRotDir, beat1.redRotDir)) continue;
+      if (!rotOk(beat2.leftRotDir, beat1.leftRotDir) ||
+          !rotOk(beat2.rightRotDir, beat1.rightRotDir)) continue;
 
       // Deduplicate by letter pair (same letters + same hand path = same word)
-      const key = `${beat1.letter}|${beat2.letter}|${beat1.blueRotDir}|${beat1.redRotDir}|${beat2.blueRotDir}|${beat2.redRotDir}`;
+      const key = `${beat1.letter}|${beat2.letter}|${beat1.leftRotDir}|${beat1.rightRotDir}|${beat2.leftRotDir}|${beat2.rightRotDir}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
@@ -145,8 +145,8 @@ function enumerateLoops(startPos) {
         handPath,
         beat1Detail: getHandPath(beat1),
         beat2Detail: getHandPath(beat2),
-        beat1RotDirs: `blue:${beat1.blueRotDir} red:${beat1.redRotDir}`,
-        beat2RotDirs: `blue:${beat2.blueRotDir} red:${beat2.redRotDir}`,
+        beat1RotDirs: `blue:${beat1.leftRotDir} red:${beat1.rightRotDir}`,
+        beat2RotDirs: `blue:${beat2.leftRotDir} red:${beat2.rightRotDir}`,
         startPos,
         midPos: beat1.endPos,
         endPos: beat2.endPos,

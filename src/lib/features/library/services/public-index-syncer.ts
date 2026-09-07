@@ -212,13 +212,13 @@ export class PublicIndexSyncer {
           word: normalized.exactWord,
           steps: [...hydrated.steps],
           thumbnails: sequence.thumbnails?.slice(0, 3) ?? [],
-          blueSoloProp: normalized.ownerData.blueSoloProp,
-          redSoloProp: normalized.ownerData.redSoloProp,
+          leftSoloProp: normalized.ownerData.leftSoloProp,
+          rightSoloProp: normalized.ownerData.rightSoloProp,
           stepPairings: normalized.ownerData.stepPairings,
-          bluePathHash: normalized.ownerData.bluePathHash,
-          redPathHash: normalized.ownerData.redPathHash,
-          blueSoloHash: normalized.ownerData.blueSoloHash,
-          redSoloHash: normalized.ownerData.redSoloHash,
+          leftPathHash: normalized.ownerData.leftPathHash,
+          rightPathHash: normalized.ownerData.rightPathHash,
+          leftSoloHash: normalized.ownerData.leftSoloHash,
+          rightSoloHash: normalized.ownerData.rightSoloHash,
           sequenceLength: normalized.sequenceLength,
           difficultyLevel: sequence.difficultyLevel,
           level,
@@ -329,15 +329,15 @@ export class PublicIndexSyncer {
     sequence: LibrarySequence,
     userId: string
   ): Promise<void> {
-    const { blueSoloProp, redSoloProp } = sequence;
-    if (!blueSoloProp || !redSoloProp) return;
+    const { leftSoloProp, rightSoloProp } = sequence;
+    if (!leftSoloProp || !rightSoloProp) return;
 
     const timestamp = serverTimestamp();
 
     const artifacts: Array<{ collectionPath: string; docId: string; data: Record<string, unknown> }> = [];
 
     // Hand paths
-    for (const soloProp of [blueSoloProp, redSoloProp]) {
+    for (const soloProp of [leftSoloProp, rightSoloProp]) {
       const hp = soloProp.handPath;
       if (hp?.contentHash) {
         artifacts.push({
@@ -361,7 +361,7 @@ export class PublicIndexSyncer {
     }
 
     // Solo props
-    for (const soloProp of [blueSoloProp, redSoloProp]) {
+    for (const soloProp of [leftSoloProp, rightSoloProp]) {
       if (soloProp?.contentHash) {
         artifacts.push({
           collectionPath: "publicSoloProps",

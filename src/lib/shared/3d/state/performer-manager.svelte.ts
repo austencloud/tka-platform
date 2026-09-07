@@ -6,18 +6,18 @@
  */
 
 import {
-  createAvatarInstanceState,
+  createCharacterInstanceState,
   makeStandaloneDeps,
-  type AvatarInstanceState,
-} from "./avatar-instance-state.svelte";
+  type CharacterInstanceState,
+} from "./character-instance-state.svelte";
 import type { DefaultPerformerSettings } from "./performer-settings-types";
 import {
-  createAvatarSyncState,
-  type AvatarSyncState,
-} from "./avatar-sync-state.svelte";
+  createCharacterSyncState,
+  type CharacterSyncState,
+} from "./character-sync-state.svelte";
 import { getDefaultPositions, MAX_PERFORMERS } from "@austencloud/scene-3d";
 // propInterpolator / sequenceConverter injected as module functions; no imports needed here
-import type { AvatarId, FormationPreset } from "@austencloud/scene-3d";
+import type { FormationPreset } from "@austencloud/scene-3d";
 import { createFormationManager } from "@austencloud/scene-3d";
 import {
   sampleInterruptibleAngle,
@@ -28,9 +28,12 @@ import {
   DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE,
   resolveViewerFormationFacingAngle,
 } from "../domain/viewer-formation-facing";
+import type { CharacterId } from "../domain/character-model";
+import { motionDuration } from "$lib/shared/transitions/motion";
+import { DURATION } from "$lib/shared/transitions/transitions";
 // FormationManager type inferred from createFormationManager return
 
-const COUNT_CHANGE_TRANSITION_MS = 320;
+const COUNT_CHANGE_TRANSITION_MS = DURATION.emphasis;
 
 export interface PerformerLayoutSnapshot {
   position: { x: number; z: number };
@@ -54,11 +57,33 @@ interface ActivePerformerLayoutTransition {
   members: PerformerLayoutTransitionMember[];
 }
 
+export type CharacterPresencePhase = "entering" | "present" | "exiting";
+
+export interface RenderablePerformer {
+  performer: CharacterInstanceState;
+  castIndex: number;
+  presencePhase: CharacterPresencePhase;
+}
+
+interface DepartingPerformer {
+  performer: CharacterInstanceState;
+  castIndex: number;
+}
+
+interface CharacterPresenceTransition {
+  performer: CharacterInstanceState;
+  castIndex: number;
+  phase: Exclude<CharacterPresencePhase, "present">;
+  timing: TimedTransition;
+  startProgress: number;
+  startVelocity: number;
+}
+
 /**
  * Dependencies for performer manager
  */
 export interface PerformerManagerDeps {
-  initialAvatarId: AvatarId;
+  initialCharacterId: CharacterId;
   /**
    * Optional cap override. Defaults to the shared STAGE.MAX_PERFORMERS (4).
    * The standalone 3D viewer passes STAGE.MAX_VIEWER_PERFORMERS (8).
@@ -71,10 +96,10 @@ export interface PerformerManagerDeps {
    */
   getDefaults?: () => DefaultPerformerSettings;
   /**
-   * Threaded through to every `createAvatarInstanceState` call as
-   * `AvatarInstanceConfig.persistent`. Defaults to `true` (unchanged
+   * Threaded through to every `createCharacterInstanceState` call as
+   * `CharacterInstanceConfig.persistent`. Defaults to `true` (unchanged
    * behavior) when omitted. Pass `false` for a seeded/ephemeral viewer so
-   * its avatar instances never read or write the persisted plane-mode /
+   * its character instances never read or write the persisted plane-mode /
    * rotation-variant localStorage keys.
    */
   persistent?: boolean;
@@ -90,7 +115,7 @@ export interface PerformerManagerDeps {
  * Create performer manager state
  */
 function buildPerformerManager(deps: PerformerManagerDeps) {
-  const { initialAvatarId } = deps;
+  const { initialCharacterId } = deps;
   const maxPerformers = deps.maxPerformers ?? MAX_PERFORMERS;
   const getDefaults = deps.getDefaults;
   const persistent = deps.persistent;
@@ -99,9 +124,10 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
     (() => DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE);
 
   // Performer states (1-4 performers)
-  let performerStates = $state<AvatarInstanceState[]>([]);
+  let performerStates = $state<CharacterInstanceState[]>([]);
+  let departingPerformers = $state<DepartingPerformer[]>([]);
   let activePerformerIndex = $state(0);
-  let syncState: AvatarSyncState | null = $state(null);
+  let syncState: CharacterSyncState | null = $state(null);
 
   // Formation manager for flexible positioning. Pass maxPerformers through
   // so the standalone viewer's 8-performer cap reaches the formation
@@ -110,27 +136,30 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
   const formationManager = createFormationManager(1, maxPerformers);
   let activeLayoutTransition: ActivePerformerLayoutTransition | null = null;
   let nextLayoutTransitionId = 1;
+  let activePresenceTransitions = $state<CharacterPresenceTransition[]>([]);
+  let nextPresenceTransitionId = 1;
+  let nextPerformerSerial = 0;
 
   // Derived: active performer state
   const activeState = $derived(performerStates[activePerformerIndex] ?? null);
 
   // Helper getters for sync (first two performers)
-  const avatar1State = $derived(performerStates[0] ?? null);
-  const avatar2State = $derived(performerStates[1] ?? null);
+  const character1State = $derived(performerStates[0] ?? null);
+  const character2State = $derived(performerStates[1] ?? null);
 
   /**
    * Create a performer at a given index
    */
-  function createPerformer(index: number): AvatarInstanceState {
+  function createPerformer(index: number): CharacterInstanceState {
     const positions = getDefaultPositions(performerStates.length + 1);
     const pos = positions[index] ?? { x: 0, z: 0 };
 
-    const performer = createAvatarInstanceState(
+    const performer = createCharacterInstanceState(
       {
-        id: `performer-${index}`,
+        id: `performer-${nextPerformerSerial++}`,
         positionX: pos.x,
         positionZ: pos.z,
-        avatarModelId: initialAvatarId,
+        characterId: initialCharacterId,
         persistent,
       },
       getDefaults ? { getDefaults } : makeStandaloneDeps()
@@ -142,20 +171,8 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
   /**
    * Initialize with a single performer
    */
-  function initialize(): AvatarInstanceState {
-    const initialPosition = getDefaultPositions(1)[0] ?? { x: 0, z: 0 };
-    const initialPerformer = createAvatarInstanceState(
-      {
-        id: "performer-0",
-        positionX: initialPosition.x,
-        positionZ: initialPosition.z,
-        avatarModelId: initialAvatarId,
-        persistent,
-      },
-      getDefaults ? { getDefaults } : makeStandaloneDeps()
-    );
-
-    initialPerformer.snapFacingAngle(getFrontStageFacingAngle());
+  function initialize(): CharacterInstanceState {
+    const initialPerformer = createPerformer(0);
     performerStates = [initialPerformer];
     return initialPerformer;
   }
@@ -177,6 +194,117 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       position: { x: 0, z: 0 },
       facingAngle: 0,
     };
+  }
+
+  function samplePresenceTransitions(nowMs: number): Map<string, number> {
+    const velocities = new Map<string, number>();
+    const stillRunning: CharacterPresenceTransition[] = [];
+    const completedDepartures = new Set<string>();
+
+    for (const transition of activePresenceTransitions) {
+      const target = transition.phase === "entering" ? 1 : 0;
+      const sample = sampleInterruptibleHermite(
+        transition.startProgress,
+        target,
+        transition.startVelocity,
+        transition.timing,
+        nowMs
+      );
+      transition.performer.setPresenceProgress(sample.value);
+      velocities.set(transition.performer.id, sample.velocity);
+
+      if (!sample.done) {
+        stillRunning.push(transition);
+        continue;
+      }
+
+      transition.performer.setPresenceProgress(target);
+      if (transition.phase === "exiting") {
+        transition.performer.destroy();
+        completedDepartures.add(transition.performer.id);
+      }
+    }
+
+    activePresenceTransitions = stillRunning;
+    if (completedDepartures.size > 0) {
+      departingPerformers = departingPerformers.filter(
+        ({ performer }) => !completedDepartures.has(performer.id)
+      );
+    }
+    return velocities;
+  }
+
+  function beginPresenceTransition(
+    performer: CharacterInstanceState,
+    castIndex: number,
+    phase: Exclude<CharacterPresencePhase, "present">,
+    startVelocity: number,
+    nowMs: number
+  ): void {
+    activePresenceTransitions = activePresenceTransitions.filter(
+      (transition) => transition.performer.id !== performer.id
+    );
+
+    const target = phase === "entering" ? 1 : 0;
+    const durationMs = motionDuration(DURATION.emphasis);
+    if (durationMs === 0) {
+      performer.setPresenceProgress(target);
+      if (phase === "exiting") performer.destroy();
+      return;
+    }
+
+    activePresenceTransitions = [
+      ...activePresenceTransitions,
+      {
+        performer,
+        castIndex,
+        phase,
+        timing: {
+          id: nextPresenceTransitionId++,
+          startTimeMs: nowMs,
+          durationMs,
+        },
+        startProgress: performer.presenceProgress,
+        startVelocity,
+      },
+    ];
+  }
+
+  function beginCharacterEntry(
+    performer: CharacterInstanceState,
+    castIndex: number,
+    nowMs: number
+  ): void {
+    performer.setPresenceProgress(0);
+    beginPresenceTransition(performer, castIndex, "entering", 0, nowMs);
+  }
+
+  function beginCharacterExit(
+    performer: CharacterInstanceState,
+    castIndex: number,
+    startVelocity: number,
+    nowMs: number
+  ): void {
+    performer.pause();
+    performer.stopMovement();
+
+    if (motionDuration(DURATION.emphasis) === 0) {
+      performer.setPresenceProgress(0);
+      performer.destroy();
+      return;
+    }
+
+    departingPerformers = [
+      ...departingPerformers,
+      { performer, castIndex },
+    ];
+    beginPresenceTransition(
+      performer,
+      castIndex,
+      "exiting",
+      startVelocity,
+      nowMs
+    );
   }
 
   /**
@@ -241,11 +369,24 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
     carriedVelocities: ReadonlyMap<string, PerformerLayoutVelocity>,
     nowMs: number
   ): TimedTransition {
+    const accessibleDurationMs = motionDuration(durationMs);
     const timing: TimedTransition = {
       id: nextLayoutTransitionId++,
       startTimeMs: nowMs,
-      durationMs,
+      durationMs: accessibleDurationMs,
     };
+
+    if (accessibleDurationMs === 0) {
+      performerStates.forEach((performer, index) => {
+        const end = targets[index];
+        if (!end) return;
+        performer.position.x = end.position.x;
+        performer.position.z = end.position.z;
+        performer.snapFacingAngle(end.facingAngle);
+      });
+      activeLayoutTransition = null;
+      return timing;
+    }
 
     activeLayoutTransition = {
       timing,
@@ -326,9 +467,9 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
   }
 
   /**
-   * A new performer appears directly in its destination while the existing
-   * cast glides out of the way. On removal, the remaining cast starts from
-   * the exact positions visible in the previous frame and closes the gap.
+   * A new character enters at its destination while the existing cast glides
+   * out of the way. On removal, the departing character remains visible long
+   * enough to explain the change while the surviving cast closes the gap.
    */
   function transitionAfterCountChange(
     previousLayout: Map<string, PerformerLayoutSnapshot>,
@@ -394,7 +535,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
    */
   function transitionToFormation(
     preset: FormationPreset,
-    durationMs: number = 500
+    durationMs: number = DURATION.dramatic
   ) {
     const nowMs = performance.now();
     const carriedVelocities = sampleLayoutTransition(nowMs);
@@ -411,7 +552,9 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
    * default row-pair slot instead of drifting.
    */
   function updateFormationTransition(timestamp?: number) {
-    sampleLayoutTransition(timestamp ?? performance.now());
+    const nowMs = timestamp ?? performance.now();
+    sampleLayoutTransition(nowMs);
+    samplePresenceTransitions(nowMs);
   }
 
   /**
@@ -422,6 +565,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
 
     const nowMs = performance.now();
     const carriedVelocities = sampleLayoutTransition(nowMs);
+    samplePresenceTransitions(nowMs);
     const previousLayout = captureLayout();
     const newPerformer = createPerformer(performerStates.length);
     performerStates = [...performerStates, newPerformer];
@@ -430,6 +574,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       carriedVelocities,
       nowMs
     );
+    beginCharacterEntry(newPerformer, performerStates.length - 1, nowMs);
 
     // Create sync state when we have exactly 2 performers
     if (performerStates.length === 2) {
@@ -437,7 +582,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       const second = performerStates[1];
       if (first && second) {
         syncState?.destroy();
-        syncState = createAvatarSyncState(first, second);
+        syncState = createCharacterSyncState(first, second);
       }
     }
 
@@ -456,17 +601,22 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
 
     const nowMs = performance.now();
     const carriedVelocities = sampleLayoutTransition(nowMs);
+    const presenceVelocities = samplePresenceTransitions(nowMs);
     const previousLayout = captureLayout();
     const removed = performerStates[index];
     if (!removed) return null;
-    removed.destroy();
-
     performerStates = performerStates.filter(
       (_, performerIndex) => performerIndex !== index
     );
     const layoutTargets = transitionAfterCountChange(
       previousLayout,
       carriedVelocities,
+      nowMs
+    );
+    beginCharacterExit(
+      removed,
+      index,
+      presenceVelocities.get(removed.id) ?? 0,
       nowMs
     );
 
@@ -480,7 +630,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
     const first = performerStates[0];
     const second = performerStates[1];
     if (first && second) {
-      syncState = createAvatarSyncState(first, second);
+      syncState = createCharacterSyncState(first, second);
     } else {
       syncState = null;
     }
@@ -533,7 +683,10 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
    */
   function destroy() {
     activeLayoutTransition = null;
+    activePresenceTransitions = [];
     performerStates.forEach((p) => p.destroy());
+    departingPerformers.forEach(({ performer }) => performer.destroy());
+    departingPerformers = [];
     syncState?.destroy();
   }
 
@@ -541,6 +694,26 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
     // State
     get performers() {
       return performerStates;
+    },
+    get renderablePerformers(): RenderablePerformer[] {
+      return [
+        ...performerStates.map((performer, castIndex) => ({
+          performer,
+          castIndex,
+          presencePhase: activePresenceTransitions.some(
+            (transition) =>
+              transition.performer.id === performer.id &&
+              transition.phase === "entering"
+          )
+            ? ("entering" as const)
+            : ("present" as const),
+        })),
+        ...departingPerformers.map(({ performer, castIndex }) => ({
+          performer,
+          castIndex,
+          presencePhase: "exiting" as const,
+        })),
+      ];
     },
     get activeIndex() {
       return activePerformerIndex;
@@ -551,11 +724,11 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
     get syncState() {
       return syncState;
     },
-    get avatar1State() {
-      return avatar1State;
+    get character1State() {
+      return character1State;
     },
-    get avatar2State() {
-      return avatar2State;
+    get character2State() {
+      return character2State;
     },
     get count() {
       return performerStates.length;

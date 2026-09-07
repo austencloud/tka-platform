@@ -1,4 +1,4 @@
-export type StickerVariant = "blue" | "red" | "full";
+export type StickerVariant = "left" | "right" | "full";
 export type StickerBackground = "transparent" | "white" | "radial-gradient";
 export type StickerSize = "3in-round"; // versioned string; Phase 2 may add "2in-round", "5in-round"
 export type StickerPresentation = "pure"; // Phase 1 only value; Phase 2 may add "word-label", "qr"

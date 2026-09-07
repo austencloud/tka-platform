@@ -41,6 +41,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import {
     createLayoutMotion,
     LAYOUT_MOTION_DURATION_MS,
@@ -77,6 +78,7 @@
     displayState,
     scrollState,
     selectedStepNumber = null,
+    autoFocusSelectedStep = true,
     practiceStepNumber = null,
     activeMode = null,
     removingStepIndex = null,
@@ -84,6 +86,7 @@
     isClearing = false,
     historyTransition = null,
     historyTransitionEpoch = 0,
+    animateStepMembership = false,
     highlightedSteps = null,
     onStepClick,
     onStartClick,
@@ -93,12 +96,13 @@
     onMandalaClick,
     getStepKey,
     getDurationDisplay,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     sequenceWord = "",
     arrivalRequest = null,
+    edgePadding = 16,
     scrollContainerRef = $bindable(),
   }: {
     steps: ReadonlyArray<StepData> | StepData[];
@@ -112,6 +116,8 @@
     displayState: StepGridDisplayState;
     scrollState: ScrollState;
     selectedStepNumber?: number | null;
+    /** Prevent playback-driven selection from stealing focus from nearby UI. */
+    autoFocusSelectedStep?: boolean;
     practiceStepNumber?: number | null;
     activeMode?: BuildModeId | null;
     removingStepIndex?: number | null;
@@ -119,6 +125,7 @@
     isClearing?: boolean;
     historyTransition?: HistoryTransitionPlan | null;
     historyTransitionEpoch?: number;
+    animateStepMembership?: boolean;
     highlightedSteps?: Map<number, { bg: string; border: string }> | null;
     onStepClick?: (
       stepNumber: number,
@@ -134,12 +141,13 @@
     ) => void;
     getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
-    blueColorOverride?: string;
-    redColorOverride?: string;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
+    leftColorOverride?: string;
+    rightColorOverride?: string;
     sequenceWord?: string;
     arrivalRequest?: PictographArrivalRequest | null;
+    edgePadding?: number;
     scrollContainerRef?: HTMLElement;
   } = $props();
 
@@ -349,11 +357,11 @@
   // (single- vs dual-ended) from this, so passing the raw (often undefined)
   // override drew the dual-staff figure even for a club. Mirrors the
   // collection-save resolution below.
-  const effectiveBluePropType = $derived(
-    bluePropTypeOverride ?? settingsService.settings.bluePropType ?? "staff"
+  const effectiveLeftPropType = $derived(
+    leftPropTypeOverride ?? settingsService.settings.leftPropType ?? "staff"
   );
-  const effectiveRedPropType = $derived(
-    redPropTypeOverride ?? settingsService.settings.redPropType ?? "staff"
+  const effectiveRightPropType = $derived(
+    rightPropTypeOverride ?? settingsService.settings.rightPropType ?? "staff"
   );
 
   // --- Duration resize (timeline only) ---
@@ -431,8 +439,8 @@
       rows: gridLayout.rows,
       includeStartPosition: hasStartPosition,
       showQRCode: false,
-      blueVisible: true,
-      redVisible: true,
+      leftVisible: true,
+      rightVisible: true,
       mandalaEnabled: true,
       startPositionLayout: "column",
     });
@@ -487,6 +495,11 @@
     // only the inside would park a black square at the destination and have the
     // pictograph slide over to cover it.
     cancelSelectors: [".history-layout-shell", ".step-cell"],
+    // A slot-preserving performer swap can change both the grid geometry and
+    // every pictograph at once. In that case the outer tile owns the reflow;
+    // prop, arrow and selection transitions resume after it lands instead of
+    // stacking a second gesture inside the moving tile.
+    suspendDescendantTransitions: animateStepMembership,
     getDuration: () => motionDuration(LAYOUT_MOTION_DURATION_MS),
     easing: LAYOUT_MOTION_EASING,
   });
@@ -516,7 +529,9 @@
   let arrivalCapturePending = false;
 
   function getHistoryMembershipDuration(identity: string): number {
-    if (!historyTransition) return 0;
+    if (!historyTransition) {
+      return animateStepMembership ? motionDuration(DURATION.fast) : 0;
+    }
     const changesMembership =
       historyTransition.insertedStepIdentities.has(identity) ||
       historyTransition.removedStepIdentities.has(identity);
@@ -655,8 +670,8 @@
       rows: rowCount,
       includeStartPosition: hasStartPosition,
       showQRCode: false,
-      blueVisible: true,
-      redVisible: true,
+      leftVisible: true,
+      rightVisible: true,
       mandalaEnabled: true,
       startPositionLayout: "column",
     });
@@ -708,12 +723,12 @@
 
   const mandalaSize = $derived(Math.round(cellSize * MANDALA_CELL_SCALE));
   const mandalaPaletteOverride = $derived.by((): MandalaPalette | undefined => {
-    if (!blueColorOverride || !redColorOverride) return undefined;
+    if (!leftColorOverride || !rightColorOverride) return undefined;
     return {
-      blueStroke: blueColorOverride,
-      blueFill: blueColorOverride,
-      redStroke: redColorOverride,
-      redFill: redColorOverride,
+      leftStroke: leftColorOverride,
+      leftFill: leftColorOverride,
+      rightStroke: rightColorOverride,
+      rightFill: rightColorOverride,
       purpleStroke: "#a78bfa",
       purpleFill: "#a78bfa",
     };
@@ -762,8 +777,8 @@
         const name = await saveMandalaToCollection({
           steps: [...steps],
           variant: mandalaMenuVariant,
-          bluePropType: effectiveBluePropType,
-          redPropType: effectiveRedPropType,
+          leftPropType: effectiveLeftPropType,
+          rightPropType: effectiveRightPropType,
           pathShape: mandalaPathShape,
           sequenceWord,
         });
@@ -797,8 +812,8 @@
     style="stroke"
     {show}
     size={mandalaSize}
-    bluePropType={effectiveBluePropType}
-    redPropType={effectiveRedPropType}
+    leftPropType={effectiveLeftPropType}
+    rightPropType={effectiveRightPropType}
     palette={mandalaPaletteOverride}
     pathShape={mandalaPathShape}
     morphChanges
@@ -809,6 +824,7 @@
   class="scroll-wrapper"
   class:has-scrollbar={scrollState.hasVerticalScrollbar}
   bind:this={scrollContainerRef}
+  style:--scroll-edge-padding="{edgePadding}px"
 >
   <div
     bind:this={gridSurfaceRef}
@@ -854,10 +870,10 @@
                 onDelete={onStepDelete}
                 animationEpoch={displayState.animationEpoch}
                 isTimelineMode={true}
-                {bluePropTypeOverride}
-                {redPropTypeOverride}
-                {blueColorOverride}
-                {redColorOverride}
+                {leftPropTypeOverride}
+                {rightPropTypeOverride}
+                {leftColorOverride}
+                {rightColorOverride}
                 onContentReady={() =>
                   noteContentReady(START_TILE_REVEAL_KEY, 0)}
               />
@@ -969,6 +985,7 @@
                     onLongPress={() => onStepLongPress?.(step.stepNumber)}
                     shouldAnimate={isStepCascading(stepIndex)}
                     isSelected={selectedStepNumber === step.stepNumber}
+                    autoFocusOnSelection={autoFocusSelectedStep}
                     isPracticeStep={practiceStepNumber === step.stepNumber}
                     {activeMode}
                     highlightStyle={highlightedSteps?.get(step.stepNumber) ??
@@ -977,10 +994,10 @@
                     isTimelineMode={true}
                     widthMultiplier={effectiveDuration}
                     animationEpoch={displayState.animationEpoch}
-                    {bluePropTypeOverride}
-                    {redPropTypeOverride}
-                    {blueColorOverride}
-                    {redColorOverride}
+                    {leftPropTypeOverride}
+                    {rightPropTypeOverride}
+                    {leftColorOverride}
+                    {rightColorOverride}
                     onContentReady={() => noteContentReady(stepIndex, waveBand)}
                   />
                 </div>
@@ -1025,10 +1042,10 @@
               onLongPress={onStepLongPress}
               onDelete={onStepDelete}
               animationEpoch={displayState.animationEpoch}
-              {bluePropTypeOverride}
-              {redPropTypeOverride}
-              {blueColorOverride}
-              {redColorOverride}
+              {leftPropTypeOverride}
+              {rightPropTypeOverride}
+              {leftColorOverride}
+              {rightColorOverride}
               onContentReady={() => noteContentReady(START_TILE_REVEAL_KEY, 0)}
             />
           </div>
@@ -1074,15 +1091,16 @@
               onLongPress={() => onStepLongPress?.(step.stepNumber)}
               shouldAnimate={isStepCascading(index)}
               isSelected={selectedStepNumber === step.stepNumber}
+              autoFocusOnSelection={autoFocusSelectedStep}
               isPracticeStep={practiceStepNumber === step.stepNumber}
               {activeMode}
               highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
               {musicalPosition}
               animationEpoch={displayState.animationEpoch}
-              {bluePropTypeOverride}
-              {redPropTypeOverride}
-              {blueColorOverride}
-              {redColorOverride}
+              {leftPropTypeOverride}
+              {rightPropTypeOverride}
+              {leftColorOverride}
+              {rightColorOverride}
               onContentReady={() => noteContentReady(index, waveBand)}
             />
           </div>
@@ -1145,7 +1163,7 @@
     min-height: 0;
     /* Breathing room so a selected/hovered cell's scaled gold border + glow
        on the outer rows/columns isn't clipped at the wrapper edge. */
-    padding: 16px;
+    padding: var(--scroll-edge-padding, 16px);
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
@@ -1480,6 +1498,25 @@
 
   .grid-surface :global(.pictograph-renderer) {
     border: none !important;
+  }
+
+  /* Layout motion is the sole gesture while a slot-based preview recomposes.
+     Its target pictographs paint immediately inside the moving tiles; their
+     normal CSS travel remains available for same-geometry performer swaps. */
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .prop-svg),
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .arrow-svg),
+  :global(.grid-surface[data-layout-motion-suspend-descendants] .step-cell),
+  :global(
+    .grid-surface[data-layout-motion-suspend-descendants] .selection-skin
+  ) {
+    transition: none !important;
+  }
+
+  :global(
+    .grid-surface[data-layout-motion-suspend-descendants]
+      .step-cell.selected::before
+  ) {
+    animation: none !important;
   }
 
   .mandala-layout-item {

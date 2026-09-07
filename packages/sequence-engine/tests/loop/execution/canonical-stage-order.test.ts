@@ -6,12 +6,12 @@ import type { SequenceStep } from "../../../src/core/types/sequence-engine-types
 // Minimal 2-step closed-under-mirror seed: startPos + 2 letter steps whose
 // motions are pro/anti (so inversion is observable). Build hand-rolled steps
 // with the fields the executors touch (motions, positions, stepNumber, letter).
-function step(n: number, letter: string, sp: string, ep: string, blue: any, red: any): SequenceStep {
-  return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { blue, red } } as unknown as SequenceStep;
+function step(n: number, letter: string, sp: string, ep: string, left: any, right: any): SequenceStep {
+  return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { left, right } } as unknown as SequenceStep;
 }
 const m = (motionType: string, rotationDirection: string, startLocation: string, endLocation: string) => ({
   motionType, rotationDirection, startLocation, endLocation,
-  startOrientation: "in", endOrientation: "in", turns: 0, color: "blue",
+  startOrientation: "in", endOrientation: "in", turns: 0, hand: "left",
 });
 
 function makeSeed(): SequenceStep[] {
@@ -37,8 +37,8 @@ describe("canonical stage order", () => {
     // Canonical: mirror first (2->4 = block X), then invert@4 alternates blocks
     // of 4. Steps 5-8 must be the motionType-flip of steps 1-4.
     for (let i = 0; i < 4; i++) {
-      const base = steps[i]!.motions.blue.motionType;
-      const inv = steps[i + 4]!.motions.blue.motionType;
+      const base = steps[i]!.motions.left.motionType;
+      const inv = steps[i + 4]!.motions.left.motionType;
       if (base === "pro") expect(inv).toBe("anti");
       if (base === "anti") expect(inv).toBe("pro");
     }

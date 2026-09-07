@@ -1,3 +1,5 @@
+import { CANONICAL_PERFORMER_ANCHOR_Y } from "../../domain/stage-coordinate-frame";
+
 export type BlossomQualityTier = "high" | "medium" | "low";
 
 export interface BlossomQualitySignals {
@@ -68,7 +70,7 @@ interface BlossomQualityPreset {
 }
 
 const AUTHORING_STAGE_RADIUS = 5;
-const AUTHORING_STAGE_TOP_Y = 0.35;
+const AUTHORING_STAGE_TOP_Y = CANONICAL_PERFORMER_ANCHOR_Y;
 const QUALITY_PRESETS: Record<BlossomQualityTier, BlossomQualityPreset> = {
   high: {
     particleScale: 1,

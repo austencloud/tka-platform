@@ -84,18 +84,18 @@ export class ClaudeCodeCopier {
           ? ` ${step.startPosition}>${step.endPosition}`
           : "";
 
-        const blue = this.formatMotionCompact(step.motions?.blue);
-        const red = this.formatMotionCompact(step.motions?.red);
+        const left = this.formatMotionCompact(step.motions?.left);
+        const right = this.formatMotionCompact(step.motions?.right);
 
         const revParts: string[] = [];
-        if (step.blueReversal) revParts.push("B");
-        if (step.redReversal) revParts.push("R");
+        if (step.leftReversal) revParts.push("B");
+        if (step.rightReversal) revParts.push("R");
         const rev = revParts.length ? ` rev:${revParts.join("")}` : "";
         const duration = step.duration ?? 1;
 
         lines.push(`${beatNum}${letter}${pos} d=${duration}${rev}`);
-        lines.push(`  blue: ${blue}`);
-        lines.push(`  red:  ${red}`);
+        lines.push(`  blue: ${left}`);
+        lines.push(`  red:  ${right}`);
       }
     } else {
       lines.push("No step data available");

@@ -49,6 +49,13 @@
     size?: "sm" | "md";
     /** Compact changes height; tight only trims horizontal padding for narrow rails. */
     density?: "standard" | "compact" | "tight";
+    /**
+     * Wrap the options into a grid of this many columns instead of one row.
+     * A long palette — the Level 4 turn list is fourteen ratios — is easier to
+     * read and to press on two rows than in one long horizontal scroller. The
+     * indicator tracks the selected cell on both axes. Omit for a single row.
+     */
+    columns?: number;
     /** Accessible name for the option group. */
     ariaLabel?: string;
     /** ID of a visible label that names the option group. */
@@ -79,6 +86,7 @@
     color = "blue",
     size = "md",
     density = "standard",
+    columns,
     ariaLabel,
     ariaLabelledby,
     semantics = "button-group",
@@ -108,7 +116,41 @@
 
   // Find selected index for indicator position
   const selectedIndex = $derived(options.findIndex((o) => o.value === value));
+  const focusIndex = $derived(
+    selectedIndex >= 0
+      ? selectedIndex
+      : options.findIndex((option) => !option.disabled)
+  );
   const selectedTone = $derived(options[selectedIndex]?.tone ?? color);
+
+  // A column count that would leave one row is the same as no wrap at all.
+  const gridColumns = $derived(
+    columns && columns > 0 && columns < options.length ? columns : null
+  );
+  const rowCount = $derived(
+    gridColumns ? Math.ceil(options.length / gridColumns) : 1
+  );
+  const selectedRow = $derived(
+    gridColumns ? Math.floor(selectedIndex / gridColumns) : 0
+  );
+  const selectedColumn = $derived(
+    gridColumns ? selectedIndex - selectedRow * gridColumns : selectedIndex
+  );
+
+  /**
+   * Nearest selectable option one grid row away. Disabled options are stepped
+   * over in the direction of travel, so a row whose cell is disabled still
+   * moves the user forward rather than trapping them.
+   */
+  function optionOneRowAway(optionIndex: number, delta: number): number | null {
+    if (!gridColumns) return null;
+    let target = optionIndex + delta * gridColumns;
+    while (target >= 0 && target < options.length) {
+      if (!options[target]?.disabled) return target;
+      target += delta;
+    }
+    return null;
+  }
 
   function handleSingleSelectKeydown(
     event: KeyboardEvent,
@@ -121,6 +163,24 @@
     );
     const currentEnabledIndex = enabledIndexes.indexOf(optionIndex);
     if (currentEnabledIndex === -1) return;
+
+    if (gridColumns && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      const target = optionOneRowAway(
+        optionIndex,
+        event.key === "ArrowDown" ? 1 : -1
+      );
+      if (target === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const targetOption = options[target];
+      if (!targetOption) return;
+      const currentTarget = event.currentTarget as HTMLButtonElement;
+      currentTarget.parentElement
+        ?.querySelectorAll<HTMLButtonElement>("button.segment")
+        ?.[target]?.focus();
+      handleSelect(targetOption.value);
+      return;
+    }
 
     let nextEnabledIndex: number | null = null;
     switch (event.key) {
@@ -143,6 +203,7 @@
     }
 
     event.preventDefault();
+    event.stopPropagation();
     if (nextEnabledIndex === null) return;
     const nextOptionIndex = enabledIndexes[nextEnabledIndex];
     if (nextOptionIndex === undefined) return;
@@ -161,6 +222,7 @@
 
 <div
   class="segmented-control"
+  class:grid={gridColumns !== null}
   class:sm={size === "sm"}
   class:compact={density === "compact"}
   class:tight={density === "tight"}
@@ -174,16 +236,20 @@
       : ariaLabel || ariaLabelledby
         ? "group"
         : undefined}
-  aria-orientation={semantics !== "button-group" ? "horizontal" : undefined}
+  aria-orientation={semantics === "button-group" || gridColumns
+    ? undefined
+    : "horizontal"}
   aria-label={ariaLabel}
   aria-labelledby={ariaLabelledby}
-  style="--count: {options.length}"
+  style="--count: {options.length}; --cols: {gridColumns ??
+    options.length}; --rows: {rowCount}"
   onpointerup={handleSurfacePointerUp}
 >
   <div
     class="indicator"
+    style:visibility={selectedIndex < 0 ? "hidden" : "visible"}
     data-tone={selectedTone}
-    style="--index: {selectedIndex}"
+    style="--index: {selectedIndex}; --col: {selectedColumn}; --row: {selectedRow}"
   ></div>
 
   {#each options as option (option.value)}
@@ -213,7 +279,7 @@
         ? value === option.value
         : undefined}
       tabindex={semantics !== "button-group"
-        ? value === option.value
+        ? options.indexOf(option) === focusIndex
           ? 0
           : -1
         : 0}
@@ -341,6 +407,35 @@
     width: calc((100% - 4px) / var(--count) - 1px);
   }
 
+  /* Wrapped layout. Equal tracks on both axes keep the indicator's cell math
+     the same as the single-row case, one dimension at a time. */
+  .segmented-control.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .grid .indicator {
+    bottom: auto;
+    left: calc(3px + (100% - 6px) / var(--cols) * var(--col));
+    width: calc((100% - 6px) / var(--cols) - 2px);
+    top: calc(3px + (100% - 6px) / var(--rows) * var(--row));
+    height: calc((100% - 6px) / var(--rows) - 2px);
+    transition:
+      left var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      top var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      width var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      height var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      background-color var(--duration-normal, 200ms) ease;
+  }
+
+  .grid.compact .indicator {
+    left: calc(2px + (100% - 4px) / var(--cols) * var(--col));
+    width: calc((100% - 4px) / var(--cols) - 1px);
+    top: calc(2px + (100% - 4px) / var(--rows) * var(--row));
+    height: calc((100% - 4px) / var(--rows) - 1px);
+  }
+
   .segment {
     flex: 1;
     min-height: var(--min-touch-target, 44px); /* WCAG AA touch target */
@@ -382,6 +477,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .indicator,
+    .grid .indicator,
     .segment {
       transition: none;
     }

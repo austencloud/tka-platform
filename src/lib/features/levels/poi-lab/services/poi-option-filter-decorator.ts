@@ -18,8 +18,8 @@ import { validateMotion, validateTransition } from "./poi-constraint-validator";
 export interface ActivePropTypes {
   // A hand may have no prop type set; only `PropType.POI` is constrained, so an
   // undefined type is treated as "not poi" (no constraint).
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
 }
 
 export class PoiOptionFilterDecorator {
@@ -28,24 +28,24 @@ export class PoiOptionFilterDecorator {
     previousPictograph: PictographData | null,
     activeProps: ActivePropTypes
   ): PictographData[] {
-    const blueIsPoi = activeProps.bluePropType === PropType.POI;
-    const redIsPoi = activeProps.redPropType === PropType.POI;
+    const leftIsPoi = activeProps.leftPropType === PropType.POI;
+    const rightIsPoi = activeProps.rightPropType === PropType.POI;
 
     // Neither hand is poi — nothing to constrain.
-    if (!blueIsPoi && !redIsPoi) {
+    if (!leftIsPoi && !rightIsPoi) {
       return [...options];
     }
 
     return options.filter((option) => {
       if (
-        blueIsPoi &&
-        !this.isHandLegal(option.motions?.blue, previousPictograph?.motions?.blue)
+        leftIsPoi &&
+        !this.isHandLegal(option.motions?.left, previousPictograph?.motions?.left)
       ) {
         return false;
       }
       if (
-        redIsPoi &&
-        !this.isHandLegal(option.motions?.red, previousPictograph?.motions?.red)
+        rightIsPoi &&
+        !this.isHandLegal(option.motions?.right, previousPictograph?.motions?.right)
       ) {
         return false;
       }

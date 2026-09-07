@@ -384,11 +384,29 @@ export class TrailRenderer3D {
       }
     }
 
-    (this.geometry.attributes.position as BufferAttribute).needsUpdate = true;
-    (this.geometry.attributes.alpha as BufferAttribute).needsUpdate = true;
+    // Upload only the vertices this frame wrote. Marking an attribute dirty
+    // with no update range makes three.js re-upload the ENTIRE backing array
+    // (WebGLAttributes.updateBuffer falls back to a full bufferSubData when
+    // updateRanges is empty), so a short live trail still paid for the full
+    // maxVertices capacity every frame. setDrawRange already bounds the draw,
+    // so the untouched tail is never read.
+    const positionAttribute = this.geometry.attributes
+      .position as BufferAttribute;
+    positionAttribute.clearUpdateRanges();
+    positionAttribute.addUpdateRange(0, vertexIndex * 3);
+    positionAttribute.needsUpdate = true;
+
+    const alphaAttribute = this.geometry.attributes.alpha as BufferAttribute;
+    alphaAttribute.clearUpdateRanges();
+    alphaAttribute.addUpdateRange(0, vertexIndex);
+    alphaAttribute.needsUpdate = true;
+
     if (this.config.rainbow) {
-      (this.geometry.attributes.instanceColor as BufferAttribute).needsUpdate =
-        true;
+      const colorAttribute = this.geometry.attributes
+        .instanceColor as BufferAttribute;
+      colorAttribute.clearUpdateRanges();
+      colorAttribute.addUpdateRange(0, vertexIndex * 3);
+      colorAttribute.needsUpdate = true;
     }
 
     // Indexed draw: range is in index count, not vertex count. vertexIndex is

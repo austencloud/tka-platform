@@ -8,7 +8,6 @@ const readSource = (path: string): string =>
 /** Every public href that is currently withdrawn from production. */
 const withdrawnHrefs = {
   "staff choreography": "/learn/staff-spinning-choreography",
-  "software roots": "/roots/software",
   "the LOOP algebra": "/notation/loops",
 } as const;
 
@@ -26,7 +25,6 @@ const publicLinkSources = [
 
 const gatedRoutes = [
   "src/routes/(public)/learn/staff-spinning-choreography/+page.server.ts",
-  "src/routes/(public)/roots/software/+page.server.ts",
   "src/routes/(public)/notation/loops/+page.server.ts",
 ];
 
@@ -40,16 +38,11 @@ describe("withdrawn public pages", () => {
     }
   });
 
-  // /roots/software is deliberately excluded from this check: its route gate
-  // returns 404 in production, yet `{ url: "roots/software" }` is still listed
-  // in the sitemap. That predates this test and is a real sitemap-to-404
-  // mismatch, not something to paper over here. Add it back to the loop once
-  // the page is either un-gated or delisted.
-  const sitemapChecked = ["staff choreography", "the LOOP algebra"] as const;
-
   it("keeps gated pages out of the sitemap", () => {
     const sitemap = readSource("src/routes/sitemap.xml/+server.ts");
-    for (const name of sitemapChecked) {
+    for (const name of Object.keys(withdrawnHrefs) as Array<
+      keyof typeof withdrawnHrefs
+    >) {
       const href = withdrawnHrefs[name];
       expect(sitemap, `sitemap still lists ${name}`).not.toContain(
         `{ url: "${href.replace(/^\//, "")}" }`
@@ -72,9 +65,6 @@ describe("withdrawn public pages", () => {
         "src/routes/(public)/learn/staff-spinning-choreography/_components/StaffSpinningChoreographyDraft.svelte"
       )
     ).toContain("Learn Staff Choreography");
-    expect(
-      readSource("src/routes/(public)/roots/software/+page.svelte")
-    ).toContain("The History of Flow Arts Software");
     expect(
       readSource("src/routes/(public)/notation/loops/+page.svelte")
     ).toContain("The LOOP Algebra");

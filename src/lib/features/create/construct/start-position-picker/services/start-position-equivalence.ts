@@ -1,4 +1,4 @@
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
@@ -11,15 +11,15 @@ interface HandBoundary {
 function getGridMode(position: PictographData): GridMode | null {
   return (
     position.gridMode ??
-    position.motions[MotionColor.BLUE]?.gridMode ??
-    position.motions[MotionColor.RED]?.gridMode ??
+    position.motions[HandSide.LEFT]?.gridMode ??
+    position.motions[HandSide.RIGHT]?.gridMode ??
     null
   );
 }
 
 function getHandBoundary(
   position: PictographData,
-  color: MotionColor
+  color: HandSide
 ): HandBoundary | null {
   const motion = position.motions[color];
   if (!motion) return null;
@@ -34,7 +34,7 @@ function getHandBoundary(
 function hasSameHandBoundary(
   first: PictographData,
   second: PictographData,
-  color: MotionColor
+  color: HandSide
 ): boolean {
   const firstBoundary = getHandBoundary(first, color);
   const secondBoundary = getHandBoundary(second, color);
@@ -67,7 +67,7 @@ export function areStartPositionsEquivalent(
   }
 
   return (
-    hasSameHandBoundary(first, second, MotionColor.BLUE) &&
-    hasSameHandBoundary(first, second, MotionColor.RED)
+    hasSameHandBoundary(first, second, HandSide.LEFT) &&
+    hasSameHandBoundary(first, second, HandSide.RIGHT)
   );
 }

@@ -1,6 +1,6 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, HandSide, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -12,23 +12,23 @@ const { EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
 // 12 staff pictographs: 3 positions × 4 thumb-orientation columns - copied
 // verbatim from _pages/StaffPositionsPage.svelte.
-const staticMotion = (color: MotionColor, loc: GridLocation, ori: Orientation) =>
+const staticMotion = (color: HandSide, loc: GridLocation, ori: Orientation) =>
   createMotionData({
     motionType: MotionType.STATIC,
     startLocation: loc,
     endLocation: loc,
     startOrientation: ori,
     endOrientation: ori,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 
-type Row = { letter: Letter; blue: GridLocation; red: GridLocation };
+type Row = { letter: Letter; left: GridLocation; right: GridLocation };
 const ROWS: Row[] = [
-  { letter: Letter.ALPHA, blue: W, red: E },
-  { letter: Letter.BETA, blue: SO_, red: SO_ },
-  { letter: Letter.GAMMA, blue: SO_, red: E },
+  { letter: Letter.ALPHA, left: W, right: E },
+  { letter: Letter.BETA, left: SO_, right: SO_ },
+  { letter: Letter.GAMMA, left: SO_, right: E },
 ];
 
 // Column thumb orientations, blue/red order (matches the artboard's colored header).
@@ -44,16 +44,16 @@ const cell = (row: Row, col: number): StepData =>
     id: `sp-${row.letter}-${col}`,
     letter: row.letter,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(row.blue, row.red),
-    endPosition: getGridPositionFromLocations(row.blue, row.red),
+    startPosition: getGridPositionFromLocations(row.left, row.right),
+    endPosition: getGridPositionFromLocations(row.left, row.right),
     motions: {
-      blue: staticMotion(MotionColor.BLUE, row.blue, COL_ORI[col]![0]),
-      red: staticMotion(MotionColor.RED, row.red, COL_ORI[col]![1]),
+      left: staticMotion(HandSide.LEFT, row.left, COL_ORI[col]![0]),
+      right: staticMotion(HandSide.RIGHT, row.right, COL_ORI[col]![1]),
     },
     stepNumber: null,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   }) as unknown as StepData;
 

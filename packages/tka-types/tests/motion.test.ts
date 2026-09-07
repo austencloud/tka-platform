@@ -7,7 +7,7 @@ import {
   Orientation,
   GridLocation,
   Plane,
-  PropColor,
+  HandSide,
   type Motion,
 } from "../src/index.js";
 
@@ -21,7 +21,7 @@ function baseBlueShift(): Motion {
     endOrientation: Orientation.out,
     turns: 0,
     plane: Plane.wall,
-    color: PropColor.blue,
+    hand: HandSide.LEFT,
   });
 }
 
@@ -29,7 +29,7 @@ describe("createMotion", () => {
   it("constructs a Motion with required fields intact", () => {
     const m = baseBlueShift();
     expect(m.motionType).toBe("shift");
-    expect(m.color).toBe("blue");
+    expect(m.hand).toBe("left");
     expect(m.plane).toBe("wall");
     expect(m.turns).toBe(0);
   });
@@ -49,7 +49,7 @@ describe("createMotion", () => {
       endOrientation: Orientation.out,
       turns: "fl",
       plane: Plane.wall,
-      color: PropColor.blue,
+      hand: HandSide.LEFT,
       prefloatMotionType: MotionType.pro,
       prefloatRotationDirection: RotationDirection.cw,
     });
@@ -68,7 +68,7 @@ describe("createMotion", () => {
         endOrientation: Orientation.out,
         turns: 0,
         plane: Plane.wall,
-        color: PropColor.blue,
+        hand: HandSide.LEFT,
       })
     ).toThrow(/motionType/);
   });
@@ -84,7 +84,7 @@ describe("createMotion", () => {
         endOrientation: Orientation.out,
         turns: 0,
         plane: Plane.wall,
-        color: PropColor.blue,
+        hand: HandSide.LEFT,
       })
     ).toThrow(/rotationDirection/);
   });
@@ -100,7 +100,7 @@ describe("createMotion", () => {
         endOrientation: Orientation.out,
         turns: Number.NaN,
         plane: Plane.wall,
-        color: PropColor.blue,
+        hand: HandSide.LEFT,
       })
     ).toThrow(/turns/);
   });
@@ -116,7 +116,7 @@ describe("createMotion", () => {
         endOrientation: Orientation.out,
         turns: "fl",
         plane: Plane.wall,
-        color: PropColor.blue,
+        hand: HandSide.LEFT,
         prefloatMotionType: "twirl" as unknown as typeof MotionType.pro,
       })
     ).toThrow(/prefloatMotionType/);
@@ -133,12 +133,12 @@ describe("createMotion defaults and optional fields", () => {
       startOrientation: Orientation.in,
       endOrientation: Orientation.out,
       turns: 0,
-      color: PropColor.blue,
+      hand: HandSide.LEFT,
     });
     expect(m.plane).toBe("wall");
   });
 
-  it("accepts a Motion with no color (keyed-channel case)", () => {
+  it("accepts a Motion with no hand (keyed-channel case)", () => {
     const m = createMotion({
       motionType: MotionType.shift,
       startLocation: GridLocation.n,
@@ -149,7 +149,7 @@ describe("createMotion defaults and optional fields", () => {
       turns: 0,
       plane: Plane.wall,
     });
-    expect(m.color).toBeUndefined();
+    expect(m.hand).toBeUndefined();
   });
 });
 

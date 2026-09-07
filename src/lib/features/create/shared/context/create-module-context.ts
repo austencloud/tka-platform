@@ -20,6 +20,7 @@ import type { SessionManager } from "../services/session-manager.svelte";
 import type { Autosaver } from "../services/autosaver";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 import type { ConstructTutorialState } from "$lib/features/create/construct/tutorial/state/construct-tutorial-state.svelte";
+import type { SequenceTransformActionDispatcher } from "../services/sequence-transform-action-dispatcher";
 
 type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 type ConstructTabState = ReturnType<typeof ConstructTabStateType>;
@@ -34,6 +35,7 @@ export interface CreateModuleContext {
   constructTabState: ConstructTabState;
   constructTutorialState: ConstructTutorialState;
   panelState: PanelCoordinationState;
+  getSequenceTransformActions: () => SequenceTransformActionDispatcher | null;
 
   // Services
   services: CreateModuleOrchestrators;

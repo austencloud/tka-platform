@@ -102,7 +102,7 @@ export class CreateModuleHandlers {
    * Handle open sequence actions button click
    */
   handleOpenSequenceActions(panelState: PanelCoordinationState): void {
-    panelState.openSequenceActionsPanel();
+    panelState.openSequenceActionsPanel("workflow");
   }
 }
 

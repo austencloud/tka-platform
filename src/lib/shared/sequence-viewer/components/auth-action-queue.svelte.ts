@@ -142,8 +142,14 @@ export function createAuthActionQueue() {
     if (!browser) return null;
     pendingActionQueue.bootstrapFromUrl(new URL(window.location.href));
     const pending = pendingActionQueue.peek();
-    if (pending && !authState.isAuthenticated) {
-      openSignInSheet(pending.type);
+    if (pending && !authState.isFullAccount) {
+      if (requiresFullAccount(pending.type)) {
+        openSignInSheet(pending.type);
+      } else if (!authState.isAuthenticated) {
+        // A guest-capable action should resume without an account gate, just
+        // as it does when invoked from a button rather than a handoff URL.
+        void ensureGuestIdentity();
+      }
       return pending.type;
     }
     return null;
@@ -155,6 +161,14 @@ export function createAuthActionQueue() {
    */
   function replayPendingAction(callbacks: AuthActionQueueCallbacks): boolean {
     if (!authState.isAuthenticated) return false;
+    const queued = pendingActionQueue.peek();
+    if (
+      queued &&
+      requiresFullAccount(queued.type) &&
+      !authState.isFullAccount
+    ) {
+      return false;
+    }
     const pending = pendingActionQueue.drain();
     if (!pending) return false;
 

@@ -14,8 +14,8 @@ export interface AxisFilter {
 }
 
 export interface MatrixFilters {
-  blue: AxisFilter;
-  red: AxisFilter;
+  left: AxisFilter;
+  right: AxisFilter;
   collapse: boolean;
 }
 
@@ -32,8 +32,8 @@ export function defaultAxisFilter(): AxisFilter {
 
 export function defaultMatrixFilters(): MatrixFilters {
   return {
-    blue: defaultAxisFilter(),
-    red: defaultAxisFilter(),
+    left: defaultAxisFilter(),
+    right: defaultAxisFilter(),
     collapse: true,
   };
 }

@@ -42,7 +42,7 @@ import { createStepData } from "$lib/shared/foundation/domain/factories/create-s
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -342,7 +342,7 @@ describe("walk classifier — unlabelable results", () => {
     // flags the sequence `metadata.incompleteWord`. Such a result cannot be
     // labelled, saved or turned into a shortcode — surfacing it would only
     // offer the user something that breaks downstream.
-    const stuck = (color: MotionColor) =>
+    const stuck = (color: HandSide) =>
       createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -351,7 +351,7 @@ describe("walk classifier — unlabelable results", () => {
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
         turns: 0,
-        color,
+        hand: color,
         arrowLocation: GridLocation.NORTH,
       });
     const unresolvable = createStepData({
@@ -361,8 +361,8 @@ describe("walk classifier — unlabelable results", () => {
       startPosition: GGGG_CW.steps[0]!.startPosition,
       endPosition: GGGG_CW.steps[0]!.startPosition,
       motions: {
-        [MotionColor.BLUE]: stuck(MotionColor.BLUE),
-        [MotionColor.RED]: stuck(MotionColor.RED),
+        [HandSide.LEFT]: stuck(HandSide.LEFT),
+        [HandSide.RIGHT]: stuck(HandSide.RIGHT),
       },
     });
 
@@ -699,7 +699,7 @@ const SOURCES: WalkSource[] = [
     variant: {
       rotation: 0,
       mirrored: false,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     },
     sequence: GGGG_CW,
@@ -710,7 +710,7 @@ const SOURCES: WalkSource[] = [
     variant: {
       rotation: 0,
       mirrored: false,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     },
     sequence: HHHH_CCW,
@@ -721,7 +721,7 @@ const SOURCES: WalkSource[] = [
     variant: {
       rotation: 0,
       mirrored: true,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     },
     sequence: HHHH_CCW,

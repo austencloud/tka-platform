@@ -21,7 +21,7 @@ import type {
 import * as keyDeriverModule from "./thumbnail-key-deriver";
 import {
   ThumbnailRenderTimeoutError,
-  type ThumbnailRenderQueue,
+  ThumbnailRenderQueue,
 } from "./thumbnail-render-queue";
 import type { ThumbnailRenderer } from "$lib/shared/browse/services/thumbnail-renderer";
 import * as cloudCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
@@ -61,6 +61,12 @@ export interface ThumbnailRequest {
 
   /** Cancels only this caller; shared same-key rendering continues for others. */
   signal?: AbortSignal;
+
+  /** Gallery previews may reuse a QR image, but must not prepare scan assets. */
+  qrPolicy?: "generate" | "cache-only" | "background";
+
+  /** Paint a separately cached preview while its QR version is prepared. */
+  onPreview?: (preview: ThumbnailResult) => void;
 }
 export interface ThumbnailResult {
   /** URL to display (either cloud URL or blob URL), null if render failed */
@@ -250,7 +256,7 @@ function uploadToCloud(
   key: ThumbnailCacheKey,
   blob: Blob
 ): void {
-  cloudCacheModule
+  const upload = cloudCacheModule
     .upload(orchestrator.buildCloudKey(key), blob)
     .then((url) => {
       if (url) {
@@ -261,11 +267,18 @@ function uploadToCloud(
       // Non-fatal - image is displayed, just couldn't upload for others
       orchestrator["metrics"]?.recordUpload(false);
     });
+
+  // A live card is finished the moment its image paints, so the upload stays
+  // off the render path. A batch warm pass is the opposite case: the upload IS
+  // the deliverable, and whoever started it needs to know when closing the tab
+  // is safe. Register the promise so settleUploads() can answer that.
+  orchestrator.trackUpload(upload);
 }
 
 export class ThumbnailRenderOrchestrator {
   private completedCount = 0;
   private memoryCache = new MemoryUrlCache();
+  private backgroundQueue = new ThumbnailRenderQueue();
 
   // Generation counter: bumped when all caches are nuked.
   // Any thumbnail rendered before this generation is stale.
@@ -273,12 +286,45 @@ export class ThumbnailRenderOrchestrator {
   // Track which generation each key was last rendered at
   private renderedGenerations = new Map<string, number>();
 
+  // Uploads that have been handed to Storage but have not settled yet. Kept so
+  // a batch pass can wait for its own writes instead of guessing.
+  private inFlightUploads = new Set<Promise<void>>();
+
   constructor(
     private queue: ThumbnailRenderQueue,
     private renderer: ThumbnailRenderer,
     private localCache: ThumbnailLocalCache,
     private metrics?: ThumbnailMetricsCollector
-  ) {}
+  ) {
+    this.backgroundQueue.setMaxConcurrent(1);
+  }
+
+  /**
+   * Register an in-flight cloud upload. Called by the module-level upload
+   * helper; the set self-drains as each upload settles.
+   */
+  trackUpload(upload: Promise<void>): void {
+    this.inFlightUploads.add(upload);
+    void upload.finally(() => this.inFlightUploads.delete(upload));
+  }
+
+  /**
+   * Resolve once every upload this orchestrator has started has settled.
+   *
+   * Uploads are deliberately fire-and-forget so a gallery card paints as soon
+   * as its image exists. That makes "render finished" a poor proxy for "the
+   * shared cache actually has it" — a warm pass can report 100% while hundreds
+   * of writes are still in the air, and closing the tab there throws that work
+   * away. A batch caller awaits this before it claims to be done.
+   *
+   * Loops because settling one upload can enqueue another (the cloud module
+   * probes for an existing object before it writes).
+   */
+  async settleUploads(): Promise<void> {
+    while (this.inFlightUploads.size > 0) {
+      await Promise.allSettled([...this.inFlightUploads]);
+    }
+  }
 
   /**
    * Nuke every cache layer and force all subsequent requests to render fresh.
@@ -303,6 +349,44 @@ export class ThumbnailRenderOrchestrator {
   }
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
+    if (request.qrPolicy !== "background") return this.loadThumbnail(request);
+
+    const preview = await this.loadThumbnail({
+      ...request,
+      qrPolicy: "cache-only",
+    });
+    if (
+      !preview.url ||
+      preview.key.inputs.visibility?.showQRCode ||
+      !request.input.visibility?.showQRCode
+    ) {
+      return preview;
+    }
+    if (request.signal?.aborted) throw cancellationError(request.signal);
+    request.onPreview?.(preview);
+
+    // The preview stays visible, without a loading overlay. Only one QR warm
+    // runs at a time, on a separate queue that cannot block new preview jobs.
+    const final = await this.loadThumbnail(
+      {
+        ...request,
+        qrPolicy: "generate",
+        onStatusChange: undefined,
+      },
+      undefined,
+      this.backgroundQueue
+    );
+    if (final.cacheWriteSkippedReason && final.url?.startsWith("blob:")) {
+      URL.revokeObjectURL(final.url);
+    }
+    return final.url && !final.cacheWriteSkippedReason ? final : preview;
+  }
+
+  private async loadThumbnail(
+    request: ThumbnailRequest,
+    continuedRequestId?: string,
+    renderQueue: ThumbnailRenderQueue = this.queue
+  ): Promise<ThumbnailResult> {
     const key = keyDeriverModule.deriveKey(request.input);
     const cloudKey = this.buildCloudKey(key);
 
@@ -319,6 +403,7 @@ export class ThumbnailRenderOrchestrator {
 
     // Start metrics tracking
     const requestId =
+      continuedRequestId ??
       this.metrics?.startRequest(true, {
         cacheKeyHash: key.hash,
         sequenceId: request.sequence.id || key.inputs.sequenceId || null,
@@ -334,7 +419,8 @@ export class ThumbnailRenderOrchestrator {
         queueDepthAtEnqueue: null,
         activeAtEnqueue: null,
         workerEligible: null,
-      }) ?? "";
+      }) ??
+      "";
     const assertRequestActive = () => {
       if (!request.signal?.aborted) return;
       this.metrics?.cancelRequest(requestId);
@@ -437,13 +523,38 @@ export class ThumbnailRenderOrchestrator {
       }
     }
 
+    if (
+      request.qrPolicy === "cache-only" &&
+      key.inputs.visibility?.showQRCode
+    ) {
+      // Preparing a new QR verifies every scan cell in both themes. That can
+      // take tens of seconds per card and serialize an entire scrolled gallery.
+      // Load a separately keyed preview instead. Warmers
+      // and full-card callers still use the complete, scannable render path.
+      const previewInput = {
+        ...request.input,
+        visibility: { ...request.input.visibility, showQRCode: false },
+      };
+      this.metrics?.updateRequestContext(requestId, {
+        cacheKeyHash: keyDeriverModule.deriveKey(previewInput).hash,
+        qrRequested: false,
+      });
+      return this.loadThumbnail(
+        {
+          ...request,
+          input: previewInput,
+        },
+        requestId
+      );
+    }
+
     // Step 5: Need to render - queue to throttle concurrent renders
     request.onStatusChange?.({ state: "queued", position: 0 });
     const queueStartTime = performance.now();
     this.metrics?.startStage(requestId, "queue_wait");
 
     // Track queue depth
-    const queueStats = this.queue.getStats();
+    const queueStats = renderQueue.getStats();
     this.metrics?.recordQueueState(requestId, queueStats);
     assertRequestActive();
 
@@ -452,9 +563,12 @@ export class ThumbnailRenderOrchestrator {
     let executedThisRequest = false;
 
     try {
-      const result = await this.queue.enqueue(
+      const result = await renderQueue.enqueue(
         key.hash,
         async (signal, reportActivity) => {
+          if (renderQueue === this.backgroundQueue) {
+            await this.waitForPreviewQueue(signal, reportActivity);
+          }
           executedThisRequest = true;
           reportActivity();
           queueWaitTime = performance.now() - queueStartTime;
@@ -539,8 +653,15 @@ export class ThumbnailRenderOrchestrator {
               : ("qr_inconsistent" as const),
           };
         },
-        request.priority,
-        request.signal
+        {
+          priority: request.priority,
+          consumerSignal: request.signal,
+          // A QR thumbnail verifies and may rasterize every scan cell in both
+          // themes before composition. Production traces showed three of these
+          // competing in qr_bitmap for minutes, so they use the queue's
+          // exclusive lane while ordinary worker renders remain concurrent.
+          exclusive: key.inputs.visibility?.showQRCode === true,
+        }
       );
 
       // A second card requesting the same key shares the queue promise. Its
@@ -596,10 +717,47 @@ export class ThumbnailRenderOrchestrator {
 
   cancel(key: Pick<ThumbnailCacheKey, "hash">): void {
     this.queue.cancel(key.hash);
+    this.backgroundQueue.cancel(key.hash);
   }
 
   cancelAll(): void {
     this.queue.cancelAll();
+    this.backgroundQueue.cancelAll();
+  }
+
+  getBackgroundQueueStats(): { queued: number; active: number } {
+    const { queued, active } = this.backgroundQueue.getStats();
+    return { queued, active };
+  }
+
+  private waitForPreviewQueue(
+    signal: AbortSignal,
+    reportActivity: () => void
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const cleanup = () => {
+        clearTimeout(timer);
+        signal.removeEventListener("abort", onAbort);
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(cancellationError(signal));
+      };
+      const check = () => {
+        if (signal.aborted) return onAbort();
+        const { active, queued } = this.queue.getStats();
+        if (!active && !queued) {
+          cleanup();
+          resolve();
+        } else {
+          reportActivity();
+          timer = setTimeout(check, 100);
+        }
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+      check();
+    });
   }
 
   getQueueStats(): { queued: number; active: number; completed: number } {

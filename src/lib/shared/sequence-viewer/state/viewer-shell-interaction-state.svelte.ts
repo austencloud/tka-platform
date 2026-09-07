@@ -113,8 +113,8 @@ export function createViewerShellInteractionState(
       includeEndHold: options.includeEndHold,
       renderMode: ctx.renderMode,
       playbackMode: ctx.playbackMode,
-      bluePropType: ctx.bluePropType,
-      redPropType: ctx.redPropType,
+      leftPropType: ctx.leftPropType,
+      rightPropType: ctx.rightPropType,
     });
   }
 
@@ -125,8 +125,8 @@ export function createViewerShellInteractionState(
       darkMode: ctx.exportOptions.imageDarkMode,
       includeStartPosition: ctx.splitPaneImageComposition.showStartPos,
       handPath: ctx.splitPaneImageComposition.handPathMode ?? false,
-      bluePropType: ctx.bluePropType,
-      redPropType: ctx.redPropType,
+      leftPropType: ctx.leftPropType,
+      rightPropType: ctx.rightPropType,
     });
   }
 
@@ -281,7 +281,7 @@ export function createViewerShellInteractionState(
 
   function handleSystemPlaybackChange(
     playing: boolean,
-    source: "system_3d_loading"
+    source: "system_3d_loading" | "system_studio_handoff"
   ): void {
     const ctx = inputs.getContext();
     const previous = ctx.isPlayingLocal;
@@ -314,20 +314,20 @@ export function createViewerShellInteractionState(
 
   function handlePropChange(propType: PropType, source: string): void {
     const ctx = inputs.getContext();
-    const previousBlue = ctx.bluePropType ? String(ctx.bluePropType) : null;
-    const previousRed = ctx.redPropType ? String(ctx.redPropType) : null;
+    const previousLeft = ctx.leftPropType ? String(ctx.leftPropType) : null;
+    const previousRight = ctx.rightPropType ? String(ctx.rightPropType) : null;
     ctx.handlePropTypeChange(propType);
-    const blue = ctx.bluePropType ? String(ctx.bluePropType) : null;
-    const red = ctx.redPropType ? String(ctx.redPropType) : null;
+    const left = ctx.leftPropType ? String(ctx.leftPropType) : null;
+    const right = ctx.rightPropType ? String(ctx.rightPropType) : null;
     dependencies.captureScanSettingChanged({
       group: "props",
       setting: "prop_type",
-      previous_value: `blue:${previousBlue ?? "none"}|red:${previousRed ?? "none"}`,
-      value: `blue:${blue ?? "none"}|red:${red ?? "none"}`,
-      previous_blue_prop: previousBlue,
-      previous_red_prop: previousRed,
-      blue_prop: blue,
-      red_prop: red,
+      previous_value: `left:${previousLeft ?? "none"}|right:${previousRight ?? "none"}`,
+      value: `left:${left ?? "none"}|right:${right ?? "none"}`,
+      previous_left_prop: previousLeft,
+      previous_right_prop: previousRight,
+      left_prop: left,
+      right_prop: right,
       source,
     });
   }
@@ -438,14 +438,14 @@ export function createViewerShellInteractionState(
     inputs.getContext().exitEditMode();
   }
 
-  function handleMotionToggle(hand: "blue" | "red"): void {
+  function handleMotionToggle(hand: "left" | "right"): void {
     const ctx = inputs.getContext();
     const previous =
-      hand === "blue"
-        ? ctx.viewerVisibility.blueMotion
-        : ctx.viewerVisibility.redMotion;
-    if (hand === "blue") ctx.viewerVisibility.toggleBlue();
-    else ctx.viewerVisibility.toggleRed();
+      hand === "left"
+        ? ctx.viewerVisibility.leftMotion
+        : ctx.viewerVisibility.rightMotion;
+    if (hand === "left") ctx.viewerVisibility.toggleLeft();
+    else ctx.viewerVisibility.toggleRight();
     dependencies.captureScanSettingChanged({
       group: "motion",
       setting: `${hand}_visible`,
@@ -638,6 +638,24 @@ export function createViewerShellInteractionState(
     ctx.handleStopRecording();
   }
 
+  function handleConfirmFilmRender(): void {
+    const ctx = inputs.getContext();
+    dependencies.captureScanAction("film_render_confirm", {
+      duration_seconds: Math.round(ctx.pendingFilmRender?.durationSeconds ?? 0),
+      render_mode: "3d",
+    });
+    ctx.handleConfirmFilmRender();
+  }
+
+  function handleDiscardFilmRender(): void {
+    const ctx = inputs.getContext();
+    dependencies.captureScanAction("film_render_discard", {
+      duration_seconds: Math.round(ctx.pendingFilmRender?.durationSeconds ?? 0),
+      render_mode: "3d",
+    });
+    ctx.handleDiscardFilmRender();
+  }
+
   function handleDismissExportedVideo(): void {
     dependencies.captureScanAction("exported_video_dismiss");
     inputs.getContext().dismissPreview();
@@ -729,6 +747,8 @@ export function createViewerShellInteractionState(
     handleArtExportEvent,
     handleCancelVideoExport,
     handleStopRecording,
+    handleConfirmFilmRender,
+    handleDiscardFilmRender,
     handleDismissExportedVideo,
     handleRedownloadExportedVideo,
     handleVideoUploadSaveFirst,

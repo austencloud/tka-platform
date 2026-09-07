@@ -20,6 +20,8 @@ import type { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tu
 import type { MandalaViewerController } from "$lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte";
 import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
 import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
 import type {
   ImageCompositionProps,
@@ -81,16 +83,19 @@ export interface OrchestratorContext {
   mirrorEnabled: boolean;
   handleToggleMirror: () => void;
 
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
   catDogModeEnabled: boolean | undefined;
   handlePropTypeChange: (propType: PropType) => void;
+  fanAppearance: FanAppearance;
+  handleFanAppearanceChange: (appearance: FanAppearance) => void;
 
   imgShowWord: boolean;
   imgShowStartPos: boolean;
   imgShowDifficulty: boolean;
   imgShowStepNumbers: boolean;
   imgShowNotes: boolean;
+  imgCustomNotesText: string;
   imgDarkMode: boolean;
 
   isSyncToggling: boolean;
@@ -109,6 +114,7 @@ export interface OrchestratorContext {
   handleFavoriteToggle: () => void;
   handlePublishAction: () => Promise<void>;
   handleUnpublishAction: () => Promise<void>;
+  saveCardPresentation: (presentation: CardPresentation) => Promise<boolean>;
 
   playbackMode: PlaybackMode;
   handlePlaybackModeChange: (mode: PlaybackMode) => void;
@@ -185,6 +191,11 @@ export interface OrchestratorContext {
   isRecording3D: boolean;
   recordingElapsed: number;
   handleStopRecording: () => void;
+  /** Non-null while the render card is up: recording has stopped and the
+   *  offline render is waiting on a quality choice. */
+  pendingFilmRender: { durationSeconds: number } | null;
+  handleConfirmFilmRender: () => void;
+  handleDiscardFilmRender: () => void;
 
   viewerState: ReturnType<typeof createViewerState>;
   viewerVisibility: SequenceViewerVisibilityState;

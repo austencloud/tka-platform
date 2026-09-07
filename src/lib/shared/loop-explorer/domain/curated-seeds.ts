@@ -3,7 +3,7 @@
  *
  * `curated-seeds.json` is verification-harness output, not persisted app
  * data. Its compact wire shape predates canonical `SequenceData`: steps carry
- * `blueMotion` / `redMotion`, positions are strings, and view-layer defaults
+ * `leftMotion` / `rightMotion`, positions are strings, and view-layer defaults
  * are omitted. Keep that distinction explicit at this boundary. Casting the
  * JSON straight to `SequenceData` lets those strings reach the animation
  * engine as if they were `StartPositionData` objects.

@@ -30,7 +30,7 @@ export function buildDiagnosticReport(
     ? optimizer.optimize(simInput, CENTER_STANCE, OPTIMIZER_BOUNDS)
     : null;
   const currentSimResult = optimizer
-    ? optimizer.simulator.evaluate(currentStance, simInput.blue, simInput.red)
+    ? optimizer.simulator.evaluate(currentStance, simInput.left, simInput.right)
     : null;
 
   return {
@@ -40,19 +40,19 @@ export function buildDiagnosticReport(
     poseIndex: allPoses.findIndex((p) => p.id === currentPose.id),
     totalPoses: allPoses.length,
     poseDefinition: {
-      blueHand: currentPose.blueHand,
-      redHand: currentPose.redHand,
+      leftHand: currentPose.leftHand,
+      rightHand: currentPose.rightHand,
     },
     propTargets: {
-      blue: {
-        grip: vec3ToPlain(simInput.blue.gripWorld),
-        tipA: vec3ToPlain(simInput.blue.tipAWorld),
-        tipB: vec3ToPlain(simInput.blue.tipBWorld),
+      left: {
+        grip: vec3ToPlain(simInput.left.gripWorld),
+        tipA: vec3ToPlain(simInput.left.tipAWorld),
+        tipB: vec3ToPlain(simInput.left.tipBWorld),
       },
-      red: {
-        grip: vec3ToPlain(simInput.red.gripWorld),
-        tipA: vec3ToPlain(simInput.red.tipAWorld),
-        tipB: vec3ToPlain(simInput.red.tipBWorld),
+      right: {
+        grip: vec3ToPlain(simInput.right.gripWorld),
+        tipA: vec3ToPlain(simInput.right.tipAWorld),
+        tipB: vec3ToPlain(simInput.right.tipBWorld),
       },
     },
     currentStance: {

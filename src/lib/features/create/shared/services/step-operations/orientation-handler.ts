@@ -13,7 +13,7 @@ import {
   isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
@@ -43,7 +43,7 @@ export function updateStepOrientation(
     return;
   }
 
-  const colorKey = color as MotionColor;
+  const colorKey = color as HandSide;
   const currentMotion: MotionData | undefined = stepData.motions[colorKey];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
@@ -194,7 +194,7 @@ export function calculatePropagatedSteps(
   if (startingStepNumber === START_POSITION_BEAT_NUMBER) {
     if (startPosition?.motions) {
       const motion: MotionData | undefined =
-        startPosition.motions[color as MotionColor];
+        startPosition.motions[color as HandSide];
       if (motion) {
         previousEndOrientation = motion.endOrientation;
       }
@@ -205,7 +205,7 @@ export function calculatePropagatedSteps(
       currentSequence.steps[arrayIndex];
     if (startingBeat?.motions) {
       const motion: MotionData | undefined =
-        startingBeat.motions[color as MotionColor];
+        startingBeat.motions[color as HandSide];
       if (motion) {
         previousEndOrientation = motion.endOrientation;
       }
@@ -240,7 +240,7 @@ export function calculatePropagatedSteps(
     }
 
     const beatMotion: MotionData | undefined =
-      beat.motions[color as MotionColor];
+      beat.motions[color as HandSide];
     // Invisible placeholder = hand not really there (both-required Step
     // shape): keep breaking the propagation chain at blank/one-hand beats.
     if (!isVisibleMotion(beatMotion)) {
@@ -258,7 +258,7 @@ export function calculatePropagatedSteps(
 
     const newEndOrientation = calculateEndOrientation(
       tempMotionData,
-      color as MotionColor
+      color as HandSide
     );
 
     // Update this beat's startOrientation and endOrientation

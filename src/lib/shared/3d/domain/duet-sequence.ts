@@ -1,19 +1,19 @@
 /**
  * Duet Sequence Domain Model
  *
- * Defines a pairing of two sequences for coordinated dual-avatar performance.
+ * Defines a pairing of two sequences for coordinated duet performance.
  * Does NOT modify SequenceData - references existing library sequences by ID.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 /**
- * Avatar positioning hint for duet performance
+ * Performer positioning hint for duet performance
  */
 export type DuetPositioning = "side-by-side" | "face-to-face" | "custom";
 
 /**
- * Duet sequence definition - pairs two sequences for dual-avatar playback
+ * Duet sequence definition - pairs two sequences for two-performer playback
  */
 export interface DuetSequence {
   /** Unique identifier */
@@ -25,15 +25,15 @@ export interface DuetSequence {
   /** Optional description */
   description?: string;
 
-  /** Reference to avatar 1's sequence (by ID) */
-  avatar1SequenceId: string;
+  /** Reference to performer 1's sequence (by ID) */
+  performer1SequenceId: string;
 
-  /** Reference to avatar 2's sequence (by ID) */
-  avatar2SequenceId: string;
+  /** Reference to performer 2's sequence (by ID) */
+  performer2SequenceId: string;
 
   /**
-   * Beat offset applied to avatar 2.
-   * Positive = avatar 2 starts later, negative = avatar 2 starts earlier.
+   * Beat offset applied to performer 2.
+   * Positive = performer 2 starts later, negative = performer 2 starts earlier.
    * In steps (e.g., 1 = one beat behind, -0.5 = half beat ahead)
    */
   stepOffset: number;
@@ -56,11 +56,11 @@ export interface DuetSequence {
  * Used when loading a duet for playback
  */
 export interface DuetSequenceWithData extends DuetSequence {
-  /** Resolved sequence data for avatar 1 */
-  avatar1Sequence: SequenceData;
+  /** Resolved sequence data for performer 1 */
+  performer1Sequence: SequenceData;
 
-  /** Resolved sequence data for avatar 2 */
-  avatar2Sequence: SequenceData;
+  /** Resolved sequence data for performer 2 */
+  performer2Sequence: SequenceData;
 }
 
 /**
@@ -69,8 +69,8 @@ export interface DuetSequenceWithData extends DuetSequence {
 export interface CreateDuetInput {
   name: string;
   description?: string;
-  avatar1SequenceId: string;
-  avatar2SequenceId: string;
+  performer1SequenceId: string;
+  performer2SequenceId: string;
   stepOffset?: number;
   positioning?: DuetPositioning;
   tags?: string[];
@@ -81,8 +81,8 @@ export function createDuetSequence(input: CreateDuetInput): DuetSequence {
     id: crypto.randomUUID(),
     name: input.name,
     description: input.description,
-    avatar1SequenceId: input.avatar1SequenceId,
-    avatar2SequenceId: input.avatar2SequenceId,
+    performer1SequenceId: input.performer1SequenceId,
+    performer2SequenceId: input.performer2SequenceId,
     stepOffset: input.stepOffset ?? 0,
     positioning: input.positioning ?? "side-by-side",
     createdAt: new Date(),

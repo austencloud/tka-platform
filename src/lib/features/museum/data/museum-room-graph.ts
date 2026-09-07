@@ -476,7 +476,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
           { type: "gap", minTiles: 2 },
           { type: "exhibit", refId: "supp-order-3", size: "standard", facing: "south", group: "order" },
           { type: "gap", minTiles: 4 },
-          { type: "door", edgeId: "suppression->crumble", width: 4 },
+          { type: "door", edgeId: "suppression->cross-reference", width: 4 },
           { type: "gap", minTiles: 2 },
         ],
         minMargin: 2,
@@ -493,9 +493,11 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       },
       east: {
         segments: [
-          { type: "gap", minTiles: 3 },
+          { type: "gap", minTiles: 2 },
           { type: "exhibit", refId: "supp-youve-seen", size: "standard", facing: "west" },
           { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "supp-bellweather", size: "large", facing: "west" },
+          { type: "gap", minTiles: 2 },
         ],
         minMargin: 2,
       },
@@ -508,6 +510,74 @@ export const MUSEUM_ROOMS: RoomNode[] = [
         minMargin: 2,
       },
     },
+  },
+  {
+    id: "cross-reference",
+    name: "Cross-Reference Room",
+    material: "marble",
+    theme: "institutional",
+    minInteriorWidth: 14,
+    minInteriorHeight: 12,
+    description:
+      "A reading room the Nomenclature Division has occupied since 1947. " +
+      "One terminal, one memo, one plaque, and a tablet transcription that has " +
+      "been through sixty-one revisions of the key without changing.",
+    devNotes:
+      "CROSS-REFERENCE ROOM\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "PURPOSE: The OOGA payload. The Order decodes the tablet and misses the point.\n" +
+      "\n" +
+      "SPATIAL BEAT: medium - quiet, fluorescent, a reading room off the Suppression\n" +
+      "\n" +
+      "Terminal on the north wall runs the decode interaction: apply the key,\n" +
+      "letters reveal one by one, connective forms dim, OOGA. K's note follows.\n" +
+      "Then 'Open in the Composer' hands the real sequence to the app.\n" +
+      "\n" +
+      "TONE: A department that was right about everything except what it was for.",
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "xref-console", size: "large", facing: "south" },
+          { type: "gap", minTiles: 2 },
+          { type: "door", edgeId: "cross-reference->crumble", width: 4 },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "door", edgeId: "suppression->cross-reference", width: 4 },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "xref-k-sign", size: "standard", facing: "north" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "xref-memo", size: "large", facing: "west" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "xref-order", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
+    furniture: [
+      { role: "desk", offsetX: 0, offsetY: 0.05 },
+      { role: "desk-chair", offsetX: 0, offsetY: 0.18, rotationY: Math.PI },
+      { role: "bookshelf", offsetX: -0.3, offsetY: -0.3, rotationY: Math.PI / 2 },
+      { role: "lamp", offsetX: 0.3, offsetY: -0.3 },
+    ],
   },
   {
     id: "vtg-wing",
@@ -599,7 +669,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       south: {
         segments: [
           { type: "gap", minTiles: 3 },
-          { type: "door", edgeId: "suppression->crumble", width: 4 },
+          { type: "door", edgeId: "cross-reference->crumble", width: 4 },
           { type: "gap", minTiles: 3 },
         ],
         minMargin: 2,
@@ -734,7 +804,16 @@ export const MUSEUM_ROOMS: RoomNode[] = [
         ],
         minMargin: 2,
       },
-      west: EMPTY_WALL,
+      west: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "fear-k-sign", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "fear-final-argument", size: "large", facing: "east" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
     },
   },
   {
@@ -763,7 +842,16 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "\n" +
       "TONE: Office park for artists. Quietly devastating.",
     walls: {
-      north: EMPTY_WALL,
+      north: {
+        segments: [
+          { type: "gap", minTiles: 4 },
+          { type: "exhibit", refId: "iso-floor-plan", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 6 },
+          { type: "exhibit", refId: "iso-solo-sign", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 4 },
+        ],
+        minMargin: 2,
+      },
       south: EMPTY_WALL,
       east: {
         segments: [
@@ -782,6 +870,36 @@ export const MUSEUM_ROOMS: RoomNode[] = [
         minMargin: 2,
       },
     },
+    // Six cubicles in two rows of three. Every station faces its own
+    // partition; nobody faces anybody. Bookshelves stand in for the
+    // waist-height dividers until real cubicle props exist.
+    performers: [
+      { offsetX: -0.3, offsetY: -0.22, facing: "north", refId: "iso-1" },
+      { offsetX: 0, offsetY: -0.22, facing: "north", refId: "iso-2" },
+      { offsetX: 0.3, offsetY: -0.22, facing: "north", refId: "iso-3" },
+      { offsetX: -0.3, offsetY: 0.22, facing: "south", refId: "iso-4" },
+      { offsetX: 0, offsetY: 0.22, facing: "south", refId: "iso-5" },
+      { offsetX: 0.3, offsetY: 0.22, facing: "south", refId: "iso-6" },
+    ],
+    furniture: [
+      // Partitions between the columns of the north row
+      { role: "bookshelf", offsetX: -0.15, offsetY: -0.22, rotationY: Math.PI / 2 },
+      { role: "bookshelf", offsetX: 0.15, offsetY: -0.22, rotationY: Math.PI / 2 },
+      // Partitions between the columns of the south row
+      { role: "bookshelf", offsetX: -0.15, offsetY: 0.22, rotationY: Math.PI / 2 },
+      { role: "bookshelf", offsetX: 0.15, offsetY: 0.22, rotationY: Math.PI / 2 },
+      // The spine between the rows
+      { role: "bookshelf", offsetX: -0.3, offsetY: 0 },
+      { role: "bookshelf", offsetX: 0, offsetY: 0 },
+      { role: "bookshelf", offsetX: 0.3, offsetY: 0 },
+      // One chair per station, one record per chair
+      { role: "desk-chair", offsetX: -0.3, offsetY: -0.3, rotationY: Math.PI },
+      { role: "desk-chair", offsetX: 0, offsetY: -0.3, rotationY: Math.PI },
+      { role: "desk-chair", offsetX: 0.3, offsetY: -0.3, rotationY: Math.PI },
+      { role: "desk-chair", offsetX: -0.3, offsetY: 0.3 },
+      { role: "desk-chair", offsetX: 0, offsetY: 0.3 },
+      { role: "desk-chair", offsetX: 0.3, offsetY: 0.3 },
+    ],
   },
   {
     id: "collaboration",
@@ -834,6 +952,8 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       { offsetX: 0.15, offsetY: -0.2, facing: "west", refId: "collab-2" },
       { offsetX: 0.25, offsetY: 0.15, facing: "north", refId: "collab-3" },
       { offsetX: -0.1, offsetY: 0.2, facing: "south", refId: "collab-4" },
+      // The wax docent stands beside the gift-shop door with the pamphlet out.
+      { offsetX: 0.08, offsetY: 0.42, facing: "north", refId: "wax-docent" },
     ],
   },
 
@@ -871,12 +991,45 @@ export const MUSEUM_ROOMS: RoomNode[] = [
         ],
         minMargin: 2,
       },
-      south: EMPTY_WALL,
-      east: EMPTY_WALL,
-      west: EMPTY_WALL,
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "shop-exit", size: "large", facing: "north" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "shop-shelf-1", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "shop-shelf-2", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "shop-shelf-3", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "shop-closing-sign", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
     },
     performers: [
-      { offsetX: 0.35, offsetY: 0, facing: "west", refId: "shop-cashier" },
+      { offsetX: 0.3, offsetY: -0.05, facing: "west", refId: "shop-cashier" },
+    ],
+    furniture: [
+      // The register: a desk in front of the mannequin
+      { role: "desk", offsetX: 0.18, offsetY: -0.05, rotationY: Math.PI / 2 },
+      { role: "rug", offsetX: 0, offsetY: -0.3 },
+      { role: "plant", offsetX: -0.35, offsetY: -0.38 },
+      { role: "trashcan", offsetX: 0.36, offsetY: 0.3 },
+      { role: "coat-rack", offsetX: -0.36, offsetY: 0.32 },
     ],
   },
   {
@@ -1049,6 +1202,14 @@ export const MUSEUM_EDGES: RoomEdge[] = [
   // Phase 4
   {
     from: "suppression",
+    to: "cross-reference",
+    type: "main-path",
+    fromWall: "north",
+    toWall: "south",
+    corridorWidth: 4,
+  },
+  {
+    from: "cross-reference",
     to: "crumble",
     type: "main-path",
     fromWall: "north",

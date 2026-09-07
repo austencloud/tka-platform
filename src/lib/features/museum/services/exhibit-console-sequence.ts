@@ -23,7 +23,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   rewindSequence,
-  swapColors,
+  swapHands,
 } from "$lib/shared/create/services/sequence-transformer";
 import { MUSEUM_EXHIBIT_SEQUENCES } from "$lib/features/museum/data/museum-exhibit-sequences";
 import type { PerformerSettings } from "$lib/features/museum/domain/exhibit-console";
@@ -67,7 +67,7 @@ export async function effectiveSteps(
     isCircular: true,
   });
 
-  if (settings.handsSwapped) sequence = swapColors(sequence);
+  if (settings.handsSwapped) sequence = swapHands(sequence);
   if (settings.reversed) sequence = await rewindSequence(sequence);
 
   return sequence.steps;

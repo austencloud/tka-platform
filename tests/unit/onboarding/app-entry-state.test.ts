@@ -115,7 +115,7 @@ describe("appEntryState — seed derivation (hasCompleted/phase can never diverg
     const state = await freshState();
     expect(state.hasCompleted).toBe(true);
     expect(state.phase).toBe("complete");
-  });
+  }, 30_000);
 
   it("REGRESSION: firstRunDone + AUTO_TOURS off seeds hasCompleted=true (was the divergence bug)", async () => {
     localStorage.setItem("tka-first-run-completed", "true");

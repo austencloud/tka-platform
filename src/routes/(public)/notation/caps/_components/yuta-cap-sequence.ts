@@ -22,7 +22,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -91,7 +91,7 @@ const RED_LEGS: Leg[] = [
 ];
 
 function makeMotion(
-  color: MotionColor,
+  hand: HandSide,
   start: GridLocation,
   end: GridLocation,
   type: MotionType,
@@ -105,7 +105,7 @@ function makeMotion(
     rotationDirection: rotation,
     startLocation: start,
     endLocation: end,
-    color,
+    hand,
     turns,
     startOrientation: Orientation.OUT,
     endOrientation: Orientation.OUT,
@@ -132,7 +132,7 @@ function makeMotion(
    entirely (isVisibleMotion guards), so this is a genuine solo club. */
 function staticBlue(): MotionData {
   return makeMotion(
-    MotionColor.BLUE,
+    HandSide.LEFT,
     GridLocation.WEST,
     GridLocation.WEST,
     MotionType.STATIC,
@@ -149,9 +149,9 @@ export function buildYutaCapSequence(): SequenceData {
     id: "caps-yuta-start",
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: staticBlue(),
-      red: makeMotion(
-        MotionColor.RED,
+      left: staticBlue(),
+      right: makeMotion(
+        HandSide.RIGHT,
         GridLocation.EAST,
         GridLocation.EAST,
         MotionType.STATIC,
@@ -167,17 +167,17 @@ export function buildYutaCapSequence(): SequenceData {
     id: `caps-yuta-step${i + 1}`,
     stepNumber: i + 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: staticBlue(),
-      red: makeMotion(
-        MotionColor.RED,
+      left: staticBlue(),
+      right: makeMotion(
+        HandSide.RIGHT,
         leg.start,
         leg.end,
         leg.type,

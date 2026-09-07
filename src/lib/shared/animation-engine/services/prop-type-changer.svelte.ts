@@ -8,8 +8,8 @@
 
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 export interface PropTypeChangerState {
-  bluePropType: string;
-  redPropType: string;
+  leftPropType: string;
+  rightPropType: string;
   legacyPropType: string;
   textureReloadSignal: number;
 }
@@ -17,8 +17,8 @@ export interface PropTypeChangerState {
 export class PropTypeChanger {
   // Reactive state - owned by service
   state = $state<PropTypeChangerState>({
-    bluePropType: "staff",
-    redPropType: "staff",
+    leftPropType: "staff",
+    rightPropType: "staff",
     legacyPropType: "staff",
     textureReloadSignal: 0,
   });
@@ -27,39 +27,39 @@ export class PropTypeChanger {
     if (!settingsService) return;
 
     const settings = settingsService.currentSettings;
-    const newBluePropType =
-      settings.bluePropType || settings.propType || "staff";
-    const newRedPropType = settings.redPropType || settings.propType || "staff";
+    const newLeftPropType =
+      settings.leftPropType || settings.propType || "staff";
+    const newRightPropType = settings.rightPropType || settings.propType || "staff";
 
     if (
-      newBluePropType !== this.state.bluePropType ||
-      newRedPropType !== this.state.redPropType
+      newLeftPropType !== this.state.leftPropType ||
+      newRightPropType !== this.state.rightPropType
     ) {
       // Update reactive state - component will react via $derived/$effect
-      this.state.bluePropType = newBluePropType;
-      this.state.redPropType = newRedPropType;
-      this.state.legacyPropType = newBluePropType; // Legacy compatibility
+      this.state.leftPropType = newLeftPropType;
+      this.state.rightPropType = newRightPropType;
+      this.state.legacyPropType = newLeftPropType; // Legacy compatibility
 
       // Signal texture reload needed
       this.state.textureReloadSignal++;
     }
   }
 
-  overridePropTypes(bluePropType: string, redPropType: string): void {
+  overridePropTypes(leftPropType: string, rightPropType: string): void {
     if (
-      bluePropType !== this.state.bluePropType ||
-      redPropType !== this.state.redPropType
+      leftPropType !== this.state.leftPropType ||
+      rightPropType !== this.state.rightPropType
     ) {
-      this.state.bluePropType = bluePropType;
-      this.state.redPropType = redPropType;
-      this.state.legacyPropType = bluePropType;
+      this.state.leftPropType = leftPropType;
+      this.state.rightPropType = rightPropType;
+      this.state.legacyPropType = leftPropType;
       this.state.textureReloadSignal++;
     }
   }
 
   dispose(): void {
-    this.state.bluePropType = "staff";
-    this.state.redPropType = "staff";
+    this.state.leftPropType = "staff";
+    this.state.rightPropType = "staff";
     this.state.legacyPropType = "staff";
     this.state.textureReloadSignal = 0;
   }

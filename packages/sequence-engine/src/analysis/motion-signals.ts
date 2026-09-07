@@ -10,7 +10,7 @@
  *     full reversal (both retrace). All three are reversals.
  *
  * Canonical data proof that `rotationDirection` records the PROP's spin, not
- * the hand's arc: letters A (pro) and B (anti) share the same blue hand path
+ * the hand's arc: letters A (pro) and B (anti) share the same left hand path
  * w→n (a clockwise arc), but A stores rotationDirection "cw" while B stores
  * "ccw". So detecting reversals from `rotationDirection` alone is blind to
  * hand reversals — the hand-arc signal below closes that gap.

@@ -18,7 +18,7 @@ describe("PlanesPopover group scope contract", () => {
   });
 
   it("reads the shared effective plane in All Performers mode", () => {
-    expect(popoverSource).toContain('? sharedPlane("blue")');
-    expect(popoverSource).toContain('? sharedPlane("red")');
+    expect(popoverSource).toContain('? sharedPlane("left")');
+    expect(popoverSource).toContain('? sharedPlane("right")');
   });
 });

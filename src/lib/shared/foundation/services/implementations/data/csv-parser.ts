@@ -192,14 +192,14 @@ export function createRowFromValues(
     endPosition: row["endPosition"] || "",
     timing: row["timing"] || "",
     direction: row["direction"] || "",
-    blueMotionType: row["blueMotionType"] || "",
-    blueRotationDirection: row["blueRotationDirection"] || "",
-    blueStartLocation: row["blueStartLocation"] || row["blueStartLoc"] || "",
-    blueEndLocation: row["blueEndLocation"] || row["blueEndLocation"] || "",
-    redMotionType: row["redMotionType"] || "",
-    redRotationDirection: row["redRotationDirection"] || "",
-    redStartLocation: row["redStartLocation"] || row["redStartLoc"] || "",
-    redEndLocation: row["redEndLocation"] || row["redEndLocation"] || "",
+    leftMotionType: row["blueMotionType"] || "",
+    leftRotationDirection: row["blueRotationDirection"] || "",
+    leftStartLocation: row["blueStartLocation"] || row["blueStartLoc"] || "",
+    leftEndLocation: row["blueEndLocation"] || row["blueEndLocation"] || "",
+    rightMotionType: row["redMotionType"] || "",
+    rightRotationDirection: row["redRotationDirection"] || "",
+    rightStartLocation: row["redStartLocation"] || row["redStartLoc"] || "",
+    rightEndLocation: row["redEndLocation"] || row["redEndLocation"] || "",
     ...row,
   } as ParsedCsvRow;
 }
@@ -221,14 +221,14 @@ export function getColumnMapping(headers: string[]): Record<string, string> {
 
   // Handle common variations in column names
   const variations: Record<string, string[]> = {
-    blueStartLocation: [
+    leftStartLocation: [
       "blueStartLocation",
       "blueStartLoc",
       "blue_start_location",
     ],
-    blueEndLocation: ["blueEndLocation", "blueEndLocation", "blue_end_location"],
-    redStartLocation: ["redStartLocation", "redStartLoc", "red_start_location"],
-    redEndLocation: ["redEndLocation", "redEndLocation", "red_end_location"],
+    leftEndLocation: ["blueEndLocation", "blueEndLocation", "blue_end_location"],
+    rightStartLocation: ["redStartLocation", "redStartLoc", "red_start_location"],
+    rightEndLocation: ["redEndLocation", "redEndLocation", "red_end_location"],
   };
 
   for (const [standardName, variants] of Object.entries(variations)) {

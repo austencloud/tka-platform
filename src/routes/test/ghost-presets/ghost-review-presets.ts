@@ -20,8 +20,8 @@ const STUDY_PRESETS: GhostReviewPreset[] = [
     direction: "Thin, icy copies with more black space between them.",
     source: "study",
     patch: {
-      blueColor: "#38bdf8",
-      redColor: "#fb7185",
+      leftColor: "#38bdf8",
+      rightColor: "#fb7185",
       intensity: 0.58,
       decay: 9.5,
       interval: 0.35,
@@ -35,8 +35,8 @@ const STUDY_PRESETS: GhostReviewPreset[] = [
     direction: "Dense, bright captures that stop reading like fog.",
     source: "study",
     patch: {
-      blueColor: "#67e8f9",
-      redColor: "#f43f5e",
+      leftColor: "#67e8f9",
+      rightColor: "#f43f5e",
       intensity: 1,
       decay: 4,
       interval: 0.9,
@@ -50,8 +50,8 @@ const STUDY_PRESETS: GhostReviewPreset[] = [
     direction: "Cooler color separation and a clear age ladder.",
     source: "study",
     patch: {
-      blueColor: "#22d3ee",
-      redColor: "#c084fc",
+      leftColor: "#22d3ee",
+      rightColor: "#c084fc",
       intensity: 0.72,
       decay: 8.5,
       interval: 0.65,
@@ -65,8 +65,8 @@ const STUDY_PRESETS: GhostReviewPreset[] = [
     direction: "A long translucent wake that almost disappears.",
     source: "study",
     patch: {
-      blueColor: "#93c5fd",
-      redColor: "#fda4af",
+      leftColor: "#93c5fd",
+      rightColor: "#fda4af",
       intensity: 0.42,
       decay: 10,
       interval: 0.8,
@@ -99,8 +99,8 @@ export function ghostReviewIntentMatches(
   expected: GhostIntent
 ): boolean {
   return (
-    current.blueColor === expected.blueColor &&
-    current.redColor === expected.redColor &&
+    current.leftColor === expected.leftColor &&
+    current.rightColor === expected.rightColor &&
     current.intensity === expected.intensity &&
     current.decay === expected.decay &&
     current.interval === expected.interval

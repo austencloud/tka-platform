@@ -168,8 +168,8 @@ export async function bakeVariationFront(
     includeStartPosition: true,
     tndElement,
     showMandala: true,
-    bluePropType: propType,
-    redPropType: propType,
+    leftPropType: propType,
+    rightPropType: propType,
   });
   return canvas.toDataURL("image/png");
 }
@@ -181,8 +181,8 @@ export async function bakeVariationBack(
 ): Promise<string> {
   const canvas = await getPrintCardRenderer().renderBack(seq, {
     includeStartPosition: true,
-    bluePropType: propType,
-    redPropType: propType,
+    leftPropType: propType,
+    rightPropType: propType,
   });
   return canvas.toDataURL("image/png");
 }

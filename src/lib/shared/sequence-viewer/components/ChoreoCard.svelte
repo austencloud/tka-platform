@@ -17,13 +17,17 @@
   // extracted sub-components (CardHeader, CardFooter, CardGridLayout, CellRenderer).
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
-  import { onDestroy } from "svelte";
+  import type { ViewerPaneBox } from "./viewer-panel-layout";
+  import { onDestroy, tick } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { authState as AuthStateModule } from "$lib/shared/auth/state/auth-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
-  import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+  import {
+    getQRCodeGenerator,
+    getUrlQRCodeGenerator,
+  } from "$lib/shared/qr/get-qr-code-generator";
   import { resolveInfoCellDisplay } from "../services/info-cell-display";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -31,6 +35,7 @@
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { CANONICAL_CARD_VISIBILITY } from "$lib/shared/render/services/cloud-cell-key";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -80,6 +85,8 @@
     showNotes?: boolean;
     showLoopGlyph?: boolean;
     showQRCode?: boolean;
+    /** Reuse a published scan link without creating an account-owned code. */
+    qrUrl?: string;
     /** When true, fill empty col-0 cells with mandala visualizations */
     showMandala?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
@@ -88,10 +95,16 @@
     browseViewMode?: import("$lib/shared/browse/domain/browse-view-mode").BrowseViewMode;
     // Settings
     darkMode?: boolean;
+    /** Optional physical-card frame painted behind the canonical card content. */
+    frameColors?: { readonly accent: string; readonly dark: string };
+    /** Optional width-to-height ratio for a physical card presentation. */
+    cardAspectRatio?: number;
+    /** Plain-text artifact title for cards whose identity is not a TKA word. */
+    customTitleText?: string;
     customNotesText?: string;
     // Prop overrides
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     catDogModeEnabled?: boolean;
     // Step highlighting (for animation sync)
     highlightedStepIndex?: number | null; // 0-indexed step to highlight (null = none)
@@ -109,9 +122,11 @@
     fitWidth?: boolean; // Always constrain by width (mobile export: let parent scroll for tall cards)
     // Render progress callback (loaded cells, total cells)
     onRenderProgress?: (loaded: number, total: number) => void;
+    /** All cells and the QR have painted; a hidden host may reveal the card. */
+    onReady?: () => void;
     // Increment to force a full re-render (clears caches and re-renders all cells)
     rerenderTrigger?: number;
-    // Suppress solo mode header ("Blue Prop Path" / "Red Hand Path")
+    // Suppress solo mode header ("Left Prop Path" / "Right Hand Path")
     hideSoloHeader?: boolean;
     // Right-click context menu callback
     onContextMenu?: (x: number, y: number) => void;
@@ -119,8 +134,24 @@
     // setting via compositionManager). Embedded contexts (landing page,
     // marketing previews) need a fixed layout independent of viewer prefs.
     startPositionLayoutOverride?: "row" | "column" | null;
+    /** Holds a resolved Auto grid while a parent workspace changes geometry. */
+    autoLayoutOverride?: ResolvedAutoLayout | null;
+    /** Keeps contain sizing on the viewer's transition clock. */
+    containSizeMotion?: "focus" | "return" | "restore" | null;
+    /**
+     * The box this Card's pane is heading toward while containSizeMotion is set.
+     *
+     * Without it the Card follows a container that is still opening and paints
+     * itself at every size along the way. With it the Card renders at its
+     * destination size for the whole structural change.
+     */
+    containMotionBox?: ViewerPaneBox | null;
     /** Reports the measured Auto winner so Download Card can reuse it for PNG export. */
-    onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
+    onAutoLayoutResolved?: (
+      layout: ResolvedAutoLayout | null,
+      width: number,
+      height: number
+    ) => void;
   }
 
   const {
@@ -132,13 +163,17 @@
     showNotes = true,
     showLoopGlyph = true,
     showQRCode = false,
+    qrUrl,
     showMandala = false,
-    handPathMode = false,
+    handPathMode: requestedHandPathMode = false,
     browseViewMode,
     darkMode = false,
+    frameColors,
+    cardAspectRatio,
+    customTitleText: requestedTitleText,
     customNotesText = "Created using Flow Arts Composer",
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     catDogModeEnabled = false,
     highlightedStepIndex = null,
     showHighlight = false,
@@ -149,10 +184,14 @@
     forceContain = false,
     fitWidth = false,
     onRenderProgress,
+    onReady,
     rerenderTrigger = 0,
     hideSoloHeader = false,
     onContextMenu,
     startPositionLayoutOverride = null,
+    autoLayoutOverride = null,
+    containSizeMotion = null,
+    containMotionBox = null,
     onAutoLayoutResolved,
   }: Props = $props();
 
@@ -183,9 +222,10 @@
     })();
   }
   $effect(() => {
-    if (showQRCode) ensureAuthLoaded();
+    if (showQRCode && !qrUrl) ensureAuthLoaded();
   });
   const isAuthenticated = $derived(authApi?.isAuthenticated ?? false);
+  const canShowQRCode = $derived(isAuthenticated || !!qrUrl);
 
   // Long-press state for touch context menu
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -233,6 +273,16 @@
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
+  const handPathMode = $derived(
+    sequence.sequenceKind === "hand-path" || requestedHandPathMode
+  );
+  const customTitleText = $derived(
+    requestedTitleText ??
+      (sequence.sequenceKind === "hand-path"
+        ? sequence.displayName || sequence.name
+        : undefined)
+  );
+
   let previewStackElement: HTMLDivElement | undefined = $state();
 
   let gridScrollRef: HTMLDivElement | undefined = $state();
@@ -245,17 +295,18 @@
       browseViewMode,
       handPathMode,
       showWord,
+      customTitleText,
       showDifficultyLevel,
       hideSoloHeader,
       showLoopGlyph,
       showNotes,
-      showBlueMotion: viewerVisibility?.blueMotion ?? true,
-      showRedMotion: viewerVisibility?.redMotion ?? true,
+      showLeftMotion: viewerVisibility?.leftMotion ?? true,
+      showRightMotion: viewerVisibility?.rightMotion ?? true,
     }),
     vm
   );
-  const showBlueMotion = $derived(displayState.showBlueMotion);
-  const showRedMotion = $derived(displayState.showRedMotion);
+  const showLeftMotion = $derived(displayState.showLeftMotion);
+  const showRightMotion = $derived(displayState.showRightMotion);
   const allMotionsVisible = $derived(displayState.allMotionsVisible);
   const showTnD = $derived(displayState.showTnD);
   const showElemental = $derived(displayState.showElemental);
@@ -268,7 +319,7 @@
   const isBrowseSoloMode = $derived(displayState.isBrowseSoloMode);
   const isMotionSoloMode = $derived(displayState.isMotionSoloMode);
   const isSoloMode = $derived(displayState.isSoloMode);
-  const soloColor = $derived(displayState.soloColor);
+  const soloHand = $derived(displayState.soloHand);
   const isHandsMode = $derived(displayState.isHandsMode);
   const difficultyLevel = $derived(displayState.difficultyLevel);
   const currentLevelStyle = $derived(displayState.currentLevelStyle);
@@ -322,7 +373,7 @@
             containerHeight: containerRawHeight,
             showHeader,
             showFooter,
-            showQRCode: sc > 1 && showQRCode && isAuthenticated,
+            showQRCode: sc > 1 && showQRCode && canShowQRCode,
           })
         : null;
     const spl =
@@ -342,6 +393,7 @@
       showMandala,
       infoCellChoice: compositionManager.getInfoCellChoiceForStepCount(sc),
       isAuthenticated,
+      hasPublishedUrl: !!qrUrl,
     });
   });
   const effShowQRCode = $derived(effectiveInfoCell.showQRCode);
@@ -354,13 +406,14 @@
     () => ({
       sequence,
       showQRCode: effShowQRCode,
+      qrUrl,
       darkMode,
       isAuthenticated,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       browseViewMode,
     }),
-    { getGenerator: getQRCodeGenerator }
+    { getGenerator: getQRCodeGenerator, getUrlGenerator: getUrlQRCodeGenerator }
   );
   const qrDataUrl = $derived(qrState.dataUrl);
   const qrPending = $derived(qrState.pending);
@@ -369,14 +422,27 @@
   // raw container measurements feed layout; the resolved layout model then
   // determines the contained box and cell width.
   let layoutState: ReturnType<typeof createChoreoCardLayoutState>;
+  const fixedCardAspectRatio = $derived(
+    typeof cardAspectRatio === "number" &&
+      Number.isFinite(cardAspectRatio) &&
+      cardAspectRatio > 0
+      ? cardAspectRatio
+      : null
+  );
+  function activePreviewAspectRatio(): number {
+    return fixedCardAspectRatio ?? layoutState.previewAspectRatio;
+  }
   const sizingState = createChoreoCardSizingState(() => ({
     containerElement,
     previewStackElement,
-    previewAspectRatio: layoutState.previewAspectRatio,
+    previewAspectRatio: activePreviewAspectRatio(),
     forceContain,
     needsScroll: layoutState.needsScroll,
     fitWidth,
+    containSizeMotion,
+    containMotionBox,
     containModel: layoutState.containModel,
+    squareGridContain: fixedCardAspectRatio !== null,
   }));
 
   layoutState = createChoreoCardLayoutState(() => ({
@@ -387,14 +453,14 @@
     showFooter,
     showQRCode: effShowQRCode,
     autoLayoutReservesQRCode:
-      sequence.steps.length > 1 && showQRCode && isAuthenticated,
+      sequence.steps.length > 1 && showQRCode && canShowQRCode,
     showMandala: effShowMandala,
     forceContain,
     // These feed ONLY the mandala placement (which color fills the info cell).
     // In browse-solo the card shows a single prop, so the mandala must match
-    // that color — otherwise it fills with both. Motion-solo/normal unchanged.
-    showBlueMotion: isBrowseSoloMode ? soloColor === "blue" : showBlueMotion,
-    showRedMotion: isBrowseSoloMode ? soloColor === "red" : showRedMotion,
+    // that hand — otherwise it fills with both. Motion-solo/normal unchanged.
+    showLeftMotion: isBrowseSoloMode ? soloHand === "left" : showLeftMotion,
+    showRightMotion: isBrowseSoloMode ? soloHand === "right" : showRightMotion,
     startPositionLayoutOverride,
     compositionVersion,
     cellWidth: sizingState.cellWidth,
@@ -402,6 +468,7 @@
     durationColCount,
     containerWidth: sizingState.containerWidth,
     containerHeight: sizingState.containerHeight,
+    autoLayoutOverride,
   }));
 
   // Reactive aliases for values that move to the layout state factory.
@@ -412,7 +479,7 @@
   const effectiveRows = $derived(layoutState.effectiveRows);
   const mandalaLayoutOverride = $derived(layoutState.mandalaLayoutOverride);
   const mandalaPlacements = $derived(layoutState.mandalaPlacements);
-  const previewAspectRatio = $derived(layoutState.previewAspectRatio);
+  const previewAspectRatio = $derived(activePreviewAspectRatio());
   const scaledHeaderHeight = $derived(layoutState.scaledHeaderHeight);
   const scaledFooterHeight = $derived(layoutState.scaledFooterHeight);
   const stepNumFontSize = $derived(layoutState.stepNumFontSize);
@@ -426,6 +493,45 @@
   const cellWidth = $derived(sizingState.cellWidth);
   const containedWidth = $derived(sizingState.containedWidth);
   const containedHeight = $derived(sizingState.containedHeight);
+
+  $effect(() => {
+    const ready = onReady;
+    const stack = previewStackElement;
+    if (
+      !ready ||
+      !stack ||
+      !containedWidth ||
+      !containedHeight ||
+      !cells.length ||
+      !cells.every((cell) => cell.isLoaded || cell.renderFailed) ||
+      !qrState.settled
+    )
+      return;
+    let cancelled = false;
+    // Render progress means an image URL exists, not that the browser has drawn
+    // it. Finish decoding and the native cell entrances behind the host's cover.
+    void (async () => {
+      await tick();
+      await Promise.allSettled(
+        [...stack.querySelectorAll("img")].map((image) => image.decode())
+      );
+      await Promise.allSettled(
+        stack
+          .getAnimations({ subtree: true })
+          .filter(
+            (animation) => animation.effect?.getTiming().iterations !== Infinity
+          )
+          .map((animation) => animation.finished)
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      if (!cancelled) ready();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  });
   const containerRawWidth = $derived(sizingState.containerWidth);
   const containerRawHeight = $derived(sizingState.containerHeight);
   const suppressFlip = $derived(sizingState.flipSuppressed);
@@ -441,12 +547,18 @@
       return;
     }
     const fit = layoutState.autoFit;
+    const measuredWidth = containedWidth ?? 0;
+    const measuredHeight = containedHeight ?? 0;
     const key = fit
-      ? `${sequence.steps.length}:${fit.cols}:${fit.rows}:${fit.startPlacement}:${fit.widthUnits ?? fit.cols}`
+      ? `${sequence.steps.length}:${fit.cols}:${fit.rows}:${fit.startPlacement}:${fit.widthUnits ?? fit.cols}:${Math.round(measuredWidth)}x${Math.round(measuredHeight)}`
       : "none";
     if (key === lastReportedAutoLayoutKey) return;
     lastReportedAutoLayoutKey = key;
-    report(fit ? { ...fit, stepCount: sequence.steps.length } : null);
+    report(
+      fit ? { ...fit, stepCount: sequence.steps.length } : null,
+      measuredWidth,
+      measuredHeight
+    );
   });
 
   // Filtered cells based on includeStartPosition.
@@ -486,10 +598,14 @@
   // Buugeng chirality is read from settings here rather than taken as a prop,
   // for the same reason PropSvg and the 2D animation canvas read it directly:
   // it is a global handedness preference, not a per-host override. Hosts that
-  // override bluePropType/redPropType are unaffected — chirality only applies
+  // override leftPropType/rightPropType are unaffected; chirality only applies
   // to buugeng-family props.
-  const blueBuugengFlipped = $derived(getSettings().blueBuugengFlipped ?? false);
-  const redBuugengFlipped = $derived(getSettings().redBuugengFlipped ?? false);
+  const leftBuugengFlipped = $derived(
+    getSettings().leftBuugengFlipped ?? false
+  );
+  const rightBuugengFlipped = $derived(
+    getSettings().rightBuugengFlipped ?? false
+  );
 
   /**
    * Build render options from current component state (delegates to extracted pure function)
@@ -497,11 +613,11 @@
   function buildRenderOptionsFn(): PreviewCellRenderOptions {
     const baseOptions = buildRenderOptions({
       cellSize: CELL_SIZE,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       catDogModeEnabled,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       showNonRadial,
       showGrid,
       handPointVis,
@@ -513,8 +629,8 @@
       isSoloMode,
       handPathMode,
       browseViewMode,
-      showBlueMotion,
-      showRedMotion,
+      showLeftMotion,
+      showRightMotion,
     });
 
     return {
@@ -522,11 +638,12 @@
       // A scan represents the printed card, not the scanner's personal export
       // toggles. Pin the same canonical visibility used when QR creation
       // verifies cloud assets; retain the sequence's participating hands.
-      ...(cloudProbeEnabled && {
-        ...CANONICAL_CARD_VISIBILITY,
-        showBlueMotion,
-        showRedMotion,
-      }),
+      ...(cloudProbeEnabled &&
+        !handPathMode && {
+          ...CANONICAL_CARD_VISIBILITY,
+          showLeftMotion,
+          showRightMotion,
+        }),
       // Scan cards keep numbers as the existing HTML overlay. Re-compositing
       // every cached blob through canvas made a warm phone pay a full
       // decode→draw→encode cycle per cell before it could paint.
@@ -535,7 +652,9 @@
       // context), so a cold scanner downloads pre-rendered cells instead of
       // rasterizing. Unset everywhere else => local render path, no extra latency.
       probeCloud: cloudProbeEnabled,
-      cloudOnly: cloudProbeEnabled,
+      // Hand-path records embed motion data; their cells can be rendered locally
+      // without requiring the prop catalog's prepublished cloud assets.
+      cloudOnly: cloudProbeEnabled && !handPathMode,
     };
   }
 
@@ -545,8 +664,8 @@
     () => ({
       sequence,
       renderOptions: buildRenderOptionsFn(),
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       browseViewMode,
       showStepNumbers,
       includeStartPosition,
@@ -572,12 +691,12 @@
   renderLifecycle = createChoreoCardRenderLifecycle(
     () => ({
       sequence,
-      bluePropType,
-      redPropType,
+      leftPropType,
+      rightPropType,
       browseViewMode,
       catDogModeEnabled,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       showStepNumbers,
       showNonRadial,
       handPointVis,
@@ -587,8 +706,8 @@
       showElemental,
       showPositions,
       showGrid,
-      showBlueMotion,
-      showRedMotion,
+      showLeftMotion,
+      showRightMotion,
       includeStartPosition,
       startPositionLayout,
       effectiveColumns,
@@ -602,7 +721,9 @@
     crossfader,
     sizingState
   );
-  const flipDuration = $derived(renderLifecycle.flipDuration);
+  const flipDuration = $derived(
+    fixedCardAspectRatio !== null ? 0 : renderLifecycle.flipDuration
+  );
 
   /**
    * For solo mode, extract the end location of the kept color's motion
@@ -614,7 +735,7 @@
     if (!isSoloMode || !sequence.steps) return String(stepIndex + 1);
     const step = sequence.steps[stepIndex];
     if (!step?.motions) return String(stepIndex + 1);
-    const motion = soloColor === "blue" ? step.motions.blue : step.motions.red;
+    const motion = soloHand === "left" ? step.motions.left : step.motions.right;
     if (!motion?.endLocation) return String(stepIndex + 1);
     // Capitalize location abbreviation: "n" → "N", "ne" → "NE"
     return motion.endLocation.toUpperCase();
@@ -622,7 +743,7 @@
 
   /**
    * Look up the visible motion for a given cell in either solo mode. Motion-solo
-   * keeps the toggled-on color; browse-solo keeps browseViewMode's color. Both
+   * keeps the toggled-on hand; browse-solo keeps browseViewMode's hand. Both
    * render the same start→end + turns annotation. cellIndex === -1 is the start
    * position. Returns undefined when not solo or data is missing.
    */
@@ -631,23 +752,25 @@
   ):
     | import("$lib/shared/pictograph/shared/domain/models/motion-data").MotionData
     | undefined {
-    const color = isMotionSoloMode
-      ? showBlueMotion
-        ? "blue"
-        : "red"
+    const hand = isMotionSoloMode
+      ? showLeftMotion
+        ? HandSide.LEFT
+        : HandSide.RIGHT
       : isBrowseSoloMode
-        ? soloColor
+        ? soloHand === "left"
+          ? HandSide.LEFT
+          : HandSide.RIGHT
         : undefined;
-    if (!color) return undefined;
+    if (!hand) return undefined;
     if (cellIndex === -1) {
       const startData =
         sequence.startPosition ??
         (sequence.steps?.[0]
           ? createStartPositionFromBeatStart(sequence.steps[0])
           : undefined);
-      return startData?.motions?.[color] ?? undefined;
+      return startData?.motions?.[hand] ?? undefined;
     }
-    return sequence.steps?.[cellIndex]?.motions?.[color] ?? undefined;
+    return sequence.steps?.[cellIndex]?.motions?.[hand] ?? undefined;
   }
 
   // Fallback context menu (when no onContextMenu prop is wired): additive
@@ -734,7 +857,15 @@
   class:dark-mode={activeDarkMode}
   class:scroll-mode={needsScroll}
   class:force-contain={forceContain}
+  data-contain-size-motion={containSizeMotion}
+  data-contain-size-jump={sizingState.sizeJump ? "true" : undefined}
   aria-busy={isRefreshing ? "true" : undefined}
+  data-layout-columns={effectiveColumns}
+  data-layout-rows={effectiveRows}
+  data-preview-aspect={previewAspectRatio}
+  data-auto-layout-locked={autoLayoutOverride ? "true" : "false"}
+  data-auto-layout-lock-columns={autoLayoutOverride?.cols ?? 0}
+  data-auto-layout-lock-rows={autoLayoutOverride?.rows ?? 0}
   bind:this={containerElement}
   oncontextmenu={(e: MouseEvent) => {
     e.preventDefault();
@@ -792,9 +923,19 @@
     <div
       class="preview-stack"
       class:scroll-mode={needsScroll}
+      class:has-frame={!!frameColors}
+      class:has-card-aspect={fixedCardAspectRatio !== null}
       style={needsScroll
         ? ""
         : `width: ${containedWidth ? `${containedWidth}px` : "auto"}; height: ${containedHeight ? `${containedHeight}px` : "auto"};${!containedWidth || !containedHeight || cellWidth < 1 ? " visibility: hidden;" : ""}`}
+      style:--card-frame-accent={frameColors?.accent}
+      style:--card-frame-dark={frameColors?.dark}
+      style:--fixed-grid-width={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveColumns}px`
+        : undefined}
+      style:--fixed-grid-height={fixedCardAspectRatio !== null
+        ? `${cellWidth * effectiveRows}px`
+        : undefined}
       bind:this={previewStackElement}
     >
       <!-- Header section -->
@@ -802,8 +943,9 @@
         {sequence}
         {showHeader}
         {isBrowseSoloMode}
-        {soloColor}
+        {soloHand}
         {browseViewMode}
+        {customTitleText}
         showDifficultyLevel={effectiveShowDifficulty}
         {difficultyLevel}
         {currentLevelStyle}
@@ -846,8 +988,8 @@
         {flipDuration}
         {cellWidth}
         {activeDarkMode}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         {onStepClick}
         {onQrPlayClick}
         {clickableStart}
@@ -859,7 +1001,7 @@
         transitionMode={crossfader.transitionMode}
         {isBrowseSoloMode}
         {isMotionSoloMode}
-        {soloColor}
+        {soloHand}
         {stepNumFontSize}
         {formatDuration}
         {getMotionSoloMotion}
@@ -962,6 +1104,72 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .preview-stack.has-frame {
+    box-sizing: border-box;
+    padding: max(4px, 2%);
+    background:
+      linear-gradient(#f5f5f5 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
+  }
+
+  .choreo-card-root.dark-mode .preview-stack.has-frame {
+    background:
+      linear-gradient(#000 0 0) content-box,
+      repeating-linear-gradient(
+          135deg,
+          var(--card-frame-accent) 0 0.45rem,
+          var(--card-frame-dark) 0.45rem 0.9rem
+        )
+        padding-box;
+  }
+
+  .preview-stack.has-card-aspect :global(.grid-section) {
+    flex: 0 0 var(--fixed-grid-height);
+    width: min(100%, var(--fixed-grid-width));
+    align-self: center;
+    margin-block: auto;
+    grid-auto-rows: 1fr;
+  }
+
+  .preview-stack.has-card-aspect :global(.cell-flip-wrapper) {
+    aspect-ratio: 1;
+  }
+
+  .preview-stack.has-card-aspect :global(.pictograph-cell) {
+    height: 100%;
+  }
+
+  /* The Card was never readable at its previous size, so there is nothing to
+     animate from. Place it at the destination without a transition. */
+  .choreo-card-root[data-contain-size-jump="true"] .preview-stack {
+    transition: none;
+  }
+
+  .choreo-card-root[data-contain-size-motion="focus"] .preview-stack {
+    transition:
+      width var(--transition-dramatic),
+      height var(--transition-dramatic);
+  }
+
+  .choreo-card-root[data-contain-size-motion="return"] .preview-stack {
+    flex: 0 0 auto;
+    transition:
+      width var(--transition-emphasis),
+      height var(--transition-emphasis);
+  }
+
+  .choreo-card-root[data-contain-size-motion="restore"] .preview-stack {
+    flex: 0 0 auto;
+    transition:
+      width var(--transition-emphasis),
+      height var(--transition-emphasis);
   }
 
   /* In scroll mode, fill the parent edge-to-edge instead of using

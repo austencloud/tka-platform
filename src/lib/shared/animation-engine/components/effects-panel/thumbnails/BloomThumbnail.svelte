@@ -13,8 +13,8 @@
   const WIDTH = 720;
   const HEIGHT = 270;
 
-  const BLUE = DEFAULT_EFFECTS_CONFIG.trails.blueColor;
-  const RED = DEFAULT_EFFECTS_CONFIG.trails.redColor;
+  const BLUE = DEFAULT_EFFECTS_CONFIG.trails.leftColor;
+  const RED = DEFAULT_EFFECTS_CONFIG.trails.rightColor;
 
   /**
    * A stylised portrait of the look rather than a replay of it. The tile is

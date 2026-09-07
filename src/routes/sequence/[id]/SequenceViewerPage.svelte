@@ -36,7 +36,8 @@
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
-  import { viewerModeForRenderMode } from "$lib/shared/sequence-viewer/services/viewer-modes";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import { initialViewerModeForUrl } from "$lib/shared/sequence-viewer/services/viewer-modes";
 
   import {
     getIabBannerVisible,
@@ -130,23 +131,29 @@
   );
 
   // URL prop params (from QR codes with prop info)
-  const urlBlueProp = $derived(page.url.searchParams.get("bp"));
-  const urlRedProp = $derived(page.url.searchParams.get("rp"));
+  const urlLeftProp = $derived(page.url.searchParams.get("bp"));
+  const urlRightProp = $derived(page.url.searchParams.get("rp"));
 
-  // URL view mode param (from QR codes with browse view mode)
+  // URL view mode param (from QR codes with browse view mode).
+  // NOT the viewer mode. `vm` here is the printed-card BROWSE view mode
+  // (`short-code-manager.ts` writes `vm=hsb`), decoded below into hand-path and
+  // per-prop visibility. The viewer's own URL-state session carries
+  // `ViewerMode` on `pane` and never reads, writes, or removes `vm` (see
+  // SequenceViewerOrchestrator). Do not "unify" them — this plumbing is not
+  // redundant.
   const urlViewModeParam = $derived(page.url.searchParams.get("vm"));
   const decodedBrowseViewMode = $derived(
     urlViewModeParam ? decodeViewMode(urlViewModeParam) : null
   );
   const urlHandPathMode = $derived(decodedBrowseViewMode?.subject === "hands");
-  const urlInitialBlueVisible = $derived(
+  const urlInitialLeftVisible = $derived(
     decodedBrowseViewMode?.granularity === "solo"
-      ? decodedBrowseViewMode.color === "blue"
+      ? decodedBrowseViewMode.hand === "left"
       : true
   );
-  const urlInitialRedVisible = $derived(
+  const urlInitialRightVisible = $derived(
     decodedBrowseViewMode?.granularity === "solo"
-      ? decodedBrowseViewMode.color === "red"
+      ? decodedBrowseViewMode.hand === "right"
       : true
   );
 
@@ -155,6 +162,8 @@
 
   // Sequence loading state
   let sequence = $state<SequenceData | null>(null);
+  /** The route id, when it resolved as a short code. Share reuses it. */
+  let resolvedShortCode = $state<string | null>(null);
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);
   let handoffData = $state<SequenceRouteHandoff | null>(null);
@@ -286,18 +295,18 @@
    * Uses PROP_TYPE_DECODE mapping (single char -> PropType).
    */
   function applyUrlPropPreferences() {
-    if (!urlBlueProp && !urlRedProp) return;
+    if (!urlLeftProp && !urlRightProp) return;
 
     const parsed = parsePropsFromURL(page.url.searchParams);
 
-    if (parsed.bluePropType || parsed.redPropType) {
-      const updates: { bluePropType?: PropType; redPropType?: PropType } = {};
+    if (parsed.leftPropType || parsed.rightPropType) {
+      const updates: { leftPropType?: PropType; rightPropType?: PropType } = {};
 
-      if (parsed.bluePropType) {
-        updates.bluePropType = parsed.bluePropType as PropType;
+      if (parsed.leftPropType) {
+        updates.leftPropType = parsed.leftPropType as PropType;
       }
-      if (parsed.redPropType) {
-        updates.redPropType = parsed.redPropType as PropType;
+      if (parsed.rightPropType) {
+        updates.rightPropType = parsed.rightPropType as PropType;
       }
 
       settingsService.updateSettings(updates);
@@ -314,8 +323,8 @@
       sequenceWord:
         resolved.word || resolved.displayName || resolved.name || null,
       deckName: data.meta.deckName,
-      blueProp: props.bluePropType ? String(props.bluePropType) : null,
-      redProp: props.redPropType ? String(props.redPropType) : null,
+      leftProp: props.leftPropType ? String(props.leftPropType) : null,
+      rightProp: props.rightPropType ? String(props.rightPropType) : null,
     });
     captureScanEvent("qr_scan_resolution", {
       outcome: "success",
@@ -483,6 +492,7 @@
   async function loadSequenceFromId(id: string) {
     isLoading = true;
     loadError = null;
+    resolvedShortCode = null;
 
     try {
       if (isInlineEncoded(id)) {
@@ -502,6 +512,7 @@
 
       const shortCodeManager = getShortCodeManager();
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
+      if (resolvedSequence) resolvedShortCode = id;
 
       if (!resolvedSequence) {
         resolvedSequence = await loadByIdentifier(id);
@@ -602,18 +613,21 @@
     initialStep={handoffData?.playbackState?.currentStep || 0}
     initialViewMode={urlViewMode || undefined}
     initialRenderMode={urlRenderMode || (scanOriginCode ? "2d" : undefined)}
-    initialViewerMode={scanOriginCode
-      ? "card"
-      : viewerModeForRenderMode(urlRenderMode)}
+    initialViewerMode={initialViewerModeForUrl(
+      !!scanOriginCode,
+      page.url.searchParams.get("pane"),
+      urlRenderMode
+    )}
     deferInteractiveStartup={!!scanOriginCode}
     initialActiveEffect={scanOriginCode ? "trails" : undefined}
     handPathMode={urlHandPathMode}
-    initialBlueVisible={urlInitialBlueVisible}
-    initialRedVisible={urlInitialRedVisible}
+    initialLeftVisible={urlInitialLeftVisible}
+    initialRightVisible={urlInitialRightVisible}
     onClose={handleClose}
     onUrlParamChange={updateUrlParam}
     onBpmChange={scanOriginCode ? handleScanBpmChange : undefined}
     onGatedDownload={scanOriginCode ? resumeGatedScanExport : undefined}
+    shortCode={resolvedShortCode}
   >
     {#snippet children(ctx)}
       <main
@@ -626,6 +640,7 @@
         <SequenceViewerShell
           {ctx}
           {sequence}
+          analyticsSource={scanOriginCode ? "qr" : "external_link"}
           {isMobile}
           startInCardThenSplit={!!scanOriginCode}
           embedded={isDemo}
@@ -654,6 +669,21 @@
       </main>
     {/snippet}
   </SequenceViewerOrchestrator>
+{/if}
+
+<!-- The take-it-home export gate (ensureFullAccountForExport) opens this drawer
+     through authDrawerState. MainApplication mounts it for the in-app viewer;
+     this standalone route has no shell, so without its own mount a guest
+     clicking Record Scene or Share saw nothing happen at all. -->
+{#if !authState.isFullAccount}
+  {#await import("$lib/shared/auth/components/AuthModal.svelte") then mod}
+    <mod.default
+      open={authDrawerState.open}
+      initialMode={authDrawerState.initialMode}
+      reason={authDrawerState.reason}
+      onClose={() => authDrawerState.hide()}
+    />
+  {/await}
 {/if}
 
 <style>

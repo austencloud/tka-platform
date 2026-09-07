@@ -4,6 +4,7 @@ import {
   PlaneGeometry,
   RingGeometry,
   SphereGeometry,
+  Vector3,
 } from "three";
 
 interface GridMaterialOptions {
@@ -16,6 +17,51 @@ const planeGeometries = new Map<number, PlaneGeometry>();
 const ringGeometries = new Map<string, RingGeometry>();
 const markerGeometries = new Map<string, SphereGeometry>();
 const materials = new Map<string, MeshBasicMaterial>();
+const orientationHelperArgs = new Map<
+  number,
+  readonly GridOrientationArrowArgs[]
+>();
+
+export type GridOrientationArrowArgs = [
+  direction: Vector3,
+  origin: Vector3,
+  length: number,
+  color: number,
+  headLength: number,
+  headWidth: number,
+];
+
+const GRID_ORIGIN = new Vector3(0, 0, 0);
+const GRID_AXES = [
+  { direction: new Vector3(1, 0, 0), color: 0xff4444 },
+  { direction: new Vector3(0, 1, 0), color: 0x44ff44 },
+  { direction: new Vector3(0, 0, 1), color: 0x4444ff },
+] as const;
+
+/**
+ * Three's ArrowHelper constructor requires Vector3 instances. Plain tuples are
+ * accepted without an exception but produce undefined positions and NaN
+ * rotations, leaving the helper silently absent from the rendered scene.
+ */
+export function getGridOrientationHelperArgs(
+  size: number
+): readonly GridOrientationArrowArgs[] {
+  let args = orientationHelperArgs.get(size);
+  if (!args) {
+    args = GRID_AXES.map(
+      ({ direction, color }): GridOrientationArrowArgs => [
+        direction,
+        GRID_ORIGIN,
+        size * 1.2,
+        color,
+        0.06,
+        0.03,
+      ]
+    );
+    orientationHelperArgs.set(size, args);
+  }
+  return args;
+}
 
 export function getGridPlaneGeometry(size: number): PlaneGeometry {
   let geometry = planeGeometries.get(size);

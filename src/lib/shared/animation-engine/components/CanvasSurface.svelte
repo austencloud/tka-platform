@@ -41,11 +41,16 @@ captureEffectDiagnostics to the context menu.
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { TrailSettings } from "../domain/types/trail-types";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+  import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
-  import { AnimationEngine } from "../services/animation-engine.svelte";
+  import {
+    AnimationEngine,
+    type AdditionalLayerTextureStatus,
+  } from "../services/animation-engine.svelte";
+  import { createRenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
   import {
     getAnimationVisibilityManager,
     type AnimationVisibilityStateManager,
@@ -67,15 +72,21 @@ captureEffectDiagnostics to the context menu.
   import { getRenderContextRegistry } from "../get-render-context-registry";
   import { installAnimatorDiagnostics } from "../debug/animator-diagnostics";
   import type { QualityTier } from "../domain/types/quality-types";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "../domain/glyph-overlay-frame";
 
   let {
     // Engine-driving props
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     additionalLayers = [],
+    preloadAdditionalLayers = [],
     tunnelSpectrum = true,
+    tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
+    gridOpacity = undefined,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
@@ -84,13 +95,15 @@ captureEffectDiagnostics to the context menu.
     currentStep = 0,
     isPlaying = false,
     trailSettings: externalTrailSettings = $bindable(),
-    bluePropType = null,
-    redPropType = null,
-    blueBuugengFlipped = undefined,
-    redBuugengFlipped = undefined,
+    leftPropType = null,
+    rightPropType = null,
+    fanAppearance = undefined,
+    leftBuugengFlipped = undefined,
+    rightBuugengFlipped = undefined,
     previewDarkMode = null,
     isSeamlesslyLoopable = undefined,
     showNonRadialPoints = true,
+    mandalaVisibleOverride = undefined,
     fireConfig = undefined,
     ledConfig = undefined,
     tipEffectMap: cellTipEffectMap = undefined,
@@ -103,10 +116,12 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     elementalGlyphVisible = false,
+    propElementalType = null,
+    glyphFrame = "pictograph",
     effectiveBeatNumbersVisible = false,
     positionGlyphVisible = false,
-    bluePathLinesVisible = false,
-    redPathLinesVisible = false,
+    leftPathLinesVisible = false,
+    rightPathLinesVisible = false,
     suppress2DOverlays = false,
     // Engine wiring props
     resizePaused = false,
@@ -119,6 +134,7 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady = () => {},
     onInitialized = undefined,
     onEffectError = undefined,
+    onAdditionalLayerTextureStatusChange = undefined,
     // Bound back to the parent so it can drive resize + diagnostics
     engine = $bindable(),
     // Optional overlay pinned inside the square .canvas-wrapper (position:relative),
@@ -126,12 +142,15 @@ captureEffectDiagnostics to the context menu.
     // header/progress stack. Undefined → nothing rendered.
     cornerControl = undefined,
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
+    tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
+    gridOpacity?: number;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
@@ -140,13 +159,15 @@ captureEffectDiagnostics to the context menu.
     currentStep?: number;
     isPlaying?: boolean;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
+    fanAppearance?: FanAppearance;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     previewDarkMode?: boolean | null;
     isSeamlesslyLoopable?: boolean;
     showNonRadialPoints?: boolean;
+    mandalaVisibleOverride?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
     tipEffectMap?: TipEffectMap;
@@ -160,11 +181,13 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     elementalGlyphVisible?: boolean;
+    propElementalType?: ElementalType | null;
+    glyphFrame?: GlyphOverlayFrameMode;
     effectiveBeatNumbersVisible?: boolean;
     /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
     positionGlyphVisible?: boolean;
-    bluePathLinesVisible?: boolean;
-    redPathLinesVisible?: boolean;
+    leftPathLinesVisible?: boolean;
+    rightPathLinesVisible?: boolean;
     suppress2DOverlays?: boolean;
     resizePaused?: boolean;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
@@ -178,6 +201,9 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onInitialized?: () => void;
     onEffectError?: (effectName: string, error: Error) => void;
+    onAdditionalLayerTextureStatusChange?: (
+      status: AdditionalLayerTextureStatus
+    ) => void;
     /** The engine instance, bound back to the parent for resize + diagnostics control. */
     engine?: AnimationEngine;
     /** Optional overlay pinned inside the square canvas (e.g. a corner toggle). */
@@ -195,6 +221,16 @@ captureEffectDiagnostics to the context menu.
     engineInstance.setInitialQualityTier(initialQualityTier);
   }
   engine = engineInstance;
+
+  // Off-screen / hidden-tab gating. Every on-screen animated canvas goes
+  // through the one owner in `shared/render-gating`: while this surface is
+  // scrolled away or the tab is hidden, its rAF stops entirely and the canvas
+  // holds its last painted frame. Created here (no DOM work, SSR-safe) and
+  // attached once the container element exists. The offscreen export engine is
+  // built by `render-context-factory`, never by this component, so it never
+  // receives a gate and is never paused.
+  const activityGate = createRenderActivityGate({ name: resolvedContextId });
+  engineInstance.setActivityGate(activityGate);
 
   // Sync 2D overlay suppression (for 3D mode)
   $effect.pre(() => {
@@ -256,8 +292,8 @@ captureEffectDiagnostics to the context menu.
   $effect(() => {
     if (!viewerVisibilityCtx) return;
     engineInstance.setMotionVisibility(
-      viewerVisibilityCtx.blueMotion,
-      viewerVisibilityCtx.redMotion
+      viewerVisibilityCtx.leftMotion,
+      viewerVisibilityCtx.rightMotion
     );
   });
 
@@ -332,6 +368,8 @@ captureEffectDiagnostics to the context menu.
     const el = containerElement;
     if (!el) return;
 
+    activityGate.attach(el);
+
     // Register the render context AFTER the (async) engine init resolves.
     // getRenderContext returns null until the awaited lifecycle init has created
     // the renderer/renderLoop/trailCapturer/resizer. The previous queueMicrotask
@@ -385,6 +423,7 @@ captureEffectDiagnostics to the context menu.
       disposed = true;
       untrack(() => {
         disposeDiagnostics?.();
+        activityGate.dispose();
         getRenderContextRegistry().unregister(resolvedContextId);
         engineInstance.dispose();
       });
@@ -393,17 +432,24 @@ captureEffectDiagnostics to the context menu.
 
   // Single effect to pass all props to engine
   $effect(() => {
+    // Resizing clears the canvas even while paused. Read the completed-resize
+    // signal here so the current pose is repainted without advancing playback.
+    if (isInitialized) void engineInstance.canvasResizeCount;
     const currentFireConfig = fireConfig;
     const currentLedConfig = ledConfig;
     const currentCellTipEffectMap = cellTipEffectMap;
     const currentCellTipEffortMap = cellTipEffortMap;
     const props = {
-      blueProp,
-      redProp,
+      leftProp,
+      rightProp,
       additionalLayers,
+      preloadAdditionalLayers,
+      onAdditionalLayerTextureStatusChange,
       tunnelSpectrum,
+      tunnelPropColors,
       tunnelSelectedLayer,
       gridVisible,
+      gridOpacity,
       gridMode,
       backgroundAlpha,
       letter,
@@ -412,14 +458,16 @@ captureEffectDiagnostics to the context menu.
       currentStep,
       isPlaying,
       externalTrailSettings,
-      bluePropType,
-      redPropType,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftPropType,
+      rightPropType,
+      fanAppearance,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       previewDarkMode,
       isSeamlesslyLoopable,
       virtualTime,
       showNonRadialPoints,
+      mandalaVisibleOverride,
     };
     untrack(() => {
       if (currentFireConfig) {
@@ -494,6 +542,8 @@ captureEffectDiagnostics to the context menu.
       {stepData}
       tkaGlyphVisible={effectiveTkaGlyphVisible}
       {elementalGlyphVisible}
+      {propElementalType}
+      {glyphFrame}
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}
@@ -508,15 +558,15 @@ captureEffectDiagnostics to the context menu.
         currentStep >= (sequenceData.steps?.length ?? 0) + 0.99}
     />
 
-    <!-- Always mounted: PathLinesOverlay self-gates on showBlue/showRed and owns
+    <!-- Always mounted: PathLinesOverlay self-gates on showLeft/showRight and owns
          its own fade in/out, so the overlay must stay in the tree for its
          out-transition to play when the Paths toggle flips off. -->
     <PathLinesOverlay
       {sequenceData}
       {currentStep}
       {stepData}
-      showBlue={bluePathLinesVisible}
-      showRed={redPathLinesVisible}
+      showLeft={leftPathLinesVisible}
+      showRight={rightPathLinesVisible}
       vm={visibilityManager}
     />
 

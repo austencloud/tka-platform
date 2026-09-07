@@ -5,75 +5,96 @@
   "installedPlantFactoryVersion": "4.8.0.0",
   "executable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
   "pythonApi": "C:/Program Files/e-on software/PlantFactory/Python/PythonLib/eon.py",
-  "activeExportSet": "flowFestBiomeR2",
+  "activeExportSet": "flowFestBiomeR3",
   "activeJobs": [
-    "quercus-robur-forest-ld-s89",
-    "quercus-robur-urban-ld-s13",
-    "aesculus-carnea-ld-s23",
-    "quercus-robur-forest-ld-s67",
-    "quercus-robur-colonised-ld-s29",
-    "salix-alba-ld-s11",
-    "aesculus-pavia-ld-s31",
-    "aesculus-pavia-ld-s79",
-    "quercus-robur-dead-ld-s37"
+    "quercus-robur-forest-ld-s101",
+    "quercus-robur-forest-ld-s113",
+    "quercus-robur-lone-ld-s57",
+    "quercus-robur-urban-ld-s71",
+    "quercus-robur-colonised-ld-s61",
+    "aesculus-carnea-ld-s47",
+    "aesculus-pavia-ld-s103",
+    "salix-alba-ld-s53",
+    "salix-babylonica-ld-s19",
+    "salix-babylonica-ld-s43",
+    "koelreuteria-bipinnata-ld-s17",
+    "melia-azedarach-ld-s27"
   ],
   "sourceResults": [
     {
-      "id": "quercus-robur-forest-ld-s89",
+      "id": "quercus-robur-forest-ld-s101",
       "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest LD.tpf",
       "bytes": 155922326,
       "sha256": "2cb531632d9f2a3ffd9597f1eed76354dc2e6cd34f57eea33f26aa1240ba6a55"
     },
     {
-      "id": "quercus-robur-urban-ld-s13",
+      "id": "quercus-robur-forest-ld-s113",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest LD.tpf",
+      "bytes": 155922326,
+      "sha256": "2cb531632d9f2a3ffd9597f1eed76354dc2e6cd34f57eea33f26aa1240ba6a55"
+    },
+    {
+      "id": "quercus-robur-lone-ld-s57",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur lone LD.tpf",
+      "bytes": 160543334,
+      "sha256": "b64ac50c6297be494bfd05838851253e9c1c798ff2dbcb734edd039363d0fbc0"
+    },
+    {
+      "id": "quercus-robur-urban-ld-s71",
       "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur urban LD.tpf",
       "bytes": 147899442,
       "sha256": "4248a8632b6d7ff4c3a47c8759d5b781fc8382a6ba6901106e5bb7fd94ae5e2c"
     },
     {
-      "id": "aesculus-carnea-ld-s23",
-      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus x carnea LD.tpf",
-      "bytes": 24091017,
-      "sha256": "c7b7671ac4da80b7575efba845a5329ca169bbacedc09accb4848c6b800f2118"
-    },
-    {
-      "id": "quercus-robur-forest-ld-s67",
-      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest LD.tpf",
-      "bytes": 155922326,
-      "sha256": "2cb531632d9f2a3ffd9597f1eed76354dc2e6cd34f57eea33f26aa1240ba6a55"
-    },
-    {
-      "id": "quercus-robur-colonised-ld-s29",
+      "id": "quercus-robur-colonised-ld-s61",
       "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest colonised LD.tpf",
       "bytes": 186762973,
       "sha256": "d2c8864903955189fe0fcc6b196e921f810547000765d1a8aa29cd49939eaebe"
     },
     {
-      "id": "salix-alba-ld-s11",
+      "id": "aesculus-carnea-ld-s47",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus x carnea LD.tpf",
+      "bytes": 24091017,
+      "sha256": "c7b7671ac4da80b7575efba845a5329ca169bbacedc09accb4848c6b800f2118"
+    },
+    {
+      "id": "aesculus-pavia-ld-s103",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus pavia LD.tpf",
+      "bytes": 17083397,
+      "sha256": "4e003bbd51d2cdec457158ae8c80a2cf848ed904cf868bd80dee7dfeefd117f1"
+    },
+    {
+      "id": "salix-alba-ld-s53",
       "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Salix alba LD.tpf",
       "bytes": 122542006,
       "sha256": "20c143069432d85c211f742067feb7bae62a8e1bc2f9c1d5eeb278641610406a"
     },
     {
-      "id": "aesculus-pavia-ld-s31",
-      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus pavia LD.tpf",
-      "bytes": 17083397,
-      "sha256": "4e003bbd51d2cdec457158ae8c80a2cf848ed904cf868bd80dee7dfeefd117f1"
+      "id": "salix-babylonica-ld-s19",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Salix babylonica LD.tpf",
+      "bytes": 126828455,
+      "sha256": "473421961bf608d0727c170adcc19c475914dafbac23ae5917b4e1d70a667458"
     },
     {
-      "id": "aesculus-pavia-ld-s79",
-      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus pavia LD.tpf",
-      "bytes": 17083397,
-      "sha256": "4e003bbd51d2cdec457158ae8c80a2cf848ed904cf868bd80dee7dfeefd117f1"
+      "id": "salix-babylonica-ld-s43",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Salix babylonica LD.tpf",
+      "bytes": 126828455,
+      "sha256": "473421961bf608d0727c170adcc19c475914dafbac23ae5917b4e1d70a667458"
     },
     {
-      "id": "quercus-robur-dead-ld-s37",
-      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur dead LD.tpf",
-      "bytes": 97194044,
-      "sha256": "7ea8fa505e391f9020610444461be5abec6467e17a52dd5b073b2105b1e15760"
+      "id": "koelreuteria-bipinnata-ld-s17",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Koelreuteria bipinnata LD.tpf",
+      "bytes": 18376440,
+      "sha256": "2451a426aded17bb182065b33aa61f4e61e77ddfaec6e12be7afa0207ca7e27e"
+    },
+    {
+      "id": "melia-azedarach-ld-s27",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Melia azedarach LD.tpf",
+      "bytes": 22599763,
+      "sha256": "174f42e3425789c2bbfe8348133328a0af8bcad6c61c6e37cae2bb019ce50a3c"
     }
   ],
   "auxiliaryResults": [],
   "apiSignaturesVerified": true,
-  "plantFactoryProofComplete": true
+  "plantFactoryProofComplete": false
 }

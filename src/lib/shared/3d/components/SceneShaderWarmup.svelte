@@ -10,7 +10,7 @@
     recordReveal,
     resetBootSpans,
   } from "../scene-boot/boot-spans";
-  import { createFrameGate } from "../scene-boot/frame-gate";
+  import { DEFAULT_FRAME_GATE, createFrameGate } from "../scene-boot/frame-gate";
   import { warmupRenderer } from "../scene-boot/renderer-warmup";
   import { resolveThrelteHandles } from "../scene-boot/threlte-handles";
 
@@ -101,17 +101,40 @@
       const gate = createFrameGate();
       const startedAt = performance.now();
       let previous = startedAt;
-      while (!cancelled) {
-        await afterPaint();
-        if (cancelled) return;
-        const now = performance.now();
-        const warm = gate.observe(now - previous, now - startedAt);
-        previous = now;
-        sceneFeatures.reportWarmupProgress(
-          COMPILE_PROGRESS_SHARE +
-            gate.streakFraction * (1 - COMPILE_PROGRESS_SHARE)
-        );
-        if (warm) break;
+
+      // The gate only tests its cap when a frame arrives, and
+      // requestAnimationFrame does not fire while the document is hidden. A
+      // scene booted in a background tab was therefore waiting on a cap that
+      // could never come. Wall-clock time is the floor under the frame loop.
+      let capExpired = false;
+      let capTimer: ReturnType<typeof setTimeout> | undefined;
+      const capReached = new Promise<void>((resolve) => {
+        capTimer = setTimeout(() => {
+          capExpired = true;
+          resolve();
+        }, DEFAULT_FRAME_GATE.capMs);
+      });
+
+      try {
+        while (!cancelled) {
+          await Promise.race([afterPaint(), capReached]);
+          if (cancelled) return;
+          const now = performance.now();
+          // When the timer wins the race the gate must reach its cap even if a
+          // coarse clock says otherwise, so the verdict stays honest.
+          const elapsed = capExpired
+            ? Math.max(now - startedAt, DEFAULT_FRAME_GATE.capMs)
+            : now - startedAt;
+          const warm = gate.observe(now - previous, elapsed);
+          previous = now;
+          sceneFeatures.reportWarmupProgress(
+            COMPILE_PROGRESS_SHARE +
+              gate.streakFraction * (1 - COMPILE_PROGRESS_SHARE)
+          );
+          if (warm) break;
+        }
+      } finally {
+        clearTimeout(capTimer);
       }
       if (gate.verdict) recordFrameGateVerdict(gate.verdict);
     }

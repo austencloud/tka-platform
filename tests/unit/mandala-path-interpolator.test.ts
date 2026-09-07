@@ -25,18 +25,18 @@ function path(tipIndex: number, points: MandalaPoint[]): SVGPathData {
   return { d: pointsToSVGPath(points), tipIndex };
 }
 
-function paths(blue: SVGPathData[], red: SVGPathData[]): MandalaPaths {
-  return { blue, red, purple: [] };
+function paths(left: SVGPathData[], right: SVGPathData[]): MandalaPaths {
+  return { left, right, purple: [] };
 }
 
 describe("mandala path interpolation", () => {
   it("keeps an unchanged hand exactly fixed during a single-hand morph", () => {
-    const blue = path(0, [
+    const left = path(0, [
       { x: -20, y: 0 },
       { x: 20, y: 0 },
     ]);
     const from = paths(
-      [blue],
+      [left],
       [
         path(0, [
           { x: 0, y: -20 },
@@ -45,7 +45,7 @@ describe("mandala path interpolation", () => {
       ]
     );
     const to = paths(
-      [blue],
+      [left],
       [
         path(0, [
           { x: -20, y: -20 },
@@ -56,8 +56,8 @@ describe("mandala path interpolation", () => {
 
     const halfway = interpolateMandalaPaths(from, to, 0.5);
 
-    expect(halfway.blue[0]).toBe(blue);
-    expect(parsePoints(halfway.red[0]!.d)).toEqual([
+    expect(halfway.left[0]).toBe(left);
+    expect(parsePoints(halfway.right[0]!.d)).toEqual([
       { x: -10, y: -20 },
       { x: 10, y: 20 },
     ]);
@@ -85,7 +85,7 @@ describe("mandala path interpolation", () => {
     );
 
     const halfwayPoints = parsePoints(
-      interpolateMandalaPaths(from, to, 0.5).blue[0]!.d
+      interpolateMandalaPaths(from, to, 0.5).left[0]!.d
     );
 
     expect(halfwayPoints).toHaveLength(3);

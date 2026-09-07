@@ -11,6 +11,7 @@ import {
   MANDALA_GRID_RADIUS,
   BASE_SAMPLES_PER_BEAT,
 } from "$lib/shared/mandala/domain/mandala-constants";
+import { normalizeLegacySteps } from "@tka/tka-types";
 
 /**
  * Extract all curve endpoint coordinates from an SVG path "d" string.
@@ -30,7 +31,8 @@ function parseSVGEndpoints(d: string): Array<{ x: number; y: number }> {
 
   // Match each C command: C cx1 cy1, cx2 cy2, x y
   // The endpoint (third pair) is the only on-curve point.
-  const cRegex = /C\s+[-\d.]+\s+[-\d.]+,\s+[-\d.]+\s+[-\d.]+,\s+([-\d.]+)\s+([-\d.]+)/g;
+  const cRegex =
+    /C\s+[-\d.]+\s+[-\d.]+,\s+[-\d.]+\s+[-\d.]+,\s+([-\d.]+)\s+([-\d.]+)/g;
   let cMatch: RegExpExecArray | null;
   while ((cMatch = cRegex.exec(d)) !== null) {
     points.push({ x: parseFloat(cMatch[1]!), y: parseFloat(cMatch[2]!) });
@@ -74,7 +76,11 @@ function dist(
  * distances along a curve can be arbitrarily large. Instead we check only the
  * specific junction indices.
  */
-function maxBeatJunctionGap(d: string, samplesPerBeat: number, stepCount: number): number {
+function maxBeatJunctionGap(
+  d: string,
+  samplesPerBeat: number,
+  stepCount: number
+): number {
   const pts = parseSVGEndpoints(d);
   // Points per beat in the SVG: samplesPerBeat + 1 on-curve points from M + C commands.
   // The M command is point[0] (first point of first beat).
@@ -120,7 +126,7 @@ function maxBeatJunctionGap(d: string, samplesPerBeat: number, stepCount: number
 const ALPHI_BEATS: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "s",
@@ -129,7 +135,7 @@ const ALPHI_BEATS: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "n",
@@ -142,7 +148,7 @@ const ALPHI_BEATS: StepLike[] = [
   },
   {
     motions: {
-      blue: {
+      left: {
         motionType: "anti",
         rotationDirection: "cw",
         startLocation: "w",
@@ -151,7 +157,7 @@ const ALPHI_BEATS: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "e",
@@ -164,7 +170,7 @@ const ALPHI_BEATS: StepLike[] = [
   },
   {
     motions: {
-      blue: {
+      left: {
         motionType: "dash",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -173,7 +179,7 @@ const ALPHI_BEATS: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -187,7 +193,7 @@ const ALPHI_BEATS: StepLike[] = [
   // Rotated 180° copies
   {
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "n",
@@ -196,7 +202,7 @@ const ALPHI_BEATS: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "s",
@@ -209,7 +215,7 @@ const ALPHI_BEATS: StepLike[] = [
   },
   {
     motions: {
-      blue: {
+      left: {
         motionType: "anti",
         rotationDirection: "cw",
         startLocation: "e",
@@ -218,7 +224,7 @@ const ALPHI_BEATS: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "w",
@@ -231,7 +237,7 @@ const ALPHI_BEATS: StepLike[] = [
   },
   {
     motions: {
-      blue: {
+      left: {
         motionType: "dash",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -240,7 +246,7 @@ const ALPHI_BEATS: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -257,7 +263,7 @@ const ALPHI_BEATS: StepLike[] = [
 const SINGLE_PRO_STEP: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "s",
@@ -266,7 +272,7 @@ const SINGLE_PRO_STEP: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -283,7 +289,7 @@ const SINGLE_PRO_STEP: StepLike[] = [
 const SINGLE_DASH_STEP: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "dash",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -292,7 +298,7 @@ const SINGLE_DASH_STEP: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "e",
@@ -309,7 +315,7 @@ const SINGLE_DASH_STEP: StepLike[] = [
 const SINGLE_STATIC_STEP: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -318,7 +324,7 @@ const SINGLE_STATIC_STEP: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -341,7 +347,7 @@ const SINGLE_STATIC_STEP: StepLike[] = [
 const SINGLE_FLOAT_STEP: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "float",
         rotationDirection: "noRotation",
         startLocation: "s",
@@ -350,7 +356,7 @@ const SINGLE_FLOAT_STEP: StepLike[] = [
         startOrientation: "out",
         endOrientation: "clock",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -367,7 +373,7 @@ const SINGLE_FLOAT_STEP: StepLike[] = [
 const HIGH_TURN_STEP: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "s",
@@ -376,7 +382,7 @@ const HIGH_TURN_STEP: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "static",
         rotationDirection: "noRotation",
         startLocation: "n",
@@ -393,7 +399,7 @@ const HIGH_TURN_STEP: StepLike[] = [
 const ANTI_PRO_PAIR: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "s",
@@ -402,7 +408,7 @@ const ANTI_PRO_PAIR: StepLike[] = [
         startOrientation: "out",
         endOrientation: "out",
       },
-      red: {
+      right: {
         motionType: "anti",
         rotationDirection: "cw",
         startLocation: "s",
@@ -424,8 +430,8 @@ const fixtureJson = JSON.parse(
   readFileSync(join(__dirname, "../../scripts/test-sequence.json"), "utf-8")
 ) as { steps: StepLike[] };
 
-const SIXTEEN_BEAT_STEPS = fixtureJson.steps.filter(
-  (s) => s.motions?.blue || s.motions?.red
+const SIXTEEN_BEAT_STEPS = normalizeLegacySteps(fixtureJson.steps).filter(
+  (s) => s.motions?.left || s.motions?.right
 );
 
 describe("MandalaGeometryCalculator", () => {
@@ -438,7 +444,7 @@ describe("MandalaGeometryCalculator", () => {
       const twoBeat: StepLike[] = [ALPHI_BEATS[0]!, ALPHI_BEATS[1]!];
       const result = calc.calculate(twoBeat);
       // Both tips of blue should be single continuous paths
-      for (const path of result.blue) {
+      for (const path of result.left) {
         expect(countMoveToCommands(path.d)).toBe(1);
       }
     });
@@ -446,7 +452,7 @@ describe("MandalaGeometryCalculator", () => {
     it("beat-junction gap < 0.02px for a 3-beat sequence", () => {
       const threeBeat = ALPHI_BEATS.slice(0, 3);
       const result = calc.calculate(threeBeat);
-      for (const path of [...result.blue, ...result.red]) {
+      for (const path of [...result.left, ...result.right]) {
         // Check only the actual beat junction points (not all consecutive pairs).
         // toFixed(2) introduces up to 0.005px rounding per coordinate, so 0.02px
         // is a tight but achievable threshold.
@@ -460,9 +466,9 @@ describe("MandalaGeometryCalculator", () => {
     it("blue tip path maintains approximately constant radius for s→w PRO beat", () => {
       const result = calc.calculate(SINGLE_PRO_STEP);
       // We expect 2 blue paths (left tip and right tip)
-      expect(result.blue.length).toBeGreaterThan(0);
+      expect(result.left.length).toBeGreaterThan(0);
 
-      const path = result.blue[0]!;
+      const path = result.left[0]!;
       const pts = parseSVGEndpoints(path.d);
       expect(pts.length).toBeGreaterThan(4);
 
@@ -483,9 +489,9 @@ describe("MandalaGeometryCalculator", () => {
   describe("DASH motion passes through center", () => {
     it("blue hand at t=0.5 is near origin for s→n DASH", () => {
       const result = calc.calculate(SINGLE_DASH_STEP);
-      expect(result.blue.length).toBeGreaterThan(0);
+      expect(result.left.length).toBeGreaterThan(0);
 
-      const path = result.blue[0]!;
+      const path = result.left[0]!;
       const pts = parseSVGEndpoints(path.d);
       expect(pts.length).toBeGreaterThan(4);
 
@@ -515,7 +521,7 @@ describe("MandalaGeometryCalculator", () => {
 
     it("path starts and ends at opposite perimeter positions for s→n DASH", () => {
       const result = calc.calculate(SINGLE_DASH_STEP);
-      const path = result.blue[0]!;
+      const path = result.left[0]!;
       const pts = parseSVGEndpoints(path.d);
 
       const first = pts[0]!;
@@ -537,9 +543,9 @@ describe("MandalaGeometryCalculator", () => {
   describe("STATIC motion", () => {
     it("all tip points share the same x coordinate for static hand at south", () => {
       const result = calc.calculate(SINGLE_STATIC_STEP);
-      expect(result.blue.length).toBeGreaterThan(0);
+      expect(result.left.length).toBeGreaterThan(0);
 
-      const path = result.blue[0]!;
+      const path = result.left[0]!;
       const pts = parseSVGEndpoints(path.d);
       expect(pts.length).toBeGreaterThan(2);
 
@@ -557,7 +563,7 @@ describe("MandalaGeometryCalculator", () => {
 
     it("all tip points share the same y coordinate for static hand at south", () => {
       const result = calc.calculate(SINGLE_STATIC_STEP);
-      const path = result.blue[0]!;
+      const path = result.left[0]!;
       const pts = parseSVGEndpoints(path.d);
 
       const ys = pts.map((p) => p.y);
@@ -570,12 +576,12 @@ describe("MandalaGeometryCalculator", () => {
   describe("FLOAT motion produces an arc with constant prop angle", () => {
     it("blue produces a path (float is a shift, it must be drawn)", () => {
       const result = calc.calculate(SINGLE_FLOAT_STEP);
-      expect(result.blue.length).toBeGreaterThan(0);
+      expect(result.left.length).toBeGreaterThan(0);
     });
 
     it("blue path traces an arc between start and end locations (s→w)", () => {
       const result = calc.calculate(SINGLE_FLOAT_STEP);
-      const path = result.blue[0]!;
+      const path = result.left[0]!;
       const pts = parseSVGEndpoints(path.d);
       expect(pts.length).toBeGreaterThan(4);
 
@@ -599,7 +605,7 @@ describe("MandalaGeometryCalculator", () => {
       // A float arc must carry the hand across the grid, so the bounding
       // box of tip points must be substantial.
       const result = calc.calculate(SINGLE_FLOAT_STEP);
-      const path = result.blue[0]!;
+      const path = result.left[0]!;
       const pts = parseSVGEndpoints(path.d);
 
       const xs = pts.map((p) => p.x);
@@ -620,10 +626,10 @@ describe("MandalaGeometryCalculator", () => {
       // separation vector — if the staff rotated, the vector between the
       // two tips would rotate too.
       const result = calc.calculate(SINGLE_FLOAT_STEP);
-      expect(result.blue).toHaveLength(2);
+      expect(result.left).toHaveLength(2);
 
-      const tipA = parseSVGEndpoints(result.blue[0]!.d);
-      const tipB = parseSVGEndpoints(result.blue[1]!.d);
+      const tipA = parseSVGEndpoints(result.left[0]!.d);
+      const tipB = parseSVGEndpoints(result.left[1]!.d);
       expect(tipA.length).toBe(tipB.length);
 
       // For each sample, the vector from tipA to tipB represents the staff
@@ -642,12 +648,12 @@ describe("MandalaGeometryCalculator", () => {
 
     it("red static path is still produced alongside float blue path", () => {
       const result = calc.calculate(SINGLE_FLOAT_STEP);
-      expect(result.red.length).toBeGreaterThan(0);
+      expect(result.right.length).toBeGreaterThan(0);
     });
 
     it("path is a single continuous curve (one M command)", () => {
       const result = calc.calculate(SINGLE_FLOAT_STEP);
-      for (const path of result.blue) {
+      for (const path of result.left) {
         expect(countMoveToCommands(path.d)).toBe(1);
       }
     });
@@ -657,7 +663,7 @@ describe("MandalaGeometryCalculator", () => {
     const makeDirectedFloat = (handPath: "cw" | "ccw"): StepLike[] => [
       {
         motions: {
-          blue: {
+          left: {
             motionType: "float",
             rotationDirection: "noRotation",
             startLocation: "s",
@@ -679,7 +685,7 @@ describe("MandalaGeometryCalculator", () => {
         undefined,
         { dx: 0, dy: 0 }
       );
-      const points = parseSVGEndpoints(result.blue[0]!.d);
+      const points = parseSVGEndpoints(result.left[0]!.d);
       const midpoint = points[Math.floor((points.length - 1) / 2)]!;
 
       // Clockwise s→e travels through the west and north sides of the grid.
@@ -692,7 +698,7 @@ describe("MandalaGeometryCalculator", () => {
       const clockwise = calc.calculate(makeDirectedFloat("cw"));
       const counterClockwise = calc.calculate(makeDirectedFloat("ccw"));
 
-      expect(clockwise.blue[0]!.d).not.toBe(counterClockwise.blue[0]!.d);
+      expect(clockwise.left[0]!.d).not.toBe(counterClockwise.left[0]!.d);
     });
   });
 
@@ -701,7 +707,7 @@ describe("MandalaGeometryCalculator", () => {
       const makeStatic = (orientation: "out" | "clockIn"): StepLike[] => [
         {
           motions: {
-            blue: {
+            left: {
               motionType: "static",
               rotationDirection: "noRotation",
               startLocation: "s",
@@ -729,8 +735,8 @@ describe("MandalaGeometryCalculator", () => {
         { dx: 120, dy: 0 }
       );
 
-      expect(interradial.blue[1]!.d).not.toBe(cardinal.blue[1]!.d);
-      expect(parseSVGEndpoints(interradial.blue[1]!.d)[0]!.x).toBeLessThan(-1);
+      expect(interradial.left[1]!.d).not.toBe(cardinal.left[1]!.d);
+      expect(parseSVGEndpoints(interradial.left[1]!.d)[0]!.x).toBeLessThan(-1);
     });
   });
 
@@ -741,11 +747,13 @@ describe("MandalaGeometryCalculator", () => {
       // (MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS).
 
       const result = calc.calculate(SINGLE_STATIC_STEP);
-      expect(result.blue.length).toBeGreaterThan(0);
+      expect(result.left.length).toBeGreaterThan(0);
 
-      const path = result.blue[1]!; // right tip (tipIndex 1, dx = +MANDALA_STANDARD_TIP_DX)
+      const path = result.left[1]!; // right tip (tipIndex 1, dx = +MANDALA_STANDARD_TIP_DX)
       const pts = parseSVGEndpoints(path.d);
-      const maxDist = Math.max(...pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2)));
+      const maxDist = Math.max(
+        ...pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2))
+      );
 
       // Expected max reach = gridRadius + MANDALA_STANDARD_TIP_DX * scale
       const scale = MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
@@ -775,22 +783,30 @@ describe("MandalaGeometryCalculator", () => {
       // derived staff angle that doesn't match beat 2's end angle, producing a
       // ~160px visual gap. With chaining, the gap is 0.
       const result = calc.calculate(ALPHI_BEATS);
-      expect(result.blue.length).toBeGreaterThan(0);
+      expect(result.left.length).toBeGreaterThan(0);
 
-      for (const path of result.blue) {
+      for (const path of result.left) {
         // All junctions should be continuous — including the critical beat 2→3
         expect(countMoveToCommands(path.d)).toBe(1);
         // Check only beat junction indices, not all consecutive pairs
-        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, ALPHI_BEATS.length);
+        const gap = maxBeatJunctionGap(
+          path.d,
+          BASE_SAMPLES_PER_BEAT,
+          ALPHI_BEATS.length
+        );
         expect(gap).toBeLessThan(0.02);
       }
     });
 
     it("6-beat ALΦ red paths are continuous throughout", () => {
       const result = calc.calculate(ALPHI_BEATS);
-      for (const path of result.red) {
+      for (const path of result.right) {
         expect(countMoveToCommands(path.d)).toBe(1);
-        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, ALPHI_BEATS.length);
+        const gap = maxBeatJunctionGap(
+          path.d,
+          BASE_SAMPLES_PER_BEAT,
+          ALPHI_BEATS.length
+        );
         expect(gap).toBeLessThan(0.02);
       }
     });
@@ -801,7 +817,7 @@ describe("MandalaGeometryCalculator", () => {
       expect(SIXTEEN_BEAT_STEPS.length).toBeGreaterThan(0);
       const result = calc.calculate(SIXTEEN_BEAT_STEPS);
 
-      const allPaths = [...result.blue, ...result.red];
+      const allPaths = [...result.left, ...result.right];
       expect(allPaths.length).toBeGreaterThan(0);
 
       for (const path of allPaths) {
@@ -811,11 +827,15 @@ describe("MandalaGeometryCalculator", () => {
 
     it("Ω-YΩXΩ-YΩX sequence has max junction gap < 0.02px across all paths", () => {
       const result = calc.calculate(SIXTEEN_BEAT_STEPS);
-      const allPaths = [...result.blue, ...result.red];
+      const allPaths = [...result.left, ...result.right];
       const stepCount = SIXTEEN_BEAT_STEPS.length;
 
       for (const path of allPaths) {
-        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, stepCount);
+        const gap = maxBeatJunctionGap(
+          path.d,
+          BASE_SAMPLES_PER_BEAT,
+          stepCount
+        );
         expect(gap).toBeLessThan(0.02);
       }
     });
@@ -830,17 +850,17 @@ describe("MandalaGeometryCalculator", () => {
       // ANTI: staffDelta = -centerMovement + 0 = +π/2 (opposite)
       // The two hands start at the same location. Their tip paths should differ
       // because their staff angles evolve in opposite directions.
-      expect(result.blue.length).toBeGreaterThan(0);
-      expect(result.red.length).toBeGreaterThan(0);
+      expect(result.left.length).toBeGreaterThan(0);
+      expect(result.right.length).toBeGreaterThan(0);
 
-      const bluePts = parseSVGEndpoints(result.blue[0]!.d);
-      const redPts = parseSVGEndpoints(result.red[0]!.d);
+      const leftPts = parseSVGEndpoints(result.left[0]!.d);
+      const rightPts = parseSVGEndpoints(result.right[0]!.d);
 
       // Midpoints should differ (staff angles diverge)
-      const blueMid = bluePts[Math.floor(bluePts.length / 2)]!;
-      const redMid = redPts[Math.floor(redPts.length / 2)]!;
+      const leftMid = leftPts[Math.floor(leftPts.length / 2)]!;
+      const rightMid = rightPts[Math.floor(rightPts.length / 2)]!;
 
-      const midDist = dist(blueMid, redMid);
+      const midDist = dist(leftMid, rightMid);
       // They should be measurably different (at least 1px apart at midpoint)
       expect(midDist).toBeGreaterThan(1);
     });
@@ -848,12 +868,12 @@ describe("MandalaGeometryCalculator", () => {
     it("anti tip at end is at a different angle than pro tip for same s→w motion", () => {
       const result = calc.calculate(ANTI_PRO_PAIR);
 
-      const blueEnd = parseSVGEndpoints(result.blue[0]!.d).at(-1)!;
-      const redEnd = parseSVGEndpoints(result.red[0]!.d).at(-1)!;
+      const leftEnd = parseSVGEndpoints(result.left[0]!.d).at(-1)!;
+      const rightEnd = parseSVGEndpoints(result.right[0]!.d).at(-1)!;
 
       // Both hands reach w (same center position), but their staff angles differ.
       // They should end at different tip positions.
-      const endDist = dist(blueEnd, redEnd);
+      const endDist = dist(leftEnd, rightEnd);
       expect(endDist).toBeGreaterThan(1);
     });
   });
@@ -870,8 +890,8 @@ describe("MandalaGeometryCalculator", () => {
 
       // 0-turn: 64 samples → 64 C commands
       // 1.5-turn: ceil(1.5)=2, 64*2=128 samples → 128 C commands
-      const zeroTurnC = countC(zeroTurnResult.blue[0]!.d);
-      const highTurnC = countC(highTurnResult.blue[0]!.d);
+      const zeroTurnC = countC(zeroTurnResult.left[0]!.d);
+      const highTurnC = countC(highTurnResult.left[0]!.d);
 
       expect(highTurnC).toBeGreaterThan(zeroTurnC);
     });
@@ -882,8 +902,8 @@ describe("MandalaGeometryCalculator", () => {
 
       const countC = (d: string) => (d.match(/\bC\b/g) ?? []).length;
 
-      const zeroC = countC(zeroTurnResult.blue[0]!.d);
-      const highC = countC(highTurnResult.blue[0]!.d);
+      const zeroC = countC(zeroTurnResult.left[0]!.d);
+      const highC = countC(highTurnResult.left[0]!.d);
 
       expect(highC).toBeGreaterThanOrEqual(zeroC * 2);
     });
@@ -894,13 +914,13 @@ describe("MandalaGeometryCalculator", () => {
   describe("return shape", () => {
     it("returns { blue, red } with SVGPathData arrays", () => {
       const result = calc.calculate(SINGLE_PRO_STEP);
-      expect(Array.isArray(result.blue)).toBe(true);
-      expect(Array.isArray(result.red)).toBe(true);
+      expect(Array.isArray(result.left)).toBe(true);
+      expect(Array.isArray(result.right)).toBe(true);
     });
 
     it("each path entry has a non-empty d string and tipIndex 0 or 1", () => {
       const result = calc.calculate(SINGLE_PRO_STEP);
-      for (const path of [...result.blue, ...result.red]) {
+      for (const path of [...result.left, ...result.right]) {
         expect(path.d.length).toBeGreaterThan(0);
         expect(path.tipIndex === 0 || path.tipIndex === 1).toBe(true);
       }
@@ -908,13 +928,13 @@ describe("MandalaGeometryCalculator", () => {
 
     it("blue produces 2 paths (left tip + right tip)", () => {
       const result = calc.calculate(SINGLE_PRO_STEP);
-      expect(result.blue).toHaveLength(2);
+      expect(result.left).toHaveLength(2);
     });
 
     it("returns empty arrays for steps with no motions", () => {
       const result = calc.calculate([{ motions: null }]);
-      expect(result.blue).toHaveLength(0);
-      expect(result.red).toHaveLength(0);
+      expect(result.left).toHaveLength(0);
+      expect(result.right).toHaveLength(0);
     });
   });
 
@@ -926,15 +946,15 @@ describe("MandalaGeometryCalculator", () => {
   describe("prop-aware tip ends", () => {
     it("default (no options) traces both tips → blue has 2 path-sets", () => {
       const result = calc.calculate(SINGLE_PRO_STEP);
-      expect(result.blue).toHaveLength(2);
+      expect(result.left).toHaveLength(2);
     });
 
     it("tipEnds:1 traces one tip → blue and red each have 1 path-set", () => {
       const result = calc.calculate(SINGLE_PRO_STEP, undefined, undefined, {
         tipEnds: 1,
       });
-      expect(result.blue).toHaveLength(1);
-      expect(result.red).toHaveLength(1);
+      expect(result.left).toHaveLength(1);
+      expect(result.right).toHaveLength(1);
     });
 
     it("the single-ended path IS the outer (+dx) tip of the dual render", () => {
@@ -945,7 +965,7 @@ describe("MandalaGeometryCalculator", () => {
       const single = calc.calculate(SINGLE_STATIC_STEP, undefined, undefined, {
         tipEnds: 1,
       });
-      expect(single.blue[0]!.d).toBe(dual.blue[1]!.d);
+      expect(single.left[0]!.d).toBe(dual.left[1]!.d);
     });
 
     it("pairTipEnds maps single-ended props → 1, staff family → 2", () => {
@@ -960,7 +980,6 @@ describe("MandalaGeometryCalculator", () => {
       expect(pairTipEnds("bigchicken", "bigchicken")).toBe(2);
       expect(pairTipEnds("chicken", "chicken")).toBe(1);
     });
-
 
     it("a mixed pair keeps the staff hand's second tip (→ 2)", () => {
       expect(pairTipEnds("club", "staff")).toBe(2);

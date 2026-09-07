@@ -82,8 +82,8 @@ describe("warmSequenceCells", () => {
   it("verifies start and every step under the exact canonical prop pair", async () => {
     const result = await warmSequenceCells(sequence, {
       isDark: true,
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogMode: true,
       requireComplete: true,
     });
@@ -91,17 +91,22 @@ describe("warmSequenceCells", () => {
     expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
     expect(renderCell).toHaveBeenCalledTimes(3);
     expect(cloudDownload).toHaveBeenCalledTimes(3);
+    expect(cloudDownload.mock.calls).toEqual([
+      ["hash-alpha", { probeUnknown: false, signal: undefined }],
+      ["hash-A", { probeUnknown: false, signal: undefined }],
+      ["hash-B", { probeUnknown: false, signal: undefined }],
+    ]);
     const options = renderCell.mock.calls[0]![3] as {
       size: number;
-      bluePropType: PropType;
-      redPropType: PropType;
+      leftPropType: PropType;
+      rightPropType: PropType;
       catDogModeEnabled: boolean;
       uploadCanonical: boolean;
     };
     expect(options).toMatchObject({
       size: 480,
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogModeEnabled: true,
       uploadCanonical: true,
     });
@@ -121,20 +126,6 @@ describe("warmSequenceCells", () => {
     expect(renderCell).not.toHaveBeenCalled();
   });
 
-  it("verifies an existing cloud object before rebuilding it on a new browser", async () => {
-    cloudDownload.mockResolvedValue(
-      new Blob(["ready"], { type: "image/webp" })
-    );
-
-    const result = await warmSequenceCells(sequence, {
-      requireComplete: true,
-    });
-
-    expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
-    expect(cloudDownload).toHaveBeenCalledTimes(3);
-    expect(renderCell).not.toHaveBeenCalled();
-  });
-
   it("warms the participating hand only for solo choreography", async () => {
     const soloSequence = {
       ...sequence,
@@ -142,8 +133,8 @@ describe("warmSequenceCells", () => {
         {
           letter: null,
           motions: {
-            blue: { isVisible: true },
-            red: { isVisible: false },
+            left: { isVisible: true },
+            right: { isVisible: false },
           },
         },
       ],
@@ -152,12 +143,12 @@ describe("warmSequenceCells", () => {
     await warmSequenceCells(soloSequence);
 
     const options = renderCell.mock.calls[0]![3] as {
-      showBlueMotion: boolean;
-      showRedMotion: boolean;
+      showLeftMotion: boolean;
+      showRightMotion: boolean;
     };
     expect(options).toMatchObject({
-      showBlueMotion: true,
-      showRedMotion: false,
+      showLeftMotion: true,
+      showRightMotion: false,
     });
   });
 

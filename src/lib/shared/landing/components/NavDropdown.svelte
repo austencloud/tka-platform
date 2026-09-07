@@ -150,11 +150,21 @@
   </button>
 
   {#if open}
-    <div class="panel" id="{uid}-panel" bind:this={panelEl} onkeydown={onPanelKeydown} role="none">
+    <div
+      class="panel"
+      id="{uid}-panel"
+      bind:this={panelEl}
+      onkeydown={onPanelKeydown}
+      role="none"
+    >
       <ul>
         {#each items as item}
           <li>
-            <a href={item.href} class:active={isItemActive(item.href)} aria-current={isItemActive(item.href) ? "page" : undefined}>
+            <a
+              href={item.href}
+              class:active={isItemActive(item.href)}
+              aria-current={isItemActive(item.href) ? "page" : undefined}
+            >
               {#if item.icon}
                 <i class="fas {item.icon} dd-icon" aria-hidden="true"></i>
               {/if}
@@ -181,6 +191,7 @@
   .trigger {
     position: relative;
     display: inline-flex;
+    min-height: var(--min-touch-target, 44px);
     align-items: center;
     gap: 6px;
     color: #c4c1d8;
@@ -188,6 +199,7 @@
     font-size: 0.92rem;
     font-weight: 500;
     padding: 0.4rem 0;
+    box-sizing: border-box;
     background: none;
     border: none;
     cursor: pointer;
@@ -204,7 +216,9 @@
   .chev {
     font-size: 0.6rem;
     color: #6f6b8e;
-    transition: transform 0.2s ease, color 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      color 0.2s ease;
   }
   .trigger.open .chev {
     transform: rotate(180deg);
@@ -270,7 +284,9 @@
     border-radius: 9px;
     color: #c4c1d8;
     text-decoration: none;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
   }
   .panel a:hover,
   .panel a:focus-visible {

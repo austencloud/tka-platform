@@ -55,8 +55,8 @@
   <div class="archive-grid">
     {#each GUIDE_MOVES as move (move.id)}
       <figure
-        class:current={move.id === app.bluePresetId ||
-          move.id === app.redPresetId}
+        class:current={move.id === app.leftPresetId ||
+          move.id === app.rightPresetId}
       >
         <div class="frame" style={`--aspect: ${move.aspect}`}>
           <QftFrames

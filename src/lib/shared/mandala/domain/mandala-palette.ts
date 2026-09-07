@@ -81,8 +81,8 @@ export function flowPalette(morphColors: string[], phase: number): MandalaPalett
 	const c2 = sampleGradient(morphColors, (phase + 0.4) % 1);
 	const mix = mixColors(c1, c2);
 	return {
-		blueStroke: c1, blueFill: withAlpha(c1, 0.15),
-		redStroke: c2, redFill: withAlpha(c2, 0.15),
+		leftStroke: c1, leftFill: withAlpha(c1, 0.15),
+		rightStroke: c2, rightFill: withAlpha(c2, 0.15),
 		purpleStroke: mix, purpleFill: withAlpha(mix, 0.2),
 	};
 }
@@ -91,14 +91,14 @@ export function flowPalette(morphColors: string[], phase: number): MandalaPalett
 export function flowGradientColors(
 	morphColors: string[],
 	phase: number,
-): { blue: [string, string]; red: [string, string]; purple: [string, string] } {
+): { left: [string, string]; right: [string, string]; purple: [string, string] } {
 	const c1 = sampleGradient(morphColors, phase);
 	const c2 = sampleGradient(morphColors, (phase + 0.4) % 1);
 	const c3 = sampleGradient(morphColors, (phase + 0.7) % 1);
 	const mix = mixColors(c1, c2);
 	return {
-		blue: [c1, c3],
-		red: [c2, c1],
+		left: [c1, c3],
+		right: [c2, c1],
 		purple: [mix, c3],
 	};
 }

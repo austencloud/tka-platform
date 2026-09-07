@@ -29,14 +29,14 @@ export class GooRenderer3D {
   private readonly maxAge = new Float32Array(CAPACITY);
   private readonly radius = new Float32Array(CAPACITY);
   private readonly gravity = new Float32Array(CAPACITY);
-  private readonly red = new Float32Array(CAPACITY);
+  private readonly right = new Float32Array(CAPACITY);
   private readonly green = new Float32Array(CAPACITY);
-  private readonly blue = new Float32Array(CAPACITY);
+  private readonly left = new Float32Array(CAPACITY);
   private readonly peakAlpha = new Float32Array(CAPACITY);
   private readonly accumulators = new Map<number, number>();
   private readonly velocityDirection = new Vector3();
   private readonly orientation = new Quaternion();
-  private readonly color: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly color: MutableRgb = { right: 1, green: 1, left: 1 };
   private readonly writeState: ParticleInstanceWrite = {
     x: 0,
     y: 0,
@@ -44,9 +44,9 @@ export class GooRenderer3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
   };
   private cursor = 0;
@@ -106,9 +106,9 @@ export class GooRenderer3D {
       write.quaternionY = this.orientation.y;
       write.quaternionZ = this.orientation.z;
       write.quaternionW = this.orientation.w;
-      write.red = this.red[index]!;
+      write.right = this.right[index]!;
       write.green = this.green[index]!;
-      write.blue = this.blue[index]!;
+      write.left = this.left[index]!;
       write.alpha = fade * this.peakAlpha[index]!;
       this.pool.write(write);
     }
@@ -161,9 +161,9 @@ export class GooRenderer3D {
       this.gravity[slot] = params.worldGravity;
       this.peakAlpha[slot] = 1 - params.clarity * 0.25;
       setRgbFromHex(this.color, params.resolvedPalette.edge);
-      this.red[slot] = this.color.red;
+      this.right[slot] = this.color.right;
       this.green[slot] = this.color.green;
-      this.blue[slot] = this.color.blue;
+      this.left[slot] = this.color.left;
       accumulator -= 1;
     }
     this.accumulators.set(source.sourceId, accumulator);

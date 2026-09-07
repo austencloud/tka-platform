@@ -22,7 +22,10 @@
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
   import { trackAuthProviderResult } from "$lib/shared/analytics/auth-events";
 
-  let { mode = $bindable("signin" as "signin" | "signup") } = $props();
+  let {
+    mode = $bindable("signin" as "signin" | "signup"),
+    showModeSwitch = true,
+  } = $props();
 
   let email = $state("");
   let password = $state("");
@@ -291,16 +294,18 @@
       {/if}
     </button>
 
-    <button
-      class="switch"
-      type="button"
-      onclick={toggleMode}
-      disabled={loading}
-    >
-      {mode === "signin"
-        ? t("auth_need_account")
-        : t("auth_have_account_signin")}
-    </button>
+    {#if showModeSwitch}
+      <button
+        class="switch"
+        type="button"
+        onclick={toggleMode}
+        disabled={loading}
+      >
+        {mode === "signin"
+          ? t("auth_need_account")
+          : t("auth_have_account_signin")}
+      </button>
+    {/if}
   </form>
 </div>
 

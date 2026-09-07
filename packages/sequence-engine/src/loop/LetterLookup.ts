@@ -10,7 +10,7 @@
  */
 
 interface MotionData {
-  color?: string;
+  hand?: string;
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -27,81 +27,81 @@ interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 /**
- * Find the TKA letter that matches the given blue and red motion parameters.
- * @param blueMotion - Blue motion data (type, locations, rotation)
- * @param redMotion - Red motion data (type, locations, rotation)
+ * Find the TKA letter that matches the given left and right motion parameters.
+ * @param leftMotion - Left motion data (type, locations, rotation)
+ * @param rightMotion - Right motion data (type, locations, rotation)
  * @param allPictographs - All available pictograph data to search
  * @returns The matching letter, or null if no match found
  */
 export function findLetterByMotions(
-  blueMotion: MotionData,
-  redMotion: MotionData,
+  leftMotion: MotionData,
+  rightMotion: MotionData,
   allPictographs: PictographData[]
 ): string | null {
   // Normalize inputs to lowercase for matching
-  const blueType = (
-    blueMotion.motionType === "float"
-      ? (blueMotion.prefloatMotionType ?? blueMotion.motionType)
-      : blueMotion.motionType
+  const leftType = (
+    leftMotion.motionType === "float"
+      ? (leftMotion.prefloatMotionType ?? leftMotion.motionType)
+      : leftMotion.motionType
   ).toLowerCase();
-  const blueStart = blueMotion.startLocation.toLowerCase();
-  const blueEnd = blueMotion.endLocation.toLowerCase();
-  const blueRot = (
-    blueMotion.motionType === "float"
-      ? (blueMotion.prefloatRotationDirection ?? blueMotion.rotationDirection)
-      : blueMotion.rotationDirection
+  const leftStart = leftMotion.startLocation.toLowerCase();
+  const leftEnd = leftMotion.endLocation.toLowerCase();
+  const leftRot = (
+    leftMotion.motionType === "float"
+      ? (leftMotion.prefloatRotationDirection ?? leftMotion.rotationDirection)
+      : leftMotion.rotationDirection
   ).toLowerCase();
 
-  const redType = (
-    redMotion.motionType === "float"
-      ? (redMotion.prefloatMotionType ?? redMotion.motionType)
-      : redMotion.motionType
+  const rightType = (
+    rightMotion.motionType === "float"
+      ? (rightMotion.prefloatMotionType ?? rightMotion.motionType)
+      : rightMotion.motionType
   ).toLowerCase();
-  const redStart = redMotion.startLocation.toLowerCase();
-  const redEnd = redMotion.endLocation.toLowerCase();
-  const redRot = (
-    redMotion.motionType === "float"
-      ? (redMotion.prefloatRotationDirection ?? redMotion.rotationDirection)
-      : redMotion.rotationDirection
+  const rightStart = rightMotion.startLocation.toLowerCase();
+  const rightEnd = rightMotion.endLocation.toLowerCase();
+  const rightRot = (
+    rightMotion.motionType === "float"
+      ? (rightMotion.prefloatRotationDirection ?? rightMotion.rotationDirection)
+      : rightMotion.rotationDirection
   ).toLowerCase();
 
   // For static and dash motions, rotation direction doesn't matter
   // because the generator applies turns which changes rotation
-  const blueIgnoreRotation = blueType === "static" || blueType === "dash";
-  const redIgnoreRotation = redType === "static" || redType === "dash";
+  const leftIgnoreRotation = leftType === "static" || leftType === "dash";
+  const rightIgnoreRotation = rightType === "static" || rightType === "dash";
 
   for (const pictograph of allPictographs) {
-    const pBlue = pictograph.blueMotion;
-    const pRed = pictograph.redMotion;
+    const pLeft = pictograph.leftMotion;
+    const pRight = pictograph.rightMotion;
 
-    // Check blue motion matches
-    const blueTypeMatches = pBlue.motionType.toLowerCase() === blueType;
-    const blueStartMatches = pBlue.startLocation.toLowerCase() === blueStart;
-    const blueEndMatches = pBlue.endLocation.toLowerCase() === blueEnd;
-    const blueRotMatches =
-      blueIgnoreRotation || pBlue.rotationDirection.toLowerCase() === blueRot;
+    // Check left motion matches
+    const leftTypeMatches = pLeft.motionType.toLowerCase() === leftType;
+    const leftStartMatches = pLeft.startLocation.toLowerCase() === leftStart;
+    const leftEndMatches = pLeft.endLocation.toLowerCase() === leftEnd;
+    const leftRotMatches =
+      leftIgnoreRotation || pLeft.rotationDirection.toLowerCase() === leftRot;
 
-    // Check red motion matches
-    const redTypeMatches = pRed.motionType.toLowerCase() === redType;
-    const redStartMatches = pRed.startLocation.toLowerCase() === redStart;
-    const redEndMatches = pRed.endLocation.toLowerCase() === redEnd;
-    const redRotMatches =
-      redIgnoreRotation || pRed.rotationDirection.toLowerCase() === redRot;
+    // Check right motion matches
+    const rightTypeMatches = pRight.motionType.toLowerCase() === rightType;
+    const rightStartMatches = pRight.startLocation.toLowerCase() === rightStart;
+    const rightEndMatches = pRight.endLocation.toLowerCase() === rightEnd;
+    const rightRotMatches =
+      rightIgnoreRotation || pRight.rotationDirection.toLowerCase() === rightRot;
 
     if (
-      blueTypeMatches &&
-      blueStartMatches &&
-      blueEndMatches &&
-      blueRotMatches &&
-      redTypeMatches &&
-      redStartMatches &&
-      redEndMatches &&
-      redRotMatches
+      leftTypeMatches &&
+      leftStartMatches &&
+      leftEndMatches &&
+      leftRotMatches &&
+      rightTypeMatches &&
+      rightStartMatches &&
+      rightEndMatches &&
+      rightRotMatches
     ) {
       return pictograph.letter;
     }
@@ -110,24 +110,24 @@ export function findLetterByMotions(
   // No exact match found - try with relaxed rotation matching
   // This handles cases where turns have been applied
   for (const pictograph of allPictographs) {
-    const pBlue = pictograph.blueMotion;
-    const pRed = pictograph.redMotion;
+    const pLeft = pictograph.leftMotion;
+    const pRight = pictograph.rightMotion;
 
-    const blueTypeMatches = pBlue.motionType.toLowerCase() === blueType;
-    const blueStartMatches = pBlue.startLocation.toLowerCase() === blueStart;
-    const blueEndMatches = pBlue.endLocation.toLowerCase() === blueEnd;
+    const leftTypeMatches = pLeft.motionType.toLowerCase() === leftType;
+    const leftStartMatches = pLeft.startLocation.toLowerCase() === leftStart;
+    const leftEndMatches = pLeft.endLocation.toLowerCase() === leftEnd;
 
-    const redTypeMatches = pRed.motionType.toLowerCase() === redType;
-    const redStartMatches = pRed.startLocation.toLowerCase() === redStart;
-    const redEndMatches = pRed.endLocation.toLowerCase() === redEnd;
+    const rightTypeMatches = pRight.motionType.toLowerCase() === rightType;
+    const rightStartMatches = pRight.startLocation.toLowerCase() === rightStart;
+    const rightEndMatches = pRight.endLocation.toLowerCase() === rightEnd;
 
     if (
-      blueTypeMatches &&
-      blueStartMatches &&
-      blueEndMatches &&
-      redTypeMatches &&
-      redStartMatches &&
-      redEndMatches
+      leftTypeMatches &&
+      leftStartMatches &&
+      leftEndMatches &&
+      rightTypeMatches &&
+      rightStartMatches &&
+      rightEndMatches
     ) {
       return pictograph.letter;
     }

@@ -7,10 +7,10 @@
  *
  * Design notes:
  *   - `letter` is a Letter enum or null; start-position steps have null.
- *   - `motions` is a keyed record (blue/red), not flat blueMotion/redMotion.
+ *   - `motions` is a performer-relative keyed record (left/right).
  *     Hand-iterating algorithms become one loop instead of duplicated blocks.
  *   - `stepNumber` is required; 0 marks the start-position step.
- *   - Reversal state (`blueReversal`/`redReversal`) is derived on read via
+ *   - Reversal state (`leftReversal`/`rightReversal`) is derived on read via
  *     `deriveReversals(steps)` in `@tka/sequence-engine`, not stored here.
  *   - Selection state (`isSelected`) is UI state; it lives in a selection
  *     store in the app layer, keyed by step `id`.
@@ -24,8 +24,8 @@ import type { Letter } from "./letter.js";
 import type { GridPosition, GridMode } from "./grid.js";
 
 export interface StepMotions {
-  readonly blue: Motion;
-  readonly red: Motion;
+  readonly left: Motion;
+  readonly right: Motion;
 }
 
 export interface Step {

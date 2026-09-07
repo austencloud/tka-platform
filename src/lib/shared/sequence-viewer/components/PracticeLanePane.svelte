@@ -17,8 +17,8 @@
     currentStep,
     bpm,
     cellSize,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     onSeek = null,
     showStartCell = false,
   }: {
@@ -27,8 +27,8 @@
     currentStep: number;
     bpm: number;
     cellSize: number;
-    bluePropType?: PropType | null;
-    redPropType?: PropType | null;
+    leftPropType?: PropType | null;
+    rightPropType?: PropType | null;
     /** Jump playback to a step (0 = start position, 1..N = steps). */
     onSeek?: ((stepNumber: number) => void) | null;
     /** Pre-roll count-in: include + focus the start-position tile so the lane
@@ -84,8 +84,8 @@
       currentStep={shiftedStep}
       {bpm}
       {cellSize}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       stepPulse={true}
       onCellClick={onSeek}
       anchor="start"

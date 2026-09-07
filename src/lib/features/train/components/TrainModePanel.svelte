@@ -283,17 +283,17 @@
     const expected = trainState.expectedPositions;
     const detected = trainState.currentFrame;
 
-    const blueCorrect =
-      expected.blue && detected.blue
-        ? detected.blue.quadrant === expected.blue
-        : expected.blue === null;
+    const leftCorrect =
+      expected.left && detected.left
+        ? detected.left.quadrant === expected.left
+        : expected.left === null;
 
-    const redCorrect =
-      expected.red && detected.red
-        ? detected.red.quadrant === expected.red
-        : expected.red === null;
+    const rightCorrect =
+      expected.right && detected.right
+        ? detected.right.quadrant === expected.right
+        : expected.right === null;
 
-    const isHit = blueCorrect && redCorrect;
+    const isHit = leftCorrect && rightCorrect;
 
     const basePoints = 100;
     const comboMultiplier = 1 + trainState.currentCombo * 0.1;

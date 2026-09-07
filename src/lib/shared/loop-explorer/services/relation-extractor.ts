@@ -84,7 +84,7 @@ function pickSimplest(candidates: readonly PairRelation[]): PairRelation | null 
   return sorted[0] ?? null;
 }
 
-function toPairMotion(motion: StepLike["motions"]["blue"]): PairMotion {
+function toPairMotion(motion: StepLike["motions"]["left"]): PairMotion {
   if (!motion || !isVisibleMotion(motion)) {
     return { startLocation: "", endLocation: "", motionType: "" };
   }
@@ -97,7 +97,7 @@ function toPairMotion(motion: StepLike["motions"]["blue"]): PairMotion {
 
 function toPairMotions(step: StepLike): PairMotions {
   return {
-    blue: toPairMotion(step.motions?.blue),
-    red: toPairMotion(step.motions?.red),
+    left: toPairMotion(step.motions?.left),
+    right: toPairMotion(step.motions?.right),
   };
 }

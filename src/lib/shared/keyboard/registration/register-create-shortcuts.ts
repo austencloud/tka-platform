@@ -9,20 +9,36 @@
  */
 
 import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
+import type { KeyboardShortcutManager } from "$lib/shared/keyboard/services/keyboard-shortcut-manager";
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import { getCreateModuleRef } from "$lib/shared/create/state/create-module-state-ref.svelte";
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
 import { executeClearSequenceWorkflow } from "$lib/shared/create/utils/clear-sequence-workflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
-import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
-import { shiftStartPosition } from "$lib/shared/create/services/sequence-transforms";
+import {
+  getSettings,
+  updateSettings,
+} from "$lib/shared/application/state/app-state.svelte";
+import type { SequenceTransformCommandId } from "$lib/shared/create/domain/sequence-action-types";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/premium-prop-access";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const debug = createComponentLogger("CreateShortcuts");
+
+async function executeSequenceShortcut(
+  action: SequenceTransformCommandId,
+  stepNumber?: number
+): Promise<void> {
+  const ref = getCreateModuleRef();
+  if (!ref) return;
+
+  await ref.executeSequenceAction(action, {
+    source: "keyboard",
+    targetHand: "both",
+    ...(stepNumber === undefined ? {} : { stepNumber }),
+  });
+}
 
 /**
  * Apply a prop preset from settings by index
@@ -45,11 +61,11 @@ async function applyPropPreset(presetIndex: number): Promise<void> {
   // Apply the preset settings
   await updateSettings({
     selectedPresetIndex: presetIndex,
-    bluePropType: preset.bluePropType,
-    redPropType: preset.redPropType,
+    leftPropType: preset.leftPropType,
+    rightPropType: preset.rightPropType,
     catDogMode: preset.catDogMode,
-    blueBuugengFlipped: preset.blueBuugengFlipped ?? false,
-    redBuugengFlipped: preset.redBuugengFlipped ?? false,
+    leftBuugengFlipped: preset.leftBuugengFlipped ?? false,
+    rightBuugengFlipped: preset.rightBuugengFlipped ?? false,
   });
 
   debug.log(`Applied prop preset ${presetIndex}:`, preset);
@@ -84,7 +100,11 @@ export function registerCreateShortcuts(
       const { panelState } = ref;
 
       // Check if any animation panel is open (Animation Panel, Export Panel, or Sequence Viewer)
-      if (panelState.isAnimationPanelOpen || panelState.isExportPanelOpen || panelState.isSequenceViewerOpen) {
+      if (
+        panelState.isAnimationPanelOpen ||
+        panelState.isExportPanelOpen ||
+        panelState.isSequenceViewerOpen
+      ) {
         // Animation is visible - toggle play/pause
         const playbackController = getAnimationPlaybackRef();
         if (playbackController) {
@@ -417,15 +437,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.mirrorSequence();
-    },
+    action: () => executeSequenceShortcut("mirror"),
   });
 
   // Alt+V - Flip sequence
@@ -444,18 +456,10 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.flipSequence();
-    },
+    action: () => executeSequenceShortcut("flip"),
   });
 
-  // Alt+X - Swap hands (swap colors). Was Alt+S but Chrome/extensions steal it.
+  // Alt+X - Swap hands. Was Alt+S but Chrome/extensions steal it.
   service.register({
     id: "create.transform-swap-hands",
     label: "Swap Hands",
@@ -471,15 +475,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.swapColors();
-    },
+    action: () => executeSequenceShortcut("swap"),
   });
 
   // Alt+I - Invert sequence
@@ -498,15 +494,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.invertSequence();
-    },
+    action: () => executeSequenceShortcut("invert"),
   });
 
   // Alt+F - Shift start (move first beat to end)
@@ -525,15 +513,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      const sequence = sequenceState?.currentSequence;
-      if (!sequence || sequence.steps.length <= 1) return;
-      const shifted = shiftStartPosition(sequence, 2);
-      sequenceState.setCurrentSequence(shifted);
-    },
+    action: () => executeSequenceShortcut("shift_start", 2),
   });
 
   // Alt+W - Rewind/Reverse sequence
@@ -552,15 +532,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.rewindSequence();
-    },
+    action: () => executeSequenceShortcut("rewind"),
   });
 
   // Alt+] - Rotate sequence clockwise (45°)
@@ -579,16 +551,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      setGridRotationDirection(1);
-      await sequenceState.rotateSequence("clockwise");
-    },
+    action: () => executeSequenceShortcut("rotate_clockwise"),
   });
 
   // Alt+[ - Rotate sequence counter-clockwise (45°)
@@ -607,16 +570,7 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       return sequenceState?.hasSequence() ?? false;
     },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      setGridRotationDirection(-1);
-      await sequenceState.rotateSequence("counterclockwise");
-    },
+    action: () => executeSequenceShortcut("rotate_counterclockwise"),
   });
 
   // ==================== Prop Presets ====================
@@ -697,17 +651,21 @@ export function registerCreateShortcuts(
     priority: "medium",
     action: async () => {
       const settings = getSettings();
-      const currentProp = settings.bluePropType ?? PropType.STAFF;
+      const currentProp = settings.leftPropType ?? PropType.STAFF;
       // Shuffle draws from the whole enum, so paid cosmetics drop out unless
       // the user may actually use them.
       const allProps = filterPremiumCosmeticProps(getAllPropTypes());
       const otherProps = allProps.filter((p) => p !== currentProp);
-      const randomProp = otherProps[Math.floor(Math.random() * otherProps.length)]!;
+      const randomProp =
+        otherProps[Math.floor(Math.random() * otherProps.length)]!;
 
       const hapticService = getHapticFeedback();
       hapticService?.trigger("selection");
 
-      await updateSettings({ bluePropType: randomProp, redPropType: randomProp });
+      await updateSettings({
+        leftPropType: randomProp,
+        rightPropType: randomProp,
+      });
       debug.log(`Shuffled prop to: ${randomProp}`);
     },
   });

@@ -527,10 +527,10 @@ function appendBarrierCell(
   appendQuad(
     positions,
     indices,
-    [corners[0][0], tops[0], corners[0][1]],
-    [corners[3][0], tops[3], corners[3][1]],
-    [corners[2][0], tops[2], corners[2][1]],
-    [corners[1][0], tops[1], corners[1][1]]
+    [corners[0][0], tops[0]!, corners[0][1]],
+    [corners[3][0], tops[3]!, corners[3][1]],
+    [corners[2][0], tops[2]!, corners[2][1]],
+    [corners[1][0], tops[1]!, corners[1][1]]
   );
 
   const neighbors = [

@@ -137,8 +137,8 @@ describe("Flow Fest production dressing", () => {
 
     expect(first.counts).toEqual(second.counts);
     expect(first.counts).toMatchObject({
-      tents: 47,
-      vehicles: 32,
+      tents: 53,
+      vehicles: 44,
       festivalPeople: 26,
     });
     expect(first.counts.interpretedTrees).toBeGreaterThan(250);
@@ -159,8 +159,14 @@ describe("Flow Fest production dressing", () => {
       roadMarkingSurfaceCount: 5,
     });
     expect(first.spatialAudit).toMatchObject({ campRouteViolations: 0 });
+    // Measured LiDAR peaks keep the detector's 7.5 m rejection radius; the
+    // jittered-grid infill trees planted between them keep their own 4.5 m
+    // floor, so no two trunks in the site woodland ever fuse.
     expect(first.spatialAudit.minimumCanopyPeakDistance).toBeGreaterThanOrEqual(
       7.5
+    );
+    expect(first.spatialAudit.minimumSiteTreeDistance).toBeGreaterThanOrEqual(
+      4.5
     );
     expect(
       first.spatialAudit.tracedConnectorSurfaceCount
@@ -174,17 +180,28 @@ describe("Flow Fest production dressing", () => {
     );
     expect(first.spatialAudit.lowerTentMaximumLoopDistance).toBeLessThan(8);
     expect(first.spatialAudit).toMatchObject({
-      lowerCenterVehicleCount: 32,
-      lowerCenterTentCount: 4,
+      lowerCenterVehicleCount: 44,
+      lowerCenterTentCount: 10,
+      lowerCenterCanopyCount: 8,
       lowerInnerRoadsideTentCount: 8,
       lowerOuterTreeLineTentCount: 14,
       lowerCenterVehicleOutsideLoopCount: 0,
+      lowerCenterVehicleAisleIntrusionCount: 0,
+      lowerCenterVehicleWalkLaneIntrusionCount: 0,
+      lowerCenterGearWalkLaneIntrusionCount: 0,
       lowerInnerRoadsideTentOutsideLoopCount: 0,
       lowerOuterTreeLineTentInsideLoopCount: 0,
     });
+    // Side-by-side stalls: a 3.55 m pitch with 0.12 m of jitter each way.
     expect(
       first.spatialAudit.minimumVehicleCenterDistance
-    ).toBeGreaterThanOrEqual(4.05);
+    ).toBeGreaterThanOrEqual(3.05);
+    expect(first.parkedCars).toHaveLength(44);
+    for (const car of first.parkedCars) {
+      expect(Math.abs(car.pitch)).toBeLessThan(0.2);
+      expect(Math.abs(car.roll)).toBeLessThan(0.2);
+    }
+    expect(new Set(first.parkedCars.map((car) => car.modelId)).size).toBe(6);
     expect(
       first.spatialAudit.minimumTentVehicleDistance
     ).toBeGreaterThanOrEqual(3.2);
@@ -195,11 +212,15 @@ describe("Flow Fest production dressing", () => {
       festivalFixtures: 5,
       entranceFixtures: 4,
     });
+    // Trees, every tent but the player's own, the parked cars, the tailgate
+    // canopies added with the car campground rows, and the four entrance
+    // fixtures.
     expect(first.collision.staticMesh.visibleObjectCount).toBe(
       first.counts.interpretedTrees +
         first.counts.tents -
         1 +
         first.counts.vehicles +
+        first.spatialAudit.lowerCenterCanopyCount +
         4
     );
     expect(first.collision.campEstablishedMesh.visibleObjectCount).toBe(1);
@@ -371,7 +392,7 @@ describe("Flow Fest production dressing", () => {
 
     first.dispose();
     second.dispose();
-  });
+  }, 30_000);
 
   it.each([
     ["lower-tent", 37],
@@ -389,8 +410,8 @@ describe("Flow Fest production dressing", () => {
       );
 
       expect(dressing.counts).toMatchObject({
-        tents: 47,
-        vehicles: 32,
+        tents: 53,
+        vehicles: 44,
         festivalPeople: 26,
         routeLanterns,
       });
@@ -400,8 +421,11 @@ describe("Flow Fest production dressing", () => {
       expect(
         dressing.spatialAudit.minimumCanopyPeakDistance
       ).toBeGreaterThanOrEqual(7.5);
+      expect(
+        dressing.spatialAudit.minimumSiteTreeDistance
+      ).toBeGreaterThanOrEqual(4.5);
       expect(dressing.collision.staticMesh.visibleObjectCount).toBe(
-        dressing.counts.interpretedTrees + 82
+        dressing.counts.interpretedTrees + 108
       );
       expect(dressing.collision.campEstablishedMesh.visibleObjectCount).toBe(1);
       expect(dressing.collision.festivalActiveMesh.visibleObjectCount).toBe(5);

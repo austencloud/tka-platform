@@ -21,6 +21,7 @@ export const DEFAULT_INERT_EXCLUSIONS = [
   "desktop-navigation-sidebar", // Allow navigation away from drawer
   "bottom-navigation", // Allow module switching on mobile
   "drawer-overlay", // Allow backdrop click to dismiss
+  "drawer-interactive-portal", // Keep drawer-owned popovers interactive outside the drawer DOM
   "mind-overlay", // The ghost presenter's operator card must outlive any drawer
 ] as const;
 
@@ -254,7 +255,9 @@ export class FocusTrap {
    */
   private shouldExcludeFromInert(element: HTMLElement): boolean {
     const exclusions = this.options.inertExclusions ?? DEFAULT_INERT_EXCLUSIONS;
-    return exclusions.some((className) => element.classList.contains(className));
+    return exclusions.some((className) =>
+      element.classList.contains(className)
+    );
   }
 
   /**

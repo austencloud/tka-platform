@@ -19,7 +19,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
@@ -28,31 +28,31 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeStep(
   stepNumber: number,
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
   return {
     id: `step-${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: createMotionData({ ...blue, color: MotionColor.BLUE }),
-      red: createMotionData({ ...red, color: MotionColor.RED }),
+      left: createMotionData({ ...left, hand: HandSide.LEFT }),
+      right: createMotionData({ ...right, hand: HandSide.RIGHT }),
     },
   };
 }
 
 function makeStartPosition(
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
-  return makeStep(0, blue, red);
+  return makeStep(0, left, right);
 }
 
 function buildTestSequence(steps: StepData[]): SequenceData {
@@ -214,32 +214,32 @@ describe("SequenceEncoder", () => {
 
       expect(decoded.steps).toHaveLength(1);
 
-      const blueMotion = decoded.steps[0].motions.blue!;
-      expect(blueMotion.motionType).toBe(MotionType.PRO);
-      expect(blueMotion.rotationDirection).toBe(RotationDirection.CLOCKWISE);
-      expect(blueMotion.startLocation).toBe(GridLocation.NORTH);
-      expect(blueMotion.endLocation).toBe(GridLocation.EAST);
+      const leftMotion = decoded.steps[0].motions.left!;
+      expect(leftMotion.motionType).toBe(MotionType.PRO);
+      expect(leftMotion.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+      expect(leftMotion.startLocation).toBe(GridLocation.NORTH);
+      expect(leftMotion.endLocation).toBe(GridLocation.EAST);
       // startOrientation comes from the chained seed (IN); endOrientation is
       // derived (PRO, 1 turn => switch) -> OUT.
-      expect(blueMotion.startOrientation).toBe(Orientation.IN);
-      expect(blueMotion.endOrientation).toBe(Orientation.OUT);
-      expect(blueMotion.turns).toBe(1);
-      expect(blueMotion.propType).toBe(PropType.STAFF);
+      expect(leftMotion.startOrientation).toBe(Orientation.IN);
+      expect(leftMotion.endOrientation).toBe(Orientation.OUT);
+      expect(leftMotion.turns).toBe(1);
+      expect(leftMotion.propType).toBe(PropType.STAFF);
 
-      const redMotion = decoded.steps[0].motions.red!;
-      expect(redMotion.motionType).toBe(MotionType.ANTI);
-      expect(redMotion.rotationDirection).toBe(
+      const rightMotion = decoded.steps[0].motions.right!;
+      expect(rightMotion.motionType).toBe(MotionType.ANTI);
+      expect(rightMotion.rotationDirection).toBe(
         RotationDirection.COUNTER_CLOCKWISE
       );
-      expect(redMotion.startLocation).toBe(GridLocation.SOUTH);
-      expect(redMotion.endLocation).toBe(GridLocation.WEST);
+      expect(rightMotion.startLocation).toBe(GridLocation.SOUTH);
+      expect(rightMotion.endLocation).toBe(GridLocation.WEST);
       // Non-default CLOCK seed survives the header round-trip and chains in as
       // the step start orientation; endOrientation derived (ANTI, 2 turns =>
       // switch) -> COUNTER.
-      expect(redMotion.startOrientation).toBe(Orientation.CLOCK);
-      expect(redMotion.endOrientation).toBe(Orientation.COUNTER);
-      expect(redMotion.turns).toBe(2);
-      expect(redMotion.propType).toBe(PropType.FAN);
+      expect(rightMotion.startOrientation).toBe(Orientation.CLOCK);
+      expect(rightMotion.endOrientation).toBe(Orientation.COUNTER);
+      expect(rightMotion.turns).toBe(2);
+      expect(rightMotion.propType).toBe(PropType.FAN);
     });
 
     it("preserves all motion fields through compressed round-trip", () => {
@@ -290,18 +290,18 @@ describe("SequenceEncoder", () => {
       const { encoded } = encodeSequenceWithCompression(seq);
       const decoded = decodeSequenceWithCompression(encoded);
 
-      const blueMotion = decoded.steps[0].motions.blue!;
-      expect(blueMotion.motionType).toBe(MotionType.DASH);
-      expect(blueMotion.startLocation).toBe(GridLocation.NORTHEAST);
-      expect(blueMotion.endLocation).toBe(GridLocation.SOUTHWEST);
-      expect(blueMotion.turns).toBe(3);
-      expect(blueMotion.propType).toBe(PropType.CLUB);
+      const leftMotion = decoded.steps[0].motions.left!;
+      expect(leftMotion.motionType).toBe(MotionType.DASH);
+      expect(leftMotion.startLocation).toBe(GridLocation.NORTHEAST);
+      expect(leftMotion.endLocation).toBe(GridLocation.SOUTHWEST);
+      expect(leftMotion.turns).toBe(3);
+      expect(leftMotion.propType).toBe(PropType.CLUB);
 
-      const redMotion = decoded.steps[0].motions.red!;
-      expect(redMotion.motionType).toBe(MotionType.STATIC);
-      expect(redMotion.startLocation).toBe(GridLocation.SOUTHEAST);
-      expect(redMotion.endLocation).toBe(GridLocation.SOUTHEAST);
-      expect(redMotion.turns).toBe(0);
+      const rightMotion = decoded.steps[0].motions.right!;
+      expect(rightMotion.motionType).toBe(MotionType.STATIC);
+      expect(rightMotion.startLocation).toBe(GridLocation.SOUTHEAST);
+      expect(rightMotion.endLocation).toBe(GridLocation.SOUTHEAST);
+      expect(rightMotion.turns).toBe(0);
     });
 
     it("preserves multi-step sequences", () => {
@@ -387,20 +387,20 @@ describe("SequenceEncoder", () => {
 
       expect(decoded.steps).toHaveLength(3);
 
-      expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
-      expect(decoded.steps[1].motions.blue!.motionType).toBe(MotionType.ANTI);
-      expect(decoded.steps[2].motions.blue!.motionType).toBe(MotionType.STATIC);
+      expect(decoded.steps[0].motions.left!.motionType).toBe(MotionType.PRO);
+      expect(decoded.steps[1].motions.left!.motionType).toBe(MotionType.ANTI);
+      expect(decoded.steps[2].motions.left!.motionType).toBe(MotionType.STATIC);
 
-      expect(decoded.steps[0].motions.blue!.startLocation).toBe(
+      expect(decoded.steps[0].motions.left!.startLocation).toBe(
         GridLocation.NORTH
       );
-      expect(decoded.steps[0].motions.blue!.endLocation).toBe(
+      expect(decoded.steps[0].motions.left!.endLocation).toBe(
         GridLocation.EAST
       );
-      expect(decoded.steps[1].motions.blue!.startLocation).toBe(
+      expect(decoded.steps[1].motions.left!.startLocation).toBe(
         GridLocation.EAST
       );
-      expect(decoded.steps[1].motions.blue!.endLocation).toBe(
+      expect(decoded.steps[1].motions.left!.endLocation).toBe(
         GridLocation.SOUTH
       );
     });
@@ -448,8 +448,8 @@ describe("SequenceEncoder", () => {
       const encoded = encodeSequence(seq);
       const decoded = decodeSequence(encoded);
 
-      expect(decoded.steps[0].motions.blue!.turns).toBe("fl");
-      expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.FLOAT);
+      expect(decoded.steps[0].motions.left!.turns).toBe("fl");
+      expect(decoded.steps[0].motions.left!.motionType).toBe(MotionType.FLOAT);
     });
 
     it("preserves all 8 grid locations", () => {
@@ -504,7 +504,7 @@ describe("SequenceEncoder", () => {
         const encoded = encodeSequence(seq);
         const decoded = decodeSequence(encoded);
 
-        expect(decoded.steps[0].motions.blue!.startLocation).toBe(loc);
+        expect(decoded.steps[0].motions.left!.startLocation).toBe(loc);
       }
     });
 
@@ -572,12 +572,12 @@ describe("SequenceEncoder", () => {
         const decoded = decodeSequence(encoded);
 
         // Seed round-trips onto the decoded start position.
-        expect(decoded.startPosition!.motions.blue!.startOrientation).toBe(
+        expect(decoded.startPosition!.motions.left!.startOrientation).toBe(
           orient
         );
         // And chains (STATIC, 0 turns => preserve) into the step.
-        expect(decoded.steps[0].motions.blue!.startOrientation).toBe(orient);
-        expect(decoded.steps[0].motions.blue!.endOrientation).toBe(orient);
+        expect(decoded.steps[0].motions.left!.startOrientation).toBe(orient);
+        expect(decoded.steps[0].motions.left!.endOrientation).toBe(orient);
       }
     });
 
@@ -632,8 +632,8 @@ describe("SequenceEncoder", () => {
         const encoded = encodeSequence(seq);
         const decoded = decodeSequence(encoded);
 
-        expect(decoded.steps[0].motions.blue!.propType).toBe(propType);
-        expect(decoded.steps[0].motions.red!.propType).toBe(propType);
+        expect(decoded.steps[0].motions.left!.propType).toBe(propType);
+        expect(decoded.steps[0].motions.right!.propType).toBe(propType);
       }
     });
   });
@@ -780,11 +780,11 @@ describe("SequenceEncoder", () => {
 
       const decoded = decodeSequenceWithCompression(parsed.encoded!);
       expect(decoded.steps).toHaveLength(1);
-      expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
-      expect(decoded.steps[0].motions.blue!.startLocation).toBe(
+      expect(decoded.steps[0].motions.left!.motionType).toBe(MotionType.PRO);
+      expect(decoded.steps[0].motions.left!.startLocation).toBe(
         GridLocation.NORTH
       );
-      expect(decoded.steps[0].motions.blue!.endLocation).toBe(
+      expect(decoded.steps[0].motions.left!.endLocation).toBe(
         GridLocation.EAST
       );
     });
@@ -865,8 +865,8 @@ describe("SequenceEncoder", () => {
       const { encoded: compressedStr } = encodeSequenceWithCompression(seq);
       const compressed = decodeSequenceWithCompression(compressedStr);
 
-      const uBlue = uncompressed.steps[0].motions.blue!;
-      const cBlue = compressed.steps[0].motions.blue!;
+      const uBlue = uncompressed.steps[0].motions.left!;
+      const cBlue = compressed.steps[0].motions.left!;
 
       expect(cBlue.motionType).toBe(uBlue.motionType);
       expect(cBlue.rotationDirection).toBe(uBlue.rotationDirection);

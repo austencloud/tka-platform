@@ -21,6 +21,7 @@ Hides header when card height is below 65px for space optimization
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
+    appearance = "vivid",
   } = $props<{
     title: string;
     icon?: string;
@@ -33,6 +34,7 @@ Hides header when card height is below 65px for space optimization
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
+    appearance?: "vivid" | "quiet";
   }>();
 
   // Create state using factory function - only created once!
@@ -67,6 +69,7 @@ Hides header when card height is below 65px for space optimization
   bind:this={state.cardElement}
   class="toggle-card"
   class:landscape-mobile={state.isLandscapeMobile}
+  class:quiet={appearance === "quiet"}
   style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   onclick={state.handleClick}
   onkeydown={state.handleKeydown}
@@ -141,7 +144,19 @@ Hides header when card height is below 65px for space optimization
     color: white;
     text-align: center;
     cursor: pointer;
+  }
 
+  .toggle-card.quiet {
+    --card-title-letter-spacing: 0;
+    --card-title-transform: none;
+    border: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg);
+    box-shadow: none;
+    color: var(--theme-text);
+  }
+
+  .toggle-card.quiet::after {
+    display: none;
   }
 
   /* 🌟 GLOSSY SHEEN OVERLAY - Creates 3D glass effect */
@@ -166,6 +181,14 @@ Hides header when card height is below 65px for space optimization
 
   /* 🖱️ DESKTOP HOVER - Only on hover-capable devices (prevents mobile stuck hover) */
   @media (hover: hover) {
+    .toggle-card.quiet:hover {
+      border-color: var(--theme-stroke-strong);
+      background: var(--theme-card-hover-bg);
+      box-shadow: none;
+      filter: none;
+      transform: translateY(-1px);
+    }
+
     .toggle-card:hover {
       transform: scale(1.02);
       filter: brightness(1.05);
@@ -182,6 +205,11 @@ Hides header when card height is below 65px for space optimization
   .toggle-card:active {
     transform: scale(0.97);
     transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toggle-card.quiet:active {
+    box-shadow: none;
+    transform: scale(0.99);
   }
 
   .toggle-card:focus-within {

@@ -88,8 +88,8 @@ Props:
   // Light mode: darker colors for visibility on light backgrounds
   // Dark mode: brighter colors for visibility on dark backgrounds
   const STATIC_COLORS = {
-    light: { blue: "#3D44B8", red: "#DC2626" }, // Matches :root --dm-motion-*
-    dark: { blue: "#3575E2", red: "#ED1C24" }, // Matches :root.dark --dm-motion-*
+    light: { left: "#3D44B8", right: "#DC2626" }, // Matches :root --dm-motion-*
+    dark: { left: "#3575E2", right: "#ED1C24" }, // Matches :root.dark --dm-motion-*
   };
 
   // Track colors from centralized cache (only used when darkMode is not explicitly provided)
@@ -109,16 +109,16 @@ Props:
   const BLUE_COLOR = $derived(
     darkMode !== undefined
       ? darkMode
-        ? STATIC_COLORS.dark.blue
-        : STATIC_COLORS.light.blue
-      : cachedColors.blue
+        ? STATIC_COLORS.dark.left
+        : STATIC_COLORS.light.left
+      : cachedColors.left
   );
   const RED_COLOR = $derived(
     darkMode !== undefined
       ? darkMode
-        ? STATIC_COLORS.dark.red
-        : STATIC_COLORS.light.red
-      : cachedColors.red
+        ? STATIC_COLORS.dark.right
+        : STATIC_COLORS.light.right
+      : cachedColors.right
   );
 
   // Track loaded letter dimensions with $state for reactivity
@@ -245,7 +245,7 @@ Props:
   function isColorHidden(color: string | undefined | null): boolean {
     if (!viewerVisibility || !color) return false;
     const isRed = color === "#ED1C24";
-    return isRed ? !viewerVisibility.redMotion : !viewerVisibility.blueMotion;
+    return isRed ? !viewerVisibility.rightMotion : !viewerVisibility.leftMotion;
   }
 
   // Check visibility. A slot renders if it has a displayable number OR is

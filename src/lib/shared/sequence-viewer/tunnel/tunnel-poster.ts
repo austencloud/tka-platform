@@ -1,3 +1,5 @@
+import { refreshInteractiveCanvasFrame } from "$lib/shared/3d/rendering/interactive-canvas-frame";
+
 /** Edge length of the square poster thumbnail stored per saved tunnel. Small so
  *  the WebP data URL stays a few KB (well under the Firestore 1MB doc limit),
  *  and because every tunnel in the collection grid ships its poster inside its
@@ -85,6 +87,8 @@ export function capturePosterFrame(
   const ctx = target.getContext("2d");
   if (!ctx) return "";
 
+  refreshInteractiveCanvasFrame(source);
+
   // Cover fit: take the largest centered source rect matching the target's
   // aspect ratio, then scale it to fill.
   const targetAspect = width / height;
@@ -143,6 +147,7 @@ export function compositeContainerLayers(
   ctx.clearRect(0, 0, size, size);
 
   for (const layer of layers) {
+    refreshInteractiveCanvasFrame(layer);
     const ls = Math.min(layer.width, layer.height);
     const lsx = (layer.width - ls) / 2;
     const lsy = (layer.height - ls) / 2;

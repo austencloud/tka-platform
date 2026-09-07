@@ -96,9 +96,10 @@ export function solveLegIK(input: LegIKInput): void {
   knee.updateMatrixWorld(true);
   foot.updateMatrixWorld(true);
 
-  {
+  if (input.groundNormal && input.footForward) {
     const up = input.groundNormal;
-    _tempForwardOnPlane.copy(input.footForward).addScaledVector(up, -input.footForward.dot(up));
+    const footForward = input.footForward;
+    _tempForwardOnPlane.copy(footForward).addScaledVector(up, -footForward.dot(up));
 
     if (_tempForwardOnPlane.lengthSq() >= 1e-6) {
       _tempForwardOnPlane.normalize();

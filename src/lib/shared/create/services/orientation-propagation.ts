@@ -9,20 +9,17 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import type {
-  Orientation} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import {
-  MotionColor
-} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 
 /**
- * Propagate orientations for a single color through all steps.
+ * Propagate orientations for one hand through all steps.
  * Each beat's start orientation = previous beat's end orientation.
  */
-export function propagateOrientationsForColor(
+export function propagateOrientationsForHand(
   steps: StepData[],
-  color: MotionColor,
+  hand: HandSide,
   initialOrientation: Orientation
 ): StepData[] {
   const updatedSteps = [...steps];
@@ -32,7 +29,7 @@ export function propagateOrientationsForColor(
     const beat = updatedSteps[i];
     if (!beat?.motions) continue;
 
-    const motion = beat.motions[color];
+    const motion = beat.motions[hand];
     if (!motion) continue;
 
     // Calculate new end orientation based on this beat's motion
@@ -41,17 +38,14 @@ export function propagateOrientationsForColor(
       startOrientation: previousEndOrientation,
     });
 
-    const newEndOrientation = calculateEndOrientation(
-      tempMotionData,
-      color
-    );
+    const newEndOrientation = calculateEndOrientation(tempMotionData, hand);
 
     // Update this beat with correct orientations
     updatedSteps[i] = {
       ...beat,
       motions: {
         ...beat.motions,
-        [color]: {
+        [hand]: {
           ...motion,
           startOrientation: previousEndOrientation,
           endOrientation: newEndOrientation,
@@ -78,26 +72,26 @@ export function recalculateAllOrientations(
 
   const startPosition = sequence.startPosition;
   let updatedSteps = [...sequence.steps];
-  const blueStartMotion = startPosition.motions[MotionColor.BLUE];
-  const redStartMotion = startPosition.motions[MotionColor.RED];
+  const leftStartMotion = startPosition.motions[HandSide.LEFT];
+  const rightStartMotion = startPosition.motions[HandSide.RIGHT];
 
-  // Recalculate orientations for blue prop
-  if (blueStartMotion) {
-    const blueStartOrientation = blueStartMotion.endOrientation;
-    updatedSteps = propagateOrientationsForColor(
+  // Recalculate orientations for the left prop
+  if (leftStartMotion) {
+    const leftStartOrientation = leftStartMotion.endOrientation;
+    updatedSteps = propagateOrientationsForHand(
       updatedSteps,
-      MotionColor.BLUE,
-      blueStartOrientation
+      HandSide.LEFT,
+      leftStartOrientation
     );
   }
 
-  // Recalculate orientations for red prop
-  if (redStartMotion) {
-    const redStartOrientation = redStartMotion.endOrientation;
-    updatedSteps = propagateOrientationsForColor(
+  // Recalculate orientations for the right prop
+  if (rightStartMotion) {
+    const rightStartOrientation = rightStartMotion.endOrientation;
+    updatedSteps = propagateOrientationsForHand(
       updatedSteps,
-      MotionColor.RED,
-      redStartOrientation
+      HandSide.RIGHT,
+      rightStartOrientation
     );
   }
 

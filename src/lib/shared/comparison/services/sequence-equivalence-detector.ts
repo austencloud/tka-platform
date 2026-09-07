@@ -54,8 +54,8 @@ export interface SequenceSignature {
  * Simplified rotation-invariant signature for a single beat (local to this detector)
  */
 interface LocalStepSignature {
-  readonly blue: LocalMotionSignature;
-  readonly red: LocalMotionSignature;
+  readonly left: LocalMotionSignature;
+  readonly right: LocalMotionSignature;
   readonly positionGroup: string;
 }
 
@@ -72,7 +72,7 @@ import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { SpatialTransformDetector } from "./spatial-transform-detector";
 import type { WordCyclicEquivalenceDetector } from "$lib/shared/foundation/utils/word-cyclic-equivalence-detector";
 import type { MotionSignature, StepSignature } from "../domain/models/signatures";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 export class SequenceEquivalenceDetector {
@@ -229,33 +229,33 @@ export class SequenceEquivalenceDetector {
         return false;
       }
 
-      const blueA = stepA.motions[MotionColor.BLUE];
-      const redA = stepA.motions[MotionColor.RED];
-      const blueB = stepB.motions[MotionColor.BLUE];
-      const redB = stepB.motions[MotionColor.RED];
+      const leftA = stepA.motions[HandSide.LEFT];
+      const rightA = stepA.motions[HandSide.RIGHT];
+      const leftB = stepB.motions[HandSide.LEFT];
+      const rightB = stepB.motions[HandSide.RIGHT];
 
       // Invisible placeholder = hand not really there (both-required Step shape).
       if (
-        !isVisibleMotion(blueA) ||
-        !isVisibleMotion(redA) ||
-        !isVisibleMotion(blueB) ||
-        !isVisibleMotion(redB)
+        !isVisibleMotion(leftA) ||
+        !isVisibleMotion(rightA) ||
+        !isVisibleMotion(leftB) ||
+        !isVisibleMotion(rightB)
       ) {
         return false;
       }
 
       // Compare locations
       if (
-        blueA.startLocation !== blueB.startLocation ||
-        blueA.endLocation !== blueB.endLocation ||
-        redA.startLocation !== redB.startLocation ||
-        redA.endLocation !== redB.endLocation
+        leftA.startLocation !== leftB.startLocation ||
+        leftA.endLocation !== leftB.endLocation ||
+        rightA.startLocation !== rightB.startLocation ||
+        rightA.endLocation !== rightB.endLocation
       ) {
         return false;
       }
 
       // Compare motion types
-      if (blueA.motionType !== blueB.motionType || redA.motionType !== redB.motionType) {
+      if (leftA.motionType !== leftB.motionType || rightA.motionType !== rightB.motionType) {
         return false;
       }
     }
@@ -449,8 +449,8 @@ export class SequenceEquivalenceDetector {
    */
   private convertStepSignature(internal: StepSignature): LocalStepSignature {
     return {
-      blue: this.convertMotionSignature(internal.blue),
-      red: this.convertMotionSignature(internal.red),
+      left: this.convertMotionSignature(internal.left),
+      right: this.convertMotionSignature(internal.right),
       positionGroup: internal.startPositionGroup,
     };
   }

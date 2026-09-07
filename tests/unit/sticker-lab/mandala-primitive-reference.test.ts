@@ -4,8 +4,8 @@ import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { createMandalaPrimitiveRef } from "$lib/features/sticker-lab/domain/mandala-primitive-reference";
 
 const paths: MandalaPaths = {
-  blue: [{ d: "M 10 0 C 10 0, 20 0, 30 0", tipIndex: 0 }],
-  red: [{ d: "M -10 0 C -10 0, -20 0, -30 0", tipIndex: 0 }],
+  left: [{ d: "M 10 0 C 10 0, 20 0, 30 0", tipIndex: 0 }],
+  right: [{ d: "M -10 0 C -10 0, -20 0, -30 0", tipIndex: 0 }],
   purple: [],
 };
 

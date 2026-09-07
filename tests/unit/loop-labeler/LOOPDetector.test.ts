@@ -15,8 +15,8 @@ interface MotionAttrs {
 
 function makeBeat(
   beat: number,
-  blue: MotionAttrs,
-  red: MotionAttrs,
+  left: MotionAttrs,
+  right: MotionAttrs,
   startPos: string,
   endPos: string
 ): RawStepData {
@@ -25,8 +25,8 @@ function makeBeat(
     letter: "A",
     startPos,
     endPos,
-    blueAttributes: blue,
-    redAttributes: red,
+    leftAttributes: left,
+    rightAttributes: right,
   };
 }
 
@@ -111,13 +111,13 @@ function halvedFixture(): SequenceEntry {
  * quartered check (all consecutive pairs differ by exactly 90° CW) passes.
  */
 function quarteredFixture(): SequenceEntry {
-  const bluePro = (s: string, e: string): MotionAttrs => ({
+  const leftPro = (s: string, e: string): MotionAttrs => ({
     startLoc: s,
     endLoc: e,
     motionType: "pro",
     propRotDir: "cw",
   });
-  const redPro = (s: string, e: string): MotionAttrs => ({
+  const rightPro = (s: string, e: string): MotionAttrs => ({
     startLoc: s,
     endLoc: e,
     motionType: "pro",
@@ -131,13 +131,13 @@ function quarteredFixture(): SequenceEntry {
       endPos: "alpha1",
     },
     // Beat 1: blue n→e, red s→w
-    makeBeat(1, bluePro("n", "e"), redPro("s", "w"), "alpha1", "alpha2"),
+    makeBeat(1, leftPro("n", "e"), rightPro("s", "w"), "alpha1", "alpha2"),
     // Beat 2: 90° CW rotated — blue e→s, red w→n
-    makeBeat(2, bluePro("e", "s"), redPro("w", "n"), "alpha2", "alpha3"),
+    makeBeat(2, leftPro("e", "s"), rightPro("w", "n"), "alpha2", "alpha3"),
     // Beat 3: another 90° CW — blue s→w, red n→e
-    makeBeat(3, bluePro("s", "w"), redPro("n", "e"), "alpha3", "alpha4"),
+    makeBeat(3, leftPro("s", "w"), rightPro("n", "e"), "alpha3", "alpha4"),
     // Beat 4: another 90° CW — blue w→n, red e→s (back to start)
-    makeBeat(4, bluePro("w", "n"), redPro("e", "s"), "alpha4", "alpha1"),
+    makeBeat(4, leftPro("w", "n"), rightPro("e", "s"), "alpha4", "alpha1"),
   ]);
 }
 
@@ -196,7 +196,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
         letter: "A",
         startPos: "alpha1",
         endPos: "alpha1",
-        blueAttributes: {
+        leftAttributes: {
           startLoc: "n",
           endLoc: "n",
           motionType: "static",
@@ -204,7 +204,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
           startOri: "in",
           endOri: "clock",
         },
-        redAttributes: {
+        rightAttributes: {
           startLoc: "s",
           endLoc: "s",
           motionType: "static",
@@ -218,7 +218,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
         letter: "A",
         startPos: "alpha1",
         endPos: "alpha1",
-        blueAttributes: {
+        leftAttributes: {
           startLoc: "n",
           endLoc: "n",
           motionType: "static",
@@ -226,7 +226,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
           startOri: "clock",
           endOri: "clock",
         },
-        redAttributes: {
+        rightAttributes: {
           startLoc: "s",
           endLoc: "s",
           motionType: "static",
@@ -257,23 +257,23 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     const beats = quartered.fullMetadata!.sequence!;
     const firstStep = beats.find((b) => (b.beat ?? 0) === 1)!;
     const lastStep = beats.find((b) => (b.beat ?? 0) === 4)!;
-    firstStep.blueAttributes = {
-      ...firstStep.blueAttributes!,
+    firstStep.leftAttributes = {
+      ...firstStep.leftAttributes!,
       startOri: "in",
       endOri: "in",
     };
-    firstStep.redAttributes = {
-      ...firstStep.redAttributes!,
+    firstStep.rightAttributes = {
+      ...firstStep.rightAttributes!,
       startOri: "in",
       endOri: "in",
     };
-    lastStep.blueAttributes = {
-      ...lastStep.blueAttributes!,
+    lastStep.leftAttributes = {
+      ...lastStep.leftAttributes!,
       startOri: "out",
       endOri: "clock",
     };
-    lastStep.redAttributes = {
-      ...lastStep.redAttributes!,
+    lastStep.rightAttributes = {
+      ...lastStep.rightAttributes!,
       startOri: "out",
       endOri: "clock",
     };
@@ -300,7 +300,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
         letter: "A",
         startPos: "alpha1",
         endPos: "alpha1",
-        blueAttributes: {
+        leftAttributes: {
           startLoc: "n",
           endLoc: "n",
           motionType: "static",
@@ -308,7 +308,7 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
           startOri: "in",
           endOri: "in",
         },
-        redAttributes: {
+        rightAttributes: {
           startLoc: "s",
           endLoc: "s",
           motionType: "static",
@@ -339,13 +339,13 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
         letter: "A",
         startPos: "alpha1",
         endPos: "alpha1",
-        blueAttributes: {
+        leftAttributes: {
           startLoc: "n",
           endLoc: "n",
           motionType: "static",
           propRotDir: "no_rotation",
         },
-        redAttributes: {
+        rightAttributes: {
           startLoc: "s",
           endLoc: "s",
           motionType: "static",
@@ -357,13 +357,13 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
         letter: "A",
         startPos: "alpha1",
         endPos: "alpha1",
-        blueAttributes: {
+        leftAttributes: {
           startLoc: "n",
           endLoc: "n",
           motionType: "static",
           propRotDir: "no_rotation",
         },
-        redAttributes: {
+        rightAttributes: {
           startLoc: "s",
           endLoc: "s",
           motionType: "static",

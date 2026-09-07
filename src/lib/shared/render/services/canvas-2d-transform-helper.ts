@@ -1,5 +1,9 @@
 import type { DrawableImage } from "./svg-image-cache";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/prepared-pictograph-data";
+import {
+  HandSide,
+  type HandSide as HandSideValue,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { DirectRenderOptions } from "./IDirectRenderer";
 import { buildArrowHaloFilter } from "../../pictograph/arrow/rendering/arrow-halo";
 import { isBuugengFamilyProp } from "../core/constants/prop-classification";
@@ -77,23 +81,23 @@ export function wrapSvgContent(
 }
 
 export function shouldMirrorProp(
-  color: string,
+  color: HandSideValue,
   pictograph: PreparedPictographData,
   options: DirectRenderOptions
 ): boolean {
-  const motionData = pictograph.motions?.[color as "blue" | "red"];
+  const motionData = pictograph.motions?.[color];
   if (!motionData) return false;
 
   let actualPropType: string | undefined;
-  if (color === "blue" && options.visibility.bluePropType) {
-    actualPropType = options.visibility.bluePropType;
-  } else if (color === "red" && options.visibility.redPropType) {
-    actualPropType = options.visibility.redPropType;
+  if (color === HandSide.LEFT && options.visibility.leftPropType) {
+    actualPropType = options.visibility.leftPropType;
+  } else if (color === HandSide.RIGHT && options.visibility.rightPropType) {
+    actualPropType = options.visibility.rightPropType;
   } else {
     actualPropType = motionData.propType;
   }
 
-  if (actualPropType?.toLowerCase() === "hand" && color === "red") {
+  if (actualPropType?.toLowerCase() === "hand" && color === HandSide.RIGHT) {
     return true;
   }
 
@@ -104,9 +108,9 @@ export function shouldMirrorProp(
   // the 2D animation canvas (which reads the same setting) rendered the
   // flipped one.
   if (actualPropType && isBuugengFamilyProp(actualPropType)) {
-    return color === "blue"
-      ? (options.visibility.blueBuugengFlipped ?? false)
-      : (options.visibility.redBuugengFlipped ?? false);
+    return color === HandSide.LEFT
+      ? (options.visibility.leftBuugengFlipped ?? false)
+      : (options.visibility.rightBuugengFlipped ?? false);
   }
 
   return false;

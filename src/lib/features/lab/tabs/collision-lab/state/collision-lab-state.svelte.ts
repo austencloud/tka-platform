@@ -69,17 +69,17 @@ const CENTER_STANCE: StancePose = {
 export interface ReachabilityInfo {
   reachable: boolean;
   /** Distance from the left shoulder to the blue prop (meters). */
-  blueDistance: number;
+  leftDistance: number;
   /** Distance from the right shoulder to the red prop (meters). */
-  redDistance: number;
+  rightDistance: number;
   /** Reach budget for the left shoulder at this pose (meters). */
-  blueBudget: number;
+  leftBudget: number;
   /** Reach budget for the right shoulder at this pose (meters). */
-  redBudget: number;
+  rightBudget: number;
   /** How much the left hand is beyond budget, meters (0 if reachable). */
-  blueExcess: number;
+  leftExcess: number;
   /** How much the right hand is beyond budget, meters (0 if reachable). */
-  redExcess: number;
+  rightExcess: number;
 }
 
 /**
@@ -89,12 +89,12 @@ export interface ReachabilityInfo {
  */
 const UNKNOWN_REACHABILITY: ReachabilityInfo = {
   reachable: true,
-  blueDistance: 0,
-  redDistance: 0,
-  blueBudget: 0,
-  redBudget: 0,
-  blueExcess: 0,
-  redExcess: 0,
+  leftDistance: 0,
+  rightDistance: 0,
+  leftBudget: 0,
+  rightBudget: 0,
+  leftExcess: 0,
+  rightExcess: 0,
 };
 
 /**
@@ -119,26 +119,26 @@ function reachabilityFromSimResult(
   // Raw shortfall (what the UI displays as "X cm short"). Anything
   // within the simulator's REACH_FEASIBILITY_TOLERANCE (3 cm) is still
   // considered reachable - see the tolerance rationale in StanceSimulator.
-  const blueExcess = simResult.reachShortfall.blue;
-  const redExcess = simResult.reachShortfall.red;
-  const blueDistance =
-    blueExcess > 0
-      ? armLengthM + blueExcess
-      : simResult.reachStretch.blue * armLengthM;
-  const redDistance =
-    redExcess > 0
-      ? armLengthM + redExcess
-      : simResult.reachStretch.red * armLengthM;
+  const leftExcess = simResult.reachShortfall.left;
+  const rightExcess = simResult.reachShortfall.right;
+  const leftDistance =
+    leftExcess > 0
+      ? armLengthM + leftExcess
+      : simResult.reachStretch.left * armLengthM;
+  const rightDistance =
+    rightExcess > 0
+      ? armLengthM + rightExcess
+      : simResult.reachStretch.right * armLengthM;
   return {
     reachable:
-      blueExcess <= REACH_FEASIBILITY_TOLERANCE &&
-      redExcess <= REACH_FEASIBILITY_TOLERANCE,
-    blueDistance,
-    redDistance,
-    blueBudget: armLengthM,
-    redBudget: armLengthM,
-    blueExcess,
-    redExcess,
+      leftExcess <= REACH_FEASIBILITY_TOLERANCE &&
+      rightExcess <= REACH_FEASIBILITY_TOLERANCE,
+    leftDistance,
+    rightDistance,
+    leftBudget: armLengthM,
+    rightBudget: armLengthM,
+    leftExcess,
+    rightExcess,
   };
 }
 
@@ -192,10 +192,10 @@ export async function createCollisionLabState(
   let infeasibleOnly = $state(false);
 
   // Filters - each hand has its own plane filter since planes are per-hand
-  let bluePlaneFilter = $state<PlaneFilter>("all");
-  let redPlaneFilter = $state<PlaneFilter>("all");
-  let blueOrientationFilter = $state<OrientationFilter>("all");
-  let redOrientationFilter = $state<OrientationFilter>("all");
+  let leftPlaneFilter = $state<PlaneFilter>("all");
+  let rightPlaneFilter = $state<PlaneFilter>("all");
+  let leftOrientationFilter = $state<OrientationFilter>("all");
+  let rightOrientationFilter = $state<OrientationFilter>("all");
   let statusFilter = $state<StatusFilter>("all");
   /**
    * "cross-plane only" convenience filter: show only poses where the
@@ -219,11 +219,11 @@ export async function createCollisionLabState(
   const filteredPoses = $derived(
     allPoses.filter(
       (p) =>
-        (bluePlaneFilter === "all" || p.blueHand.plane === bluePlaneFilter) &&
-        (redPlaneFilter === "all" || p.redHand.plane === redPlaneFilter) &&
-        (blueOrientationFilter === "all" || p.blueHand.orientation === blueOrientationFilter) &&
-        (redOrientationFilter === "all" || p.redHand.orientation === redOrientationFilter) &&
-        (!crossPlaneOnly || p.blueHand.plane !== p.redHand.plane) &&
+        (leftPlaneFilter === "all" || p.leftHand.plane === leftPlaneFilter) &&
+        (rightPlaneFilter === "all" || p.rightHand.plane === rightPlaneFilter) &&
+        (leftOrientationFilter === "all" || p.leftHand.orientation === leftOrientationFilter) &&
+        (rightOrientationFilter === "all" || p.rightHand.orientation === rightOrientationFilter) &&
+        (!crossPlaneOnly || p.leftHand.plane !== p.rightHand.plane) &&
         matchesStatusFilter(labels[p.id], statusFilter) &&
         (!infeasibleOnly || scanCache[p.id]?.feasible === false)
     )
@@ -254,8 +254,8 @@ export async function createCollisionLabState(
     const simInput = poseToOptimizerInput(currentPose);
     const simResult = optimizer.simulator.evaluate(
       currentStance,
-      simInput.blue,
-      simInput.red
+      simInput.left,
+      simInput.right
     );
     const armLengthM =
       optimizer.simulator.restPose.upperArmLength +
@@ -404,10 +404,10 @@ export async function createCollisionLabState(
     get labels() { return labels; },
     get progress() { return progress; },
     get cursorIndex() { return cursorIndex; },
-    get bluePlaneFilter() { return bluePlaneFilter; },
-    get redPlaneFilter() { return redPlaneFilter; },
-    get blueOrientationFilter() { return blueOrientationFilter; },
-    get redOrientationFilter() { return redOrientationFilter; },
+    get leftPlaneFilter() { return leftPlaneFilter; },
+    get rightPlaneFilter() { return rightPlaneFilter; },
+    get leftOrientationFilter() { return leftOrientationFilter; },
+    get rightOrientationFilter() { return rightOrientationFilter; },
     get statusFilter() { return statusFilter; },
     get crossPlaneOnly() { return crossPlaneOnly; },
     get footOffsetX() { return footOffsetX; },
@@ -489,24 +489,24 @@ export async function createCollisionLabState(
     },
 
     // Filters - all reset cursor to 0
-    setBluePlaneFilter(p: PlaneFilter) {
-      bluePlaneFilter = p;
+    setLeftPlaneFilter(p: PlaneFilter) {
+      leftPlaneFilter = p;
       cursorIndex = 0;
     },
-    setRedPlaneFilter(p: PlaneFilter) {
-      redPlaneFilter = p;
+    setRightPlaneFilter(p: PlaneFilter) {
+      rightPlaneFilter = p;
       cursorIndex = 0;
     },
     setCrossPlaneOnly(v: boolean) {
       crossPlaneOnly = v;
       cursorIndex = 0;
     },
-    setBlueOrientationFilter(o: OrientationFilter) {
-      blueOrientationFilter = o;
+    setLeftOrientationFilter(o: OrientationFilter) {
+      leftOrientationFilter = o;
       cursorIndex = 0;
     },
-    setRedOrientationFilter(o: OrientationFilter) {
-      redOrientationFilter = o;
+    setRightOrientationFilter(o: OrientationFilter) {
+      rightOrientationFilter = o;
       cursorIndex = 0;
     },
     setStatusFilter(s: StatusFilter) {

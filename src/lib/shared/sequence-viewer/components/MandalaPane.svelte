@@ -11,8 +11,8 @@
 
   interface Props {
     sequence: SequenceData;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     show?: MandalaRenderOptions["show"];
     /**
      * The mandala controller. Owned by ArtPane so the same instance backs both
@@ -39,8 +39,8 @@
 
   let {
     sequence,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     show,
     ctrl: providedCtrl,
     controlsPlacement = "dock",
@@ -61,8 +61,8 @@
     providedCtrl ??
     new MandalaViewerController({
       getSequence: () => sequence,
-      getBluePropType: () => bluePropType,
-      getRedPropType: () => redPropType,
+      getLeftPropType: () => leftPropType,
+      getRightPropType: () => rightPropType,
       pathPolicy,
     });
 
@@ -110,8 +110,8 @@
       animateRotation={ctrl.rotation}
       pathShape={ctrl.pathShape}
       size={containerSize}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       mode="card-back"
       style="stroke"
       show={renderedHands}
@@ -132,8 +132,8 @@
   <MandalaExportTakeover
     {ctrl}
     {sequence}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
     size={takeoverSize}
     suppressed={exportTakeoverSuppressed}
     onCancel={onExportCancel}

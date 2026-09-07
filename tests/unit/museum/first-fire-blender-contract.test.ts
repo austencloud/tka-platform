@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   FIRST_FIRE_BLENDER_COLLECTIONS,
+  buildCompiledFirstFireBlenderContract,
   buildFirstFireBlenderContract,
   firstFireBlenderPointToPlan,
   firstFirePlanPointToBlender,
@@ -11,6 +12,7 @@ import {
 import { canonicalJSON } from "$lib/shared/foundation/utils/canonical-json";
 
 const contract = buildFirstFireBlenderContract();
+const compiledContract = buildCompiledFirstFireBlenderContract();
 const manifestPath = resolve(
   "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-blender-plan.json"
 );
@@ -34,6 +36,30 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
     expect(contract.coordinateSystem.gltfRuntime.integrationStatus).toBe(
       "not-the-compiled-cave-fire-room"
     );
+    expect(contract.approachCorridor).toBeNull();
+  });
+
+  it("lays the compiled contract on the live cave-fire room with its stamped doors and approach corridor", () => {
+    expect(compiledContract.coordinateSystem.gltfRuntime.integrationStatus).toBe(
+      "compiled-cave-fire-room"
+    );
+    expect(compiledContract.room.width).toBe(58);
+    expect(compiledContract.room.depth).toBe(44.5);
+    expect(compiledContract.room.planCentre).toEqual({ x: 60.25, z: 23.5 });
+    for (const door of [compiledContract.doors.water, compiledContract.doors.earth]) {
+      expect(door.clearWidth).toBe(4);
+      expect(door.tileClearWidth).toBe(2);
+    }
+    expect(compiledContract.approachCorridor).not.toBeNull();
+    expect(compiledContract.approachCorridor!.clearance).toBe(2.6);
+    expect(compiledContract.approachCorridor!.blenderRects.length).toBeGreaterThan(0);
+    // The corridor meets the west door from outside the room.
+    const maxX = Math.max(
+      ...compiledContract.approachCorridor!.blenderRects.map(
+        (rect) => rect.centre.x + rect.sizeX / 2
+      )
+    );
+    expect(maxX).toBeCloseTo(compiledContract.room.blenderBounds.minX, 6);
   });
 
   it("round-trips every authored route, court, basalt, and fire-guide point", () => {
@@ -178,7 +204,7 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
       })
     );
     expect(manifest.sourceDigest).toBe(digest);
-    expect(manifest.contract).toEqual(contract);
+    expect(manifest.contract).toEqual(compiledContract);
     expect(manifest.sequenceSources.catalog.path).toBe(
       "static/data/hero/tnd-base-words.json"
     );
@@ -196,17 +222,17 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
       {
         catalogId: "tnd-split-opp-jdjd",
         catalogFingerprintSha256:
-          "22640f3d4be6de1b99f7201bba701432084835210869e6cda2ae655fa948ce29",
+          "85e671e79cdc21fd768fb295993d626015185903fb32043d8b0a9eb7cf8d1d6b",
       },
       {
         catalogId: "tnd-split-opp-keke",
         catalogFingerprintSha256:
-          "a550324310e6e4a8bff54b78bcefdf2d56b7a8496767a7534aead1c39f78bad9",
+          "41380963bebba7b5ad5435ce77b9606548f8c6d186af9e16cdd4a5af7f98b6d2",
       },
       {
         catalogId: "tnd-split-opp-lflf",
         catalogFingerprintSha256:
-          "91e4e6e0bdb58a269fcfcad36d82e68f59d1d589986e67624357ccb65e7475e0",
+          "7afc9578e351d176d4c20401fc11ffa9595278cfadff33b88b6d647c7e12eb31",
       },
     ]);
     expect(

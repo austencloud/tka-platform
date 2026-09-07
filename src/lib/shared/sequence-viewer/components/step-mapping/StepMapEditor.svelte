@@ -37,7 +37,7 @@
   import { mirrorStartPosition } from "$lib/shared/create/services/start-position-transforms";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     videoUrl: string;
@@ -285,7 +285,7 @@
       steps.map((step) =>
         mirrorBeat(
           step,
-          step.motions[MotionColor.BLUE]?.gridMode ?? GridMode.DIAMOND,
+          step.motions[HandSide.LEFT]?.gridMode ?? GridMode.DIAMOND,
           motionQueryHandler
         )
       )

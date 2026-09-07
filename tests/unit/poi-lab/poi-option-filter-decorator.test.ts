@@ -22,14 +22,14 @@ function mkMotion(o: Partial<MotionData> = {}): MotionData {
   } as unknown as MotionData;
 }
 
-function pic(blue?: MotionData, red?: MotionData): PictographData {
-  return { motions: { blue, red } } as unknown as PictographData;
+function pic(left?: MotionData, right?: MotionData): PictographData {
+  return { motions: { left, right } } as unknown as PictographData;
 }
 
 const decorator = new PoiOptionFilterDecorator();
-const bothStaff = { bluePropType: PropType.STAFF, redPropType: PropType.STAFF };
-const bluePoi = { bluePropType: PropType.POI, redPropType: PropType.STAFF };
-const bothPoi = { bluePropType: PropType.POI, redPropType: PropType.POI };
+const bothStaff = { leftPropType: PropType.STAFF, rightPropType: PropType.STAFF };
+const bluePoi = { leftPropType: PropType.POI, rightPropType: PropType.STAFF };
+const bothPoi = { leftPropType: PropType.POI, rightPropType: PropType.POI };
 
 describe("PoiOptionFilterDecorator.filterPoiLegalOptions", () => {
   test("no poi hand → identity (even an illegal-for-poi move survives)", () => {

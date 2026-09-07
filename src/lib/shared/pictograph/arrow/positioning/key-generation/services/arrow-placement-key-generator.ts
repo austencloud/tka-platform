@@ -62,11 +62,11 @@ function detectLayerInfo(pictographData: PictographData): {
   hasBetaProps: boolean;
   hasGammaProps: boolean;
 } {
-  const redEndOri = isVisibleMotion(pictographData.motions.red)
-    ? pictographData.motions.red.endOrientation
+  const rightEndOri = isVisibleMotion(pictographData.motions.right)
+    ? pictographData.motions.right.endOrientation
     : undefined;
-  const blueEndOri = isVisibleMotion(pictographData.motions.blue)
-    ? pictographData.motions.blue.endOrientation
+  const leftEndOri = isVisibleMotion(pictographData.motions.left)
+    ? pictographData.motions.left.endOrientation
     : undefined;
 
   const radialOrientations = ["in", "out"];
@@ -87,8 +87,8 @@ function detectLayerInfo(pictographData: PictographData): {
   let hasNonRadialProps: boolean;
   let hasHybridOrientation: boolean;
 
-  if (!redEndOri || !blueEndOri) {
-    const availableOri = blueEndOri || redEndOri;
+  if (!rightEndOri || !leftEndOri) {
+    const availableOri = leftEndOri || rightEndOri;
     if (!availableOri) {
       return {
         hasRadialProps: false,
@@ -113,15 +113,15 @@ function detectLayerInfo(pictographData: PictographData): {
     };
   }
 
-  const redIsRadial = radialOrientations.includes(redEndOri);
-  const redIsNonRadial = nonRadialOrientations.includes(redEndOri);
-  const blueIsRadial = radialOrientations.includes(blueEndOri);
-  const blueIsNonRadial = nonRadialOrientations.includes(blueEndOri);
+  const rightIsRadial = radialOrientations.includes(rightEndOri);
+  const rightIsNonRadial = nonRadialOrientations.includes(rightEndOri);
+  const leftIsRadial = radialOrientations.includes(leftEndOri);
+  const leftIsNonRadial = nonRadialOrientations.includes(leftEndOri);
 
-  hasRadialProps = redIsRadial && blueIsRadial;
-  hasNonRadialProps = redIsNonRadial && blueIsNonRadial;
+  hasRadialProps = rightIsRadial && leftIsRadial;
+  hasNonRadialProps = rightIsNonRadial && leftIsNonRadial;
   hasHybridOrientation =
-    (redIsRadial && blueIsNonRadial) || (redIsNonRadial && blueIsRadial);
+    (rightIsRadial && leftIsNonRadial) || (rightIsNonRadial && leftIsRadial);
 
   const letter = pictographData.letter;
   const alphaLetters = [

@@ -15,8 +15,8 @@ const DEFAULT_SETTINGS = {
   backgroundQuality: "medium",
   backgroundEnabled: false,
   backgroundColor: "#000000",
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
 };
 
 /**

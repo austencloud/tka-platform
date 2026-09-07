@@ -3,8 +3,12 @@ import { describe, expect, it } from "vitest";
 import { GenerationMode } from "../../../src/lib/shared/foundation/domain/models/generation/generate-models";
 import {
   compileSequenceDirective,
+  isIdleSequence,
+  isLibrarySequence,
+  isTransformedSequence,
   resolvePositionRef,
   sequenceDirectiveKey,
+  transformSourceId,
 } from "../../../src/routes/test/film-director/_lib/sequence-language";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 
@@ -30,14 +34,16 @@ describe("position references", () => {
   });
 
   it("derives a position from a hand pair", () => {
-    expect(resolvePositionRef({ blue: "s", red: "s" }, "here")).toBe("beta5");
-    expect(resolvePositionRef({ blue: "s", red: "n" }, "here")).toBe("alpha1");
+    expect(resolvePositionRef({ left: "s", right: "s" }, "here")).toBe("beta5");
+    expect(resolvePositionRef({ left: "s", right: "n" }, "here")).toBe(
+      "alpha1"
+    );
   });
 
   it("resolves a group at a spoken location", () => {
-    expect(resolvePositionRef({ group: "beta", location: "south" }, "here")).toBe(
-      "beta5"
-    );
+    expect(
+      resolvePositionRef({ group: "beta", location: "south" }, "here")
+    ).toBe("beta5");
     expect(
       resolvePositionRef({ group: "beta", location: "North-East" }, "here")
     ).toBe("beta2");
@@ -46,7 +52,7 @@ describe("position references", () => {
   it("refuses to guess which hand an ambiguous group reference meant", () => {
     expect(() =>
       resolvePositionRef({ group: "alpha", location: "south" }, "here")
-    ).toThrow(/alpha1 \(blue s, red n\) or alpha5 \(blue n, red s\)/);
+    ).toThrow(/alpha1 \(left s, right n\) or alpha5 \(left n, right s\)/);
   });
 
   it("names the catalog when a location or position does not exist", () => {
@@ -68,40 +74,43 @@ describe("position references", () => {
 describe("turn figures", () => {
   it("repeats one spoken turn across both hands", () => {
     const options = compileSequenceDirective({ word: "DJ", turns: 1 });
-    expect(options.turnPattern).toEqual({ blue: [1], red: [1] });
+    expect(options.turnPattern).toEqual({ left: [1], right: [1] });
     expect(options.turnIntensity).toBeUndefined();
   });
 
   it("takes a figure per hand and rests the hand that is left out", () => {
     const options = compileSequenceDirective({
       word: "DJ",
-      turns: { blue: [1, 0, 2] },
+      turns: { left: [1, 0, 2] },
     });
-    expect(options.turnPattern).toEqual({ blue: [1, 0, 2], red: [0] });
+    expect(options.turnPattern).toEqual({ left: [1, 0, 2], right: [0] });
   });
 
   it("routes an intensity to the allocator instead of the pattern", () => {
-    const options = compileSequenceDirective({ length: 8, turns: { intensity: 2 } });
+    const options = compileSequenceDirective({
+      length: 8,
+      turns: { intensity: 2 },
+    });
     expect(options.turnIntensity).toBe(2);
     expect(options.turnPattern).toBeUndefined();
   });
 
   it("rejects a turn the level does not carry", () => {
-    expect(() =>
-      compileSequenceDirective({ word: "DJ", turns: 0.5 })
-    ).toThrow(/blue turn 0.5 is not available at level 2/);
-    expect(() => compileSequenceDirective({ word: "DJ", turns: 1, level: 1 })).toThrow(
-      /not available at level 1, which allows 0/
+    expect(() => compileSequenceDirective({ word: "DJ", turns: 0.5 })).toThrow(
+      /left turn 0.5 is not available at level 2/
     );
+    expect(() =>
+      compileSequenceDirective({ word: "DJ", turns: 1, level: 1 })
+    ).toThrow(/not available at level 1, which allows 0/);
   });
 
   it("allows halves and floats once the level carries them", () => {
     const options = compileSequenceDirective({
       word: "DJ",
       level: 3,
-      turns: { blue: 0.5, red: "fl" },
+      turns: { left: 0.5, right: "fl" },
     });
-    expect(options.turnPattern).toEqual({ blue: [0.5], red: ["fl"] });
+    expect(options.turnPattern).toEqual({ left: [0.5], right: ["fl"] });
   });
 
   it("keeps an intensity inside the level's ceiling", () => {
@@ -122,7 +131,7 @@ describe("the compiler", () => {
       word: "DJ",
       length: 2,
       startPositionId: "beta5",
-      turnPattern: { blue: [1], red: [1] },
+      turnPattern: { left: [1], right: [1] },
       gridMode: "diamond",
       difficulty: "intermediate",
       constraintPreset: "smooth",
@@ -158,22 +167,25 @@ describe("the compiler", () => {
   it("carries orientations, letters and end positions", () => {
     const options = compileSequenceDirective({
       length: 8,
-      startOrientation: { blue: "in", red: "counter" },
+      startOrientation: { left: "in", right: "counter" },
       mustContain: ["A"],
       mustNotContain: ["B", "C"],
-      endPosition: [{ blue: "s", red: "s" }, "alpha3"],
+      endPosition: [{ left: "s", right: "s" }, "alpha3"],
     });
-    expect(options.blueStartOrientation).toBe("in");
-    expect(options.redStartOrientation).toBe("counter");
+    expect(options.leftStartOrientation).toBe("in");
+    expect(options.rightStartOrientation).toBe("counter");
     expect(options.mustContainLetters).toEqual(["A"]);
     expect(options.mustNotContainLetters).toEqual(["B", "C"]);
     expect(options.endPositions).toEqual(["beta5", "alpha3"]);
   });
 
   it("repeats one spoken orientation across both hands", () => {
-    const options = compileSequenceDirective({ length: 8, startOrientation: "out" });
-    expect(options.blueStartOrientation).toBe("out");
-    expect(options.redStartOrientation).toBe("out");
+    const options = compileSequenceDirective({
+      length: 8,
+      startOrientation: "out",
+    });
+    expect(options.leftStartOrientation).toBe("out");
+    expect(options.rightStartOrientation).toBe("out");
   });
 
   it("rejects a letter that is not in the alphabet", () => {
@@ -223,9 +235,9 @@ describe("the film schema", () => {
   });
 
   it("refuses a sequence that names no source", () => {
-    expect(() => firstSequence([{ id: "lead", sequence: { turns: 1 } }])).toThrow(
-      /names one source/
-    );
+    expect(() =>
+      firstSequence([{ id: "lead", sequence: { turns: 1 } }])
+    ).toThrow(/names one source/);
   });
 
   it("refuses a sequence that names two sources", () => {
@@ -258,5 +270,66 @@ describe("the film schema", () => {
         { id: "lead", sequence: { word: "DJ", startPosition: "beta9" } },
       ])
     ).toThrow(/unknown position "beta9"/);
+  });
+});
+
+describe("derived and library sequences", () => {
+  it("keys a transform chain by its source and its ordered ops", () => {
+    const key = sequenceDirectiveKey({
+      transformOf: "lead",
+      transforms: [
+        { op: "rotate", degrees: 90, direction: "cw" },
+        { op: "swap-hands" },
+      ],
+    });
+    expect(key).toBe(
+      'transformOf:lead:[{"degrees":90,"direction":"cw","op":"rotate"},{"op":"swap-hands"}]'
+    );
+  });
+
+  it("keys the same ops in a different order as a different sequence", () => {
+    const a = sequenceDirectiveKey({
+      transformOf: "lead",
+      transforms: [{ op: "mirror" }, { op: "flip" }],
+    });
+    const b = sequenceDirectiveKey({
+      transformOf: "lead",
+      transforms: [{ op: "flip" }, { op: "mirror" }],
+    });
+    expect(a).not.toBe(b);
+  });
+
+  it("keys a library sequence by its id", () => {
+    expect(sequenceDirectiveKey({ library: "abc-123" })).toBe("library:abc-123");
+  });
+
+  it("names the performer a derived sequence comes from", () => {
+    expect(transformSourceId({ mirrorOf: "lead" })).toBe("lead");
+    expect(
+      transformSourceId({ transformOf: "second", transforms: [{ op: "invert" }] })
+    ).toBe("second");
+    expect(transformSourceId({ source: "demo" })).toBeNull();
+    expect(transformSourceId({ library: "x" })).toBeNull();
+  });
+
+  it("classifies sources", () => {
+    expect(
+      isTransformedSequence({ transformOf: "a", transforms: [{ op: "rewind" }] })
+    ).toBe(true);
+    expect(isTransformedSequence({ mirrorOf: "a" })).toBe(false);
+    expect(isLibrarySequence({ library: "a" })).toBe(true);
+    expect(isLibrarySequence({ word: "AB" })).toBe(false);
+  });
+});
+
+describe("standing and watching", () => {
+  it("keys an idle performer by their idleness", () => {
+    expect(sequenceDirectiveKey({ source: "none" })).toBe("none");
+  });
+
+  it("classifies an idle sequence", () => {
+    expect(isIdleSequence({ source: "none" })).toBe(true);
+    expect(isIdleSequence({ source: "demo" })).toBe(false);
+    expect(isIdleSequence({ word: "AB" })).toBe(false);
   });
 });

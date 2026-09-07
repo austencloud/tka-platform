@@ -6,12 +6,12 @@ import type {
 } from "../domain/village-types";
 import type * as PersonalityGeneratorModule from "../services/personality-generator";
 import { VILLAGE_PROP_TYPES, EFFECT_AFFINITIES } from "../domain/village-constants";
-import { DEPLOYED_AVATAR_IDS } from "$lib/shared/3d/config/deployed-avatars";
+import { DEPLOYED_CHARACTER_IDS } from "$lib/shared/3d/config/deployed-characters";
 
 // Only assign avatars whose GLB is actually deployed. The chXX Mixamo models
-// aren't on R2 yet and 404 (see deployed-avatars.ts), so picking one floods the
+// aren't on R2 yet and 404 (see deployed-characters.ts), so picking one floods the
 // console and renders nothing. This list self-expands as chXX land on R2.
-const AVATAR_MODELS: string[] = DEPLOYED_AVATAR_IDS;
+const AVATAR_MODELS: string[] = DEPLOYED_CHARACTER_IDS;
 
 export function createVillageWorld(): World<VillageEntity> {
 	return new World<VillageEntity>();

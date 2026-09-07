@@ -95,7 +95,7 @@ interface Motionish {
 }
 
 const motionsOf = (step: AnyRec) =>
-  (step.motions ?? {}) as { blue?: Motionish; red?: Motionish };
+  (step.motions ?? {}) as { left?: Motionish; right?: Motionish };
 
 const isPrefloatlessFloat = (m?: Motionish) =>
   String(m?.motionType ?? "").toLowerCase() === "float" &&
@@ -111,7 +111,7 @@ const signature = (step: AnyRec): string => {
       mm?.rotationDirection,
       String(mm?.turns),
     ].join("/");
-  return `B:${one(m.blue)} R:${one(m.red)}`;
+  return `B:${one(m.left)} R:${one(m.right)}`;
 };
 
 /** Smallest divisor p of n under which every mod-p class of positions holds
@@ -228,7 +228,7 @@ async function main(): Promise<void> {
     // and gets its own treatment, never a letter stamp.
     const nonFloatGaps = gaps.filter((i) => {
       const m = motionsOf(content[i]!);
-      return !isPrefloatlessFloat(m.blue) && !isPrefloatlessFloat(m.red);
+      return !isPrefloatlessFloat(m.left) && !isPrefloatlessFloat(m.right);
     });
     if (nonFloatGaps.length > 0) {
       residuals.push({
@@ -400,7 +400,7 @@ async function main(): Promise<void> {
     const gridModes = new Set(
       embedSteps.flatMap((s) => {
         const m = motionsOf(s);
-        return [m.blue?.gridMode, m.red?.gridMode].filter(Boolean) as string[];
+        return [m.left?.gridMode, m.right?.gridMode].filter(Boolean) as string[];
       })
     );
     const embed: AnyRec = {

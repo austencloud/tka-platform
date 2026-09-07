@@ -3,7 +3,7 @@ import { parseTurnsTuple } from "$lib/shared/pictograph/tka-glyph/utils/turn-tup
 import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -133,20 +133,20 @@ describe("parseTurnsTuple — roundtrip with TurnsTupleGenerator", () => {
 
   function makePictograph(
     letter: string,
-    blue: Parameters<typeof createMotionData>[0],
-    red: Parameters<typeof createMotionData>[0]
+    left: Parameters<typeof createMotionData>[0],
+    right: Parameters<typeof createMotionData>[0]
   ): PictographData {
     return {
       id: `test-${letter}`,
       letter: letter as Letter,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          ...blue,
-          color: MotionColor.BLUE,
+        [HandSide.LEFT]: createMotionData({
+          ...left,
+          hand: HandSide.LEFT,
         }),
-        [MotionColor.RED]: createMotionData({
-          ...red,
-          color: MotionColor.RED,
+        [HandSide.RIGHT]: createMotionData({
+          ...right,
+          hand: HandSide.RIGHT,
         }),
       },
     };

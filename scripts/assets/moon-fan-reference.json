@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "product": "Lighttoys Moon Fans FT",
+  "manufacturer": "Pyroterra Lighttoys",
+  "product_url": "https://www.lighttoys.cz/product/moon-fans-ft/",
+  "observed_2026_09_01": {
+    "dimensions_m": {
+      "width": 0.6,
+      "height": 0.38,
+      "ring_hole_diameter": 0.081
+    },
+    "weight_kg": 0.42,
+    "led_count": 78,
+    "segment_count": 2,
+    "brightness_lm": 400
+  },
+  "geometry_m": {
+    "hand_pivot": [0.0, 0.0, 0.0],
+    "outer_arc_center_y": 0.03,
+    "outer_arc_radius_x": 0.3,
+    "outer_arc_radius_y": 0.288,
+    "fabric_notch_radius": 0.058,
+    "fabric_depth": 0.004,
+    "frame_radius": 0.003,
+    "grip_tube_radius": 0.0045,
+    "grip_inner_radius": 0.0405
+  },
+  "reference_images": [
+    "https://www.lighttoys.cz/app/uploads/2015/09/20181030_moonfansprodukt_001.jpg",
+    "https://www.lighttoys.cz/app/uploads/2015/09/20181030_moonfansprodukt_005.jpg",
+    "https://www.lighttoys.cz/app/uploads/2015/09/20181030_moonfansprodukt_024.jpg",
+    "https://www.lighttoys.cz/app/uploads/2015/09/20181030_moonfansprodukt_027.jpg",
+    "https://www.lighttoys.cz/app/uploads/2015/09/20181030_moonfansprodukt_046-1024x732.jpg",
+    "https://www.lighttoys.cz/app/uploads/2015/09/20181030_moonfans_019b.jpg",
+    "https://www.lighttoys.cz/app/uploads/2015/09/moonfan_package.png"
+  ],
+  "interpretation": {
+    "fabric_profile": "A symmetric semi-ellipse fitted to the published envelope and the front-on product photographs.",
+    "light_zones": "Two equal fabric halves divided by the visible center support, matching the documented A/B segment control.",
+    "led_path": "Thirty-nine emitters per half follow the outer arc and straight lower edge under the diffusion skin."
+  }
+}

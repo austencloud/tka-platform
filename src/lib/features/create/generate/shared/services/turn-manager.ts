@@ -5,6 +5,7 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -13,7 +14,7 @@ import { PropContinuity } from "../domain/models/generate-models";
 // This module mutates generator-owned draft steps in place (legacy port
 // contract: void functions, callers rely on mutation). StepMotions is
 // readonly for everyone else; the drafts here are freshly built copies.
-type MutableStepMotions = { blue: MotionData; red: MotionData };
+type MutableStepMotions = { left: MotionData; right: MotionData };
 const mutableMotions = (step: StepData): MutableStepMotions =>
   step.motions as MutableStepMotions;
 
@@ -36,12 +37,12 @@ const MOTION_TYPES = {
  */
 export function setTurns(
   step: StepData,
-  turnBlue: number | "fl",
-  turnRed: number | "fl"
+  turnLeft: number | "fl",
+  turnRight: number | "fl"
 ): void {
   if (!step) return;
-  setTurnForColor(step, "blue", turnBlue);
-  setTurnForColor(step, "red", turnRed);
+  setTurnForHand(step, HandSide.LEFT, turnLeft);
+  setTurnForHand(step, HandSide.RIGHT, turnRight);
 }
 
 /**
@@ -50,12 +51,22 @@ export function setTurns(
 export function updateDashStaticRotationDirections(
   step: StepData,
   propContinuity: PropContinuity,
-  blueRotationDirection: string,
-  redRotationDirection: string
+  leftRotationDirection: string,
+  rightRotationDirection: string
 ): void {
   if (!step) return;
-  updateRotationForColor(step, "blue", propContinuity, blueRotationDirection);
-  updateRotationForColor(step, "red", propContinuity, redRotationDirection);
+  updateRotationForHand(
+    step,
+    HandSide.LEFT,
+    propContinuity,
+    leftRotationDirection
+  );
+  updateRotationForHand(
+    step,
+    HandSide.RIGHT,
+    propContinuity,
+    rightRotationDirection
+  );
 }
 
 export function getRandomRotationDirection(): RotationDirection {
@@ -63,12 +74,12 @@ export function getRandomRotationDirection(): RotationDirection {
   return options[Math.floor(Math.random() * options.length)]!;
 }
 
-function setTurnForColor(
+function setTurnForHand(
   step: StepData,
-  color: "blue" | "red",
+  hand: HandSide,
   turn: number | "fl"
 ): void {
-  const motion = step.motions[color];
+  const motion = step.motions[hand];
   if (!motion) return;
 
   if (turn === "fl") {
@@ -76,7 +87,7 @@ function setTurnForColor(
       motion.motionType === MotionType.PRO ||
       motion.motionType === MotionType.ANTI
     ) {
-      mutableMotions(step)[color] = {
+      mutableMotions(step)[hand] = {
         ...motion,
         turns: "fl",
         prefloatMotionType: motion.motionType,
@@ -85,26 +96,26 @@ function setTurnForColor(
         rotationDirection: RotationDirection.NO_ROTATION,
       };
     } else {
-      mutableMotions(step)[color] = {
+      mutableMotions(step)[hand] = {
         ...motion,
         turns: 0,
       };
     }
   } else {
-    mutableMotions(step)[color] = {
+    mutableMotions(step)[hand] = {
       ...motion,
       turns: turn,
     };
   }
 }
 
-function updateRotationForColor(
+function updateRotationForHand(
   step: StepData,
-  color: "blue" | "red",
+  hand: HandSide,
   propContinuity: PropContinuity,
   rotationDirection: string
 ): void {
-  const motion = step.motions[color];
+  const motion = step.motions[hand];
   if (!motion) return;
 
   if (
@@ -132,7 +143,7 @@ function updateRotationForColor(
     newRotationDirection = getRandomRotationDirection();
   }
 
-  mutableMotions(step)[color] = {
+  mutableMotions(step)[hand] = {
     ...motion,
     rotationDirection: newRotationDirection,
   };

@@ -140,7 +140,8 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
       inputs.modalAnimationState,
       inputs.interactive.hapticService,
       (beat: number) => args.controller.additionalLayersAt(beat),
-      args.controller.spectrum
+      args.controller.spectrum,
+      args.controller.exactPropColors
     );
   }
 

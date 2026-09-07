@@ -28,9 +28,9 @@ describe("StanceSimulator.evaluateSweep", () => {
   it("reports the WORST torso intrusion across the sweep", () => {
     const sim = new StanceSimulator(restPoseFromHeight(1.8));
     // One sample passes through the body (z=0), others are clear (z far).
-    const blueSweep = [staffAt(2), staffAt(0), staffAt(2)];
-    const redSweep = [farTarget, farTarget, farTarget];
-    const swept = sim.evaluateSweep(NEUTRAL, blueSweep, redSweep);
+    const leftSweep = [staffAt(2), staffAt(0), staffAt(2)];
+    const rightSweep = [farTarget, farTarget, farTarget];
+    const swept = sim.evaluateSweep(NEUTRAL, leftSweep, rightSweep);
     const single = sim.evaluate(NEUTRAL, staffAt(0), farTarget);
     const sweptTorso = swept.collisions.find((c) => c.zone === "prop-through-torso");
     const singleTorso = single.collisions.find((c) => c.zone === "prop-through-torso");

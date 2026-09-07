@@ -145,6 +145,60 @@ export interface WingRegion {
   roomPresentation?: MuseumRoomPresentation;
 }
 
+/**
+ * Visual family a wall plaque is rendered in. `plaque` is the brass museum
+ * default every pre-2026 exhibit uses. The rest are the Kinetic Archive's
+ * in-fiction surfaces: the Order's institutional cards, K's handmade signs,
+ * paper documents under glass, terminal faces, and gift-shop shelf tags.
+ */
+export type PlaqueStyle =
+  | "plaque"
+  | "order"
+  | "k-sign"
+  | "document"
+  | "console"
+  | "shelf";
+
+/**
+ * One of K's post-2008 notes stuck to an Order surface. The era follows the
+ * museum-writer voice guide: early sharpie scribbles, then settling, then
+ * established signs, then the final room's voice.
+ */
+export interface PlaqueAnnotation {
+  text: string;
+  era?: "early" | "settled" | "established" | "final";
+}
+
+export interface PlaqueContent {
+  title: string;
+  subtitle?: string;
+  body: string;
+  barter?: string;
+  style?: PlaqueStyle;
+  annotations?: PlaqueAnnotation[];
+  /** In-fiction text that has not had Austen's pass yet. Shown as a badge. */
+  draft?: boolean;
+}
+
+/** A readable multi-page document (report, memo, pamphlet) behind an exhibit. */
+export interface MuseumDocument {
+  kind: "report" | "memo" | "transcript" | "pamphlet" | "filing";
+  heading: string;
+  meta: string[];
+  pages: string[];
+  draft?: boolean;
+}
+
+/**
+ * What an exhibit does beyond being read. `decode` runs the Nomenclature key
+ * over a sequence and reveals its letters; `terminal` boots a route; `exit`
+ * hands a sequence to the Composer and leaves the museum.
+ */
+export type ExhibitInteraction =
+  | { kind: "decode"; sequenceId: string; reveal: string; annotation: string }
+  | { kind: "terminal"; route: string; label: string }
+  | { kind: "exit"; sequenceId: string; label: string };
+
 export interface ExhibitDefinition {
   id: string;
   tileX: number;
@@ -152,12 +206,9 @@ export interface ExhibitDefinition {
   /** Plaque size: standard (1 tile), large (2 tiles), or dev-whiteboard (3 tiles) */
   size?: "standard" | "large" | "dev-whiteboard";
   sequenceId?: string;
-  plaque?: {
-    title: string;
-    subtitle?: string;
-    body: string;
-    barter?: string;
-  };
+  plaque?: PlaqueContent;
+  document?: MuseumDocument;
+  interaction?: ExhibitInteraction;
 }
 
 export interface PerformerDefinition {
@@ -167,6 +218,12 @@ export interface PerformerDefinition {
   facing: Direction;
   sequenceId?: string;
   autoPlay: boolean;
+  /** Display name in the examine panel (defaults to "Performer Station"). */
+  label?: string;
+  /** In-fiction description shown under the label. */
+  description?: string;
+  /** A document the figure hands the visitor (the wax docent's pamphlet). */
+  handout?: MuseumDocument;
   /** Presentation variant used by telekinetic formations. */
   presentation?: MuseumFormationPresentation;
   /** Uniform visual scale for formation-style performers. */

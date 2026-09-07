@@ -46,7 +46,7 @@
   >
     <T.CircleGeometry args={[0.038, 24]} />
     <T.MeshBasicMaterial
-      color={ball.color === "blue" ? "#91bbff" : "#ff94a0"}
+      color={ball.hand === "left" ? "#91bbff" : "#ff94a0"}
       transparent
       opacity={0.78}
       depthWrite={false}

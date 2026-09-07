@@ -2,6 +2,7 @@
 <script lang="ts">
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { TurnLevel } from "$lib/shared/create/services/level-turn-values";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import OptionPickerContent from "./OptionPickerContent.svelte";
 
   const {
@@ -10,16 +11,55 @@
     sideBySide = true,
     topOffset = 0,
     level = 2,
+    continuous = false,
+    sequenceLength = 0,
+    leftTurns = 0,
+    rightTurns = 0,
+    shownCount = 0,
+    hiddenCount = 0,
+    settledWidth = undefined,
+    settleMs = 450,
   } = $props<{
     width?: number;
     height?: number;
     sideBySide?: boolean;
     topOffset?: number;
     level?: TurnLevel;
+    continuous?: boolean;
+    sequenceLength?: number;
+    leftTurns?: number;
+    rightTurns?: number;
+    shownCount?: number;
+    hiddenCount?: number;
+    /** Width the box eases to, standing in for the workspace expansion. */
+    settledWidth?: number;
+    settleMs?: number;
   }>();
+
+  const currentSequence = $derived(
+    Array.from({ length: sequenceLength }, () => ({}) as PictographData)
+  );
+
+  // Reproduces the real mount condition: StandardWorkspaceLayout is already
+  // easing its grid columns when the picker appears, so the box the picker
+  // measures on its first frame is not the box it will live in.
+  let harnessElement: HTMLDivElement | null = $state(null);
+  $effect(() => {
+    if (settledWidth === undefined || !harnessElement) return;
+    const animation = harnessElement.animate(
+      [{ width: `${width}px` }, { width: `${settledWidth}px` }],
+      {
+        duration: settleMs,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        fill: "forwards",
+      }
+    );
+    return () => animation.cancel();
+  });
 </script>
 
 <div
+  bind:this={harnessElement}
   class="harness"
   style:width={`${width}px`}
   style:height={`${height}px`}
@@ -41,17 +81,20 @@
       },
     })}
     onSelect={() => {}}
+    isContinuousOnly={continuous}
+    optionAvailability={{ shownCount, hiddenCount }}
     isSideBySideLayout={() => sideBySide}
-    blueTurns={0}
-    redTurns={0}
+    {currentSequence}
+    {leftTurns}
+    {rightTurns}
     {level}
     onLevelChange={() => {}}
-    blueRotation={RotationDirection.CLOCKWISE}
-    redRotation={RotationDirection.CLOCKWISE}
-    onBlueTurnsChange={() => {}}
-    onRedTurnsChange={() => {}}
-    onBlueRotationChange={() => {}}
-    onRedRotationChange={() => {}}
+    leftRotation={RotationDirection.CLOCKWISE}
+    rightRotation={RotationDirection.CLOCKWISE}
+    onLeftTurnsChange={() => {}}
+    onRightTurnsChange={() => {}}
+    onLeftRotationChange={() => {}}
+    onRightRotationChange={() => {}}
   />
 </div>
 

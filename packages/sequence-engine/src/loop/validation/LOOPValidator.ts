@@ -225,7 +225,7 @@ const VERTICAL_MIRROR_POSITION_MAP: Record<string, string> = {
 
 /**
  * Swapped Position Map
- * Maps positions to their color-swapped equivalents
+ * Maps positions to their hand-swapped equivalents
  */
 const SWAPPED_POSITION_MAP: Record<string, string> = {
   // Alpha group - 180° swap pattern

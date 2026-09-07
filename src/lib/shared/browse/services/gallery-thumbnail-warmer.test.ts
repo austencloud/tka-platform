@@ -147,7 +147,7 @@ describe("startGalleryWarm", () => {
     for (const input of inputs) {
       expect(input.variant).toBe("gallery");
       expect(input.startPositionLayout).toBe("row");
-      expect(input.bluePropType).toBe(PropType.STAFF);
+      expect(input.leftPropType).toBe(PropType.STAFF);
       expect((input.visibility as { showMandala: boolean }).showMandala).toBe(true);
     }
     const qrFlags = inputs.map((i) => (i.visibility as { showQRCode: boolean }).showQRCode);
@@ -226,5 +226,73 @@ describe("startGalleryWarm", () => {
     await handle.promise;
 
     expect(peak).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("upload settling", () => {
+  const oneCombo: WarmScope = { props: [PropType.STAFF], modes: ["dark"], qr: [false] };
+
+  it("does not report finished until the orchestrator's uploads have settled", async () => {
+    let releaseUploads = () => {};
+    const settled = new Promise<void>((resolve) => {
+      releaseUploads = resolve;
+    });
+    const getThumbnail = vi.fn(async () => okResult(false));
+    const settleUploads = vi.fn(() => settled);
+
+    const seen: boolean[] = [];
+    const handle = startGalleryWarm(
+      oneCombo,
+      (p) => seen.push(p.finished),
+      {
+        orchestrator: { getThumbnail, settleUploads } as never,
+        loader: loaderOf([seq({ word: "A" })]),
+      }
+    );
+
+    // Every render has resolved, but the uploads have not.
+    await vi.waitFor(() => expect(settleUploads).toHaveBeenCalled());
+    expect(seen.some(Boolean)).toBe(false);
+
+    releaseUploads();
+    const final = await handle.promise;
+    expect(final.finished).toBe(true);
+    expect(final.uploading).toBe(false);
+    expect(final.rendered).toBe(1);
+  });
+
+  it("reports the draining state while uploads are in flight", async () => {
+    let releaseUploads = () => {};
+    const settled = new Promise<void>((resolve) => {
+      releaseUploads = resolve;
+    });
+    const uploadingStates: boolean[] = [];
+    const handle = startGalleryWarm(
+      oneCombo,
+      (p) => uploadingStates.push(p.uploading),
+      {
+        orchestrator: {
+          getThumbnail: vi.fn(async () => okResult(false)),
+          settleUploads: vi.fn(() => settled),
+        } as never,
+        loader: loaderOf([seq({ word: "A" })]),
+      }
+    );
+
+    await vi.waitFor(() => expect(uploadingStates.some(Boolean)).toBe(true));
+    releaseUploads();
+    await handle.promise;
+  });
+
+  it("still finishes when the orchestrator has no settle point", async () => {
+    // Legacy/stubbed orchestrators predate settleUploads; a missing settle
+    // point must not strand the run.
+    const handle = startGalleryWarm(oneCombo, () => {}, {
+      orchestrator: { getThumbnail: vi.fn(async () => okResult(false)) } as never,
+      loader: loaderOf([seq({ word: "A" })]),
+    });
+    const final = await handle.promise;
+    expect(final.finished).toBe(true);
+    expect(final.rendered).toBe(1);
   });
 });

@@ -6,7 +6,11 @@
  * - Cell layout section showing grid positions, spans, layers, transforms, offsets
  */
 
-import type { TunnelLayerConfig, TransformType, AppliedTransform, } from "$lib/shared/animation-engine/domain/compose-types";
+import type {
+  TunnelLayerConfig,
+  TransformType,
+  AppliedTransform,
+} from "$lib/shared/animation-engine/domain/compose-types";
 import type { GridCell } from "../state/arrange-grid-state.svelte";
 import type { SerializationContext } from "./types";
 
@@ -20,9 +24,10 @@ import type { SerializationContext } from "./types";
  *   `hand: 'both'` and `timestamp: 0`.
  * - If neither exists, an empty array is returned.
  */
-export function migrateAppliedTransforms(
-  layer: { appliedTransforms?: TransformType[]; transformStack?: AppliedTransform[] }
-): { transformStack: AppliedTransform[] } {
+export function migrateAppliedTransforms(layer: {
+  appliedTransforms?: TransformType[];
+  transformStack?: AppliedTransform[];
+}): { transformStack: AppliedTransform[] } {
   if (layer.transformStack) return { transformStack: layer.transformStack };
   if (layer.appliedTransforms) {
     return {
@@ -59,10 +64,10 @@ function getMotionFallback(
   const refStep = refLayer.sequence.steps?.[0];
   if (!layerStep?.motions || !refStep?.motions) return null;
 
-  const lb = layerStep.motions.blue;
-  const lr = layerStep.motions.red;
-  const rb = refStep.motions.blue;
-  const rr = refStep.motions.red;
+  const lb = layerStep.motions.left;
+  const lr = layerStep.motions.right;
+  const rb = refStep.motions.left;
+  const rr = refStep.motions.right;
 
   const differs =
     lb?.startLocation !== rb?.startLocation ||
@@ -71,8 +76,8 @@ function getMotionFallback(
   if (!differs) return null;
 
   const parts: string[] = [];
-  if (lb) parts.push(`blue:${lb.startLocation}→${lb.endLocation}`);
-  if (lr) parts.push(`red:${lr.startLocation}→${lr.endLocation}`);
+  if (lb) parts.push(`left:${lb.startLocation}→${lb.endLocation}`);
+  if (lr) parts.push(`right:${lr.startLocation}→${lr.endLocation}`);
   return parts.length > 0 ? `(${parts.join(" ")})` : null;
 }
 

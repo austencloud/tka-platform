@@ -8,6 +8,7 @@
   import type { ArtSettingsPanelProps } from "./art-settings/art-settings-types";
 
   let {
+    sequence,
     controller,
     mandalaController,
     artType,
@@ -23,8 +24,10 @@
     onBpmChange = () => {},
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
-    bluePropType = null,
+    leftPropType = null,
     onPropChange,
+    fanAppearance,
+    onFanAppearanceChange,
     onArtSettingChange,
     exporting = false,
   }: ArtSettingsPanelProps = $props();
@@ -42,6 +45,7 @@
 
 {#if artType === "tunnel"}
   <TunnelArtSettings
+    {sequence}
     {controller}
     {layout}
     {onExport}
@@ -55,8 +59,10 @@
     {onBpmChange}
     {onPlaybackModeChange}
     {onPlaybackToggle}
-    {bluePropType}
+    {leftPropType}
     {onPropChange}
+    {fanAppearance}
+    {onFanAppearanceChange}
     {onArtSettingChange}
     {exporting}
     {reduceMotion}

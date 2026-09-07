@@ -14,7 +14,9 @@ function parsePoint(raw: string | null): CameraUrlPoint | null {
   if (!raw) return null;
   const values = raw.split(",").map((part) => Number(part.trim()));
   if (values.length !== 3 || !values.every(Number.isFinite)) return null;
-  return { x: values[0], y: values[1], z: values[2] };
+  const [x, y, z] = values;
+  if (x === undefined || y === undefined || z === undefined) return null;
+  return { x, y, z };
 }
 
 /**

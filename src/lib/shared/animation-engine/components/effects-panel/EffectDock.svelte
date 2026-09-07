@@ -21,7 +21,7 @@
     defaultChipId: string;
     customChipId: string;
     customDisabled?: boolean;
-    customColors?: { blue: string; red: string } | null;
+    customColors?: { left: string; right: string } | null;
     primarySpec?: PrimaryParamSpec;
     primaryValue: number;
     onSelectPreset: (presetId: string) => void;

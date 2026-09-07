@@ -1,6 +1,7 @@
-import type { FishEscapePhase } from "@austencloud/backgrounds";
-
-export type CursorCapturePhase = FishEscapePhase | "escape-swim" | "recovery";
+/** The capture panel records whatever phase string the fish reports
+ * (`+page.svelte` reads it as `string | null`); the ocean package no longer
+ * exports a phase union to narrow it against. */
+export type CursorCapturePhase = string;
 export type CursorCaptureState = "idle" | "armed" | "recording" | "complete";
 export type AutomatedPursuitState = "idle" | "running" | "complete";
 

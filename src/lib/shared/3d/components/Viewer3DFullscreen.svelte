@@ -41,8 +41,9 @@
     word: string | null;
     /** A stage the host authored, in metres — see Viewer3DScene. */
     stageExtent?: { width: number; depth: number } | null;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    cameraFov?: number;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     onClose?: () => void;
     onPlaybackToggle: () => void;
     onBpmChange: (bpm: number) => void;
@@ -67,6 +68,10 @@
     worldChildren?: Snippet;
     /** Host commands added to the left of the HUD's command bar. */
     hudActions?: Snippet;
+    /** Host editor shares the scene inspector's space and dismissal behavior. */
+    hostPanel?: Snippet<[() => void, boolean]>;
+    hostPanelTitle?: string;
+    hostPanelOpen?: boolean;
     /**
      * Host chrome layered over the canvas — a transport, a timeline, a chart.
      * It sits below the scene controls, so a host that reserves space with
@@ -90,6 +95,9 @@
      * setup so the user meets one decision at a time.
      */
     showSceneChrome?: boolean;
+    /** Compact control sheets can ask a document host to make room around the
+     *  shared viewer without coupling the viewer to that host's layout. */
+    onCompactSceneSheetChange?: (sheet: "performer" | "scene" | null) => void;
   }
 
   let {
@@ -99,8 +107,8 @@
     bpm,
     word,
     stageExtent = null,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     onClose,
     onPlaybackToggle,
     onBpmChange,
@@ -114,16 +122,21 @@
     onExport,
     exportBusy = false,
     renderEmptyScene = false,
+    cameraFov,
     visiblePerformerCount,
     performerSteps = null,
     worldChildren,
     hudActions,
+    hostPanel,
+    hostPanelTitle,
+    hostPanelOpen = $bindable(false),
     overlayChildren,
     hideCanvasOverlays = false,
     sceneControlsBottomOffset,
     sceneControlsLeftOffset,
     allowSaveScene = true,
     showSceneChrome = true,
+    onCompactSceneSheetChange,
   }: Props = $props();
 
   let hostEl = $state<HTMLElement | null>(null);
@@ -255,14 +268,15 @@
       {isPlaying}
       {bpm}
       {onBpmChange}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       hideOverlays={immersive || hideCanvasOverlays}
       {initialRevealMode}
       {initialRevealDeferredFeatures}
       {onPlaybackToggle}
       {onProgressBarSeek}
       {renderEmptyScene}
+      {cameraFov}
       {visiblePerformerCount}
       {performerSteps}
       {worldChildren}
@@ -292,6 +306,10 @@
         bottomOffset={sceneControlsBottomOffset}
         leftOffset={sceneControlsLeftOffset}
         {allowSaveScene}
+        {hostPanel}
+        {hostPanelTitle}
+        bind:hostPanelOpen
+        onCompactSheetChange={onCompactSceneSheetChange}
         onLayoutChange={(next) => (sceneControlLayout = next)}
       />
     </div>

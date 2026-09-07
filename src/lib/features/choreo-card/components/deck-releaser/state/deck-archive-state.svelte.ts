@@ -37,7 +37,7 @@ export function createDeckArchiveState(
       length: deck.selectedLength,
       level: [...deck.selectedLevels][0],
       period: [...deck.selectedSliceTypes][0],
-      prop: String(deck.bluePropType),
+      prop: String(deck.leftPropType),
       cardCount: deck.cards.length,
       words: deps.getWords(),
     };

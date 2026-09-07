@@ -3,7 +3,7 @@ import { PropTypeConstraint } from "../../../../src/generation/constraints/domai
 import type { ConstraintContext } from "../../../../src/generation/constraints/types.js";
 
 const EMPTY_MOTION = {
-  color: "",
+  hand: "",
   startLocation: "",
   endLocation: "",
   motionType: "",
@@ -25,8 +25,8 @@ function makeContext(
       endPosition: "alpha1",
       timing: "together",
       direction: "same",
-      blueMotion: EMPTY_MOTION,
-      redMotion: EMPTY_MOTION,
+      leftMotion: EMPTY_MOTION,
+      rightMotion: EMPTY_MOTION,
     },
     letter: "A",
   };

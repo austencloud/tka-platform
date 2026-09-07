@@ -6,7 +6,7 @@
   import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
   import { getArrowSvgPath } from "$lib/shared/pictograph/arrow/rendering/services/arrow-path-resolver";
   import {
-    MotionColor,
+    HandSide,
     RotationDirection,
     type MotionType,
     type Orientation,
@@ -36,12 +36,13 @@
     letter: string;
     startPosition: string;
     endPosition: string;
+    /** Legacy checked-in fixture shape. Normalized as it enters the route. */
     motions: { blue: RawMotion; red: RawMotion };
   }
 
-  const steps = fixture.steps as RawStep[];
+  const steps = fixture.steps as unknown as RawStep[];
 
-  function toMotion(raw: RawMotion, color: MotionColor): MotionData {
+  function toMotion(raw: RawMotion, color: HandSide): MotionData {
     return createMotionData({
       motionType: raw.motionType as MotionType,
       rotationDirection:
@@ -54,7 +55,7 @@
       startOrientation: raw.startOrientation as Orientation,
       endOrientation: raw.endOrientation as Orientation,
       turns: raw.turns,
-      color,
+      hand: color,
       propType: PropType.CLUB,
       gridMode: GridMode.DIAMOND,
     });
@@ -68,8 +69,8 @@
       endPosition: step.endPosition as GridPosition,
       gridMode: GridMode.DIAMOND,
       motions: {
-        blue: toMotion(step.motions.blue, MotionColor.BLUE),
-        red: toMotion(step.motions.red, MotionColor.RED),
+        left: toMotion(step.motions.blue, HandSide.LEFT),
+        right: toMotion(step.motions.red, HandSide.RIGHT),
       },
     };
   }
@@ -79,14 +80,14 @@
     const retuned = (motion: MotionData | undefined) => {
       if (!motion) return motion;
       const next = { ...motion, turns };
-      return { ...next, endOrientation: calculateEndOrientation(next, next.color) };
+      return { ...next, endOrientation: calculateEndOrientation(next, next.hand) };
     };
     return {
       ...source,
       id: `${source.id}-t${turns}`,
       motions: {
-        blue: retuned(source.motions.blue),
-        red: retuned(source.motions.red),
+        left: retuned(source.motions.left),
+        right: retuned(source.motions.right),
       },
     };
   }
@@ -101,7 +102,7 @@
     { label: "0.25 turns — current art (rejected)", data: selected },
     { label: "0.5 turns — legacy art", data: withTurns(selected, 0.5) },
   ]);
-  const quarterAssetPath = $derived(getArrowSvgPath(selected.motions.blue));
+  const quarterAssetPath = $derived(getArrowSvgPath(selected.motions.left));
 
   function motionSummary(m: RawMotion): string {
     const dir =

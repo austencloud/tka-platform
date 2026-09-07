@@ -88,8 +88,8 @@ export interface LetterPositionInfo {
 export interface LetterMappingData {
   startPosition: string;
   endPosition: string;
-  blueMotion: string;
-  redMotion: string;
+  leftMotion: string;
+  rightMotion: string;
 }
 
 /**
@@ -126,9 +126,9 @@ export interface SequenceStep {
   /** Ending position */
   endPosition: string;
   /** Blue hand/prop motion data */
-  blueMotion: MotionData;
+  leftMotion: MotionData;
   /** Red hand/prop motion data */
-  redMotion: MotionData;
+  rightMotion: MotionData;
   /** Beat number in the sequence */
   stepNumber: number;
 }

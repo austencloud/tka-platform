@@ -17,8 +17,8 @@ import type { StartPositionData } from "$lib/shared/foundation/domain/models/sta
 
 export interface OrientationCycleResult {
   cycleCount: 1 | 2 | 4 | 8;
-  blueOrientations: Orientation[];
-  redOrientations: Orientation[];
+  leftOrientations: Orientation[];
+  rightOrientations: Orientation[];
 }
 
 export function detectOrientationCycle(
@@ -30,38 +30,38 @@ export function detectOrientationCycle(
     sequence.steps as unknown as readonly SequenceStep[],
     {
     startOrientations: {
-      blue: start.blue as EngineOrientation,
-      red: start.red as EngineOrientation,
+      left: start.left as EngineOrientation,
+      right: start.right as EngineOrientation,
     },
     }
   );
 
   return {
     cycleCount: result.cycleCount,
-    blueOrientations: result.blueOrientations as Orientation[],
-    redOrientations: result.redOrientations as Orientation[],
+    leftOrientations: result.leftOrientations as Orientation[],
+    rightOrientations: result.rightOrientations as Orientation[],
   };
 }
 
 function getStartingOrientations(sequence: SequenceData): {
-  blue: Orientation;
-  red: Orientation;
+  left: Orientation;
+  right: Orientation;
 } {
   const startPosition = sequence.startPosition || sequence.startingPosition;
 
   if (startPosition && isStartPositionData(startPosition)) {
     return {
-      blue:
-        startPosition.motions?.blue?.startOrientation ?? Orientation.IN,
-      red:
-        startPosition.motions?.red?.startOrientation ?? Orientation.IN,
+      left:
+        startPosition.motions?.left?.startOrientation ?? Orientation.IN,
+      right:
+        startPosition.motions?.right?.startOrientation ?? Orientation.IN,
     };
   }
 
   const firstStep = sequence.steps[0];
   return {
-    blue: firstStep?.motions.blue?.startOrientation ?? Orientation.IN,
-    red: firstStep?.motions.red?.startOrientation ?? Orientation.IN,
+    left: firstStep?.motions.left?.startOrientation ?? Orientation.IN,
+    right: firstStep?.motions.right?.startOrientation ?? Orientation.IN,
   };
 }
 

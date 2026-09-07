@@ -26,7 +26,7 @@
   import {
     MotionType,
     RotationDirection,
-    MotionColor,
+    HandSide,
     Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
@@ -87,7 +87,7 @@
 
   function expandMotion(
     m: any,
-    color: MotionColor,
+    color: HandSide,
     gridMode: GridMode
   ) {
     // "at" is shorthand for static/dash where start === end
@@ -138,15 +138,15 @@
       endPosition: input.end ?? null,
       gridMode,
       duration: input.duration ?? 1,
-      blueReversal: input.blueReversal ?? false,
-      redReversal: input.redReversal ?? false,
+      leftReversal: input.leftReversal ?? false,
+      rightReversal: input.rightReversal ?? false,
       isBlank: false,
       motions: {
-        ...(input.blue
-          ? { blue: expandMotion(input.blue, MotionColor.BLUE, gridMode) }
+        ...(input.left
+          ? { left: expandMotion(input.left, HandSide.LEFT, gridMode) }
           : {}),
-        ...(input.red
-          ? { red: expandMotion(input.red, MotionColor.RED, gridMode) }
+        ...(input.right
+          ? { right: expandMotion(input.right, HandSide.RIGHT, gridMode) }
           : {}),
       },
     });
@@ -158,8 +158,8 @@
     beat: 2,
     start: "gamma13",
     end: "alpha5",
-    blue: { type: "anti", from: "w", to: "n", turns: 1, rot: "ccw" },
-    red: {
+    left: { type: "anti", from: "w", to: "n", turns: 1, rot: "ccw" },
+    right: {
       type: "static",
       at: "s",
       turns: 1,

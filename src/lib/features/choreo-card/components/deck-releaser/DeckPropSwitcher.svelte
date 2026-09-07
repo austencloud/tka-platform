@@ -18,7 +18,7 @@
 
   let open = $state(false);
 
-  const propLabel = $derived(getPropTypeDisplayInfo(rs.bluePropType).label);
+  const propLabel = $derived(getPropTypeDisplayInfo(rs.leftPropType).label);
 </script>
 
 <button
@@ -52,7 +52,7 @@
 
   <div class="picker-body">
     <BentoPropGrid
-      selectedPropType={rs.bluePropType}
+      selectedPropType={rs.leftPropType}
       variant="inline"
       title="Select Prop"
       onSelect={(p: PropType) => {

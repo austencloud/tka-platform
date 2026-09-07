@@ -77,7 +77,11 @@ export interface Offline3DExportDependencies {
    * accessors are used; the renderer is restored before export completes.
    */
   renderer: {
-    getSize(target: { x: number; y: number; set(w: number, h: number): unknown }): unknown;
+    getSize(target: {
+      x: number;
+      y: number;
+      set(w: number, h: number): unknown;
+    }): unknown;
     setSize(w: number, h: number, updateStyle?: boolean): void;
     getPixelRatio(): number;
     setPixelRatio(ratio: number): void;
@@ -119,10 +123,6 @@ import { ExportDiagnostics } from "$lib/shared/video-export/domain/export-diagno
 
 const KEYFRAME_INTERVAL = 30;
 const FALLBACK_ASPECT_RATIO = 16 / 9;
-// How many frames to render between event-loop yields. Too small wastes
-// time in scheduling overhead; too large blocks the UI (progress bar
-// stops updating, cancel button feels sticky). 8 strikes a good balance.
-const YIELD_EVERY_N_FRAMES = 8;
 // Cinema-mode tunables.
 const CINEMA_SSAA = 2;
 const CINEMA_SUB_FRAMES = 4;
@@ -239,6 +239,12 @@ export class Offline3DExporter {
       // automatic renders during capture, and gives tab-switch immunity.
       deps.pauseAutoLoop();
 
+      // Give the browser one task boundary to paint the progress state and
+      // accept Cancel before encoder startup begins. A click here is latched
+      // by cancel() and prevents the worker from starting at all.
+      await yieldToEventLoop();
+      this.throwIfCancelled();
+
       // Spawn + configure the encoder worker now that the scene is quiesced.
       await this.backgroundEncoder.initialize({
         width,
@@ -249,9 +255,7 @@ export class Offline3DExporter {
       });
 
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
-        if (this.shouldCancel) {
-          throw new Error("Export cancelled");
-        }
+        this.throwIfCancelled();
 
         diag.startFrame();
 
@@ -277,7 +281,11 @@ export class Offline3DExporter {
 
           // 2. Interpolate camera at sub-frame time.
           const cam = interpolateKeyframes(keyframes, subTime);
-          deps.camera.position.set(cam.position[0], cam.position[1], cam.position[2]);
+          deps.camera.position.set(
+            cam.position[0],
+            cam.position[1],
+            cam.position[2]
+          );
           deps.camera.quaternion.set(
             cam.quaternion[0],
             cam.quaternion[1],
@@ -304,6 +312,15 @@ export class Offline3DExporter {
             compositorCtx.globalAlpha = 1 / (sub + 1);
             compositorCtx.drawImage(deps.webglCanvas, 0, 0, width, height);
           }
+
+          // Cinema has already copied this sub-render into its persistent 2D
+          // accumulator, so it can yield safely before the next expensive
+          // render. Standard mode must synchronously read Three's
+          // nonpersistent framebuffer first.
+          if (compositorCtx) {
+            await yieldToEventLoop();
+            this.throwIfCancelled();
+          }
         }
 
         diag.markDrawImage();
@@ -318,6 +335,20 @@ export class Offline3DExporter {
         this.backgroundEncoder.addFrameCaptured(frame, frameIndex, isKeyframe);
         diag.markAddFrame();
 
+        // Standard mode yields after the synchronous canvas read. Cancellation
+        // still lands before another render starts, without paying for a
+        // duplicate composed render or risking a discarded framebuffer.
+        if (!compositorCtx) {
+          await yieldToEventLoop();
+          this.throwIfCancelled();
+        }
+
+        // Keep transferred GPU frames bounded. If encoding falls behind, this
+        // wait is cancellation-aware and prevents the queued frames themselves
+        // from starving the browser's input loop.
+        await this.backgroundEncoder.waitForFrameQueue(6);
+        this.throwIfCancelled();
+
         // 6. Progress report.
         onProgress({
           progress: frameIndex / totalFrames,
@@ -327,14 +358,6 @@ export class Offline3DExporter {
         });
 
         monotonicTime += frameDurationMs;
-
-        // 7. Yield to the event loop periodically so the UI stays
-        //    responsive - progress bar updates, cancel button works.
-        //    MessageChannel is unthrottled even when the tab is
-        //    backgrounded (unlike setTimeout or rAF).
-        if (frameIndex % YIELD_EVERY_N_FRAMES === 0) {
-          await yieldToEventLoop();
-        }
       }
 
       diag.finish();
@@ -384,6 +407,10 @@ export class Offline3DExporter {
     this.shouldCancel = true;
     this.backgroundEncoder.cancel();
   }
+
+  private throwIfCancelled(): void {
+    if (this.shouldCancel) throw new Error("Export cancelled");
+  }
 }
 
 /**
@@ -392,6 +419,13 @@ export class Offline3DExporter {
  * is unaffected by tab backgrounding or the 60Hz display refresh.
  */
 function yieldToEventLoop(): Promise<void> {
+  const scheduler = (
+    globalThis as typeof globalThis & {
+      scheduler?: { yield?: () => Promise<void> };
+    }
+  ).scheduler;
+  if (scheduler?.yield) return scheduler.yield();
+
   return new Promise<void>((resolve) => {
     const channel = new MessageChannel();
     channel.port1.onmessage = () => resolve();

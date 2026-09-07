@@ -8,6 +8,7 @@ const ic = {
   addDifficultyLevel: true,
   showLoopGlyph: true,
   showNotes: false,
+  customNotesText: "Created using Flow Arts Composer",
   showQRCode: true,
   showMandala: true,
   _cols: 4 as number | null,
@@ -44,6 +45,8 @@ describe("buildCardRenderOptions", () => {
     ic.includeStartPosition = true;
     ic.addDifficultyLevel = true;
     ic.showLoopGlyph = true;
+    ic.showNotes = false;
+    ic.customNotesText = "Created using Flow Arts Composer";
   });
 
   it("threads every panel toggle into the render options (no hand-path)", () => {
@@ -74,6 +77,45 @@ describe("buildCardRenderOptions", () => {
     expect(o).not.toHaveProperty("showBirthday");
     expect(o).not.toHaveProperty("birthday");
     expect(o.addUserInfo).toBe(false);
+  });
+
+  it("renders an explicit card footer without reading private sequence notes", () => {
+    const sequence = {
+      ...seq,
+      notes: "private choreography note",
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Shared from First Fire" },
+      },
+    } as any;
+
+    const options = buildCardRenderOptions(sequence, { darkMode: false });
+
+    expect(options.showNotes).toBe(true);
+    expect(options.addUserInfo).toBe(true);
+    expect(options.customNotesText).toBe("Shared from First Fire");
+    expect(options.notes).toBe("Shared from First Fire");
+    expect(JSON.stringify(options)).not.toContain("private choreography note");
+  });
+
+  it("lets a one-share footer override the saved card presentation", () => {
+    const sequence = {
+      ...seq,
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "credit" },
+      },
+    } as any;
+
+    const options = buildCardRenderOptions(sequence, {
+      darkMode: false,
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Only for this post" },
+      },
+    });
+
+    expect(options.customNotesText).toBe("Only for this post");
   });
 
   it("converts manual STEP columns according to the chosen start placement", () => {

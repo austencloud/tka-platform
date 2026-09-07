@@ -14,7 +14,7 @@ export type {
   MotionType,
   Orientation,
   RotationDirection,
-  PropColor,
+  HandSide,
   Coordinates,
   PropPlacement,
   ArrowPlacement,
@@ -31,7 +31,7 @@ export {
 // SVG color transforms
 export {
   ACCENT_COLORS_TO_PRESERVE,
-  MOTION_COLOR_MAP,
+  HAND_COLOR_MAP,
   SELECTIVE_COLOR_PROP_TYPES,
   getMotionColor,
   shouldPreserveColor,
@@ -39,7 +39,6 @@ export {
   applyMotionColorToSvg,
 } from "./svg-color.js";
 export type {
-  MotionColor as SvgMotionColor,
   ThemeMode,
   SvgColorOptions,
   MotionSvgColorOptions,

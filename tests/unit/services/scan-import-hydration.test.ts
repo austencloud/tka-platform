@@ -35,29 +35,29 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function makeStep(
   stepNumber: number,
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>
 ): StepData {
   return {
     id: `step-${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: createMotionData({ ...blue, color: MotionColor.BLUE }),
-      red: createMotionData({ ...red, color: MotionColor.RED }),
+      left: createMotionData({ ...left, hand: HandSide.LEFT }),
+      right: createMotionData({ ...right, hand: HandSide.RIGHT }),
     },
   };
 }
@@ -157,8 +157,8 @@ describe("scan-import save/read round-trip (decoded blob → library copy → vi
     // which is exactly how a husk gets written. It must not throw.
     const composed = ensureComposition(decoded);
     expect(composed.stepPairings?.length).toBe(2);
-    expect(composed.blueSoloProp).toBeTruthy();
-    expect(composed.redSoloProp).toBeTruthy();
+    expect(composed.leftSoloProp).toBeTruthy();
+    expect(composed.rightSoloProp).toBeTruthy();
   });
 
   it("steps re-derive after the Firestore write shape strips them", () => {
@@ -174,8 +174,8 @@ describe("scan-import save/read round-trip (decoded blob → library copy → vi
     const rehydrated = hydrate(storedShape);
     expect(rehydrated.steps.length).toBe(2);
     // The rebuilt motions must be real, not blank placeholders.
-    expect(rehydrated.steps[0]?.motions?.blue?.motionType).toBe(MotionType.PRO);
-    expect(rehydrated.steps[0]?.motions?.red?.motionType).toBe(MotionType.ANTI);
+    expect(rehydrated.steps[0]?.motions?.left?.motionType).toBe(MotionType.PRO);
+    expect(rehydrated.steps[0]?.motions?.right?.motionType).toBe(MotionType.ANTI);
   });
 
   it("collection member mapping hydrates a steps-less doc", async () => {
@@ -198,7 +198,7 @@ describe("scan-import save/read round-trip (decoded blob → library copy → vi
       "X6DK"
     );
     expect(member.steps.length).toBe(2);
-    expect(member.steps[0]?.motions?.blue?.motionType).toBe(MotionType.PRO);
+    expect(member.steps[0]?.motions?.left?.motionType).toBe(MotionType.PRO);
     // This test pays the one-time cost of transforming the mapper's transitive
     // firebase dep graph (~1.3s alone). Under a loaded parallel full-suite run
     // that overruns the 5s default and fails a green build, so give the import

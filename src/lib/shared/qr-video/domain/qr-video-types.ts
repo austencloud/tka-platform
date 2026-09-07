@@ -10,8 +10,8 @@ export interface FramePropState {
 }
 
 export interface PrecomputedFrame {
-  blue: FramePropState | null;
-  red: FramePropState | null;
+  left: FramePropState | null;
+  right: FramePropState | null;
   stepIndex: number;
   isStartPosition: boolean;
 }
@@ -20,7 +20,7 @@ export interface VideoRenderConfig {
   fps: number;
   resolution: number;
   speed: number;
-  propTypes: { blue: PropType; red: PropType };
+  propTypes: { left: PropType; right: PropType };
   loopCount: number;
   includeStartPosition: boolean;
   includeEndHold: boolean;
@@ -31,10 +31,10 @@ export interface VideoRenderConfig {
 
 export interface TransferableAssets {
   gridImage: ImageBitmap;
-  bluePropImage: ImageBitmap;
-  redPropImage: ImageBitmap;
-  bluePropViewBox: { width: number; height: number };
-  redPropViewBox: { width: number; height: number };
+  leftPropImage: ImageBitmap;
+  rightPropImage: ImageBitmap;
+  leftPropViewBox: { width: number; height: number };
+  rightPropViewBox: { width: number; height: number };
   letterGlyphs: ImageBitmap[];
   startPositionGlyph: ImageBitmap | null;
 }

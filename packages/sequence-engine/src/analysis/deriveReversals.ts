@@ -58,8 +58,8 @@ export interface ChannelReversals {
 }
 
 export interface StepReversals {
-  readonly blue: ChannelReversals;
-  readonly red: ChannelReversals;
+  readonly left: ChannelReversals;
+  readonly right: ChannelReversals;
 }
 
 export interface DeriveReversalsOptions {
@@ -78,8 +78,8 @@ export interface ReversalStepLike {
   readonly stepNumber?: number;
   readonly isBlank?: boolean;
   readonly motions?: {
-    readonly blue?: MotionSignalSource | null;
-    readonly red?: MotionSignalSource | null;
+    readonly left?: MotionSignalSource | null;
+    readonly right?: MotionSignalSource | null;
   } | null;
 }
 
@@ -88,8 +88,8 @@ const NO_CHANNELS: ChannelReversals = Object.freeze({
   handReversal: false,
 });
 const NO_REVERSAL: StepReversals = Object.freeze({
-  blue: NO_CHANNELS,
-  red: NO_CHANNELS,
+  left: NO_CHANNELS,
+  right: NO_CHANNELS,
 });
 
 interface HandSignals {
@@ -111,17 +111,17 @@ export function deriveReversals(
 
   // Extract each hand's signals once. Blank steps and the start-position step
   // are inert: they never flag and never anchor.
-  const blueSignals: HandSignals[] = new Array(n);
-  const redSignals: HandSignals[] = new Array(n);
+  const leftSignals: HandSignals[] = new Array(n);
+  const rightSignals: HandSignals[] = new Array(n);
   for (let i = 0; i < n; i++) {
     const step = steps[i]!;
     if (step.isBlank || step.stepNumber === 0) {
-      blueSignals[i] = INERT;
-      redSignals[i] = INERT;
+      leftSignals[i] = INERT;
+      rightSignals[i] = INERT;
       continue;
     }
-    blueSignals[i] = signalsOf(step.motions?.blue);
-    redSignals[i] = signalsOf(step.motions?.red);
+    leftSignals[i] = signalsOf(step.motions?.left);
+    rightSignals[i] = signalsOf(step.motions?.right);
   }
 
   const out: StepReversals[] = [];
@@ -131,12 +131,12 @@ export function deriveReversals(
       out.push(NO_REVERSAL);
       continue;
     }
-    const blue = channelFlips(blueSignals, i, loop);
-    const red = channelFlips(redSignals, i, loop);
+    const left = channelFlips(leftSignals, i, loop);
+    const right = channelFlips(rightSignals, i, loop);
     out.push(
-      blue === NO_CHANNELS && red === NO_CHANNELS
+      left === NO_CHANNELS && right === NO_CHANNELS
         ? NO_REVERSAL
-        : Object.freeze({ blue, red })
+        : Object.freeze({ left, right })
     );
   }
 

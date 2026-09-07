@@ -2,7 +2,7 @@
 // user doc as `activeProp`, so the browse creators queries (which can't reach
 // the settings subcollection) can show a prop identity badge for everyone.
 //
-// Source: users/{uid}/settings/preferences.bluePropType
+// Source: users/{uid}/settings/preferences.leftPropType
 // Target: users/{uid}.activeProp
 //
 // Idempotent - skips users whose activeProp already matches. Going forward,
@@ -30,23 +30,23 @@ async function main() {
     const prefs = await db
       .doc(`users/${userDoc.id}/settings/preferences`)
       .get();
-    const bluePropType = prefs.exists ? prefs.data().bluePropType : undefined;
+    const leftPropType = prefs.exists ? prefs.data().leftPropType : undefined;
 
-    if (!bluePropType) {
+    if (!leftPropType) {
       skippedNoSetting++;
       continue;
     }
-    if (userDoc.data().activeProp === bluePropType) {
+    if (userDoc.data().activeProp === leftPropType) {
       skippedCurrent++;
       continue;
     }
 
     if (!dryRun) {
-      await db.doc(`users/${userDoc.id}`).update({ activeProp: bluePropType });
+      await db.doc(`users/${userDoc.id}`).update({ activeProp: leftPropType });
     }
     written++;
     console.log(
-      `${dryRun ? "[dry-run] would set" : "set"} ${userDoc.id} activeProp=${bluePropType}`
+      `${dryRun ? "[dry-run] would set" : "set"} ${userDoc.id} activeProp=${leftPropType}`
     );
   }
 

@@ -7,8 +7,8 @@ import type { SequenceStep } from "../../../src/core/types/sequence-engine-types
 // motions are pro/anti (so inversion is observable). Build hand-rolled steps
 // with the fields the executors touch (motions, positions, stepNumber, letter).
 // Copied verbatim from canonical-stage-order.test.ts — tests independently readable.
-function step(n: number, letter: string, sp: string, ep: string, blue: any, red: any): SequenceStep {
-  return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { blue, red } } as unknown as SequenceStep;
+function step(n: number, letter: string, sp: string, ep: string, left: any, right: any): SequenceStep {
+  return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { left, right } } as unknown as SequenceStep;
 }
 const m = (
   motionType: string,
@@ -18,19 +18,19 @@ const m = (
   turns = 0,
 ) => ({
   motionType, rotationDirection, startLocation, endLocation,
-  startOrientation: "in", endOrientation: "in", turns, color: "blue",
+  startOrientation: "in", endOrientation: "in", turns, hand: "left",
 });
 
 // Deviation from the plan's literal seed: the plan's makeSeed() ends at
-// gamma5 (blue e, red s), which is NOT a valid halved-rotation pair for
-// gamma13 (HALF_POSITION_MAP maps gamma13 -> gamma9, blue e / red n —
+// gamma5 (left e, right s), which is NOT a valid halved-rotation pair for
+// gamma13 (HALF_POSITION_MAP maps gamma13 -> gamma9, left e / right n —
 // see packages/sequence-engine/src/loop/position-maps/circular-position-maps.ts).
 // canonical-stage-order.test.ts's copy never exercises ROTATED so it never
 // hit this gate; this file's tests do (ROTATED period 2), so StrictRotatedExecutor's
 // validateSequence throws on the plan's literal seed. Fixing the seed (per plan
-// discipline: fix the seed, never weaken assertions) — red now dashes s->n in
-// step 2 instead of staying static, landing the sequence on gamma9 (blue e, red n),
-// the valid halved-rotation partner of gamma13. Blue's pro/ccw s->e motion (the
+// discipline: fix the seed, never weaken assertions) — right now dashes s->n in
+// step 2 instead of staying static, landing the sequence on gamma9 (left e, right n),
+// the valid halved-rotation partner of gamma13. Left's pro/ccw s->e motion (the
 // thing the inversion assertions actually observe) is unchanged from the plan.
 function makeSeed(): SequenceStep[] {
   return [
@@ -63,8 +63,8 @@ describe("overlay inversion", () => {
       expect(overlaid[i]!.startPosition).toBe(base[i]!.startPosition);
       expect(overlaid[i]!.endPosition).toBe(base[i]!.endPosition);
       const odd = Math.floor((i - 1) / blockSize) % 2 === 1;
-      const b = base[i]!.motions.blue.motionType;
-      const o = overlaid[i]!.motions.blue.motionType;
+      const b = base[i]!.motions.left.motionType;
+      const o = overlaid[i]!.motions.left.motionType;
       if (!odd || b === "dash" || b === "static") expect(o).toBe(b);
       else expect(o).toBe(b === "pro" ? "anti" : "pro");
     }
@@ -76,8 +76,8 @@ describe("overlay inversion", () => {
       [LOOPComponent.INVERTED, { period: 2, mode: "overlay" }],
     ]));
     for (let i = 2; i < overlaid.length; i++) {
-      expect(overlaid[i]!.motions.blue.startOrientation).toBe(overlaid[i - 1]!.motions.blue.endOrientation);
-      expect(overlaid[i]!.motions.red.startOrientation).toBe(overlaid[i - 1]!.motions.red.endOrientation);
+      expect(overlaid[i]!.motions.left.startOrientation).toBe(overlaid[i - 1]!.motions.left.endOrientation);
+      expect(overlaid[i]!.motions.right.startOrientation).toBe(overlaid[i - 1]!.motions.right.endOrientation);
     }
   });
 
@@ -107,7 +107,7 @@ describe("overlay inversion", () => {
       [LOOPComponent.INVERTED, { period: 2, mode: "overlay" }],
     ]));
 
-    const transformedBlue = overlaid[2]!.motions.blue;
+    const transformedBlue = overlaid[2]!.motions.left;
     expect(transformedBlue.motionType).toBe("dash");
     expect(transformedBlue.turns).toBe(0.5);
     expect(transformedBlue.rotationDirection).toBe("cw");

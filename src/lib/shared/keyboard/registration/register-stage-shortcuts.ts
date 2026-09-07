@@ -34,7 +34,7 @@ export interface StageShortcutHandlers {
   nextSet: () => void;
   toggleChart: () => void;
   addSet: () => void;
-  removeSelectedSet: () => void;
+  deleteSelection: () => void;
 }
 
 const CTX = "stage" as const;
@@ -155,22 +155,24 @@ export function createStageShortcuts(
       action: handlers.addSet,
     },
     {
+      // Keep the historical id so a customized binding survives the command
+      // becoming selection-aware.
       id: "stage.remove-set",
-      label: "Remove the set",
-      description: "Take the selected set off the show",
+      label: "Delete selection",
+      description: "Remove the selected performer, sequence, set, or timing",
       key: "Delete",
       context: CTX,
       scope: "editing",
-      action: handlers.removeSelectedSet,
+      action: handlers.deleteSelection,
     },
     {
       id: "stage.remove-set-backspace",
-      label: "Remove the set (Backspace)",
-      description: "Take the selected set off the show",
+      label: "Delete selection (Backspace)",
+      description: "Remove the selected performer, sequence, set, or timing",
       key: "Backspace",
       context: CTX,
       scope: "editing",
-      action: handlers.removeSelectedSet,
+      action: handlers.deleteSelection,
     },
 
     // ── The chart ───────────────────────────────────────────────────────────
@@ -205,7 +207,7 @@ export function createInertStageHandlers(): StageShortcutHandlers {
     nextSet: noop,
     toggleChart: noop,
     addSet: noop,
-    removeSelectedSet: noop,
+    deleteSelection: noop,
   };
 }
 

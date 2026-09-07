@@ -26,8 +26,8 @@ function applyToBeat(beat: StepData, propType: PropType): StepData {
   return {
     ...beat,
     motions: {
-      blue: { ...beat.motions.blue, propType },
-      red: { ...beat.motions.red, propType },
+      left: { ...beat.motions.left, propType },
+      right: { ...beat.motions.right, propType },
     },
   };
 }
@@ -41,8 +41,8 @@ function applyToStartPosition(
   return {
     ...startPos,
     motions: {
-      blue: startPos.motions.blue ? { ...startPos.motions.blue, propType } : undefined,
-      red: startPos.motions.red ? { ...startPos.motions.red, propType } : undefined,
+      left: startPos.motions.left ? { ...startPos.motions.left, propType } : undefined,
+      right: startPos.motions.right ? { ...startPos.motions.right, propType } : undefined,
     },
   };
 }

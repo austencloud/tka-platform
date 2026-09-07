@@ -2,7 +2,7 @@
   HandPathExplorerLab.svelte
 
   Lab tab for browsing unique hand paths across the sequence library.
-  Groups sequences by their bluePathHash / redPathHash and lets you explore
+  Groups sequences by their leftPathHash / rightPathHash and lets you explore
   which paths are reused most across your library.
 -->
 <script lang="ts">
@@ -21,17 +21,25 @@
 
 <div class="explorer">
   <!-- Main grid panel -->
-  <div class="explorer__grid-panel" class:explorer__grid-panel--narrowed={state.selectedGroup !== null}>
+  <div
+    class="explorer__grid-panel"
+    class:explorer__grid-panel--narrowed={state.selectedGroup !== null}
+  >
     <div class="explorer__header">
       <span class="explorer__title">Hand Path Explorer</span>
       {#if !state.isLoading && !state.loadError}
-        <span class="explorer__count">{state.pathGroups.length} unique paths</span>
+        <span class="explorer__count"
+          >{state.pathGroups.length} unique paths</span
+        >
       {/if}
     </div>
 
     {#if state.isLoading}
       <div class="explorer__center">
-        <i class="fas fa-circle-notch fa-spin explorer__spinner" aria-hidden="true"></i>
+        <i
+          class="fas fa-circle-notch fa-spin explorer__spinner"
+          aria-hidden="true"
+        ></i>
         <span>Loading library...</span>
       </div>
     {:else if state.loadError}
@@ -43,7 +51,9 @@
       <div class="explorer__center">
         <i class="fas fa-wind" aria-hidden="true"></i>
         <span>No sequences with compositional data found.</span>
-        <span class="explorer__hint">Sequences need blueSoloProp / redSoloProp fields to appear here.</span>
+        <span class="explorer__hint"
+          >Sequences need leftSoloProp / rightSoloProp fields to appear here.</span
+        >
       </div>
     {:else}
       <div class="explorer__grid">
@@ -113,7 +123,8 @@
     gap: 12px;
     align-content: start;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      transparent;
   }
 
   @media (max-width: 480px) {

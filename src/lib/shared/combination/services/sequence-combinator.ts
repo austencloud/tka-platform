@@ -10,11 +10,11 @@
  * search rather than needing separate code paths.
  *
  * The material the walk may use:
- *   - card A as given (the FRAME — never rotated, mirrored or colour-swapped,
+ *   - card A as given (the FRAME — never rotated, mirrored, or hand-swapped,
  *     because the result is expressed in card A's orientation);
  *   - card A's rotation-faithful twin (`buildTwinSource`);
  *   - every distinct variant of card B (`buildVariants` — rotation, mirror,
- *     colour swap, twin, deduped cyclically).
+ *     hand swap, twin, deduped cyclically).
  *
  *   - AMBIENT base-vocabulary steps (ΦΨ bridges and friends), when the caller
  *     supplies an `ambientProvider`. These are not one of the two things being
@@ -576,7 +576,7 @@ export async function findCombinations(
     variant: {
       rotation: 0,
       mirrored: false,
-      colorSwapped: false,
+      handsSwapped: false,
       rotationFaithful: false,
     },
     sequence: cardA,

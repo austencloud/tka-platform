@@ -12,7 +12,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -82,10 +82,10 @@ function rotateLocation(
 
 /** Apply mirror transform to pictograph */
 export function applyMirror(data: PictographData): PictographData {
-  const newMotions: Partial<Record<MotionColor, MotionData>> = {};
+  const newMotions: Partial<Record<HandSide, MotionData>> = {};
   for (const [color, motion] of Object.entries(data.motions)) {
     if (motion) {
-      newMotions[color as MotionColor] = createMotionData({
+      newMotions[color as HandSide] = createMotionData({
         ...motion,
         startLocation: mirrorLocation(motion.startLocation),
         endLocation: mirrorLocation(motion.endLocation),
@@ -104,10 +104,10 @@ export function applyRotate(
   data: PictographData,
   direction: "cw" | "ccw"
 ): PictographData {
-  const newMotions: Partial<Record<MotionColor, MotionData>> = {};
+  const newMotions: Partial<Record<HandSide, MotionData>> = {};
   for (const [color, motion] of Object.entries(data.motions)) {
     if (motion) {
-      newMotions[color as MotionColor] = createMotionData({
+      newMotions[color as HandSide] = createMotionData({
         ...motion,
         startLocation: rotateLocation(motion.startLocation, direction),
         endLocation: rotateLocation(motion.endLocation, direction),
@@ -122,28 +122,28 @@ export function applyRotate(
 
 /** Apply swap hands transform to pictograph */
 export function applySwap(data: PictographData): PictographData {
-  const blue = data.motions[MotionColor.BLUE];
-  const red = data.motions[MotionColor.RED];
-  const newMotions: Partial<Record<MotionColor, MotionData>> = {};
-  if (blue)
-    newMotions[MotionColor.RED] = createMotionData({
-      ...blue,
-      color: MotionColor.RED,
+  const left = data.motions[HandSide.LEFT];
+  const right = data.motions[HandSide.RIGHT];
+  const newMotions: Partial<Record<HandSide, MotionData>> = {};
+  if (left)
+    newMotions[HandSide.RIGHT] = createMotionData({
+      ...left,
+      hand: HandSide.RIGHT,
     });
-  if (red)
-    newMotions[MotionColor.BLUE] = createMotionData({
-      ...red,
-      color: MotionColor.BLUE,
+  if (right)
+    newMotions[HandSide.LEFT] = createMotionData({
+      ...right,
+      hand: HandSide.LEFT,
     });
   return { ...data, motions: newMotions };
 }
 
 /** Apply rewind transform to pictograph */
 export function applyRewind(data: PictographData): PictographData {
-  const newMotions: Partial<Record<MotionColor, MotionData>> = {};
+  const newMotions: Partial<Record<HandSide, MotionData>> = {};
   for (const [color, motion] of Object.entries(data.motions)) {
     if (motion) {
-      newMotions[color as MotionColor] = createMotionData({
+      newMotions[color as HandSide] = createMotionData({
         ...motion,
         startLocation: motion.endLocation,
         endLocation: motion.startLocation,
@@ -158,10 +158,10 @@ export function applyRewind(data: PictographData): PictographData {
 
 /** Apply flip transform to pictograph (flip north/south) */
 export function applyFlip(data: PictographData): PictographData {
-  const newMotions: Partial<Record<MotionColor, MotionData>> = {};
+  const newMotions: Partial<Record<HandSide, MotionData>> = {};
   for (const [color, motion] of Object.entries(data.motions)) {
     if (motion) {
-      newMotions[color as MotionColor] = createMotionData({
+      newMotions[color as HandSide] = createMotionData({
         ...motion,
         startLocation: flipLocation(motion.startLocation),
         endLocation: flipLocation(motion.endLocation),
@@ -177,7 +177,7 @@ export function applyFlip(data: PictographData): PictographData {
 
 /** Apply invert transform to pictograph (flip rotation directions and motion types) */
 export function applyInvert(data: PictographData): PictographData {
-  const newMotions: Partial<Record<MotionColor, MotionData>> = {};
+  const newMotions: Partial<Record<HandSide, MotionData>> = {};
   for (const [color, motion] of Object.entries(data.motions)) {
     if (motion) {
       // Flip motion type (PRO ↔ ANTI, others stay same)
@@ -188,7 +188,7 @@ export function applyInvert(data: PictographData): PictographData {
         invertedMotionType = MotionType.PRO;
       }
 
-      newMotions[color as MotionColor] = createMotionData({
+      newMotions[color as HandSide] = createMotionData({
         ...motion,
         motionType: invertedMotionType,
         rotationDirection: flipRotation(motion.rotationDirection),

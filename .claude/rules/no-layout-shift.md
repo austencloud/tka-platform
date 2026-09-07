@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/**/*.{svelte,css,ts}"
+---
+
 # Layout Stability and Motion — ENFORCED
 
 ## Why This Is Load-Bearing
@@ -51,7 +56,7 @@ durations or easing curves in feature code. Use `DURATION`, the global
 | Route/module navigation                                                  | the existing native view-transition/module-transition owner in `src/app.css` and `view-transitions.css` |
 
 If none fits, extend the closest shared owner first and document the new route
-in `.claude/rules/canonical-capabilities.md`. Do not create a feature-local
+in `docs/architecture/canonical-capabilities.md`. Do not create a feature-local
 motion framework.
 
 ## Preventing Accidental Movement
@@ -119,7 +124,7 @@ transition trigger. A screenshot of only the final state cannot prove motion.
 ## Related
 
 - `docs/architecture/layout-motion.md` — owner boundaries and implementation examples
-- `canonical-capabilities.md` — searchable routing index
+- `docs/architecture/canonical-capabilities.md` — searchable routing index
 - `crossfade-primitive.md` — true content swaps and remount limits
 - `visual-verification-mandatory.md` — required visual evidence
 - `never-hand-roll.md` — extend an owner instead of creating a parallel behavior stack

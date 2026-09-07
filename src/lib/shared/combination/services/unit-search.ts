@@ -91,7 +91,7 @@ export function toSteps(
   for (const pictograph of pictographs) {
     if (!pictograph.letter) continue;
     if (!pictograph.startPosition || !pictograph.endPosition) continue;
-    if (!pictograph.motions.blue || !pictograph.motions.red) continue;
+    if (!pictograph.motions.left || !pictograph.motions.right) continue;
     steps.push(createStepData({ ...pictograph, id: pictograph.id }));
   }
   return steps;

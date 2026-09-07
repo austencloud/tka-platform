@@ -12,6 +12,7 @@
     propType,
     visibility,
     getData,
+    getCellHref,
     onCellSelect,
   }: {
     sheet: CodexSheetDef;
@@ -29,6 +30,7 @@
     propType?: PropType;
     visibility?: GuideCodexVisibility;
     getData?: (id: string) => PictographData | null | undefined;
+    getCellHref?: (id: string) => string | undefined;
     onCellSelect?: (id: string) => void;
   } = $props();
 </script>
@@ -58,6 +60,7 @@
             {propType}
             {visibility}
             {getData}
+            {getCellHref}
             {onCellSelect}
           />
         {/each}

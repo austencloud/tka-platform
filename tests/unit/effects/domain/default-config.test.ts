@@ -25,12 +25,13 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
   it("has valid trails intent", () => {
     const t = DEFAULT_EFFECTS_CONFIG.trails;
     expect(t.trackingMode).toBe("both_ends");
+    expect(t.thickness).toBe(4);
     expect(t.thickness).toBeGreaterThanOrEqual(1);
     expect(t.thickness).toBeLessThanOrEqual(12);
     expect(t.brightness).toBeGreaterThanOrEqual(0.3);
     expect(t.brightness).toBeLessThanOrEqual(1.0);
-    expect(t.blueColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-    expect(t.redColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+    expect(t.leftColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+    expect(t.rightColor).toMatch(/^#[0-9a-fA-F]{6}$/);
     expect(t.rainbow).toBe(false);
   });
 

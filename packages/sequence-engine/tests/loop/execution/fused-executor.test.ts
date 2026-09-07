@@ -30,8 +30,8 @@ function makeStep(
     startPosition: "alpha1",
     endPosition: "alpha5",
     motions: {
-      blue: makeMotion(),
-      red: makeMotion({
+      left: makeMotion(),
+      right: makeMotion({
         startLocation: "s",
         endLocation: "w",
         rotationDirection: "ccw",
@@ -56,13 +56,13 @@ describe("FusedExecutor", () => {
 
       expect(result.length).toBe(3);
       const transformed = result[2]!;
-      expect(transformed.motions.blue.motionType).toBe("anti");
-      expect(transformed.motions.blue.rotationDirection).toBe("ccw");
+      expect(transformed.motions.left.motionType).toBe("anti");
+      expect(transformed.motions.left.rotationDirection).toBe("ccw");
     });
   });
 
   describe("swap only", () => {
-    it("blue reads from red source and vice versa", () => {
+    it("left reads from right source and vice versa", () => {
       const executor = new FusedExecutor({
         mirror: false,
         flip: false,
@@ -74,16 +74,16 @@ describe("FusedExecutor", () => {
         makeStep(0),
         makeStep(1, {
           motions: {
-            blue: makeMotion({ motionType: "pro" }),
-            red: makeMotion({ motionType: "anti" }),
+            left: makeMotion({ motionType: "pro" }),
+            right: makeMotion({ motionType: "anti" }),
           },
         }),
       ];
       const result = executor.execute(seq, 2);
 
       const transformed = result[2]!;
-      expect(transformed.motions.blue.motionType).toBe("anti");
-      expect(transformed.motions.red.motionType).toBe("pro");
+      expect(transformed.motions.left.motionType).toBe("anti");
+      expect(transformed.motions.right.motionType).toBe("pro");
     });
   });
 
@@ -101,8 +101,8 @@ describe("FusedExecutor", () => {
 
       const source = seq[1]!;
       const transformed = result[2]!;
-      expect(transformed.motions.blue.rotationDirection).toBe(
-        source.motions.blue.rotationDirection
+      expect(transformed.motions.left.rotationDirection).toBe(
+        source.motions.left.rotationDirection
       );
     });
   });
@@ -135,18 +135,18 @@ describe("FusedExecutor", () => {
         makeStep(0),
         makeStep(1, {
           motions: {
-            blue: makeMotion({ startLocation: "s", endLocation: "se" }),
-            red: makeMotion({ startLocation: "n", endLocation: "ne" }),
+            left: makeMotion({ startLocation: "s", endLocation: "se" }),
+            right: makeMotion({ startLocation: "n", endLocation: "ne" }),
           },
         }),
       ];
 
       const transformed = executor.execute(seq, 2)[2]!;
 
-      expect(transformed.motions.blue.startLocation).toBe("se");
-      expect(transformed.motions.blue.endLocation).toBe("e");
-      expect(transformed.motions.red.startLocation).toBe("ne");
-      expect(transformed.motions.red.endLocation).toBe("e");
+      expect(transformed.motions.left.startLocation).toBe("se");
+      expect(transformed.motions.left.endLocation).toBe("e");
+      expect(transformed.motions.right.startLocation).toBe("ne");
+      expect(transformed.motions.right.endLocation).toBe("e");
     });
 
     it("reflects the 45-degree path direction without changing its magnitude", () => {
@@ -160,18 +160,18 @@ describe("FusedExecutor", () => {
         makeStep(0),
         makeStep(1, {
           motions: {
-            blue: makeMotion({ startLocation: "s", endLocation: "se" }),
-            red: makeMotion({ startLocation: "n", endLocation: "ne" }),
+            left: makeMotion({ startLocation: "s", endLocation: "se" }),
+            right: makeMotion({ startLocation: "n", endLocation: "ne" }),
           },
         }),
       ];
 
       const transformed = executor.execute(seq, 2)[2]!;
 
-      expect(transformed.motions.blue.startLocation).toBe("se");
-      expect(transformed.motions.blue.endLocation).toBe("s");
-      expect(transformed.motions.red.startLocation).toBe("ne");
-      expect(transformed.motions.red.endLocation).toBe("n");
+      expect(transformed.motions.left.startLocation).toBe("se");
+      expect(transformed.motions.left.endLocation).toBe("s");
+      expect(transformed.motions.right.startLocation).toBe("ne");
+      expect(transformed.motions.right.endLocation).toBe("n");
     });
   });
 });

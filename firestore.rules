@@ -2321,19 +2321,11 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Public "submit your flow arts software" capture (/roots/software).
-    // Mirrors shop_waitlist: anyone may create a shape-valid doc, only the
-    // admin reads, nothing is ever updated or deleted from the client.
+    // Software-history submissions pass through the rate-limited server API.
+    // The Admin SDK bypasses these rules; browser clients cannot write here.
     match /software_submissions/{entryId} {
       allow read: if isAdmin();
-      allow create: if request.resource.data.name is string
-        && request.resource.data.name.size() > 1
-        && request.resource.data.name.size() < 120
-        && request.resource.data.url is string
-        && request.resource.data.url.size() < 500
-        && request.resource.data.notes is string
-        && request.resource.data.notes.size() < 2000;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     // ============================================================================

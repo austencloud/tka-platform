@@ -25,13 +25,18 @@ import { resolveInfoCellDisplay } from "$lib/shared/sequence-viewer/services/inf
 import { getAuthSync } from "$lib/shared/auth/firebase";
 import { toMandalaPathShape } from "$lib/shared/mandala/services/mandala-path-policy";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import {
+  cardPresentationFromFooterSettings,
+  resolveCardFooter,
+  type CardPresentation,
+} from "$lib/shared/share/domain/models/card-presentation";
 
 export interface CardRenderOptionsInput {
   /**
    * Theme. The viewer passes its export-panel value (exportOptions.imageDarkMode);
    * the share/download paths pass the composition manager's darkMode. Explicit so
    * each caller keeps its own canonical source and preview/export stay in lockstep.
-  */
+   */
   darkMode: boolean;
   /**
    * Hand-path visualization (HAND props + float arrows). When true the difficulty
@@ -46,6 +51,8 @@ export interface CardRenderOptionsInput {
    * the user configured.
    */
   resolvedAutoLayout?: ResolvedAutoLayout | null;
+  /** Current card or one-share override. Omitted means account defaults. */
+  cardPresentation?: CardPresentation;
 }
 
 /**
@@ -64,7 +71,9 @@ export interface CardRenderOptionsInput {
  * when they really are pins.
  */
 export function isCardLayoutAutomatic(stepCount: number): boolean {
-  return getImageCompositionManager().getColumnCountForStepCount(stepCount) === null;
+  return (
+    getImageCompositionManager().getColumnCountForStepCount(stepCount) === null
+  );
 }
 
 /**
@@ -85,14 +94,18 @@ export function buildCardRenderOptions(
   // canvas backstop in findEmptyCellForQR and the gallery thumbnail gate).
   const oneCount = stepCount <= 1;
   const isAuthenticated = !!getAuthSync().currentUser;
+  const footer = resolveCardFooter(
+    input.cardPresentation ??
+      sequence.cardPresentation ??
+      cardPresentationFromFooterSettings(ic.showNotes, ic.customNotesText)
+  );
 
   // Auto owns both axes: it chooses the total grid columns and whether the start
   // consumes a row or a column. The live Download Card preview evaluates the
   // container; the export path consumes that exact winner.
   const stepColumns = ic.getColumnCountForStepCount(stepCount);
   const automaticLayout =
-    stepColumns === null &&
-    input.resolvedAutoLayout?.stepCount === stepCount
+    stepColumns === null && input.resolvedAutoLayout?.stepCount === stepCount
       ? input.resolvedAutoLayout
       : null;
   const startPositionLayout =
@@ -133,8 +146,10 @@ export function buildCardRenderOptions(
     addWord: ic.addWord,
     addDifficultyLevel: isHandPath ? false : ic.addDifficultyLevel,
     showLoopGlyph: isHandPath ? false : ic.showLoopGlyph,
-    addUserInfo: ic.showNotes,
-    showNotes: ic.showNotes,
+    addUserInfo: footer.show,
+    showNotes: footer.show,
+    customNotesText: footer.text,
+    notes: footer.text,
     addReversalSymbols: !isHandPath,
     // Whatever the animation is currently drawing, the exported card draws
     // too — see toMandalaPathShape.

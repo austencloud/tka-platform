@@ -15,7 +15,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -30,7 +30,7 @@
   const NOROT = RotationDirection.NO_ROTATION;
 
   const mo = (
-    color: MotionColor,
+    color: HandSide,
     type: MotionType,
     from: GridLocation,
     to: GridLocation,
@@ -50,15 +50,15 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const pic = (id: string, blue: ReturnType<typeof mo>, red: ReturnType<typeof mo>) => ({
+  const pic = (id: string, left, right) => ({
     id: `l2gp-${id}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { blue, red },
+    motions: { left, right },
   });
 
-  const B = MotionColor.BLUE;
-  const R = MotionColor.RED;
+  const B = HandSide.LEFT;
+  const R = HandSide.RIGHT;
   // MCP-verified hybrid examples (variation indices in the header comment).
   const EX_C = pic("c11", mo(B, MotionType.PRO, SO_, W, CW, IN, IN), mo(R, MotionType.ANTI, N, E, CCW, IN, OUT));
   const EX_S = pic("s8", mo(B, MotionType.PRO, SO_, W, CW, IN, IN), mo(R, MotionType.PRO, E, SO_, CW, IN, IN));
@@ -255,8 +255,8 @@
       <PictographContainer
         pictographData={c.data}
         gridMode={GridMode.DIAMOND}
-        bluePropTypeOverride={PropType.STAFF}
-        redPropTypeOverride={PropType.STAFF}
+        leftPropTypeOverride={PropType.STAFF}
+        rightPropTypeOverride={PropType.STAFF}
         showGrid={true}
         showTKA={false}
         showPositions={false}
@@ -283,8 +283,8 @@
     <PictographContainer
       pictographData={EX_A}
       gridMode={GridMode.DIAMOND}
-      bluePropTypeOverride={PropType.STAFF}
-      redPropTypeOverride={PropType.STAFF}
+      leftPropTypeOverride={PropType.STAFF}
+      rightPropTypeOverride={PropType.STAFF}
       showGrid={true}
       showTKA={false}
       showPositions={false}

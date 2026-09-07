@@ -96,17 +96,17 @@
             <span class="motion-dot" aria-hidden="true"></span>
             <span class="motion-line" aria-hidden="true"></span>
             <span class="motion-location"
-              >{beat.blueLocation.toUpperCase()}</span
+              >{beat.leftLocation.toUpperCase()}</span
             >
-            <span class="motion-orientation">{beat.blueOrientation}</span>
+            <span class="motion-orientation">{beat.leftOrientation}</span>
           </span>
 
           <span class="motion-row red">
             <span class="motion-dot" aria-hidden="true"></span>
             <span class="motion-line" aria-hidden="true"></span>
-            <span class="motion-location">{beat.redLocation.toUpperCase()}</span
+            <span class="motion-location">{beat.rightLocation.toUpperCase()}</span
             >
-            <span class="motion-orientation">{beat.redOrientation}</span>
+            <span class="motion-orientation">{beat.rightOrientation}</span>
           </span>
 
           <span class="turn-value">{beat.turns} turn</span>

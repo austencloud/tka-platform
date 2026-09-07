@@ -7,8 +7,16 @@
  * Set by CreateModule when it mounts, cleared when it unmounts.
  */
 
-import type { CreateModuleState, ConstructTabState } from "$lib/shared/create/state/create-module-state-types";
+import type {
+  CreateModuleState,
+  ConstructTabState,
+} from "$lib/shared/create/state/create-module-state-types";
 import type { createPanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
+import type {
+  SequenceTransformCommandId,
+  SequenceTransformCommandOptions,
+  SequenceTransformCommandResult,
+} from "$lib/shared/create/domain/sequence-action-types";
 
 type PanelCoordinationState = ReturnType<typeof createPanelCoordinationState>;
 
@@ -16,6 +24,10 @@ interface CreateModuleGlobalRef {
   CreateModuleState: CreateModuleState;
   constructTabState: ConstructTabState;
   panelState: PanelCoordinationState;
+  executeSequenceAction(
+    action: SequenceTransformCommandId,
+    options: SequenceTransformCommandOptions
+  ): Promise<SequenceTransformCommandResult>;
   /**
    * Module-owned clear-sequence flow: confirmation dialog (unless opted out),
    * undo snapshot, back to the start-position picker. Deleting the start
@@ -31,7 +43,7 @@ export function setCreateModuleStateRef(ref: CreateModuleGlobalRef | null) {
 }
 
 export function getCreateModuleStateRef(): CreateModuleState | null {
-  return createModuleRef!.CreateModuleState ?? null;
+  return createModuleRef?.CreateModuleState ?? null;
 }
 
 export function getCreateModuleRef(): CreateModuleGlobalRef | null {

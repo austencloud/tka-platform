@@ -55,8 +55,8 @@ function csvRowToPictographData(row, index) {
     endPosition: row.endPosition,
     gridMode: "DIAMOND",
     motions: {
-      blue: buildMotion("blue"),
-      red: buildMotion("red"),
+      left: buildMotion("blue"),
+      right: buildMotion("red"),
     },
   };
 }

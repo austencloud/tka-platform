@@ -72,8 +72,8 @@ interface RenderSizingPort {
 export interface ChoreoCardRenderDeps {
   readonly sequence: SequenceData;
   readonly renderOptions: PreviewCellRenderOptions;
-  readonly bluePropType: PropType | undefined;
-  readonly redPropType: PropType | undefined;
+  readonly leftPropType: PropType | undefined;
+  readonly rightPropType: PropType | undefined;
   readonly browseViewMode: BrowseViewMode | undefined;
   readonly showStepNumbers: boolean;
   readonly includeStartPosition: boolean;

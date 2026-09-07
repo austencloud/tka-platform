@@ -3,14 +3,14 @@ import { PictographPreparer } from "$lib/shared/pictograph/shared/services/picto
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-function staticMotion(color: MotionColor) {
+function staticMotion(color: HandSide) {
   return createMotionData({
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
@@ -19,7 +19,7 @@ function staticMotion(color: MotionColor) {
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
     turns: 0,
-    color,
+    hand: color,
   });
 }
 
@@ -66,21 +66,21 @@ describe("PictographPreparer presentation visibility", () => {
     const pictograph: PictographData = {
       id: "masked-pair",
       motions: {
-        blue: staticMotion(MotionColor.BLUE),
-        red: staticMotion(MotionColor.RED),
+        left: staticMotion(HandSide.LEFT),
+        right: staticMotion(HandSide.RIGHT),
       },
     };
 
     const prepared = await preparer.prepareSingle(pictograph, {
-      showBlueMotion: true,
-      showRedMotion: false,
+      showLeftMotion: true,
+      showRightMotion: false,
     });
 
-    expect(arrowInput?.motions.blue).toBeDefined();
-    expect(arrowInput?.motions.red).toBeUndefined();
+    expect(arrowInput?.motions.left).toBeDefined();
+    expect(arrowInput?.motions.right).toBeUndefined();
     expect(arrowSoloMode).toBe(true);
     expect(Object.keys(prepared._prepared?.propPositions ?? {})).toEqual([
-      "blue",
+      "left",
     ]);
   });
 });

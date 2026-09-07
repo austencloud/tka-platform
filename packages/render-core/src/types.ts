@@ -69,8 +69,8 @@ export type Orientation =
 /** Rotation directions */
 export type RotationDirection = "cw" | "ccw" | "no_rot";
 
-/** Prop colors */
-export type PropColor = "blue" | "red";
+/** Performer-relative hand identity */
+export type HandSide = "left" | "right";
 
 
 /** 2D coordinates */

@@ -68,10 +68,10 @@ export interface UserAuthData {
   adminMetadata: AdminMetadata;
 }
 
-interface AdminMetadata {
+type AdminMetadata = {
   adminLabel: string | null;
   adminNotes: string | null;
-}
+};
 
 type Mutation =
   | { action: "role"; role: UserRole }

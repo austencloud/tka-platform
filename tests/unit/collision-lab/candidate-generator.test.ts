@@ -44,17 +44,17 @@ function makeSetup() {
 function crossPlanePose(): { pose: PoseDefinition; input: OptimizerInput } {
   const pose: PoseDefinition = {
     id: "test-wNi-fNi",
-    blueHand: { plane: Plane.WALL, position: "N", orientation: "in" },
-    redHand: { plane: Plane.FLOOR, position: "N", orientation: "in" },
+    leftHand: { plane: Plane.WALL, position: "N", orientation: "in" },
+    rightHand: { plane: Plane.FLOOR, position: "N", orientation: "in" },
   };
   const input: OptimizerInput = {
-    blue: {
+    left: {
       gripWorld: new Vector3(-0.1, 0.45, 0.25),
       tipAWorld: new Vector3(-0.1, 0.02, 0.25),
       tipBWorld: new Vector3(-0.1, 0.88, 0.25),
       radius: 0.012,
     },
-    red: {
+    right: {
       gripWorld: new Vector3(0.1, 0.0, 0.4),
       tipAWorld: new Vector3(0.1, 0.0, 0.83),
       tipBWorld: new Vector3(0.1, 0.0, -0.03),
@@ -132,8 +132,8 @@ describe("CandidateGenerator.generateDiverse", () => {
     const set = generator.generateDiverse(pose, input, BOUNDS);
 
     const centroid = {
-      x: (input.blue.gripWorld.x + input.red.gripWorld.x) / 2,
-      z: (input.blue.gripWorld.z + input.red.gripWorld.z) / 2,
+      x: (input.left.gripWorld.x + input.right.gripWorld.x) / 2,
+      z: (input.left.gripWorld.z + input.right.gripWorld.z) / 2,
     };
     const idealYaw = Math.atan2(-centroid.x, centroid.z);
     const tolerance = (30 * Math.PI) / 180;

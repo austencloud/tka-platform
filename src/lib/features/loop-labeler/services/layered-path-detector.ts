@@ -1,4 +1,9 @@
-import type { LayeredPathResult, HandPathCycle, ZoneCoverageAnalysis, PositionalCategory } from "./types";
+import type {
+  LayeredPathResult,
+  HandPathCycle,
+  ZoneCoverageAnalysis,
+  PositionalCategory,
+} from "./types";
 
 function getProperFactors(n: number): number[] {
   const factors: number[] = [];
@@ -64,17 +69,17 @@ function calculateCycleConfidence(
 }
 
 function calculateConfidence(
-  blueCycle: HandPathCycle | null,
-  redCycle: HandPathCycle | null
+  leftCycle: HandPathCycle | null,
+  rightCycle: HandPathCycle | null
 ): number {
-  if (!blueCycle && !redCycle) return 0;
+  if (!leftCycle && !rightCycle) return 0;
 
-  const blueConf = blueCycle?.confidence || 0;
-  const redConf = redCycle?.confidence || 0;
+  const leftConf = leftCycle?.confidence || 0;
+  const rightConf = rightCycle?.confidence || 0;
 
-  let confidence = (blueConf + redConf) / (blueCycle && redCycle ? 2 : 1);
+  let confidence = (leftConf + rightConf) / (leftCycle && rightCycle ? 2 : 1);
 
-  if (blueCycle && redCycle) {
+  if (leftCycle && rightCycle) {
     confidence += 0.1;
   }
 
@@ -82,8 +87,8 @@ function calculateConfidence(
 }
 
 function buildDescription(
-  blueCycle: HandPathCycle | null,
-  redCycle: HandPathCycle | null,
+  leftCycle: HandPathCycle | null,
+  rightCycle: HandPathCycle | null,
   rhythmType: "isorhythmic" | "polyrhythmic" | null,
   polyrhythmRatio: string | null,
   zoneCoverage: ZoneCoverageAnalysis | null
@@ -93,18 +98,18 @@ function buildDescription(
   if (rhythmType === "polyrhythmic" && polyrhythmRatio) {
     parts.push(`Polyrhythmic ${polyrhythmRatio}`);
   } else if (rhythmType === "isorhythmic") {
-    const cycleLen = blueCycle?.cycleLength || redCycle?.cycleLength;
+    const cycleLen = leftCycle?.cycleLength || rightCycle?.cycleLength;
     parts.push(`Isorhythmic (${cycleLen}:${cycleLen})`);
   }
 
-  if (blueCycle) {
+  if (leftCycle) {
     parts.push(
-      `Blue: ${blueCycle.cycleLength}-beat cycle × ${blueCycle.repeatCount}`
+      `Left: ${leftCycle.cycleLength}-beat cycle × ${leftCycle.repeatCount}`
     );
   }
-  if (redCycle) {
+  if (rightCycle) {
     parts.push(
-      `Red: ${redCycle.cycleLength}-beat cycle × ${redCycle.repeatCount}`
+      `Right: ${rightCycle.cycleLength}-beat cycle × ${rightCycle.repeatCount}`
     );
   }
 
@@ -120,8 +125,8 @@ function buildDescription(
 function noLayeredPathResult(reason: string): LayeredPathResult {
   return {
     isLayeredPath: false,
-    blueCycle: null,
-    redCycle: null,
+    leftCycle: null,
+    rightCycle: null,
     rhythmType: null,
     polyrhythmRatio: null,
     zoneCoverage: null,
@@ -130,7 +135,9 @@ function noLayeredPathResult(reason: string): LayeredPathResult {
   };
 }
 
-export function detectLayeredPath(rawSequence: Record<string, unknown>[]): LayeredPathResult {
+export function detectLayeredPath(
+  rawSequence: Record<string, unknown>[]
+): LayeredPathResult {
   const stepRecords = rawSequence.filter(
     (item) => typeof item.beat === "number" && item.beat > 0
   );
@@ -138,50 +145,48 @@ export function detectLayeredPath(rawSequence: Record<string, unknown>[]): Layer
   const length = stepRecords.length;
 
   if (length < 4) {
-    return noLayeredPathResult(
-      "Sequence too short for layered path analysis"
-    );
+    return noLayeredPathResult("Sequence too short for layered path analysis");
   }
 
-  const blueCycle = analyzeHandPath(rawSequence, "blue");
-  const redCycle = analyzeHandPath(rawSequence, "red");
+  const leftCycle = analyzeHandPath(rawSequence, "left");
+  const rightCycle = analyzeHandPath(rawSequence, "right");
 
-  if (!blueCycle && !redCycle) {
+  if (!leftCycle && !rightCycle) {
     return noLayeredPathResult("No hand path cycles detected");
   }
 
   let rhythmType: "isorhythmic" | "polyrhythmic" | null = null;
   let polyrhythmRatio: string | null = null;
 
-  if (blueCycle && redCycle) {
-    if (blueCycle.cycleLength === redCycle.cycleLength) {
+  if (leftCycle && rightCycle) {
+    if (leftCycle.cycleLength === rightCycle.cycleLength) {
       rhythmType = "isorhythmic";
     } else {
       rhythmType = "polyrhythmic";
-      const smaller = Math.min(blueCycle.cycleLength, redCycle.cycleLength);
-      const larger = Math.max(blueCycle.cycleLength, redCycle.cycleLength);
+      const smaller = Math.min(leftCycle.cycleLength, rightCycle.cycleLength);
+      const larger = Math.max(leftCycle.cycleLength, rightCycle.cycleLength);
       polyrhythmRatio = `${smaller}:${larger}`;
     }
-  } else if (blueCycle || redCycle) {
+  } else if (leftCycle || rightCycle) {
     rhythmType = "isorhythmic";
   }
 
   const zoneCoverage = analyzeZoneCoverage(rawSequence);
 
   const description = buildDescription(
-    blueCycle,
-    redCycle,
+    leftCycle,
+    rightCycle,
     rhythmType,
     polyrhythmRatio,
     zoneCoverage
   );
 
-  const confidence = calculateConfidence(blueCycle, redCycle);
+  const confidence = calculateConfidence(leftCycle, rightCycle);
 
   return {
     isLayeredPath: true,
-    blueCycle,
-    redCycle,
+    leftCycle,
+    rightCycle,
     rhythmType,
     polyrhythmRatio,
     zoneCoverage,
@@ -192,7 +197,7 @@ export function detectLayeredPath(rawSequence: Record<string, unknown>[]): Layer
 
 export function analyzeHandPath(
   rawSequence: Record<string, unknown>[],
-  hand: "blue" | "red"
+  hand: "left" | "right"
 ): HandPathCycle | null {
   const stepRecords = rawSequence.filter(
     (item) => typeof item.beat === "number" && item.beat > 0
@@ -200,10 +205,11 @@ export function analyzeHandPath(
 
   if (stepRecords.length < 4) return null;
 
-  const attrKey = hand === "blue" ? "blueAttributes" : "redAttributes";
-
   const pathData = stepRecords.map((step) => {
-    const attrs = (step[attrKey] as Record<string, unknown>) || {};
+    const currentKey = hand === "left" ? "leftAttributes" : "rightAttributes";
+    const legacyKey = hand === "left" ? "blueAttributes" : "redAttributes";
+    const attrs =
+      ((step[currentKey] ?? step[legacyKey]) as Record<string, unknown>) || {};
     return {
       startLoc: (attrs.startLoc as string) || "unknown",
       endLoc: (attrs.endLoc as string) || "unknown",
@@ -339,8 +345,7 @@ export function analyzeZoneCoverage(
     summary =
       "Perfect Latin Square: each half has exactly one of each positional category";
   } else if (hasCompleteCoverage) {
-    summary =
-      "Complete coverage: each half visits all 4 positional categories";
+    summary = "Complete coverage: each half visits all 4 positional categories";
   } else {
     const missingFirst = Object.entries(firstHalf)
       .filter(([, count]) => count === 0)

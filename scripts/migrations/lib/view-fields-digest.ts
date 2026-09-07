@@ -18,7 +18,7 @@
  */
 import type { StepData } from "../../../src/lib/shared/foundation/domain/models/step-data";
 import type { MotionData } from "../../../src/lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 function motionRiskFields(m: MotionData | undefined): Record<string, unknown> | null {
   if (!m) return null;
@@ -40,8 +40,8 @@ function motionRiskFields(m: MotionData | undefined): Record<string, unknown> | 
 export function viewFieldsDigest(steps: readonly StepData[]): string {
   return JSON.stringify(
     steps.map((s) => ({
-      b: motionRiskFields(s.motions[MotionColor.BLUE]),
-      r: motionRiskFields(s.motions[MotionColor.RED]),
+      b: motionRiskFields(s.motions[HandSide.LEFT]),
+      r: motionRiskFields(s.motions[HandSide.RIGHT]),
     }))
   );
 }
@@ -62,7 +62,7 @@ export interface RiskFieldCoverage {
 export function riskFieldCoverage(allSteps: readonly StepData[]): RiskFieldCoverage {
   const cov: RiskFieldCoverage = { handPath: 0, skew: 0, pathShape: 0, float: 0, prefloat: 0 };
   for (const s of allSteps) {
-    for (const color of [MotionColor.BLUE, MotionColor.RED]) {
+    for (const color of [HandSide.LEFT, HandSide.RIGHT]) {
       const m = s.motions[color];
       if (!m) continue;
       if (m.handPath != null) cov.handPath++;

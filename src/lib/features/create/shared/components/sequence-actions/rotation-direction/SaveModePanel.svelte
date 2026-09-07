@@ -36,27 +36,27 @@
         {#each sequence.steps as beat, i}
           <!-- Invisible placeholder = hand not really there: null (no-motion
                display state), never "none" (motion present, no rotation). -->
-          {@const blueMotion = isVisibleMotion(beat.motions?.blue)
-            ? beat.motions.blue
+          {@const leftMotion = isVisibleMotion(beat.motions?.left)
+            ? beat.motions.left
             : null}
-          {@const redMotion = isVisibleMotion(beat.motions?.red)
-            ? beat.motions.red
+          {@const rightMotion = isVisibleMotion(beat.motions?.right)
+            ? beat.motions.right
             : null}
-          {@const blueRotation = formatRotationValue(
-            blueMotion?.rotationDirection === "cw"
+          {@const leftRotation = formatRotationValue(
+            leftMotion?.rotationDirection === "cw"
               ? "cw"
-              : blueMotion?.rotationDirection === "ccw"
+              : leftMotion?.rotationDirection === "ccw"
                 ? "ccw"
-                : blueMotion
+                : leftMotion
                   ? "none"
                   : null
           )}
-          {@const redRotation = formatRotationValue(
-            redMotion?.rotationDirection === "cw"
+          {@const rightRotation = formatRotationValue(
+            rightMotion?.rotationDirection === "cw"
               ? "cw"
-              : redMotion?.rotationDirection === "ccw"
+              : rightMotion?.rotationDirection === "ccw"
                 ? "ccw"
-                : redMotion
+                : rightMotion
                   ? "none"
                   : null
           )}
@@ -65,16 +65,16 @@
             <div class="rotation-pair">
               <span
                 class="rotation-value {getRotationColorClass(
-                  blueRotation
+                  leftRotation
                 )} blue"
               >
-                {blueRotation}
+                {leftRotation}
               </span>
               <span class="separator">|</span>
               <span
-                class="rotation-value {getRotationColorClass(redRotation)} red"
+                class="rotation-value {getRotationColorClass(rightRotation)} red"
               >
-                {redRotation}
+                {rightRotation}
               </span>
             </div>
           </div>

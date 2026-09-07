@@ -6,25 +6,25 @@ import {
   stepToReversalSymbol,
 } from "$lib/features/choreo-card/domain/reversal-matcher";
 
-type StepLite = { blueReversal: boolean; redReversal: boolean };
+type StepLite = { leftReversal: boolean; rightReversal: boolean };
 
 function mk(symbols: string): StepLite[] {
   return [...symbols].map((s) => {
     switch (s) {
-      case "P": return { blueReversal: true, redReversal: true };
-      case "R": return { blueReversal: false, redReversal: true };
-      case "B": return { blueReversal: true, redReversal: false };
-      default:  return { blueReversal: false, redReversal: false };
+      case "P": return { leftReversal: true, rightReversal: true };
+      case "R": return { leftReversal: false, rightReversal: true };
+      case "B": return { leftReversal: true, rightReversal: false };
+      default:  return { leftReversal: false, rightReversal: false };
     }
   });
 }
 
 describe("stepToReversalSymbol", () => {
   it("maps all four symbol states", () => {
-    expect(stepToReversalSymbol({ blueReversal: false, redReversal: false })).toBe("-");
-    expect(stepToReversalSymbol({ blueReversal: true, redReversal: true })).toBe("P");
-    expect(stepToReversalSymbol({ blueReversal: false, redReversal: true })).toBe("R");
-    expect(stepToReversalSymbol({ blueReversal: true, redReversal: false })).toBe("B");
+    expect(stepToReversalSymbol({ leftReversal: false, rightReversal: false })).toBe("-");
+    expect(stepToReversalSymbol({ leftReversal: true, rightReversal: true })).toBe("P");
+    expect(stepToReversalSymbol({ leftReversal: false, rightReversal: true })).toBe("R");
+    expect(stepToReversalSymbol({ leftReversal: true, rightReversal: false })).toBe("B");
   });
 });
 

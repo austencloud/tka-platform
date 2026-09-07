@@ -13,51 +13,51 @@ export interface ReversalPositions {
 }
 
 export function calculateReversalPositions(
-  blueReversal: boolean,
-  redReversal: boolean,
+  leftReversal: boolean,
+  rightReversal: boolean,
   isDarkMode: boolean
 ): ReversalPositions {
-  if (!blueReversal && !redReversal) {
+  if (!leftReversal && !rightReversal) {
     return { dots: [] };
   }
 
-  const blueColor = isDarkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT;
-  const redColor = isDarkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT;
+  const leftColor = isDarkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT;
+  const rightColor = isDarkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT;
 
   const { X_POSITION, DOT_RADIUS, DOT_SPACING, CENTER_Y } = REVERSAL_INDICATOR;
 
   const dots: ReversalDotPosition[] = [];
 
-  if (blueReversal && redReversal) {
-    const redY = CENTER_Y - DOT_SPACING / 2; 
-    const blueY = CENTER_Y + DOT_SPACING / 2; 
+  if (leftReversal && rightReversal) {
+    const rightY = CENTER_Y - DOT_SPACING / 2; 
+    const leftY = CENTER_Y + DOT_SPACING / 2; 
 
     dots.push({
       cx: X_POSITION,
-      cy: redY,
+      cy: rightY,
       r: DOT_RADIUS,
-      color: redColor,
+      color: rightColor,
     });
 
     dots.push({
       cx: X_POSITION,
-      cy: blueY,
+      cy: leftY,
       r: DOT_RADIUS,
-      color: blueColor,
+      color: leftColor,
     });
-  } else if (blueReversal) {
+  } else if (leftReversal) {
     dots.push({
       cx: X_POSITION,
       cy: CENTER_Y,
       r: DOT_RADIUS,
-      color: blueColor,
+      color: leftColor,
     });
-  } else if (redReversal) {
+  } else if (rightReversal) {
     dots.push({
       cx: X_POSITION,
       cy: CENTER_Y,
       r: DOT_RADIUS,
-      color: redColor,
+      color: rightColor,
     });
   }
 
@@ -65,11 +65,11 @@ export function calculateReversalPositions(
 }
 
 export function getReversalColors(isDarkMode: boolean): {
-  blue: string;
-  red: string;
+  left: string;
+  right: string;
 } {
   return {
-    blue: isDarkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT,
-    red: isDarkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT,
+    left: isDarkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT,
+    right: isDarkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT,
   };
 }

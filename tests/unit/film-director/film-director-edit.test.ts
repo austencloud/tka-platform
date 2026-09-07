@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyPerformerEdit,
+  applySceneEdit,
+  MAX_CAMERA_MOVES,
   PerformerEditError,
+  SceneEditError,
 } from "../../../src/routes/test/film-director/_lib/film-director-edit";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import type { FilmDirectorInput } from "../../../src/routes/test/film-director/_lib/film-director-schema";
@@ -228,5 +231,179 @@ describe("rejected edits", () => {
         value: "fan",
       })
     ).toThrow(PerformerEditError);
+  });
+});
+
+describe("applySceneEdit", () => {
+  function sceneFilm(scene: Record<string, unknown>): FilmDirectorInput {
+    return {
+      version: 5,
+      id: "scene-edit-film",
+      title: "Scene Edit Film",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { bpm: 120, formation: "side-by-side", cast: { count: 2 } },
+          ...scene,
+        },
+      ],
+    } as unknown as FilmDirectorInput;
+  }
+
+  function cameraOf(input: FilmDirectorInput): Record<string, unknown> {
+    return (input.scenes[0] as unknown as { camera?: Record<string, unknown> })
+      .camera as Record<string, unknown>;
+  }
+
+  it("appends a move to a camera that has none", () => {
+    const input = sceneFilm({});
+    const next = applySceneEdit(input, {
+      sceneId: "s1",
+      kind: "append-camera-move",
+      move: { move: "orbit", direction: "cw" },
+    });
+    expect(cameraOf(next).moves).toEqual([{ move: "orbit", direction: "cw" }]);
+  });
+
+  it("appends to the end of an existing run", () => {
+    const input = sceneFilm({ camera: { moves: [{ move: "hold" }] } });
+    const next = applySceneEdit(input, {
+      sceneId: "s1",
+      kind: "append-camera-move",
+      move: { move: "push-in" },
+    });
+    expect(cameraOf(next).moves).toEqual([
+      { move: "hold" },
+      { move: "push-in" },
+    ]);
+  });
+
+  it("leaves the caller's document untouched", () => {
+    const input = sceneFilm({ camera: { moves: [{ move: "hold" }] } });
+    applySceneEdit(input, {
+      sceneId: "s1",
+      kind: "append-camera-move",
+      move: { move: "push-in" },
+    });
+    expect(cameraOf(input).moves).toEqual([{ move: "hold" }]);
+  });
+
+  it("removes a move by position", () => {
+    const input = sceneFilm({
+      camera: { moves: [{ move: "hold" }, { move: "push-in" }] },
+    });
+    const next = applySceneEdit(input, {
+      sceneId: "s1",
+      kind: "remove-camera-move",
+      index: 0,
+    });
+    expect(cameraOf(next).moves).toEqual([{ move: "push-in" }]);
+  });
+
+  it("drops the moves field entirely when the last move goes", () => {
+    // An empty `moves` array fails the schema's own min(1), so removal has to
+    // take the field away rather than leave it empty.
+    const input = sceneFilm({ camera: { moves: [{ move: "hold" }] } });
+    const next = applySceneEdit(input, {
+      sceneId: "s1",
+      kind: "remove-camera-move",
+      index: 0,
+    });
+    expect(cameraOf(next)).not.toHaveProperty("moves");
+  });
+
+  it("sets the formation and the environment", () => {
+    const withFormation = applySceneEdit(sceneFilm({}), {
+      sceneId: "s1",
+      kind: "formation",
+      value: "circle",
+    });
+    expect(
+      resolveFilmDirectorSpec(withFormation).scenes[0]!.performance.formation
+    ).toBe("circle");
+
+    const withEnvironment = applySceneEdit(sceneFilm({}), {
+      sceneId: "s1",
+      kind: "environment",
+      value: "ocean",
+    });
+    expect(
+      resolveFilmDirectorSpec(withEnvironment).scenes[0]!.location.environmentId
+    ).toBe("ocean");
+  });
+
+  it("rejects a move on a camera written as a preset", () => {
+    expect(() =>
+      applySceneEdit(sceneFilm({ camera: { preset: "hero-dolly-in" } }), {
+        sceneId: "s1",
+        kind: "append-camera-move",
+        move: { move: "hold" },
+      })
+    ).toThrow(/"hero-dolly-in" preset/);
+  });
+
+  it("rejects a move on a camera written as shots", () => {
+    expect(() =>
+      applySceneEdit(
+        sceneFilm({ camera: { shots: [{ shotSize: "wide" }] } }),
+        {
+          sceneId: "s1",
+          kind: "append-camera-move",
+          move: { move: "hold" },
+        }
+      )
+    ).toThrow(/run of shots/);
+  });
+
+  it("rejects a seventeenth move", () => {
+    const input = sceneFilm({
+      camera: {
+        moves: Array.from({ length: MAX_CAMERA_MOVES }, () => ({
+          move: "hold" as const,
+        })),
+      },
+    });
+    expect(() =>
+      applySceneEdit(input, {
+        sceneId: "s1",
+        kind: "append-camera-move",
+        move: { move: "hold" },
+      })
+    ).toThrow(SceneEditError);
+  });
+
+  it("rejects an unknown scene, formation, and environment", () => {
+    expect(() =>
+      applySceneEdit(sceneFilm({}), {
+        sceneId: "nope",
+        kind: "formation",
+        value: "circle",
+      })
+    ).toThrow(SceneEditError);
+    expect(() =>
+      applySceneEdit(sceneFilm({}), {
+        sceneId: "s1",
+        kind: "formation",
+        value: "conga-line",
+      })
+    ).toThrow(SceneEditError);
+    expect(() =>
+      applySceneEdit(sceneFilm({}), {
+        sceneId: "s1",
+        kind: "environment",
+        value: "lagoon",
+      })
+    ).toThrow(SceneEditError);
+  });
+
+  it("reports a removal of a move that is no longer there", () => {
+    expect(() =>
+      applySceneEdit(sceneFilm({}), {
+        sceneId: "s1",
+        kind: "remove-camera-move",
+        index: 0,
+      })
+    ).toThrow(/no longer on this camera/);
   });
 });

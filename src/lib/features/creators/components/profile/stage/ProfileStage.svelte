@@ -318,9 +318,9 @@
    */
   type ArtifactMandala = {
     steps: unknown[];
-    variant: "blue" | "red" | "both";
-    bluePropType?: string;
-    redPropType?: string;
+    variant: "left" | "right" | "both";
+    leftPropType?: string;
+    rightPropType?: string;
     pathShape?: "arc" | "linear" | "concave" | "hybrid";
   };
 
@@ -381,8 +381,8 @@
         mandala: {
           steps: r.steps ?? [],
           variant: r.variant ?? "both",
-          bluePropType: r.bluePropType,
-          redPropType: r.redPropType,
+          leftPropType: r.leftPropType,
+          rightPropType: r.rightPropType,
           pathShape: r.pathShape,
         },
       });

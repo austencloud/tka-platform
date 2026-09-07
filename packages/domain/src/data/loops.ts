@@ -37,8 +37,8 @@ export const LOOP_BASE_COMPONENTS: Record<LoopComponent, LoopBaseComponent> = {
     note: "Same concept as mirrored but along perpendicular axis",
   },
   swapped: {
-    description: "Blue and Red hands swap roles",
-    effect: "What blue hand did, red hand now does (and vice versa)",
+    description: "Left and right hands swap roles",
+    effect: "What the left hand did, the right hand now does (and vice versa)",
     note: "Changes body motion significantly",
   },
   inverted: {

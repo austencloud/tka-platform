@@ -12,31 +12,43 @@
 
 import { z } from "zod";
 import {
+  normalizeLegacySequence,
+  normalizeLegacyStep,
+} from "@tka/tka-types";
+import {
   GridMode,
   GridPositionGroup,
 } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import type { MotionDataSchema } from "../../pictograph/shared/domain/schemas/pictograph-schemas";
-import { PictographDataSchema } from "../../pictograph/shared/domain/schemas/pictograph-schemas";
+import {
+  PictographDataObjectSchema,
+  PictographDataSchema,
+} from "../../pictograph/shared/domain/schemas/pictograph-schemas";
 
 
 // Pictograph-specific schemas moved to pictograph/shared/domain/schemas/
 
 // STEP AND SEQUENCE SCHEMAS - The Main Targets
 
-export const StepDataSchema = PictographDataSchema.extend({
+const StepDataObjectSchema = PictographDataObjectSchema.extend({
   // Beat context properties
   stepNumber: z
     .number()
     .int()
     .nonnegative("Beat number must be non-negative (0 or positive)"),
   duration: z.number().positive("Duration must be positive").default(1.0),
-  blueReversal: z.boolean().default(false),
-  redReversal: z.boolean().default(false),
+  leftReversal: z.boolean().default(false),
+  rightReversal: z.boolean().default(false),
   isBlank: z.boolean().default(false),
 });
 
-export const SequenceDataSchema = z.object({
+export const StepDataSchema = z.preprocess(
+  normalizeLegacyStep,
+  StepDataObjectSchema
+);
+
+const SequenceDataObjectSchema = z.object({
   id: z
     .string()
     .min(1, "Sequence ID cannot be empty")
@@ -81,6 +93,11 @@ export const SequenceDataSchema = z.object({
     .default({} as Record<string, unknown>),
 });
 
+export const SequenceDataSchema = z.preprocess(
+  normalizeLegacySequence,
+  SequenceDataObjectSchema
+);
+
 // PNG IMPORT SCHEMAS - Second Target
 
 const PngMotionAttributesSchema = z.object({
@@ -93,23 +110,36 @@ const PngMotionAttributesSchema = z.object({
   turns: z.union([z.number(), z.literal("fl")]).optional(),
 });
 
-export const PngStepSchema = z.object({
-  // beat is optional - will be derived from array index if not present
-  beat: z
-    .number()
-    .int()
-    .nonnegative("PNG beat number must be non-negative (0 or positive)")
-    .optional(),
-  letter: z.string().min(1, "PNG letter cannot be empty"),
-  blue_attributes: PngMotionAttributesSchema.optional(), // snake_case to match PNG
-  red_attributes: PngMotionAttributesSchema.optional(), // snake_case to match PNG
-  // These fields are present in newer metadata format
-  start_pos: z.string().optional(),
-  end_pos: z.string().optional(),
-  timing: z.string().optional(),
-  direction: z.string().optional(),
-  sequence_start_position: z.string().optional(), // Marks start position entry
-});
+export const PngStepSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return value;
+    }
+    const record = value as Record<string, unknown>;
+    return {
+      ...record,
+      left_attributes: record.left_attributes ?? record.blue_attributes,
+      right_attributes: record.right_attributes ?? record.red_attributes,
+    };
+  },
+  z.object({
+    // beat is optional - will be derived from array index if not present
+    beat: z
+      .number()
+      .int()
+      .nonnegative("PNG beat number must be non-negative (0 or positive)")
+      .optional(),
+    letter: z.string().min(1, "PNG letter cannot be empty"),
+    left_attributes: PngMotionAttributesSchema.optional(),
+    right_attributes: PngMotionAttributesSchema.optional(),
+    // These fields are present in newer metadata format
+    start_pos: z.string().optional(),
+    end_pos: z.string().optional(),
+    timing: z.string().optional(),
+    direction: z.string().optional(),
+    sequence_start_position: z.string().optional(),
+  })
+);
 
 export const PngMetadataArraySchema = z.array(PngStepSchema);
 

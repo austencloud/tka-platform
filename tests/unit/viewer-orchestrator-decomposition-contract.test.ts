@@ -100,4 +100,33 @@ describe("sequence viewer orchestrator decomposition", () => {
       );
     }
   });
+
+  it("wires the seeded effects config to the visibility manager eagerly", () => {
+    // A full-state link can boot straight into the 3D pane, where no 2D
+    // CanvasSurface ever mounts — and CanvasSurface is otherwise the only
+    // assigner of `visibilityManager.effectsConfigState`. Viewer3DScene reads
+    // that field for its tip effect map, so without this eager assignment a
+    // seeded fx slice (e.g. sparkles) renders nowhere in 3D until an unrelated
+    // pane switch mounts a canvas.
+    const assignment =
+      "getAnimationVisibilityManager().effectsConfigState = effectsConfigState;";
+    expect(orchestrator).toContain(assignment);
+    // The assignment must precede fx slice registration so captures and the
+    // 3D bridge observe the same instance from the first frame.
+    expect(orchestrator.indexOf(assignment)).toBeLessThan(
+      orchestrator.indexOf('urlSession.registerSlice("fx"')
+    );
+  });
+
+  it("compares the fx own-link disk side from a plain snapshot, not a throwaway store", () => {
+    // `createEffectsConfigState(persisted, { persist: false })` registers the
+    // global "effects" undo domain and runs `migrateFromVmStorageOnce`, which a
+    // persist:true instance skips for a stored config. A legacy VM-storage
+    // entry would then make the two sides differ and turn the visitor's own
+    // reloaded link view-only, silently stopping persistence of their tweaks.
+    expect(orchestrator).toContain(
+      "captureFxSlice({ snapshot: () => persistedEffectsConfig })"
+    );
+    expect(orchestrator).not.toMatch(/createEffectsConfigState\(persistedEffectsConfig/);
+  });
 });

@@ -7,7 +7,7 @@
    *
    * Three 8-step LOOPs (Start + 2 rows of 4, real staff pictographs), one per
    * LOOP type, with the system's reversal indicators exactly where the prop
-   * rotation flips (`blueReversal`/`redReversal` - dots are prop-only):
+   * rotation flips (`leftReversal`/`rightReversal` - dots are prop-only):
    *   Mirrored - AABB then its horizontal-plane reflection (both hands flag R
    *   on step 5, where CW becomes CCW).
    *   Rotated  - DΨDΨDΨDΨ from β: each D+Ψ repetition ends 90° rotated
@@ -29,7 +29,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -61,7 +61,7 @@
   // rides the handpath, anti counter-rotates, dash/static none.
   const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
   type HandStep = { t: "pro" | "anti" | "dash" | "static"; from: GridLocation; to: GridLocation; so: Orientation };
-  const handMotion = (color: MotionColor, h: HandStep) => {
+  const handMotion = (color: HandSide, h: HandStep) => {
     const dir = HP_CW.has(`${h.from}-${h.to}`) ? CW : CCW;
     const type =
       h.t === "pro" ? MotionType.PRO : h.t === "anti" ? MotionType.ANTI : h.t === "dash" ? MotionType.DASH : MotionType.STATIC;
@@ -80,15 +80,15 @@
     });
   };
 
-  type Step = { letter: Letter; name: string; blue: HandStep; red: HandStep; bRev?: boolean; rRev?: boolean };
+  type Step = { letter: Letter; name: string; left: HandStep; right: HandStep; bRev?: boolean; rRev?: boolean };
   const hs = (t: HandStep["t"], from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ t, from, to, so });
 
   type LoopDef = {
     key: string;
     word: string;
     startLetter: Letter;
-    startBlue: GridLocation;
-    startRed: GridLocation;
+    startLeft: GridLocation;
+    startRight: GridLocation;
     startX: number;
     rowX: number;
     rowYs: [number, number];
@@ -101,20 +101,20 @@
       key: "loop-mirror",
       word: "AABB Mirrored",
       startLetter: Letter.ALPHA,
-      startBlue: W,
-      startRed: E,
+      startLeft: W,
+      startRight: E,
       startX: 217.7,
       rowX: 292.7,
       rowYs: [193, 268],
       steps: [
-        { letter: Letter.A, name: "A", blue: hs("pro", W, N), red: hs("pro", E, SO_) },
-        { letter: Letter.A, name: "A", blue: hs("pro", N, E), red: hs("pro", SO_, W) },
-        { letter: Letter.B, name: "B", blue: hs("anti", E, N), red: hs("anti", W, SO_) },
-        { letter: Letter.B, name: "B", blue: hs("anti", N, W, OUT), red: hs("anti", SO_, E, OUT) },
-        { letter: Letter.A, name: "A", blue: hs("pro", W, SO_), red: hs("pro", E, N), bRev: true, rRev: true },
-        { letter: Letter.A, name: "A", blue: hs("pro", SO_, E), red: hs("pro", N, W) },
-        { letter: Letter.B, name: "B", blue: hs("anti", E, SO_), red: hs("anti", W, N) },
-        { letter: Letter.B, name: "B", blue: hs("anti", SO_, W, OUT), red: hs("anti", N, E, OUT) },
+        { letter: Letter.A, name: "A", left: hs("pro", W, N), right: hs("pro", E, SO_) },
+        { letter: Letter.A, name: "A", left: hs("pro", N, E), right: hs("pro", SO_, W) },
+        { letter: Letter.B, name: "B", left: hs("anti", E, N), right: hs("anti", W, SO_) },
+        { letter: Letter.B, name: "B", left: hs("anti", N, W, OUT), right: hs("anti", SO_, E, OUT) },
+        { letter: Letter.A, name: "A", left: hs("pro", W, SO_), right: hs("pro", E, N), bRev: true, rRev: true },
+        { letter: Letter.A, name: "A", left: hs("pro", SO_, E), right: hs("pro", N, W) },
+        { letter: Letter.B, name: "B", left: hs("anti", E, SO_), right: hs("anti", W, N) },
+        { letter: Letter.B, name: "B", left: hs("anti", SO_, W, OUT), right: hs("anti", N, E, OUT) },
       ],
     },
     {
@@ -122,20 +122,20 @@
       key: "loop-rotate",
       word: "DΨDΨDΨDΨ Rotated",
       startLetter: Letter.BETA,
-      startBlue: SO_,
-      startRed: SO_,
+      startLeft: SO_,
+      startRight: SO_,
       startX: 9.6,
       rowX: 84.5,
       rowYs: [398.6, 473.6],
       steps: [
-        { letter: Letter.D, name: "D", blue: hs("pro", SO_, W), red: hs("pro", SO_, E) },
-        { letter: Letter.PSI, name: "Ψ", blue: hs("static", W, W), red: hs("dash", E, W) },
-        { letter: Letter.D, name: "D", blue: hs("pro", W, N), red: hs("pro", W, SO_, OUT) },
-        { letter: Letter.PSI, name: "Ψ", blue: hs("static", N, N), red: hs("dash", SO_, N, OUT) },
-        { letter: Letter.D, name: "D", blue: hs("pro", N, E), red: hs("pro", N, W) },
-        { letter: Letter.PSI, name: "Ψ", blue: hs("static", E, E), red: hs("dash", W, E) },
-        { letter: Letter.D, name: "D", blue: hs("pro", E, SO_), red: hs("pro", E, N, OUT) },
-        { letter: Letter.PSI, name: "Ψ", blue: hs("static", SO_, SO_), red: hs("dash", N, SO_, OUT) },
+        { letter: Letter.D, name: "D", left: hs("pro", SO_, W), right: hs("pro", SO_, E) },
+        { letter: Letter.PSI, name: "Ψ", left: hs("static", W, W), right: hs("dash", E, W) },
+        { letter: Letter.D, name: "D", left: hs("pro", W, N), right: hs("pro", W, SO_, OUT) },
+        { letter: Letter.PSI, name: "Ψ", left: hs("static", N, N), right: hs("dash", SO_, N, OUT) },
+        { letter: Letter.D, name: "D", left: hs("pro", N, E), right: hs("pro", N, W) },
+        { letter: Letter.PSI, name: "Ψ", left: hs("static", E, E), right: hs("dash", W, E) },
+        { letter: Letter.D, name: "D", left: hs("pro", E, SO_), right: hs("pro", E, N, OUT) },
+        { letter: Letter.PSI, name: "Ψ", left: hs("static", SO_, SO_), right: hs("dash", N, SO_, OUT) },
       ],
     },
     {
@@ -143,25 +143,25 @@
       key: "loop-swap",
       word: "Δ-TQZ- Swapped",
       startLetter: Letter.BETA,
-      startBlue: SO_,
-      startRed: SO_,
+      startLeft: SO_,
+      startRight: SO_,
       startX: 224.6,
       rowX: 299.5,
       rowYs: [619.4, 694.3],
       steps: [
-        { letter: Letter.DELTA_DASH, name: "Δ-", blue: hs("dash", SO_, N), red: hs("anti", SO_, E) },
-        { letter: Letter.T, name: "T", blue: hs("anti", N, W, OUT), red: hs("anti", E, N, OUT) },
-        { letter: Letter.Q, name: "Q", blue: hs("anti", W, N), red: hs("anti", N, W), bRev: true },
-        { letter: Letter.Z_DASH, name: "Z-", blue: hs("dash", N, SO_, OUT), red: hs("anti", W, SO_, OUT) },
-        { letter: Letter.DELTA_DASH, name: "Δ-", blue: hs("anti", SO_, E), red: hs("dash", SO_, N), bRev: true },
-        { letter: Letter.T, name: "T", blue: hs("anti", E, N, OUT), red: hs("anti", N, W, OUT) },
-        { letter: Letter.Q, name: "Q", blue: hs("anti", N, W), red: hs("anti", W, N), rRev: true },
-        { letter: Letter.Z_DASH, name: "Z-", blue: hs("anti", W, SO_, OUT), red: hs("dash", N, SO_, OUT) },
+        { letter: Letter.DELTA_DASH, name: "Δ-", left: hs("dash", SO_, N), right: hs("anti", SO_, E) },
+        { letter: Letter.T, name: "T", left: hs("anti", N, W, OUT), right: hs("anti", E, N, OUT) },
+        { letter: Letter.Q, name: "Q", left: hs("anti", W, N), right: hs("anti", N, W), bRev: true },
+        { letter: Letter.Z_DASH, name: "Z-", left: hs("dash", N, SO_, OUT), right: hs("anti", W, SO_, OUT) },
+        { letter: Letter.DELTA_DASH, name: "Δ-", left: hs("anti", SO_, E), right: hs("dash", SO_, N), bRev: true },
+        { letter: Letter.T, name: "T", left: hs("anti", E, N, OUT), right: hs("anti", N, W, OUT) },
+        { letter: Letter.Q, name: "Q", left: hs("anti", N, W), right: hs("anti", W, N), rRev: true },
+        { letter: Letter.Z_DASH, name: "Z-", left: hs("anti", W, SO_, OUT), right: hs("dash", N, SO_, OUT) },
       ],
     },
   ];
 
-  const stat = (color: MotionColor, loc: GridLocation) =>
+  const stat = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -179,14 +179,14 @@
       id: `${l.key}-${i + 1}`,
       letter: st.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(st.blue.from, st.red.from),
-      endPosition: getGridPositionFromLocations(st.blue.to, st.red.to),
+      startPosition: getGridPositionFromLocations(st.left.from, st.right.from),
+      endPosition: getGridPositionFromLocations(st.left.to, st.right.to),
       stepNumber: i + 1,
-      blueReversal: !!st.bRev,
-      redReversal: !!st.rRev,
+      leftReversal: !!st.bRev,
+      rightReversal: !!st.rRev,
       motions: {
-        blue: handMotion(MotionColor.BLUE, st.blue),
-        red: handMotion(MotionColor.RED, st.red),
+        left: handMotion(HandSide.LEFT, st.left),
+        right: handMotion(HandSide.RIGHT, st.right),
       },
     } as unknown as StepData;
   };
@@ -197,11 +197,11 @@
       letter: l.startLetter,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
-      endPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
+      startPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
+      endPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
       motions: {
-        blue: stat(MotionColor.BLUE, l.startBlue),
-        red: stat(MotionColor.RED, l.startRed),
+        left: stat(HandSide.LEFT, l.startLeft),
+        right: stat(HandSide.RIGHT, l.startRight),
       },
     }) as unknown as StepData;
 
@@ -326,8 +326,8 @@
         <PictographContainer
           pictographData={RESOLVED[l.key]![0]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           stepNumberOverride={true}
           {...PICTO_FLAGS}
         />
@@ -342,8 +342,8 @@
           <PictographContainer
             pictographData={sd}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

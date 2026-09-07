@@ -43,6 +43,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import ConfettiBurst from "$lib/shared/delight/components/ConfettiBurst.svelte";
   import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+  import { withViewTransition } from "./play/state/view-transition";
 
   type LearnMode = "concepts" | "play" | "tika" | "guide";
 
@@ -223,8 +224,8 @@ Navigation via bottom tabs (mobile-first UX pattern)
     if (routeConceptId) writeConceptUrl(undefined, "replace");
   }
 
-  // The URL is the durable owner of the open lesson. Local persistence only
-  // helps the bare course URL resume an interrupted lesson after a reload.
+  // Public lesson links own the destination. The catalog stays a catalog;
+  // the full app can still restore its interrupted lesson on entry.
   onMount(() => {
     // A public course URL always owns the Concepts mode, even if the full app
     // last persisted Play, TIKA, or Guide. Other Learn entry points keep their
@@ -235,7 +236,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
       navigationState.setLearnMode("concepts");
     }
 
-    syncConceptFromUrl(true);
+    syncConceptFromUrl(!publicCourse);
     const handlePopstate = () => syncConceptFromUrl(false);
     window.addEventListener("popstate", handlePopstate);
     return () => window.removeEventListener("popstate", handlePopstate);
@@ -244,6 +245,13 @@ Navigation via bottom tabs (mobile-first UX pattern)
   // Handle concept selection
   function handleConceptClick(concept: LearnConcept, conceptPlaceId?: string) {
     openConcept(concept, "push", conceptPlaceId ?? null);
+  }
+
+  function handleConceptContinue(
+    concept: LearnConcept,
+    conceptPlaceId: string | null
+  ) {
+    withViewTransition(() => openConcept(concept, "replace", conceptPlaceId));
   }
 
   // Handle back from detail view
@@ -291,6 +299,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
               <ConceptDetailView
                 concept={selectedConcept}
                 onClose={handleBackToPath}
+                onContinue={handleConceptContinue}
               />
             {/key}
           {:else}

@@ -31,13 +31,13 @@ export class SparkleRenderer3D {
   private readonly maxAge = new Float32Array(CAPACITY);
   private readonly size = new Float32Array(CAPACITY);
   private readonly gravity = new Float32Array(CAPACITY);
-  private readonly red = new Float32Array(CAPACITY);
+  private readonly right = new Float32Array(CAPACITY);
   private readonly green = new Float32Array(CAPACITY);
-  private readonly blue = new Float32Array(CAPACITY);
+  private readonly left = new Float32Array(CAPACITY);
   private readonly rainbow = new Uint8Array(CAPACITY);
   private readonly hueOffset = new Float32Array(CAPACITY);
   private readonly accumulators = new Map<number, number>();
-  private readonly color: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly color: MutableRgb = { right: 1, green: 1, left: 1 };
   private readonly writeState: ParticleInstanceWrite = {
     x: 0,
     y: 0,
@@ -45,9 +45,9 @@ export class SparkleRenderer3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
   };
   private cursor = 0;
@@ -85,9 +85,9 @@ export class SparkleRenderer3D {
           0.6
         );
       } else {
-        this.color.red = this.red[index]!;
+        this.color.right = this.right[index]!;
         this.color.green = this.green[index]!;
-        this.color.blue = this.blue[index]!;
+        this.color.left = this.left[index]!;
       }
 
       const write = this.writeState;
@@ -97,9 +97,9 @@ export class SparkleRenderer3D {
       write.scaleX = radius;
       write.scaleY = radius;
       write.scaleZ = radius;
-      write.red = this.color.red;
+      write.right = this.color.right;
       write.green = this.color.green;
-      write.blue = this.color.blue;
+      write.left = this.color.left;
       write.alpha = 0.8 * (1 - life);
       this.pool.write(write);
     }
@@ -154,9 +154,9 @@ export class SparkleRenderer3D {
           ? params.palette[Math.floor(Math.random() * params.palette.length)]!
           : params.color;
       setRgbFromHex(this.color, paletteColor);
-      this.red[slot] = this.color.red;
+      this.right[slot] = this.color.right;
       this.green[slot] = this.color.green;
-      this.blue[slot] = this.color.blue;
+      this.left[slot] = this.color.left;
       accumulator -= 1;
     }
     this.accumulators.set(source.sourceId, accumulator);

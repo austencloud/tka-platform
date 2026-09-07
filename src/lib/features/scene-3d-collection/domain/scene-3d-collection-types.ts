@@ -6,6 +6,8 @@ import {
   normalizeSceneEnvironmentId,
   type SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
+import { normalizeLegacyScene3DSnapshot } from "$lib/shared/3d/state/legacy-viewer-3d-snapshots";
+import type { CameraKeyframe } from "$lib/shared/video-export/domain/camera-keyframe";
 
 /**
  * A reproducible snapshot of the 3D viewer configuration. Aggregates the four
@@ -37,14 +39,15 @@ export interface Scene3DSnapshot {
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
   selectedPerformerIndex: number | null;
+  selectedPerformerIndices?: number[];
   activeFormation: string;
   propSizeLinked: boolean;
   defaultSettings: {
     prop: string;
     effortId: string;
     planeMode: string;
-    customBluePlane: string;
-    customRedPlane: string;
+    customLeftPlane: string;
+    customRightPlane: string;
   };
   visiblePlanes: string[];
   showGridLabels: boolean;
@@ -54,7 +57,7 @@ export interface Scene3DSnapshot {
   stageGroundOffset: number;
   effectToggles: Record<string, boolean>;
   sceneFeatures: Record<string, boolean>;
-  props: { bluePropType?: string; redPropType?: string };
+  props: { leftPropType?: string; rightPropType?: string };
   /** Playback tempo at save time. Absent when the playback seam was
    *  unavailable (v1 snapshots, or capture outside the viewer). */
   bpm?: number;
@@ -73,11 +76,39 @@ export interface StoredPerformerSettings {
 export interface StoredPerformerSnapshot {
   position: { x: number; z: number };
   facingAngle: number;
-  customBluePlane: string;
-  customRedPlane: string;
+  customLeftPlane: string;
+  customRightPlane: string;
   name?: string | null;
   /** Absent = no overrides (v1 snapshots). */
   settings?: StoredPerformerSettings;
+}
+
+/** How the camera was driven while the film was recorded. */
+export type FilmCameraMode = "free" | "auto-orbit";
+
+/** The render settings the film was first rendered with. Pass 2 is
+ *  deterministic, so these plus the keyframes reproduce the same film later. */
+export interface Scene3DFilmRender {
+  fps: number;
+  resolution: number;
+  quality: "standard" | "cinema";
+  includeStartPosition: boolean;
+  includeEndHold: boolean;
+}
+
+/** The recorded camera performance saved alongside a scene. Having this means
+ *  a recording is never lost when the rendered video is dismissed: the film can
+ *  be re-rendered at any resolution from the recipe. */
+export interface Scene3DFilm {
+  version: 1;
+  recordedAt: number;
+  durationSeconds: number;
+  cameraMode: FilmCameraMode;
+  keyframes: CameraKeyframe[];
+  render: Scene3DFilmRender;
+  /** Written by the Stop hook without the user asking, so it may be pruned
+   *  when newer recordings arrive. Naming the entry clears this. */
+  autoSaved: boolean;
 }
 
 export interface Collected3DScene {
@@ -94,6 +125,9 @@ export interface Collected3DScene {
    *  its library id. Optional: old entries simply lack them. */
   sourceWord?: string;
   sourceSequenceId?: string;
+  /** Present → this entry also carries a recorded camera performance that can
+   *  be re-rendered into a video. */
+  film?: Scene3DFilm;
 }
 
 // External-enum fields (camera vectors, planes, formation, backgroundType) are
@@ -109,56 +143,65 @@ const StoredPerformerSettingsSchema = z.object({
 const StoredPerformerSnapshotSchema = z.object({
   position: z.object({ x: z.number(), z: z.number() }),
   facingAngle: z.number(),
-  customBluePlane: z.string(),
-  customRedPlane: z.string(),
+  customLeftPlane: z.string(),
+  customRightPlane: z.string(),
   name: z.string().nullable().optional(),
   settings: StoredPerformerSettingsSchema.optional(),
 });
 
 const GroupsSchema = z.record(z.enum(SCENE_3D_GROUPS), z.boolean());
 
-export const Scene3DSnapshotSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  scene: z
-    .object({
-      environmentId: z.string().optional(),
-      backgroundType: z.string().optional(),
-      oceanVariant: z.string(),
-    })
-    .refine(
-      (scene) => Boolean(scene.environmentId || scene.backgroundType),
-      "A saved 3D scene needs an environment identity"
-    ),
-  camera: z.any().nullable(),
-  performers: z.array(StoredPerformerSnapshotSchema),
-  selectedPerformerIndex: z.number().nullable(),
-  activeFormation: z.string(),
-  propSizeLinked: z.boolean(),
-  defaultSettings: z.object({
-    prop: z.string(),
-    effortId: z.string(),
-    planeMode: z.string(),
-    customBluePlane: z.string(),
-    customRedPlane: z.string(),
-  }),
-  visiblePlanes: z.array(z.string()),
-  showGridLabels: z.boolean(),
-  navMode: z.enum(["orbit", "fly", "walk"]),
-  activePreset: z.string().nullable(),
-  activeCameraPreset: z.string(),
-  stageGroundOffset: z.number(),
-  effectToggles: z.record(z.string(), z.boolean()),
-  sceneFeatures: z.record(z.string(), z.boolean()),
-  props: z.object({
-    bluePropType: z.string().optional(),
-    redPropType: z.string().optional(),
-  }),
-  bpm: z.number().optional(),
-  groups: GroupsSchema.optional(),
-});
+export const Scene3DSnapshotSchema = z.preprocess(
+  normalizeLegacyScene3DSnapshot,
+  z.object({
+    version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    scene: z
+      .object({
+        environmentId: z.string().optional(),
+        backgroundType: z.string().optional(),
+        oceanVariant: z.string(),
+      })
+      .refine(
+        (scene) => Boolean(scene.environmentId || scene.backgroundType),
+        "A saved 3D scene needs an environment identity"
+      ),
+    camera: z.any().nullable(),
+    performers: z.array(StoredPerformerSnapshotSchema),
+    selectedPerformerIndex: z.number().nullable(),
+    selectedPerformerIndices: z
+      .array(z.number().int().nonnegative())
+      .optional(),
+    activeFormation: z.string(),
+    propSizeLinked: z.boolean(),
+    defaultSettings: z.object({
+      prop: z.string(),
+      effortId: z.string(),
+      planeMode: z.string(),
+      customLeftPlane: z.string(),
+      customRightPlane: z.string(),
+    }),
+    visiblePlanes: z.array(z.string()),
+    showGridLabels: z.boolean(),
+    navMode: z.enum(["orbit", "fly", "walk"]),
+    activePreset: z.string().nullable(),
+    activeCameraPreset: z.string(),
+    stageGroundOffset: z.number(),
+    effectToggles: z.record(z.string(), z.boolean()),
+    sceneFeatures: z.record(z.string(), z.boolean()),
+    props: z.object({
+      leftPropType: z.string().optional(),
+      rightPropType: z.string().optional(),
+    }),
+    bpm: z.number().optional(),
+    groups: GroupsSchema.optional(),
+  })
+);
 
 /** Whether a group was saved. Absent mask (v1) = everything saved. */
-export function isGroupSaved(snapshot: Scene3DSnapshot, group: Scene3DGroupId): boolean {
+export function isGroupSaved(
+  snapshot: Scene3DSnapshot,
+  group: Scene3DGroupId
+): boolean {
   return snapshot.groups?.[group] ?? true;
 }
 
@@ -168,6 +211,35 @@ export function getScene3DEnvironmentId(
   return normalizeSceneEnvironmentId(
     snapshot.scene.environmentId ?? snapshot.scene.backgroundType
   );
+}
+
+const CameraKeyframeSchema = z.object({
+  timestamp: z.number(),
+  position: z.tuple([z.number(), z.number(), z.number()]),
+  quaternion: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+  fov: z.number(),
+});
+
+export const Scene3DFilmSchema = z.object({
+  version: z.literal(1),
+  recordedAt: z.number(),
+  durationSeconds: z.number(),
+  cameraMode: z.enum(["free", "auto-orbit"]),
+  // A film with no camera samples cannot be rendered, so it is not a film.
+  keyframes: z.array(CameraKeyframeSchema).min(1),
+  render: z.object({
+    fps: z.number(),
+    resolution: z.number(),
+    quality: z.enum(["standard", "cinema"]),
+    includeStartPosition: z.boolean(),
+    includeEndHold: z.boolean(),
+  }),
+  autoSaved: z.boolean(),
+});
+
+/** Whether this saved scene can be re-rendered into a video. */
+export function scene3DHasFilm(scene: Collected3DScene): boolean {
+  return (scene.film?.keyframes.length ?? 0) > 0;
 }
 
 export const Collected3DSceneSchema = z.object({
@@ -182,6 +254,7 @@ export const Collected3DSceneSchema = z.object({
   steps: z.array(StepDataSchema).optional(),
   sourceWord: z.string().optional(),
   sourceSequenceId: z.string().optional(),
+  film: Scene3DFilmSchema.optional(),
 });
 
 export const SCENE_3D_COLLECTION_STORAGE_KEY = "tka:scene-3d-collection";

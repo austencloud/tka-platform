@@ -14,8 +14,8 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { hashSoloProp } from "$lib/shared/foundation/services/content-hasher";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  extractLeftSoloProp,
+  extractRightSoloProp,
 } from "$lib/shared/foundation/services/sequence-decomposer";
 
 const SOLO = createSoloProp(
@@ -41,20 +41,20 @@ describe("soloPropToSequence", () => {
     const sequence = soloPropToSequence(SOLO, "left");
     expect(getSequenceMotionProfile(sequence)).toMatchObject({
       kind: "solo",
-      color: "blue",
+      hand: "left",
       authoredHand: "left",
     });
-    expect(hashSoloProp(extractBlueSoloProp(sequence))).toBe(SOLO.contentHash);
+    expect(hashSoloProp(extractLeftSoloProp(sequence))).toBe(SOLO.contentHash);
   });
 
   it("reassigns presentation to the right hand without changing content", () => {
     const sequence = soloPropToSequence(SOLO, "right");
     expect(getSequenceMotionProfile(sequence)).toMatchObject({
       kind: "solo",
-      color: "red",
+      hand: "right",
       authoredHand: "right",
     });
-    expect(hashSoloProp(extractRedSoloProp(sequence))).toBe(SOLO.contentHash);
+    expect(hashSoloProp(extractRightSoloProp(sequence))).toBe(SOLO.contentHash);
   });
 
   it("refuses a zero-step hand path instead of creating an empty card", () => {

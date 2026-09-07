@@ -119,11 +119,11 @@ describe("console transforms of the bound record", () => {
     });
     expect(swapped).toHaveLength(bound.length);
     // The roles trade places rather than both becoming one thing.
-    expect(swapped[0].motions.blue.motionType).toBe(
-      bound[0].motions.red.motionType
+    expect(swapped[0].motions.left.motionType).toBe(
+      bound[0].motions.right.motionType
     );
-    expect(swapped[0].motions.red.motionType).toBe(
-      bound[0].motions.blue.motionType
+    expect(swapped[0].motions.right.motionType).toBe(
+      bound[0].motions.left.motionType
     );
   });
 

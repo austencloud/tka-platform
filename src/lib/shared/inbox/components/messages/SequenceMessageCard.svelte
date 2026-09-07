@@ -157,6 +157,7 @@
 
       inboxState.close();
       openSequenceViewer(viewerSequence, {
+        source: "inbox_message",
         returnPath: window.location.pathname,
         returnLabel: "Messages",
       });

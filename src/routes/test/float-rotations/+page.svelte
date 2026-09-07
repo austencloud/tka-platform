@@ -11,7 +11,7 @@
     MotionType,
     RotationDirection,
     Orientation,
-    MotionColor,
+    HandSide,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -55,7 +55,8 @@
   function rotate(handpath: Handpath, loc: Loc, delta: number) {
     const key = cellKey(handpath, loc);
     const current = displayAngle(handpath, loc);
-    const next = (((Math.round((current + delta) / 45) * 45) % 360) + 360) % 360;
+    const next =
+      (((Math.round((current + delta) / 45) * 45) % 360) + 360) % 360;
     const base = mapRotation(handpath, loc);
     const nextPending = { ...pending };
     if (next === base) delete nextPending[key];
@@ -113,7 +114,8 @@
     function apply() {
       const arrow = node.querySelector<SVGGElement>(".red-arrow-svg");
       if (!arrow) return;
-      if ((arrow.style.transform || "").includes(`rotate(${current}deg)`)) return;
+      if ((arrow.style.transform || "").includes(`rotate(${current}deg)`))
+        return;
       const style = arrow.getAttribute("style") || "";
       const translate = style.match(/translate\([^)]*\)/)?.[0] ?? "";
       arrow.style.transform = `${translate} rotate(${current}deg)`;
@@ -150,8 +152,15 @@
   });
 
   const LOC_NAME: Record<Loc, string> = {
-    n: "N", e: "E", s: "S", w: "W",
-    ne: "NE", se: "SE", sw: "SW", nw: "NW", c: "C",
+    n: "N",
+    e: "E",
+    s: "S",
+    w: "W",
+    ne: "NE",
+    se: "SE",
+    sw: "SW",
+    nw: "NW",
+    c: "C",
   };
 
   interface FloatCase {
@@ -163,7 +172,7 @@
     prefloat: (typeof MotionType)[keyof typeof MotionType];
     gridMode: (typeof GridMode)[keyof typeof GridMode];
     /** Location for the neutral BLUE static hand (kept clear of the float). */
-    blueStatic: Loc;
+    leftStatic: Loc;
   }
 
   function buildFloat(c: FloatCase): PictographData {
@@ -174,7 +183,7 @@
       startPosition: null,
       endPosition: null,
       motions: {
-        [MotionColor.RED]: createMotionData({
+        [HandSide.RIGHT]: createMotionData({
           motionType: MotionType.FLOAT,
           turns: "fl",
           rotationDirection: RotationDirection.NO_ROTATION,
@@ -188,19 +197,19 @@
           arrowLocation: c.arrow,
           startOrientation: Orientation.IN,
           endOrientation: Orientation.IN,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
           gridMode: c.gridMode,
         }),
-        [MotionColor.BLUE]: createMotionData({
+        [HandSide.LEFT]: createMotionData({
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
-          startLocation: c.blueStatic,
-          endLocation: c.blueStatic,
-          arrowLocation: c.blueStatic,
+          startLocation: c.leftStatic,
+          endLocation: c.leftStatic,
+          arrowLocation: c.leftStatic,
           turns: 0,
           startOrientation: Orientation.IN,
           endOrientation: Orientation.IN,
-          color: MotionColor.BLUE,
+          hand: HandSide.LEFT,
           gridMode: c.gridMode,
         }),
       },
@@ -215,7 +224,7 @@
     startPosition: GridPosition.ALPHA3,
     endPosition: GridPosition.ALPHA1,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
         turns: 0.5,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -224,10 +233,10 @@
         arrowLocation: GridLocation.SOUTHWEST,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.COUNTER,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.DIAMOND,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.FLOAT,
         turns: "fl",
         rotationDirection: RotationDirection.NO_ROTATION,
@@ -238,7 +247,7 @@
         arrowLocation: GridLocation.NORTHEAST,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.CLOCK,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.DIAMOND,
       }),
     },
@@ -246,41 +255,192 @@
 
   // ── Section B: every DIAMOND cardinal-shift float ─────────────────────────
   const diamondCases: FloatCase[] = [
-    { id: "d-cw-ne", handpath: "cw", start: "n", end: "e", arrow: "ne", prefloat: MotionType.PRO, gridMode: GridMode.DIAMOND, blueStatic: "s" },
-    { id: "d-cw-se", handpath: "cw", start: "e", end: "s", arrow: "se", prefloat: MotionType.PRO, gridMode: GridMode.DIAMOND, blueStatic: "w" },
-    { id: "d-cw-sw", handpath: "cw", start: "s", end: "w", arrow: "sw", prefloat: MotionType.PRO, gridMode: GridMode.DIAMOND, blueStatic: "n" },
-    { id: "d-cw-nw", handpath: "cw", start: "w", end: "n", arrow: "nw", prefloat: MotionType.PRO, gridMode: GridMode.DIAMOND, blueStatic: "e" },
-    { id: "d-ccw-ne", handpath: "ccw", start: "e", end: "n", arrow: "ne", prefloat: MotionType.ANTI, gridMode: GridMode.DIAMOND, blueStatic: "s" },
-    { id: "d-ccw-se", handpath: "ccw", start: "s", end: "e", arrow: "se", prefloat: MotionType.ANTI, gridMode: GridMode.DIAMOND, blueStatic: "w" },
-    { id: "d-ccw-sw", handpath: "ccw", start: "w", end: "s", arrow: "sw", prefloat: MotionType.ANTI, gridMode: GridMode.DIAMOND, blueStatic: "n" },
-    { id: "d-ccw-nw", handpath: "ccw", start: "n", end: "w", arrow: "nw", prefloat: MotionType.ANTI, gridMode: GridMode.DIAMOND, blueStatic: "e" },
+    {
+      id: "d-cw-ne",
+      handpath: "cw",
+      start: "n",
+      end: "e",
+      arrow: "ne",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "s",
+    },
+    {
+      id: "d-cw-se",
+      handpath: "cw",
+      start: "e",
+      end: "s",
+      arrow: "se",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "w",
+    },
+    {
+      id: "d-cw-sw",
+      handpath: "cw",
+      start: "s",
+      end: "w",
+      arrow: "sw",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "n",
+    },
+    {
+      id: "d-cw-nw",
+      handpath: "cw",
+      start: "w",
+      end: "n",
+      arrow: "nw",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "e",
+    },
+    {
+      id: "d-ccw-ne",
+      handpath: "ccw",
+      start: "e",
+      end: "n",
+      arrow: "ne",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "s",
+    },
+    {
+      id: "d-ccw-se",
+      handpath: "ccw",
+      start: "s",
+      end: "e",
+      arrow: "se",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "w",
+    },
+    {
+      id: "d-ccw-sw",
+      handpath: "ccw",
+      start: "w",
+      end: "s",
+      arrow: "sw",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "n",
+    },
+    {
+      id: "d-ccw-nw",
+      handpath: "ccw",
+      start: "n",
+      end: "w",
+      arrow: "nw",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.DIAMOND,
+      leftStatic: "e",
+    },
   ];
 
   // ── Section C: every BOX intercardinal-shift float ────────────────────────
   const boxCases: FloatCase[] = [
-    { id: "b-cw-e", handpath: "cw", start: "ne", end: "se", arrow: "e", prefloat: MotionType.PRO, gridMode: GridMode.BOX, blueStatic: "sw" },
-    { id: "b-cw-s", handpath: "cw", start: "se", end: "sw", arrow: "s", prefloat: MotionType.PRO, gridMode: GridMode.BOX, blueStatic: "nw" },
-    { id: "b-cw-w", handpath: "cw", start: "sw", end: "nw", arrow: "w", prefloat: MotionType.PRO, gridMode: GridMode.BOX, blueStatic: "ne" },
-    { id: "b-cw-n", handpath: "cw", start: "nw", end: "ne", arrow: "n", prefloat: MotionType.PRO, gridMode: GridMode.BOX, blueStatic: "se" },
-    { id: "b-ccw-e", handpath: "ccw", start: "se", end: "ne", arrow: "e", prefloat: MotionType.ANTI, gridMode: GridMode.BOX, blueStatic: "sw" },
-    { id: "b-ccw-n", handpath: "ccw", start: "ne", end: "nw", arrow: "n", prefloat: MotionType.ANTI, gridMode: GridMode.BOX, blueStatic: "se" },
-    { id: "b-ccw-w", handpath: "ccw", start: "nw", end: "sw", arrow: "w", prefloat: MotionType.ANTI, gridMode: GridMode.BOX, blueStatic: "ne" },
-    { id: "b-ccw-s", handpath: "ccw", start: "sw", end: "se", arrow: "s", prefloat: MotionType.ANTI, gridMode: GridMode.BOX, blueStatic: "nw" },
+    {
+      id: "b-cw-e",
+      handpath: "cw",
+      start: "ne",
+      end: "se",
+      arrow: "e",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.BOX,
+      leftStatic: "sw",
+    },
+    {
+      id: "b-cw-s",
+      handpath: "cw",
+      start: "se",
+      end: "sw",
+      arrow: "s",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.BOX,
+      leftStatic: "nw",
+    },
+    {
+      id: "b-cw-w",
+      handpath: "cw",
+      start: "sw",
+      end: "nw",
+      arrow: "w",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.BOX,
+      leftStatic: "ne",
+    },
+    {
+      id: "b-cw-n",
+      handpath: "cw",
+      start: "nw",
+      end: "ne",
+      arrow: "n",
+      prefloat: MotionType.PRO,
+      gridMode: GridMode.BOX,
+      leftStatic: "se",
+    },
+    {
+      id: "b-ccw-e",
+      handpath: "ccw",
+      start: "se",
+      end: "ne",
+      arrow: "e",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.BOX,
+      leftStatic: "sw",
+    },
+    {
+      id: "b-ccw-n",
+      handpath: "ccw",
+      start: "ne",
+      end: "nw",
+      arrow: "n",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.BOX,
+      leftStatic: "se",
+    },
+    {
+      id: "b-ccw-w",
+      handpath: "ccw",
+      start: "nw",
+      end: "sw",
+      arrow: "w",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.BOX,
+      leftStatic: "ne",
+    },
+    {
+      id: "b-ccw-s",
+      handpath: "ccw",
+      start: "sw",
+      end: "se",
+      arrow: "s",
+      prefloat: MotionType.ANTI,
+      gridMode: GridMode.BOX,
+      leftStatic: "nw",
+    },
   ];
 
-  const diamondPictographs = diamondCases.map((c) => ({ c, data: buildFloat(c) }));
+  const diamondPictographs = diamondCases.map((c) => ({
+    c,
+    data: buildFloat(c),
+  }));
   const boxPictographs = boxCases.map((c) => ({ c, data: buildFloat(c) }));
 </script>
 
 {#snippet dial(handpath: Handpath, loc: Loc)}
-  <div class="dial" role="group" aria-label="Rotate {handpath} {LOC_NAME[loc]} float arrow">
+  <div
+    class="dial"
+    role="group"
+    aria-label="Rotate {handpath} {LOC_NAME[loc]} float arrow"
+  >
     <button
       class="step"
       disabled={saving}
       onclick={() => rotate(handpath, loc, -45)}
       aria-label="Rotate 45 degrees counter-clockwise"
-      title="−45° (counter-clockwise)"
-    >−45°</button>
+      title="−45° (counter-clockwise)">−45°</button
+    >
     <span class="angle" class:dirty={isDirty(handpath, loc)}>
       {displayAngle(handpath, loc)}°{isDirty(handpath, loc) ? " *" : ""}
     </span>
@@ -289,12 +449,14 @@
       disabled={saving}
       onclick={() => rotate(handpath, loc, 45)}
       aria-label="Rotate 45 degrees clockwise"
-      title="+45° (clockwise)"
-    >+45°</button>
+      title="+45° (clockwise)">+45°</button
+    >
   </div>
   <div class="cell-key">
     map cell <code>{handpath} · {LOC_NAME[loc]}</code>
-    {#if isDirty(handpath, loc)}<span class="was">was {mapRotation(handpath, loc)}°</span>{/if}
+    {#if isDirty(handpath, loc)}<span class="was"
+        >was {mapRotation(handpath, loc)}°</span
+      >{/if}
   </div>
 {/snippet}
 
@@ -303,8 +465,8 @@
     <h1>Float arrow rotations — live tuner</h1>
     <p>
       RED hand is the float under test; BLUE is a neutral static hand. Each dial
-      rotates the arrow by 45° and previews it live with no reload. Nothing is written until you press
-      Save all, which flushes every pending change into
+      rotates the arrow by 45° and previews it live with no reload. Nothing is
+      written until you press Save all, which flushes every pending change into
       <code>float-rotation-maps.ts</code> at once and reloads once. Each dial
       edits a canonical map cell
       <code>(handpath · arrow-location)</code>, so every float that shares that
@@ -318,17 +480,26 @@
       {#if status}
         <span class="msg">{status}</span>
       {:else if dirtyCount > 0}
-        <span class="msg">{dirtyCount} unsaved change{dirtyCount > 1 ? "s" : ""}</span>
+        <span class="msg"
+          >{dirtyCount} unsaved change{dirtyCount > 1 ? "s" : ""}</span
+        >
       {:else}
         <span class="msg idle">No unsaved changes</span>
       {/if}
     </div>
     <div class="savebar-actions">
-      <button class="btn ghost" disabled={saving || dirtyCount === 0} onclick={discardAll}
-        >Discard</button
+      <button
+        class="btn ghost"
+        disabled={saving || dirtyCount === 0}
+        onclick={discardAll}>Discard</button
       >
-      <button class="btn primary" disabled={saving || dirtyCount === 0} onclick={saveAll}
-        >{saving ? "Saving…" : `Save all${dirtyCount ? ` (${dirtyCount})` : ""}`}</button
+      <button
+        class="btn primary"
+        disabled={saving || dirtyCount === 0}
+        onclick={saveAll}
+        >{saving
+          ? "Saving…"
+          : `Save all${dirtyCount ? ` (${dirtyCount})` : ""}`}</button
       >
     </div>
   </div>
@@ -342,7 +513,10 @@
     <div class="grid">
       <div class="cell highlight">
         <div class="label">Letter B · diamond · beat 10</div>
-        <div class="pictograph-container" use:previewRotation={displayAngle("ccw", "ne")}>
+        <div
+          class="pictograph-container"
+          use:previewRotation={displayAngle("ccw", "ne")}
+        >
           <PictographContainer pictographData={reported} />
         </div>
         <div class="info">
@@ -363,11 +537,15 @@
           <div class="label">
             {c.handpath.toUpperCase()} handpath · arrow {LOC_NAME[c.arrow]}
           </div>
-          <div class="pictograph-container" use:previewRotation={displayAngle(c.handpath, c.arrow)}>
+          <div
+            class="pictograph-container"
+            use:previewRotation={displayAngle(c.handpath, c.arrow)}
+          >
             <PictographContainer pictographData={data} />
           </div>
           <div class="info">
-            <span class="red">RED float</span> {LOC_NAME[c.start]}→{LOC_NAME[c.end]}
+            <span class="red">RED float</span>
+            {LOC_NAME[c.start]}→{LOC_NAME[c.end]}
           </div>
           {@render dial(c.handpath, c.arrow)}
         </div>
@@ -377,18 +555,24 @@
 
   <section>
     <h2>Box floats — all 4 cardinal arrow locations × handpath</h2>
-    <p class="note">Intercardinal shifts (NE/SE/SW/NW → neighbor) in box mode.</p>
+    <p class="note">
+      Intercardinal shifts (NE/SE/SW/NW → neighbor) in box mode.
+    </p>
     <div class="grid">
       {#each boxPictographs as { c, data } (c.id)}
         <div class="cell">
           <div class="label">
             {c.handpath.toUpperCase()} handpath · arrow {LOC_NAME[c.arrow]}
           </div>
-          <div class="pictograph-container" use:previewRotation={displayAngle(c.handpath, c.arrow)}>
+          <div
+            class="pictograph-container"
+            use:previewRotation={displayAngle(c.handpath, c.arrow)}
+          >
             <PictographContainer pictographData={data} />
           </div>
           <div class="info">
-            <span class="red">RED float</span> {LOC_NAME[c.start]}→{LOC_NAME[c.end]}
+            <span class="red">RED float</span>
+            {LOC_NAME[c.start]}→{LOC_NAME[c.end]}
           </div>
           {@render dial(c.handpath, c.arrow)}
         </div>
@@ -464,7 +648,9 @@
     border: 1px solid rgba(255, 255, 255, 0.18);
     color: inherit;
     background: rgba(255, 255, 255, 0.07);
-    transition: background 0.12s ease, opacity 0.12s ease;
+    transition:
+      background 0.12s ease,
+      opacity 0.12s ease;
   }
   .btn.primary {
     background: #f2c14e;
@@ -550,7 +736,9 @@
     font-weight: 700;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition:
+      background 0.12s ease,
+      border-color 0.12s ease;
   }
   .step:hover:not(:disabled) {
     background: rgba(242, 193, 78, 0.18);

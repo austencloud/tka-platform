@@ -22,9 +22,33 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { Timestamp } from "firebase/firestore";
 import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
+import { normalizeLegacyHandSide } from "@tka/tka-types";
 
 const logger = createComponentLogger("PropGeometryAdjustmentRepository");
 const ADMIN_EMAIL = "austencloud@gmail.com";
+
+function normalizeArrowHand(value: string): string {
+  return normalizeLegacyHandSide(value) ?? value;
+}
+
+function normalizeKey(key: PropGeometryKey): PropGeometryKey {
+  return { ...key, arrowColor: normalizeArrowHand(key.arrowColor) };
+}
+
+function normalizeInput(
+  input: PropGeometryAdjustmentInput
+): PropGeometryAdjustmentInput {
+  return { ...input, arrowColor: normalizeArrowHand(input.arrowColor) };
+}
+
+function normalizeAdjustment(
+  adjustment: PropGeometryAdjustment
+): PropGeometryAdjustment {
+  return {
+    ...adjustment,
+    arrowColor: normalizeArrowHand(adjustment.arrowColor),
+  };
+}
 
 export class PropGeometryAdjustmentRepository {
   private readonly state: PropGeometryAdjustmentState;
@@ -53,27 +77,29 @@ export class PropGeometryAdjustmentRepository {
       logger.info("Initializing prop geometry adjustments...");
 
       const adjustments = await this.persister.loadAll();
-      this.state.loadAll(adjustments);
+      this.state.loadAll(adjustments.map(normalizeAdjustment));
 
       this.unsubscribe = this.persister.subscribe(
         (adjustment: PropGeometryAdjustment) => {
-          this.state.setAdjustment(adjustment);
+          const normalized = normalizeAdjustment(adjustment);
+          this.state.setAdjustment(normalized);
           logger.info(
             `Real-time update: ${generatePropGeometryKeyString({
-              placementFrame: adjustment.placementFrame,
-              propType: adjustment.propType,
-              otherPropType: adjustment.otherPropType,
-              positionType: adjustment.positionType,
-              endOrientation: adjustment.endOrientation,
-              otherEndOrientation: adjustment.otherEndOrientation,
-              motionType: adjustment.motionType,
-              turns: adjustment.turns,
-              arrowColor: adjustment.arrowColor,
+              placementFrame: normalized.placementFrame,
+              propType: normalized.propType,
+              otherPropType: normalized.otherPropType,
+              positionType: normalized.positionType,
+              endOrientation: normalized.endOrientation,
+              otherEndOrientation: normalized.otherEndOrientation,
+              motionType: normalized.motionType,
+              turns: normalized.turns,
+              arrowColor: normalized.arrowColor,
             })}`
           );
         },
         (keyString: string) => {
-          const key = parsePropGeometryKeyString(keyString);
+          const parsedKey = parsePropGeometryKeyString(keyString);
+          const key = parsedKey ? normalizeKey(parsedKey) : null;
           if (key) {
             this.state.removeAdjustment(key);
             logger.info(`Real-time removal: ${keyString}`);
@@ -100,12 +126,12 @@ export class PropGeometryAdjustmentRepository {
   getAdjustmentCascading(
     key: PropGeometryKey
   ): CascadingPropGeometryResult | null {
-    return this.state.getAdjustmentCascading(key);
+    return this.state.getAdjustmentCascading(normalizeKey(key));
   }
 
   /** Exact (non-cascading) lookup. */
   getAdjustment(key: PropGeometryKey): { x: number; y: number } | null {
-    return this.state.getAdjustment(key);
+    return this.state.getAdjustment(normalizeKey(key));
   }
 
   /** All loaded adjustments, in the exact shape `state.loadAll` consumes (bundle snapshot). */
@@ -114,7 +140,7 @@ export class PropGeometryAdjustmentRepository {
   }
 
   hasAdjustment(key: PropGeometryKey): boolean {
-    return this.state.hasAdjustment(key);
+    return this.state.hasAdjustment(normalizeKey(key));
   }
 
   /** In-memory only — live WASD preview before persisting (admin only). */
@@ -130,16 +156,17 @@ export class PropGeometryAdjustmentRepository {
       isEqual: () => false,
     } as unknown as Timestamp;
 
+    const normalized = normalizeInput(input);
     this.state.setAdjustment({
-      placementFrame: normalizePlacementFrame(input.placementFrame),
-      propType: input.propType,
-      otherPropType: input.otherPropType,
-      positionType: input.positionType,
-      endOrientation: input.endOrientation,
-      otherEndOrientation: input.otherEndOrientation,
-      motionType: input.motionType,
-      turns: input.turns,
-      arrowColor: input.arrowColor,
+      placementFrame: normalizePlacementFrame(normalized.placementFrame),
+      propType: normalized.propType,
+      otherPropType: normalized.otherPropType,
+      positionType: normalized.positionType,
+      endOrientation: normalized.endOrientation,
+      otherEndOrientation: normalized.otherEndOrientation,
+      motionType: normalized.motionType,
+      turns: normalized.turns,
+      arrowColor: normalized.arrowColor,
       adjustmentX: input.adjustmentX,
       adjustmentY: input.adjustmentY,
       updatedAt: fakeTimestamp,
@@ -152,7 +179,7 @@ export class PropGeometryAdjustmentRepository {
     if (!this.isAdmin()) {
       throw new Error("Only admin can delete prop geometry adjustments");
     }
-    this.state.removeAdjustment(key);
+    this.state.removeAdjustment(normalizeKey(key));
   }
 
   /** Persist a delete (admin only). */
@@ -160,7 +187,9 @@ export class PropGeometryAdjustmentRepository {
     if (!this.isAdmin()) {
       throw new Error("Only admin can delete prop geometry adjustments");
     }
-    await this.persister.delete(generatePropGeometryKeyString(key));
+    await this.persister.delete(
+      generatePropGeometryKeyString(normalizeKey(key))
+    );
   }
 
   async saveAdjustment(input: PropGeometryAdjustmentInput): Promise<void> {
@@ -173,7 +202,7 @@ export class PropGeometryAdjustmentRepository {
       throw new Error("User email not available");
     }
 
-    await this.persister.save(input, userEmail);
+    await this.persister.save(normalizeInput(input), userEmail);
   }
 
   private isAdmin(): boolean {

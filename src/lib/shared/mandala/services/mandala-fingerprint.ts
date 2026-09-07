@@ -42,13 +42,13 @@ function quantizedTokenSet(...groups: readonly SVGPathData[][]): Set<string> {
 /** Color-blind shape fingerprint: union of all blue/red/purple on-curve points,
  *  quantized, sorted, hashed. The primary equivalence key. */
 export function shapeKey(p: MandalaPaths): string {
-	const tokens = [...quantizedTokenSet(p.blue, p.red, p.purple)].sort();
+	const tokens = [...quantizedTokenSet(p.left, p.right, p.purple)].sort();
 	return hashString(tokens.join(";"));
 }
 
 export interface ColorSignature {
-	blueOnly: boolean;
-	redOnly: boolean;
+	leftOnly: boolean;
+	rightOnly: boolean;
 	/** |blue∩red| / |blue∪red| over quantized points — the purple-overlap share. */
 	comboPurpleRatio: number;
 }
@@ -56,19 +56,19 @@ export interface ColorSignature {
 /** Which colors drew the glyph, and how much they overlap. Annotation only —
  *  never part of the primary shapeKey. */
 export function colorSignature(p: MandalaPaths): ColorSignature {
-	const blue = quantizedTokenSet(p.blue);
-	const red = quantizedTokenSet(p.red);
-	const hasBlue = blue.size > 0;
-	const hasRed = red.size > 0;
+	const left = quantizedTokenSet(p.left);
+	const right = quantizedTokenSet(p.right);
+	const hasLeft = left.size > 0;
+	const hasRight = right.size > 0;
 
 	let inter = 0;
-	for (const t of blue) if (red.has(t)) inter++;
-	const union = blue.size + red.size - inter;
+	for (const t of left) if (right.has(t)) inter++;
+	const union = left.size + right.size - inter;
 	const comboPurpleRatio = union === 0 ? 0 : inter / union;
 
 	return {
-		blueOnly: hasBlue && !hasRed,
-		redOnly: hasRed && !hasBlue,
+		leftOnly: hasLeft && !hasRight,
+		rightOnly: hasRight && !hasLeft,
 		comboPurpleRatio,
 	};
 }
@@ -96,7 +96,7 @@ interface PolarToken {
 function polarTokens(p: MandalaPaths): PolarToken[] {
 	const seen = new Set<string>();
 	const toks: PolarToken[] = [];
-	for (const group of [p.blue, p.red, p.purple]) {
+	for (const group of [p.left, p.right, p.purple]) {
 		for (const path of group) {
 			for (const pt of parsePoints(path.d)) {
 				const r = Math.round(Math.hypot(pt.x, pt.y) / ORBIT_RADIAL_GRID);

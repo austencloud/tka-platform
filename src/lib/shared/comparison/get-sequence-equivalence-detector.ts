@@ -1,7 +1,7 @@
 /**
  * Pure equivalence arithmetic over plain sequence data — no DOM, no storage, no
  * network (verified against `services/sequence-equivalence-detector.ts`, whose
- * only value imports are `MotionColor` and `isVisibleMotion`). The `browser`
+ * only value imports are `HandSide` and `isVisibleMotion`). The `browser`
  * guard was dropped with the canonicalizer's (see
  * `get-sequence-canonicalizer.ts`); this getter sits on that dependency chain
  * and carried the same split, where the browser took the real path while every

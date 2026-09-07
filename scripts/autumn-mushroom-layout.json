@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "fairyChampignonArc": {
+    "id": "champignon",
+    "name": "FairyChampignonArc",
+    "center": [4.0, 12.0],
+    "radius": 2.15,
+    "count": 24,
+    "phase": 0.34,
+    "gaps": [4, 5, 6, 17],
+    "auraRadius": 2.9,
+    "auraColor": "#78f5d6"
+  },
+  "amethystDeceiverDrifts": [
+    {
+      "id": "amethyst-west",
+      "name": "AmethystWestRoot",
+      "center": [-9.55, 5.45],
+      "count": 5,
+      "spread": [0.62, 0.42],
+      "auraRadius": 1.5,
+      "auraColor": "#bf83ff"
+    },
+    {
+      "id": "amethyst-east",
+      "name": "AmethystEastRoot",
+      "center": [13.25, -5.75],
+      "count": 5,
+      "spread": [0.58, 0.38],
+      "auraRadius": 1.45,
+      "auraColor": "#bf83ff"
+    },
+    {
+      "id": "amethyst-front",
+      "name": "AmethystFrontRoot",
+      "center": [-15.35, -10.05],
+      "count": 5,
+      "spread": [0.6, 0.4],
+      "auraRadius": 1.5,
+      "auraColor": "#bf83ff"
+    }
+  ],
+  "honeyFungusColonies": [
+    {
+      "id": "honey-one",
+      "name": "HoneyFungusLogOne",
+      "center": [10.35, 6.75],
+      "count": 8,
+      "spread": [0.48, 0.34],
+      "auraRadius": 1.55,
+      "auraColor": "#ffb84f"
+    },
+    {
+      "id": "honey-two",
+      "name": "HoneyFungusLogTwo",
+      "center": [-12.2, 12.85],
+      "count": 7,
+      "spread": [0.44, 0.3],
+      "auraRadius": 1.5,
+      "auraColor": "#ffb84f"
+    }
+  ]
+}

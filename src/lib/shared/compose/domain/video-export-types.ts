@@ -1,6 +1,7 @@
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export type VideoExportFormat = "webm" | "mp4";
 
@@ -10,7 +11,12 @@ export type VideoExportFormat = "webm" | "mp4";
  * named type — svelte-fast-check can't resolve named type exports from a
  * `*.svelte` module.
  */
-export type ExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
+export type ExportPhase =
+  | "idle"
+  | "capturing"
+  | "encoding"
+  | "complete"
+  | "error";
 
 export interface VideoExportProgress {
   progress: number;
@@ -52,12 +58,18 @@ export interface VideoExportOrchestratorOptions {
    *  export engine loads — without them the export falls back to global settings
    *  (default "staff") and on the QR landing page (no DI bootstrap) renders the
    *  wrong/blank prop. */
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   /** Preview dark-mode override matching the live view's prop colors. */
   previewDarkMode?: boolean | null;
   /** Whether non-radial grid points are shown (matches the live grid). */
   showNonRadialPoints?: boolean;
+  /**
+   * Viewer Blue/Red motion toggles, forwarded to the offscreen engine so a hand
+   * hidden on screen is hidden in the file. Omitted → both visible.
+   */
+  leftMotionVisible?: boolean;
+  rightMotionVisible?: boolean;
   /**
    * Optional per-frame overlay drawn on top of the composited animation frame
    * (after the black flatten + canvas layers + path lines), in the output-square
@@ -93,6 +105,8 @@ export interface VideoExportOrchestratorOptions {
    * (defaults to true) for normal sequence export.
    */
   tunnelSpectrum?: boolean;
+  /** Exact Left/Right pair for a Custom Tunnel export. */
+  tunnelPropColors?: TunnelPropColorPair | null;
 
   /**
    * Square source-size override (px). When set, the export ignores the live
@@ -117,8 +131,8 @@ export interface VideoExportOrchestratorOptions {
     stepNumbers: boolean;
     wordHeader: boolean;
     progressBar: boolean;
-    bluePathLines: boolean;
-    redPathLines: boolean;
+    leftPathLines: boolean;
+    rightPathLines: boolean;
     grid: boolean;
   }>;
   onCleanup?: () => void;

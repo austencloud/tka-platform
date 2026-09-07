@@ -5,7 +5,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 
 function makeMotion(over: Partial<MotionData> = {}): MotionData {
   return {
-    color: "blue",
+    hand: "left",
     motionType: "anti",
     startLocation: "w",
     endLocation: "n",
@@ -19,21 +19,30 @@ function makeMotion(over: Partial<MotionData> = {}): MotionData {
   } as MotionData;
 }
 
-function makePictograph(blue: MotionData, red: MotionData): PictographData {
+function makePictograph(left: MotionData, right: MotionData): PictographData {
   return {
     id: "t",
     letter: "Q",
     startPosition: "gamma1",
     endPosition: "gamma15",
-    motions: { blue, red },
+    motions: { left, right },
   } as PictographData;
 }
 
 describe("derivePropGeometryKey", () => {
-  it("builds a 9-dimension key from blue motion context", () => {
-    const blue = makeMotion();
-    const red = makeMotion({ color: "red", motionType: "static", endOrientation: "in", turns: 0 });
-    const key = derivePropGeometryKey(makePictograph(blue, red), blue, "blue");
+  it("builds a 9-dimension key from left motion context", () => {
+    const left = makeMotion();
+    const right = makeMotion({
+      hand: "right",
+      motionType: "static",
+      endOrientation: "in",
+      turns: 0,
+    });
+    const key = derivePropGeometryKey(
+      makePictograph(left, right),
+      left,
+      "left"
+    );
     expect(key).toEqual({
       placementFrame: "canonical",
       propType: "staff",
@@ -43,21 +52,67 @@ describe("derivePropGeometryKey", () => {
       otherEndOrientation: "in",
       motionType: "anti",
       turns: "1.5",
-      arrowColor: "blue",
+      arrowColor: "left",
     });
   });
 
+  it("uses the motion hand when no explicit hand is passed", () => {
+    const left = makeMotion({ propType: "staff" });
+    const right = makeMotion({
+      hand: "right",
+      propType: "fan",
+      motionType: "static",
+      endOrientation: "clock",
+      turns: 0,
+    });
+
+    expect(
+      derivePropGeometryKey(makePictograph(left, right), left)
+    ).toMatchObject({
+      propType: "staff",
+      otherPropType: "fan",
+      arrowColor: "left",
+    });
+    expect(
+      derivePropGeometryKey(makePictograph(left, right), right)
+    ).toMatchObject({
+      propType: "fan",
+      otherPropType: "staff",
+      arrowColor: "right",
+    });
+  });
+
+  it("normalizes legacy color arguments at the compatibility boundary", () => {
+    const left = makeMotion();
+    const right = makeMotion({ hand: "right", propType: "fan" });
+
+    expect(
+      derivePropGeometryKey(makePictograph(left, right), left, "blue")
+        ?.arrowColor
+    ).toBe("left");
+    expect(
+      derivePropGeometryKey(makePictograph(left, right), right, "red")
+        ?.arrowColor
+    ).toBe("right");
+  });
+
   it("returns null when endPosition is missing", () => {
-    const blue = makeMotion();
-    const red = makeMotion({ color: "red" });
-    const pg = makePictograph(blue, red);
+    const left = makeMotion();
+    const right = makeMotion({ hand: "right" });
+    const pg = makePictograph(left, right);
     (pg as { endPosition?: string }).endPosition = undefined;
-    expect(derivePropGeometryKey(pg, blue, "blue")).toBeNull();
+    expect(derivePropGeometryKey(pg, left, "left")).toBeNull();
   });
 
   it("returns null when a motion is absent", () => {
-    const blue = makeMotion();
-    const pg = { id: "t", letter: "Q", startPosition: "a", endPosition: "beta5", motions: { blue } } as unknown as PictographData;
-    expect(derivePropGeometryKey(pg, blue, "blue")).toBeNull();
+    const left = makeMotion();
+    const pg = {
+      id: "t",
+      letter: "Q",
+      startPosition: "a",
+      endPosition: "beta5",
+      motions: { left },
+    } as unknown as PictographData;
+    expect(derivePropGeometryKey(pg, left, "left")).toBeNull();
   });
 });

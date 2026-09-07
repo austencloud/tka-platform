@@ -12,7 +12,7 @@
   import BuilderOrientationPicker from "./BuilderOrientationPicker.svelte";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import { getBuilderControlVisibility } from "../services/builder-phase-presentation";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
@@ -58,8 +58,8 @@
   class="control-bar"
   class:dimmed={barDimmed}
   class:hidden-bar={barHidden}
-  class:blue-hand={builderState.activeHand === MotionColor.BLUE}
-  class:red-hand={builderState.activeHand === MotionColor.RED}
+  class:blue-hand={builderState.activeHand === HandSide.LEFT}
+  class:red-hand={builderState.activeHand === HandSide.RIGHT}
 >
   <!-- Placing phase: orientation pills (persists during animating/done to prevent layout shift) -->
   {#if showPlacing}

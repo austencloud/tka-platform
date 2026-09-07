@@ -10,9 +10,9 @@ describe("buildMandalaCollectionEntry", () => {
     const entry = buildMandalaCollectionEntry(
       {
         steps,
-        variant: "blue",
-        bluePropType: "club",
-        redPropType: "staff",
+        variant: "left",
+        leftPropType: "club",
+        rightPropType: "staff",
         pathShape: "linear",
         sequenceWord: "FΨFΨFΨFΨ",
       },
@@ -21,9 +21,9 @@ describe("buildMandalaCollectionEntry", () => {
 
     expect(entry).toMatchObject({
       name: "FΨ",
-      variant: "blue",
-      bluePropType: "club",
-      redPropType: "staff",
+      variant: "left",
+      leftPropType: "club",
+      rightPropType: "staff",
       pathShape: "linear",
       source: "sequence",
       sourceWord: "FΨ",
@@ -37,8 +37,8 @@ describe("buildMandalaCollectionEntry", () => {
       {
         steps: [],
         variant: "both",
-        bluePropType: "staff",
-        redPropType: "staff",
+        leftPropType: "staff",
+        rightPropType: "staff",
         pathShape: "arc",
         sequenceWord: "",
       },

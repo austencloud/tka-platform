@@ -25,10 +25,11 @@ import { browser } from "$app/environment";
 export interface PersistenceOptions<T> {
   key: string;
   defaultValue: T;
+  migrate?: (value: unknown) => T;
 }
 
 export function createPersistenceHelper<T>(options: PersistenceOptions<T>) {
-  const { key, defaultValue } = options;
+  const { key, defaultValue, migrate } = options;
 
   /**
    * Load state from localStorage, with error handling and fallback to defaults
@@ -40,7 +41,9 @@ export function createPersistenceHelper<T>(options: PersistenceOptions<T>) {
       const stored = localStorage.getItem(key);
       if (!stored) return structuredClone(defaultValue);
 
-      const parsed = JSON.parse(stored) as T;
+      const parsed = migrate
+        ? migrate(JSON.parse(stored))
+        : (JSON.parse(stored) as T);
       // Deep merge with defaults to handle schema evolution
       return mergeWithDefaults(parsed, defaultValue);
     } catch (error) {

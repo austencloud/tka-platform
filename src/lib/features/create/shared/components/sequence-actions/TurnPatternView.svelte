@@ -62,7 +62,7 @@
   // entry, so edits are not clobbered by sequence-length changes while open.
   onMount(() => {
     const alt = stampPerHand(PER_HAND_RHYTHMS[2]!, initPeriod, 1, 1, 0); // alternating x1
-    strip = [alt.blue, alt.red];
+    strip = [alt.left, alt.right];
   });
 
   function applyStrip() {

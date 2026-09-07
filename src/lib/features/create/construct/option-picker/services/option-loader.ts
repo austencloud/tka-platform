@@ -48,15 +48,15 @@ export class OptionLoader {
     // Filter options based on sequence context
     // The next beat's start position should match the current beat's end position
     const filteredOptions = allOptions.filter((option) => {
-      if (!option.motions.blue || !option.motions.red) {
+      if (!option.motions.left || !option.motions.right) {
         return false;
       }
 
       // Calculate the start position of this option
       const optionStartPosition =
         getGridPositionFromLocations(
-          option.motions.blue.startLocation,
-          option.motions.red.startLocation
+          option.motions.left.startLocation,
+          option.motions.right.startLocation
         );
 
       const optionStartPositionStr = optionStartPosition

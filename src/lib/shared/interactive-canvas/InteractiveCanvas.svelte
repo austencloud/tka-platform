@@ -19,20 +19,21 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import HitTargetOverlay from "./components/HitTargetOverlay.svelte";
+  import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     // AnimatorCanvas rendering props
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     gridMode?: GridMode;
     gridVisible?: boolean;
     stepData?: StartPositionData | StepData | null;
     backgroundAlpha?: number;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     // InteractiveCanvas-specific props
     interactive?: boolean;
-    activePhaseColor?: "blue" | "red" | null;
+    activePhaseHand?: HandSide | null;
     currentPosition?: GridLocation | null;
     disabled?: boolean;
     onPointClick?: (location: GridLocation) => void;
@@ -43,17 +44,17 @@
 
   let {
     // AnimatorCanvas props
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     gridMode = GridMode.DIAMOND,
     gridVisible = true,
     stepData = null,
     backgroundAlpha = 1,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     // InteractiveCanvas props
     interactive = true,
-    activePhaseColor = null,
+    activePhaseHand = null,
     currentPosition = null,
     disabled = false,
     onPointClick = () => {},
@@ -65,14 +66,14 @@
 
 <div class="interactive-canvas-wrapper">
   <AnimatorCanvas
-    {blueProp}
-    {redProp}
+    {leftProp}
+    {rightProp}
     {gridMode}
     {gridVisible}
     {stepData}
     {backgroundAlpha}
-    {bluePropType}
-    {redPropType}
+    {leftPropType}
+    {rightPropType}
     fillContainer={true}
     hideProgressBar={true}
     {...restProps}
@@ -90,7 +91,7 @@
   {#if interactive}
     <HitTargetOverlay
       {gridMode}
-      {activePhaseColor}
+      {activePhaseHand}
       {currentPosition}
       {disabled}
       {onPointClick}

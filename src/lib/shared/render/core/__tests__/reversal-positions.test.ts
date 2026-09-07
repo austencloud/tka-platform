@@ -31,9 +31,9 @@ describe("calculateReversalPositions", () => {
   });
 
   it("uses different colors for blue vs red single reversals", () => {
-    const blue = calculateReversalPositions(true, false, false).dots[0]!;
-    const red = calculateReversalPositions(false, true, false).dots[0]!;
-    expect(blue.color).not.toBe(red.color);
+    const left = calculateReversalPositions(true, false, false).dots[0]!;
+    const right = calculateReversalPositions(false, true, false).dots[0]!;
+    expect(left.color).not.toBe(right.color);
   });
 
   describe("both reversals", () => {
@@ -47,14 +47,14 @@ describe("calculateReversalPositions", () => {
 
     it("puts RED on top (smaller cy) and BLUE on the bottom", () => {
       const { dots } = calculateReversalPositions(true, true, false);
-      const redSingle = calculateReversalPositions(false, true, false).dots[0]!;
-      const blueSingle = calculateReversalPositions(true, false, false).dots[0]!;
+      const rightSingle = calculateReversalPositions(false, true, false).dots[0]!;
+      const leftSingle = calculateReversalPositions(true, false, false).dots[0]!;
 
-      const redDot = dots.find((d) => d.color === redSingle.color)!;
-      const blueDot = dots.find((d) => d.color === blueSingle.color)!;
-      expect(redDot).toBeDefined();
-      expect(blueDot).toBeDefined();
-      expect(redDot.cy).toBeLessThan(blueDot.cy);
+      const rightDot = dots.find((d) => d.color === rightSingle.color)!;
+      const leftDot = dots.find((d) => d.color === leftSingle.color)!;
+      expect(rightDot).toBeDefined();
+      expect(leftDot).toBeDefined();
+      expect(rightDot.cy).toBeLessThan(leftDot.cy);
     });
 
     it("shares one X position and one radius across both dots", () => {
@@ -76,14 +76,14 @@ describe("calculateReversalPositions", () => {
 describe("getReversalColors", () => {
   it("matches the colors used by the dots", () => {
     const colors = getReversalColors(false);
-    const blueDot = calculateReversalPositions(true, false, false).dots[0]!;
-    const redDot = calculateReversalPositions(false, true, false).dots[0]!;
-    expect(colors.blue).toBe(blueDot.color);
-    expect(colors.red).toBe(redDot.color);
+    const leftDot = calculateReversalPositions(true, false, false).dots[0]!;
+    const rightDot = calculateReversalPositions(false, true, false).dots[0]!;
+    expect(colors.left).toBe(leftDot.color);
+    expect(colors.right).toBe(rightDot.color);
   });
 
   it("returns different palettes for light and dark", () => {
-    expect(getReversalColors(true).blue).not.toBe(getReversalColors(false).blue);
-    expect(getReversalColors(true).red).not.toBe(getReversalColors(false).red);
+    expect(getReversalColors(true).left).not.toBe(getReversalColors(false).left);
+    expect(getReversalColors(true).right).not.toBe(getReversalColors(false).right);
   });
 });

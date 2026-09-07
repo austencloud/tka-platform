@@ -43,7 +43,8 @@ describe("OptionPickerContent desktop layout", () => {
     const settingsBounds = settings.element().getBoundingClientRect();
     const tabsBounds = tabs.element().getBoundingClientRect();
     const infoBounds = info.element().getBoundingClientRect();
-    expect(headerBounds.height).toBeLessThanOrEqual(40);
+    expect(headerBounds.height).toBeGreaterThanOrEqual(44);
+    expect(headerBounds.height).toBeLessThanOrEqual(48);
     expect(settingsBounds.right).toBeLessThanOrEqual(tabsBounds.left);
     expect(tabsBounds.right).toBeLessThanOrEqual(infoBounds.left);
     expect(
@@ -130,5 +131,41 @@ describe("OptionPickerContent desktop layout", () => {
     expect(settingsPanel!.scrollHeight).toBeLessThanOrEqual(
       settingsPanel!.clientHeight
     );
+  });
+
+  it("keeps the filter when direction settings hide every option", async () => {
+    const screen = render(OptionPickerDesktopLayoutHarness, {
+      width: 1200,
+      height: 700,
+      continuous: true,
+      sequenceLength: 2,
+      leftTurns: 2,
+      rightTurns: 2,
+      shownCount: 0,
+      hiddenCount: 6,
+    });
+
+    await expect
+      .element(page.getByRole("button", { name: /^Continuous/ }))
+      .toBeInTheDocument();
+    await expect
+      .element(page.getByRole("button", { name: /^Continuous/ }))
+      .toHaveTextContent("6 hidden");
+    expect(document.querySelector(".availability-status")).toBeNull();
+
+    await screen.rerender({ continuous: false });
+    await expect
+      .element(page.getByRole("button", { name: "Continuous", exact: true }))
+      .not.toHaveTextContent("hidden");
+
+    await screen.rerender({ continuous: true, hiddenCount: 3 });
+    await expect
+      .element(page.getByRole("button", { name: /^Continuous/ }))
+      .toHaveTextContent("3 hidden");
+
+    await screen.rerender({ hiddenCount: 0, shownCount: 6 });
+    await expect
+      .element(page.getByRole("button", { name: "Continuous", exact: true }))
+      .not.toHaveTextContent("hidden");
   });
 });

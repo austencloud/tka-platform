@@ -56,11 +56,11 @@ export interface TransitionResult {
 
 
 import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
-import type { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
 
 export interface MotionRenderData {
-  color: MotionColor;
+  color: HandSide;
   motionData: MotionData;
 }
 

@@ -44,6 +44,8 @@ const HOSTS: Record<string, string> = {
     "src/lib/features/create/tunnel/components/TunnelLayout.svelte",
   "viewer tunnel art settings":
     "src/lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte",
+  "3D viewer prop adapter":
+    "src/lib/shared/3d/components/controls/ScenePropPicker.svelte",
 };
 
 /**
@@ -71,7 +73,9 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(grid).toContain("chirality?: PropChiralitySeam");
     // Gated on the prop actually being buugeng-family, so staff users never
     // see a control that would do nothing.
-    expect(grid).toMatch(/\{#if chirality && isBuugengFamilyProp\(/);
+    expect(grid).toMatch(
+      /\{#if chirality && selectedPropType !== null && isBuugengFamilyProp\(/
+    );
   });
 
   it("the row routes to SegmentedControl rather than a hand-rolled toggle", () => {
@@ -96,7 +100,9 @@ describe("buugeng chirality is owned by the prop picker", () => {
     const row = read(ROW_PATH);
     expect(row).toMatch(/\{#each hands as/);
     expect(row).toContain("onChange(state.hand,");
-    expect(row).toContain('state.hand === "red" ? "Red prop" : "Blue prop"');
+    expect(row).toContain(
+      'state.hand === "right" ? "Right prop" : "Left prop"'
+    );
   });
 
   it("keeps the prop sheet open after every selection", () => {
@@ -148,11 +154,11 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(seam).toContain("createGlobalChiralitySeam");
     // A hand-less seam yields BOTH hands as separate entries rather than one
     // entry that writes both.
-    expect(seam).toContain('[handState("blue"), handState("red")]');
+    expect(seam).toContain('[handState("left"), handState("right")]');
     // And the writer touches exactly the hand it was handed.
     const writer = seam.slice(seam.indexOf("onChange("));
     expect(writer).toMatch(
-      /\{ redBuugengFlipped: flipped \}\s*:\s*\{ blueBuugengFlipped: flipped \}/
+      /\{ rightBuugengFlipped: flipped \}\s*:\s*\{ leftBuugengFlipped: flipped \}/
     );
   });
 
@@ -161,9 +167,9 @@ describe("buugeng chirality is owned by the prop picker", () => {
       "src/lib/shared/settings/components/tabs/PropTypeTab.svelte"
     );
     // Its single-prop grid governs the pair, so it hands over both hands.
-    expect(tab).toContain('chiralitySeam("blue", "red")');
+    expect(tab).toContain('chiralitySeam("left", "right")');
     // The old mirror — blue carries red outside cat/dog mode — is gone.
-    expect(tab).not.toContain("redBuugengFlipped = blueBuugengFlipped");
+    expect(tab).not.toContain("rightBuugengFlipped = leftBuugengFlipped");
   });
 
   it.each(Object.entries(HOSTS))(

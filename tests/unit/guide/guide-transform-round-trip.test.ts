@@ -47,13 +47,17 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
 
 import { saveOverride } from "../../../src/routes/(public)/guide/level-1/_data/guide-overrides.svelte";
 import { sequenceToStrip } from "../../../src/routes/(public)/guide/level-1/_data/guide-sequence-adapter";
-import { colorSwapSequence } from "../../../src/lib/shared/create/services/sequence-transforms";
+import { handSwapSequence } from "../../../src/lib/shared/create/services/sequence-transforms";
 import { rotateSequenceGeometry } from "../../../src/lib/shared/create/services/sequence-derived-fields";
 import type { SequenceData } from "../../../src/lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "../../../src/lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "../../../src/lib/shared/foundation/domain/models/start-position-data";
 
-function makeMotion(color: "blue" | "red", startLocation: string, endLocation: string) {
+function makeMotion(
+  hand: "left" | "right",
+  startLocation: string,
+  endLocation: string
+) {
   return {
     motionType: "pro",
     rotationDirection: "cw",
@@ -62,7 +66,7 @@ function makeMotion(color: "blue" | "red", startLocation: string, endLocation: s
     startOrientation: "in",
     endOrientation: "in",
     turns: 0,
-    color,
+    hand,
     propType: "staff",
     gridMode: "diamond",
   };
@@ -75,8 +79,8 @@ function makeStartPosition(): StartPositionData {
     isStartPosition: true,
     gridMode: "diamond",
     motions: {
-      blue: makeMotion("blue", "n", "n"),
-      red: makeMotion("red", "s", "s"),
+      left: makeMotion("left", "n", "n"),
+      right: makeMotion("right", "s", "s"),
     },
   } as unknown as StartPositionData;
 }
@@ -90,12 +94,12 @@ function makeStep(stepNumber: number): StepData {
     endPosition: "alpha3" as unknown as StepData["endPosition"],
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      blue: makeMotion("blue", "n", "e"),
-      red: makeMotion("red", "s", "w"),
+      left: makeMotion("blue", "n", "e"),
+      right: makeMotion("red", "s", "w"),
     },
   } as unknown as StepData;
 }
@@ -123,10 +127,10 @@ describe("guide companion transform round trip (P2)", () => {
     mockSetDoc.mockResolvedValue(undefined);
   });
 
-  it("colorSwapSequence -> sequenceToStrip -> saveOverride persists blue/red-swapped, JSON-serializable steps", async () => {
+  it("handSwapSequence -> sequenceToStrip -> saveOverride persists left/right-swapped, JSON-serializable steps", async () => {
     const sequence = makeSequence();
 
-    const swapped = colorSwapSequence(sequence);
+    const swapped = handSwapSequence(sequence);
     const strip = sequenceToStrip(swapped);
     await saveOverride("t1l-transform-test", strip, swapped.word);
 
@@ -141,16 +145,22 @@ describe("guide companion transform round trip (P2)", () => {
     // strip[0] is the start position (stepNumber 0), strip[1] is the numbered step.
     const startBox = writtenSteps[0]!;
     const stepBox = writtenSteps[1]!;
-    const startMotions = startBox.motions as Record<string, Record<string, unknown>>;
-    const stepMotions = stepBox.motions as Record<string, Record<string, unknown>>;
+    const startMotions = startBox.motions as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const stepMotions = stepBox.motions as Record<
+      string,
+      Record<string, unknown>
+    >;
 
     // Color swap: the ORIGINAL red motion's geometry now lives on blue, and vice versa.
-    expect(startMotions.blue!.startLocation).toBe("s"); // was red's start
-    expect(startMotions.red!.startLocation).toBe("n"); // was blue's start
-    expect(stepMotions.blue!.startLocation).toBe("s");
-    expect(stepMotions.blue!.endLocation).toBe("w");
-    expect(stepMotions.red!.startLocation).toBe("n");
-    expect(stepMotions.red!.endLocation).toBe("e");
+    expect(startMotions.left!.startLocation).toBe("s"); // was red's start
+    expect(startMotions.right!.startLocation).toBe("n"); // was blue's start
+    expect(stepMotions.left!.startLocation).toBe("s");
+    expect(stepMotions.left!.endLocation).toBe("w");
+    expect(stepMotions.right!.startLocation).toBe("n");
+    expect(stepMotions.right!.endLocation).toBe("e");
   });
 
   it("rotateSequenceGeometry(seq, 2) [90 CW] -> sequenceToStrip -> saveOverride round trip", async () => {
@@ -166,19 +176,22 @@ describe("guide companion transform round trip (P2)", () => {
 
     const writtenSteps = written.steps as Array<Record<string, unknown>>;
     // n rotated 90 CW (2 x 45deg steps) becomes e; original step motion started at "n".
-    const stepMotions = writtenSteps[1]!.motions as Record<string, Record<string, unknown>>;
-    expect(stepMotions.blue!.startLocation).toBe("e");
+    const stepMotions = writtenSteps[1]!.motions as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(stepMotions.left!.startLocation).toBe("e");
   });
 
   it("saveOverride throws (transform not persisted) when the caller is not admin", async () => {
     mockIsAdmin = false;
     const sequence = makeSequence();
-    const swapped = colorSwapSequence(sequence);
+    const swapped = handSwapSequence(sequence);
     const strip = sequenceToStrip(swapped);
 
-    await expect(saveOverride("t1l-transform-test", strip, swapped.word)).rejects.toThrow(
-      /not authorized/i
-    );
+    await expect(
+      saveOverride("t1l-transform-test", strip, swapped.word)
+    ).rejects.toThrow(/not authorized/i);
     expect(mockSetDoc).not.toHaveBeenCalled();
   });
 });

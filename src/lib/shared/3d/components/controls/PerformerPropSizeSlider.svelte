@@ -1,17 +1,23 @@
 <script lang="ts">
   import { inchesToCm } from "@austencloud/scene-3d";
-  import type { AvatarInstanceState } from "../../state/avatar-instance-state.svelte";
+  import type { CharacterInstanceState } from "../../state/character-instance-state.svelte";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
-    performer: AvatarInstanceState;
+    performer: CharacterInstanceState;
+    mixed?: boolean;
     onSizeChange?: (cm: number) => void;
     onSettingChange?: ViewerControlSink;
   }
-  let { performer, onSizeChange, onSettingChange }: Props = $props();
+  let {
+    performer,
+    mixed = false,
+    onSizeChange,
+    onSettingChange,
+  }: Props = $props();
 
   const currentCm = $derived(performer.settings.staffLengthCm ?? 81);
   const displayInches = $derived(Math.round(currentCm / 2.54));
@@ -38,7 +44,7 @@
 <div class="prop-size">
   <div class="size-header">
     <span class="size-label">Prop size</span>
-    <span class="size-value">{displayInches} in</span>
+    <span class="size-value">{mixed ? "Mixed" : `${displayInches} in`}</span>
   </div>
   <input
     type="range"

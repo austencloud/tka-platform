@@ -1,0 +1,1594 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "ember-broken-rift",
+  "directionId": "midflank-fire-pilgrimage-r4",
+  "revisionId": "gate2-r4",
+  "gateId": "playable-graybox",
+  "status": "gate1-approved-gate2-in-progress",
+  "museumTracker": {
+    "gate1Approval": "xFcagbaZTQAq615IbZgT",
+    "gate2ReviewReference": "lXhTllDFV2Ne1E7foCkS"
+  },
+  "sourceAuthority": {
+    "selectedDirection": "midflank-fire-pilgrimage-r4",
+    "terrainOwner": "scripts/build-ember-geology-study.py",
+    "terrainRevision": "r4",
+    "gate1AmendmentReport": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-1-1-geology-amendment-r4/ember-midflank-fire-pilgrimage-r4-gate1-1-report.json",
+    "researchContract": "docs/superpowers/specs/ember-spatial-directions/geology-lava-composition-research.md",
+    "simulatorDepositSource": "static/data/ember/review/ember-midflank-fire-pilgrimage-r4-flowy-thickness.f32",
+    "simulatorImplementation": "Flowy",
+    "simulatorCalibration": "r4n-c02-channel-16m2",
+    "simulatorRole": "Visible Gate 2 deposit footprint and per-cell source thickness owner; final material morphology remains Gate 4 work."
+  },
+  "coordinateSystem": {
+    "world": "right-handed metres; x east/west, y elevation, z north/south",
+    "blenderChildCoordinates": "(worldX, worldY, worldZ)",
+    "blenderDisplayTransform": "World root rotates +90 degrees about X; review cameras use (x, -z, y)",
+    "gltfRuntime": "Root and child transforms preserve plan-world local coordinates for later integration review."
+  },
+  "worldBoundsMeters": {
+    "minX": -190.0,
+    "maxX": 190.0,
+    "minZ": -145.0,
+    "maxZ": 190.0
+  },
+  "terrain": {
+    "dataPath": "static/data/ember/review/ember-midflank-fire-pilgrimage-r4-height.f32",
+    "columns": 381,
+    "rows": 336,
+    "cellSizeMeters": 1.0,
+    "reviewStrideSamples": 1,
+    "minimumElevationMeters": -92.945786,
+    "maximumElevationMeters": 156.837616,
+    "performerElevationMeters": 0.18,
+    "dataSha256": "2cf6bbb4b08717f09f1258c4da1e5a9c5bb9d531d95d068998eb37742d687b2a"
+  },
+  "lavaPlan": {
+    "sourceWorldXZ": [
+      -34.0,
+      132.0
+    ],
+    "diagnosticCenterlineWorldXZ": [
+      [
+        -34.0,
+        132.0
+      ],
+      [
+        -31.0,
+        114.0
+      ],
+      [
+        -29.0,
+        94.0
+      ],
+      [
+        -25.0,
+        73.0
+      ],
+      [
+        -21.0,
+        52.0
+      ],
+      [
+        -19.0,
+        33.0
+      ],
+      [
+        -20.0,
+        17.0
+      ],
+      [
+        -20.0,
+        2.0
+      ],
+      [
+        -21.0,
+        -17.0
+      ],
+      [
+        -18.0,
+        -38.0
+      ],
+      [
+        -11.0,
+        -62.0
+      ],
+      [
+        0.0,
+        -88.0
+      ],
+      [
+        8.0,
+        -116.0
+      ],
+      [
+        18.0,
+        -145.0
+      ]
+    ],
+    "compositionSectionWorldXZ": [
+      [
+        -18.0,
+        190.0
+      ],
+      [
+        -26.0,
+        158.0
+      ],
+      [
+        -34.0,
+        132.0
+      ],
+      [
+        -31.0,
+        114.0
+      ],
+      [
+        -29.0,
+        94.0
+      ],
+      [
+        -25.0,
+        73.0
+      ],
+      [
+        -21.0,
+        52.0
+      ],
+      [
+        -19.0,
+        33.0
+      ],
+      [
+        -20.0,
+        17.0
+      ],
+      [
+        -20.0,
+        2.0
+      ],
+      [
+        -21.0,
+        -17.0
+      ],
+      [
+        -18.0,
+        -38.0
+      ],
+      [
+        -11.0,
+        -62.0
+      ],
+      [
+        0.0,
+        -88.0
+      ],
+      [
+        8.0,
+        -116.0
+      ],
+      [
+        18.0,
+        -145.0
+      ]
+    ],
+    "pathLengthMeters": 284.506201,
+    "sourceTerrainElevationMeters": 104.29808,
+    "terminusTerrainElevationMeters": -92.945786,
+    "netDescentMeters": 197.243866,
+    "centerlineCumulativeDistanceMeters": [
+      0.0,
+      18.248288,
+      38.348039,
+      59.725597,
+      81.103155,
+      100.208129,
+      116.239348,
+      131.239348,
+      150.265646,
+      171.478849,
+      196.478849,
+      224.710038,
+      253.830477,
+      284.506201
+    ],
+    "footprintOwner": "simulatorDeposit",
+    "grayboxRole": "The centerline is section and causality evidence only; it does not generate visible lava geometry."
+  },
+  "simulatorDeposit": {
+    "dataPath": "static/data/ember/review/ember-midflank-fire-pilgrimage-r4-flowy-thickness.f32",
+    "dataSha256": "e4097841c644b76bc2c0f2e2701d6a33d4e40f248f3e5444924c583fa004e5cf",
+    "rasterSampleRegistration": "ESRI cell centres align to integer world X/Z because the lower-left corner is offset by half the 1 m cell size.",
+    "format": "little-endian float32, row-major, runtime Z ascending",
+    "columns": 381,
+    "rows": 336,
+    "cellSizeMeters": 1.0,
+    "activeThicknessThresholdMeters": 0.01,
+    "minimumActiveThicknessMeters": 0.010133,
+    "maximumActiveThicknessMeters": 1.48593,
+    "activeCellCount": 2154,
+    "activeAreaSquareMeters": 2154.0,
+    "boundsWorldXZ": {
+      "minX": -35.0,
+      "maxX": 18.0,
+      "minZ": -141.0,
+      "maxZ": 136.0
+    },
+    "cellSupportBoundsWorldXZ": {
+      "minX": -35.5,
+      "maxX": 18.5,
+      "minZ": -141.5,
+      "maxZ": 136.5
+    },
+    "minimumCenterDistanceMeters": 11.0,
+    "minimumVisibleSupportDistanceMeters": 10.5,
+    "distanceMeasurement": "Minimum distance from performer origin to the visible 1 m cell support, computed against each active square's nearest point.",
+    "clearanceBeyondActionEnvelopeMeters": 6.0,
+    "upstreamMedianWidthMeters": 5.0,
+    "upstreamWidthSamplingRuntimeZ": {
+      "minimum": 30.0,
+      "maximum": 100.0
+    },
+    "downstreamMedianWidthMeters": 9.0,
+    "downstreamWidthSamplingRuntimeZ": {
+      "maximum": -80.0
+    },
+    "downstreamWideningRatio": 1.8,
+    "passesMidflank": true,
+    "reachesDownslopeExit": true,
+    "continuousDownslope": true,
+    "midflankPassActiveCellCount": 486,
+    "southExitActiveCellCount": 13,
+    "occupiedRowGapCount": 0,
+    "depositSectionWorldXZ": [
+      [
+        -34.0,
+        132.0
+      ],
+      [
+        -34.0,
+        131.0
+      ],
+      [
+        -34.0,
+        130.0
+      ],
+      [
+        -34.0,
+        129.0
+      ],
+      [
+        -34.0,
+        128.0
+      ],
+      [
+        -34.0,
+        127.0
+      ],
+      [
+        -34.0,
+        126.0
+      ],
+      [
+        -34.0,
+        125.0
+      ],
+      [
+        -34.0,
+        124.0
+      ],
+      [
+        -34.0,
+        123.0
+      ],
+      [
+        -34.0,
+        122.0
+      ],
+      [
+        -34.0,
+        121.0
+      ],
+      [
+        -34.0,
+        120.0
+      ],
+      [
+        -34.0,
+        119.0
+      ],
+      [
+        -34.0,
+        118.0
+      ],
+      [
+        -34.0,
+        117.0
+      ],
+      [
+        -34.0,
+        116.0
+      ],
+      [
+        -34.0,
+        115.0
+      ],
+      [
+        -34.0,
+        114.0
+      ],
+      [
+        -34.0,
+        113.0
+      ],
+      [
+        -34.0,
+        112.0
+      ],
+      [
+        -34.0,
+        111.0
+      ],
+      [
+        -33.0,
+        110.0
+      ],
+      [
+        -33.0,
+        109.0
+      ],
+      [
+        -33.0,
+        108.0
+      ],
+      [
+        -33.0,
+        107.0
+      ],
+      [
+        -33.0,
+        106.0
+      ],
+      [
+        -33.0,
+        105.0
+      ],
+      [
+        -33.0,
+        104.0
+      ],
+      [
+        -32.0,
+        103.0
+      ],
+      [
+        -32.0,
+        102.0
+      ],
+      [
+        -32.0,
+        101.0
+      ],
+      [
+        -32.0,
+        100.0
+      ],
+      [
+        -32.0,
+        99.0
+      ],
+      [
+        -32.0,
+        98.0
+      ],
+      [
+        -32.0,
+        97.0
+      ],
+      [
+        -31.0,
+        96.0
+      ],
+      [
+        -31.0,
+        95.0
+      ],
+      [
+        -31.0,
+        94.0
+      ],
+      [
+        -31.0,
+        93.0
+      ],
+      [
+        -31.0,
+        92.0
+      ],
+      [
+        -31.0,
+        91.0
+      ],
+      [
+        -31.0,
+        90.0
+      ],
+      [
+        -31.0,
+        89.0
+      ],
+      [
+        -31.0,
+        88.0
+      ],
+      [
+        -31.0,
+        87.0
+      ],
+      [
+        -31.0,
+        86.0
+      ],
+      [
+        -31.0,
+        85.0
+      ],
+      [
+        -30.0,
+        84.0
+      ],
+      [
+        -30.0,
+        83.0
+      ],
+      [
+        -30.0,
+        82.0
+      ],
+      [
+        -30.0,
+        81.0
+      ],
+      [
+        -30.0,
+        80.0
+      ],
+      [
+        -30.0,
+        79.0
+      ],
+      [
+        -30.0,
+        78.0
+      ],
+      [
+        -29.0,
+        77.0
+      ],
+      [
+        -29.0,
+        76.0
+      ],
+      [
+        -29.0,
+        75.0
+      ],
+      [
+        -29.0,
+        74.0
+      ],
+      [
+        -29.0,
+        73.0
+      ],
+      [
+        -29.0,
+        72.0
+      ],
+      [
+        -28.0,
+        71.0
+      ],
+      [
+        -28.0,
+        70.0
+      ],
+      [
+        -28.0,
+        69.0
+      ],
+      [
+        -28.0,
+        68.0
+      ],
+      [
+        -28.0,
+        67.0
+      ],
+      [
+        -28.0,
+        66.0
+      ],
+      [
+        -28.0,
+        65.0
+      ],
+      [
+        -27.0,
+        64.0
+      ],
+      [
+        -27.0,
+        63.0
+      ],
+      [
+        -27.0,
+        62.0
+      ],
+      [
+        -27.0,
+        61.0
+      ],
+      [
+        -27.0,
+        60.0
+      ],
+      [
+        -26.0,
+        59.0
+      ],
+      [
+        -26.0,
+        58.0
+      ],
+      [
+        -26.0,
+        57.0
+      ],
+      [
+        -26.0,
+        56.0
+      ],
+      [
+        -25.0,
+        55.0
+      ],
+      [
+        -25.0,
+        54.0
+      ],
+      [
+        -25.0,
+        53.0
+      ],
+      [
+        -24.0,
+        52.0
+      ],
+      [
+        -24.0,
+        51.0
+      ],
+      [
+        -24.0,
+        50.0
+      ],
+      [
+        -23.0,
+        49.0
+      ],
+      [
+        -23.0,
+        48.0
+      ],
+      [
+        -23.0,
+        47.0
+      ],
+      [
+        -22.0,
+        46.0
+      ],
+      [
+        -22.0,
+        45.0
+      ],
+      [
+        -22.0,
+        44.0
+      ],
+      [
+        -21.0,
+        43.0
+      ],
+      [
+        -21.0,
+        42.0
+      ],
+      [
+        -21.0,
+        41.0
+      ],
+      [
+        -20.0,
+        40.0
+      ],
+      [
+        -20.0,
+        39.0
+      ],
+      [
+        -20.0,
+        38.0
+      ],
+      [
+        -20.0,
+        37.0
+      ],
+      [
+        -20.0,
+        36.0
+      ],
+      [
+        -20.0,
+        35.0
+      ],
+      [
+        -19.0,
+        34.0
+      ],
+      [
+        -19.0,
+        33.0
+      ],
+      [
+        -19.0,
+        32.0
+      ],
+      [
+        -19.0,
+        31.0
+      ],
+      [
+        -19.0,
+        30.0
+      ],
+      [
+        -19.0,
+        29.0
+      ],
+      [
+        -19.0,
+        28.0
+      ],
+      [
+        -19.0,
+        27.0
+      ],
+      [
+        -19.0,
+        26.0
+      ],
+      [
+        -19.0,
+        25.0
+      ],
+      [
+        -19.0,
+        24.0
+      ],
+      [
+        -19.0,
+        23.0
+      ],
+      [
+        -19.0,
+        22.0
+      ],
+      [
+        -19.0,
+        21.0
+      ],
+      [
+        -20.0,
+        20.0
+      ],
+      [
+        -21.0,
+        19.0
+      ],
+      [
+        -21.0,
+        18.0
+      ],
+      [
+        -21.0,
+        17.0
+      ],
+      [
+        -21.0,
+        16.0
+      ],
+      [
+        -21.0,
+        15.0
+      ],
+      [
+        -21.0,
+        14.0
+      ],
+      [
+        -21.0,
+        13.0
+      ],
+      [
+        -21.0,
+        12.0
+      ],
+      [
+        -21.0,
+        11.0
+      ],
+      [
+        -21.0,
+        10.0
+      ],
+      [
+        -21.0,
+        9.0
+      ],
+      [
+        -21.0,
+        8.0
+      ],
+      [
+        -21.0,
+        7.0
+      ],
+      [
+        -21.0,
+        6.0
+      ],
+      [
+        -21.0,
+        5.0
+      ],
+      [
+        -21.0,
+        4.0
+      ],
+      [
+        -21.0,
+        3.0
+      ],
+      [
+        -21.0,
+        2.0
+      ],
+      [
+        -21.0,
+        1.0
+      ],
+      [
+        -21.0,
+        0.0
+      ],
+      [
+        -21.0,
+        -1.0
+      ],
+      [
+        -21.0,
+        -2.0
+      ],
+      [
+        -21.0,
+        -3.0
+      ],
+      [
+        -21.0,
+        -4.0
+      ],
+      [
+        -21.0,
+        -5.0
+      ],
+      [
+        -21.0,
+        -6.0
+      ],
+      [
+        -21.0,
+        -7.0
+      ],
+      [
+        -21.0,
+        -8.0
+      ],
+      [
+        -21.0,
+        -9.0
+      ],
+      [
+        -21.0,
+        -10.0
+      ],
+      [
+        -21.0,
+        -11.0
+      ],
+      [
+        -21.0,
+        -12.0
+      ],
+      [
+        -21.0,
+        -13.0
+      ],
+      [
+        -21.0,
+        -14.0
+      ],
+      [
+        -21.0,
+        -15.0
+      ],
+      [
+        -21.0,
+        -16.0
+      ],
+      [
+        -21.0,
+        -17.0
+      ],
+      [
+        -21.0,
+        -18.0
+      ],
+      [
+        -21.0,
+        -19.0
+      ],
+      [
+        -21.0,
+        -20.0
+      ],
+      [
+        -21.0,
+        -21.0
+      ],
+      [
+        -21.0,
+        -22.0
+      ],
+      [
+        -21.0,
+        -23.0
+      ],
+      [
+        -21.0,
+        -24.0
+      ],
+      [
+        -21.0,
+        -25.0
+      ],
+      [
+        -21.0,
+        -26.0
+      ],
+      [
+        -21.0,
+        -27.0
+      ],
+      [
+        -21.0,
+        -28.0
+      ],
+      [
+        -21.0,
+        -29.0
+      ],
+      [
+        -21.0,
+        -30.0
+      ],
+      [
+        -20.0,
+        -31.0
+      ],
+      [
+        -20.0,
+        -32.0
+      ],
+      [
+        -20.0,
+        -33.0
+      ],
+      [
+        -20.0,
+        -34.0
+      ],
+      [
+        -19.0,
+        -35.0
+      ],
+      [
+        -19.0,
+        -36.0
+      ],
+      [
+        -19.0,
+        -37.0
+      ],
+      [
+        -19.0,
+        -38.0
+      ],
+      [
+        -19.0,
+        -39.0
+      ],
+      [
+        -19.0,
+        -40.0
+      ],
+      [
+        -19.0,
+        -41.0
+      ],
+      [
+        -19.0,
+        -42.0
+      ],
+      [
+        -19.0,
+        -43.0
+      ],
+      [
+        -18.0,
+        -44.0
+      ],
+      [
+        -17.0,
+        -45.0
+      ],
+      [
+        -16.0,
+        -46.0
+      ],
+      [
+        -15.0,
+        -47.0
+      ],
+      [
+        -14.0,
+        -48.0
+      ],
+      [
+        -14.0,
+        -49.0
+      ],
+      [
+        -14.0,
+        -50.0
+      ],
+      [
+        -14.0,
+        -51.0
+      ],
+      [
+        -14.0,
+        -52.0
+      ],
+      [
+        -13.0,
+        -53.0
+      ],
+      [
+        -12.0,
+        -54.0
+      ],
+      [
+        -12.0,
+        -55.0
+      ],
+      [
+        -12.0,
+        -56.0
+      ],
+      [
+        -12.0,
+        -57.0
+      ],
+      [
+        -12.0,
+        -58.0
+      ],
+      [
+        -11.0,
+        -59.0
+      ],
+      [
+        -11.0,
+        -60.0
+      ],
+      [
+        -11.0,
+        -61.0
+      ],
+      [
+        -10.0,
+        -62.0
+      ],
+      [
+        -10.0,
+        -63.0
+      ],
+      [
+        -10.0,
+        -64.0
+      ],
+      [
+        -10.0,
+        -65.0
+      ],
+      [
+        -9.0,
+        -66.0
+      ],
+      [
+        -9.0,
+        -67.0
+      ],
+      [
+        -9.0,
+        -68.0
+      ],
+      [
+        -8.0,
+        -69.0
+      ],
+      [
+        -8.0,
+        -70.0
+      ],
+      [
+        -8.0,
+        -71.0
+      ],
+      [
+        -7.0,
+        -72.0
+      ],
+      [
+        -7.0,
+        -73.0
+      ],
+      [
+        -7.0,
+        -74.0
+      ],
+      [
+        -7.0,
+        -75.0
+      ],
+      [
+        -6.0,
+        -76.0
+      ],
+      [
+        -6.0,
+        -77.0
+      ],
+      [
+        -5.0,
+        -78.0
+      ],
+      [
+        -5.0,
+        -79.0
+      ],
+      [
+        -5.0,
+        -80.0
+      ],
+      [
+        -5.0,
+        -81.0
+      ],
+      [
+        -5.0,
+        -82.0
+      ],
+      [
+        -4.0,
+        -83.0
+      ],
+      [
+        -3.0,
+        -84.0
+      ],
+      [
+        -3.0,
+        -85.0
+      ],
+      [
+        -3.0,
+        -86.0
+      ],
+      [
+        -3.0,
+        -87.0
+      ],
+      [
+        -3.0,
+        -88.0
+      ],
+      [
+        -2.0,
+        -89.0
+      ],
+      [
+        -2.0,
+        -90.0
+      ],
+      [
+        -2.0,
+        -91.0
+      ],
+      [
+        -2.0,
+        -92.0
+      ],
+      [
+        -1.0,
+        -93.0
+      ],
+      [
+        -1.0,
+        -94.0
+      ],
+      [
+        -1.0,
+        -95.0
+      ],
+      [
+        0.0,
+        -96.0
+      ],
+      [
+        0.0,
+        -97.0
+      ],
+      [
+        0.0,
+        -98.0
+      ],
+      [
+        1.0,
+        -99.0
+      ],
+      [
+        1.0,
+        -100.0
+      ],
+      [
+        1.0,
+        -101.0
+      ],
+      [
+        2.0,
+        -102.0
+      ],
+      [
+        2.0,
+        -103.0
+      ],
+      [
+        2.0,
+        -104.0
+      ],
+      [
+        2.0,
+        -105.0
+      ],
+      [
+        3.0,
+        -106.0
+      ],
+      [
+        3.0,
+        -107.0
+      ],
+      [
+        4.0,
+        -108.0
+      ],
+      [
+        4.0,
+        -109.0
+      ],
+      [
+        4.0,
+        -110.0
+      ],
+      [
+        4.0,
+        -111.0
+      ],
+      [
+        5.0,
+        -112.0
+      ],
+      [
+        6.0,
+        -113.0
+      ],
+      [
+        7.0,
+        -114.0
+      ],
+      [
+        8.0,
+        -115.0
+      ],
+      [
+        8.0,
+        -116.0
+      ],
+      [
+        8.0,
+        -117.0
+      ],
+      [
+        9.0,
+        -118.0
+      ],
+      [
+        9.0,
+        -119.0
+      ],
+      [
+        10.0,
+        -120.0
+      ],
+      [
+        10.0,
+        -121.0
+      ],
+      [
+        10.0,
+        -122.0
+      ],
+      [
+        11.0,
+        -123.0
+      ],
+      [
+        11.0,
+        -124.0
+      ],
+      [
+        11.0,
+        -125.0
+      ],
+      [
+        11.0,
+        -126.0
+      ],
+      [
+        12.0,
+        -127.0
+      ],
+      [
+        12.0,
+        -128.0
+      ],
+      [
+        12.0,
+        -129.0
+      ],
+      [
+        12.0,
+        -130.0
+      ],
+      [
+        13.0,
+        -131.0
+      ],
+      [
+        13.0,
+        -132.0
+      ],
+      [
+        13.0,
+        -133.0
+      ],
+      [
+        14.0,
+        -134.0
+      ],
+      [
+        14.0,
+        -135.0
+      ],
+      [
+        14.0,
+        -136.0
+      ],
+      [
+        14.0,
+        -137.0
+      ],
+      [
+        15.0,
+        -138.0
+      ],
+      [
+        16.0,
+        -139.0
+      ],
+      [
+        17.0,
+        -140.0
+      ],
+      [
+        18.0,
+        -141.0
+      ]
+    ],
+    "depositSectionLengthMeters": 296.195959,
+    "depositSectionSourceElevationMeters": 104.29808,
+    "depositSectionTerminusElevationMeters": -91.289772,
+    "depositSectionNetDescentMeters": 195.587852,
+    "depositSectionDownhillFraction": 1.0,
+    "depositSectionMaximumLocalRiseMeters": 0.048332,
+    "visibleThicknessContract": "Each active ESRI cell becomes one quad centred on its registered integer world X/Z sample. Its four corners use the cell's exact Flowy thickness above the bilinearly sampled terrain; there is no thickness scale, floor, or neighbouring-cell maximum."
+  },
+  "performerContract": {
+    "originWorldXYZ": [
+      0.0,
+      0.18,
+      0.0
+    ],
+    "heightMeters": 1.75,
+    "actionRadiusMeters": 4.5,
+    "orbitRadiusMeters": 25.0,
+    "walkable": false
+  },
+  "compositionContract": {
+    "dominantMass": "colossal upper volcanic massif and furnace saddle rising north of the performer",
+    "openHorizon": "lower southern country falls far below the performer and continues beyond the world edge",
+    "sourceToDownslopeExit": "high furnace saddle to western passing ravine, past the mid-flank ledge, over the lower escarpment, and out through the south boundary",
+    "antiPatterns": [
+      "decorative arch",
+      "circular stage island",
+      "radial basin",
+      "spline-owned lava footprint",
+      "visible world edge from the 25 m orbit",
+      "inboard terminal pool",
+      "flat horizon that erases the mid-flank read"
+    ]
+  },
+  "reviewCameras": [
+    {
+      "id": "default-audience",
+      "positionWorldXYZ": [
+        0.0,
+        8.43,
+        -21.5
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "00-default-audience.png"
+    },
+    {
+      "id": "orbit-000",
+      "bearingDegreesClockwiseFromAudience": 0,
+      "positionWorldXYZ": [
+        0.0,
+        8.43,
+        -24.140215
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "01-orbit-000.png"
+    },
+    {
+      "id": "orbit-045",
+      "bearingDegreesClockwiseFromAudience": 45,
+      "positionWorldXYZ": [
+        17.06971,
+        8.43,
+        -17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "02-orbit-045.png"
+    },
+    {
+      "id": "orbit-090",
+      "bearingDegreesClockwiseFromAudience": 90,
+      "positionWorldXYZ": [
+        24.140215,
+        8.43,
+        -0.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "03-orbit-090.png"
+    },
+    {
+      "id": "orbit-135",
+      "bearingDegreesClockwiseFromAudience": 135,
+      "positionWorldXYZ": [
+        17.06971,
+        8.43,
+        17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "04-orbit-135.png"
+    },
+    {
+      "id": "orbit-180",
+      "bearingDegreesClockwiseFromAudience": 180,
+      "positionWorldXYZ": [
+        0.0,
+        8.43,
+        24.140215
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "05-orbit-180.png"
+    },
+    {
+      "id": "orbit-225",
+      "bearingDegreesClockwiseFromAudience": 225,
+      "positionWorldXYZ": [
+        -17.06971,
+        8.43,
+        17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "06-orbit-225.png"
+    },
+    {
+      "id": "orbit-270",
+      "bearingDegreesClockwiseFromAudience": 270,
+      "positionWorldXYZ": [
+        -24.140215,
+        8.43,
+        0.0
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "07-orbit-270.png"
+    },
+    {
+      "id": "orbit-315",
+      "bearingDegreesClockwiseFromAudience": 315,
+      "positionWorldXYZ": [
+        -17.06971,
+        8.43,
+        -17.06971
+      ],
+      "targetWorldXYZ": [
+        0.0,
+        1.93,
+        0.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": true,
+      "reviewImage": "08-orbit-315.png"
+    },
+    {
+      "id": "director-overview",
+      "positionWorldXYZ": [
+        110.0,
+        160.0,
+        -95.0
+      ],
+      "targetWorldXYZ": [
+        -8.0,
+        25.0,
+        25.0
+      ],
+      "verticalFovDegrees": 48.0,
+      "runtimeEquivalent": false,
+      "reviewImage": "12-director-overview.png",
+      "reviewRole": "bird-eye-summit-ledge-lower-country"
+    },
+    {
+      "id": "midflank-oblique",
+      "positionWorldXYZ": [
+        62.0,
+        45.0,
+        -55.0
+      ],
+      "targetWorldXYZ": [
+        -12.0,
+        12.0,
+        25.0
+      ],
+      "verticalFovDegrees": 50.0,
+      "runtimeEquivalent": false,
+      "reviewImage": "13-midflank-oblique.png",
+      "reviewRole": "midflank-vertical-composition"
+    }
+  ],
+  "reviewImages": [
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/00-default-audience.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/01-orbit-000.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/02-orbit-045.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/03-orbit-090.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/04-orbit-135.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/05-orbit-180.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/06-orbit-225.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/07-orbit-270.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/08-orbit-315.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/09-north-up-plan.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/10-longitudinal-section.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/12-director-overview.png",
+    "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/13-midflank-oblique.png"
+  ],
+  "orbitStrip": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/11-sampled-runtime-orbit-board.png",
+  "continuousOrbit": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-2-geology-graybox-r4/14-continuous-runtime-orbit.webp",
+  "limitations": [
+    "This is a composition and spatial-causality graybox, not a final geological surface.",
+    "The Flowy calibration is preproduction morphology evidence, not eruption-history or hazard science.",
+    "The visible lava body is generated only from the selected checked-in Flowy thickness raster.",
+    "The GLB is spatially review-equivalent for geometry, materials, cameras, and collision metadata; Blender world shading and the area fill are renderer-specific and intentionally excluded.",
+    "The collision metadata is runtime-recognized, but the current Viewer3D terrain-safe collision path is enabled only for AUTUMN; Ember integration remains a later-gate task.",
+    "Semantic composition assertions remain human review items and are not reported as machine-verified passes.",
+    "No production Ember asset, runtime behavior, final material, atmosphere, or Meshy object is changed."
+  ],
+  "sourceDigests": {
+    "terrainOwnerSha256": "4ea7a830e7f9250605f5463416ce4cc5032ea4b0db776fc884397ffdb7869901",
+    "gate1AmendmentReportSha256": "234e8b656a299ee2fd5349f6325783f27712741657e93537ff13f7d19bbca03a",
+    "researchContractSha256": "acd32c9c1918725de8891e71b74cf70b31b4df1d8b0834ec427871afe05abd69",
+    "contractPayloadSha256": "d616e0fdd62e1a731ad832ef39205d39cac62bfa65b0e388464fc99a9d20c133"
+  }
+}

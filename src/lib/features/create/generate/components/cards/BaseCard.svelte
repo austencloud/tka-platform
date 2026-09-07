@@ -18,6 +18,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     gridColumnSpan = 2,
     cardIndex = 0, // For stagger animations
     headerFontSize = "9px",
+    appearance = "vivid",
     ariaLabel,
     onClick,
     triggerProps,
@@ -33,6 +34,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     gridColumnSpan?: number;
     cardIndex?: number; // Index for stagger animations
     headerFontSize?: string;
+    appearance?: "vivid" | "quiet";
     ariaLabel?: string;
     onClick?: () => void;
     /**
@@ -82,6 +84,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     bind:this={cardElement}
     class="base-card clickable"
     class:cap-card={title === "LOOP Type"}
+    class:quiet={appearance === "quiet"}
     role="button"
     tabindex="0"
     onclick={handleClick}
@@ -121,6 +124,7 @@ Provides consistent styling and interaction patterns for all generation setting 
 {:else}
   <div
     class="base-card"
+    class:quiet={appearance === "quiet"}
     aria-label={ariaLabel ?? `${title}: ${currentValue}`}
     style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   >
@@ -190,6 +194,25 @@ Provides consistent styling and interaction patterns for all generation setting 
        which replays animations and causes visible opacity flashing */
   }
 
+  .base-card.quiet {
+    --text-color: var(--theme-text);
+    --card-title-letter-spacing: 0;
+    --card-title-transform: none;
+    border: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg);
+    box-shadow: none;
+    color: var(--theme-text);
+  }
+
+  .base-card.quiet::after {
+    display: none;
+  }
+
+  .base-card.quiet .card-value {
+    color: var(--theme-text);
+    text-shadow: none;
+  }
+
   /* 🌟 GLOSSY SHEEN OVERLAY - Creates 3D glass effect */
   .base-card::after {
     content: "";
@@ -212,6 +235,14 @@ Provides consistent styling and interaction patterns for all generation setting 
 
   /* 🖱️ DESKTOP HOVER - Only on hover-capable devices (prevents mobile stuck hover) */
   @media (hover: hover) {
+    .base-card.quiet.clickable:hover {
+      border-color: var(--theme-stroke-strong);
+      background: var(--theme-card-hover-bg);
+      box-shadow: none;
+      filter: none;
+      transform: translateY(-1px);
+    }
+
     .base-card.clickable:hover {
       transform: scale(1.02);
       filter: brightness(1.05);
@@ -230,6 +261,11 @@ Provides consistent styling and interaction patterns for all generation setting 
     transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  .base-card.quiet.clickable:active {
+    animation: none;
+    box-shadow: none;
+    transform: scale(0.99);
+  }
 
   .base-card.clickable {
     cursor: pointer;
@@ -268,7 +304,8 @@ Provides consistent styling and interaction patterns for all generation setting 
     transition: all var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
 
     /* 🎯 SPRING BOUNCE - Trigger bounce animation on release */
-    animation: springBounce var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: springBounce var(--duration-dramatic)
+      cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* 🎯 Spring bounce animation - overshoot and settle */

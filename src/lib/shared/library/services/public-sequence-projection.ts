@@ -41,8 +41,8 @@ export const PROJECTION_DIGEST_EXCLUDED_KEYS = [
   "birthday",
   "publicProjectionRevision",
   "publicProjectionDigest",
-  "blueSoloProp",
-  "redSoloProp",
+  "leftSoloProp",
+  "rightSoloProp",
   "stepPairings",
 ] as const;
 
@@ -139,6 +139,7 @@ export interface ExistingPublicOwnedFields {
  * expose converted dates.
  */
 export interface PublicSequenceProjectionWrite {
+  readonly sequenceKind?: SequenceData["sequenceKind"];
   readonly id: string;
   readonly sourceRef: string;
   readonly ownerId: string;
@@ -176,13 +177,13 @@ export interface PublicSequenceProjectionWrite {
   readonly contentHashVersion: number;
   readonly encoderHash: string;
 
-  readonly blueSoloProp?: SequenceData["blueSoloProp"];
-  readonly redSoloProp?: SequenceData["redSoloProp"];
+  readonly leftSoloProp?: SequenceData["leftSoloProp"];
+  readonly rightSoloProp?: SequenceData["rightSoloProp"];
   readonly stepPairings?: SequenceData["stepPairings"];
-  readonly bluePathHash?: string;
-  readonly redPathHash?: string;
-  readonly blueSoloHash?: string;
-  readonly redSoloHash?: string;
+  readonly leftPathHash?: string;
+  readonly rightPathHash?: string;
+  readonly leftSoloHash?: string;
+  readonly rightSoloHash?: string;
   readonly startPosition?: SequenceData["startPosition"];
 
   readonly creatorIntent?: NonNullable<SequenceData["creatorIntent"]>;
@@ -251,6 +252,9 @@ export async function buildPublicSequenceProjection(
     }),
 
     name: source.name,
+    ...(source.sequenceKind !== undefined && {
+      sequenceKind: source.sequenceKind,
+    }),
     ...(source.displayName !== undefined && {
       displayName: source.displayName,
     }),
@@ -300,17 +304,17 @@ export async function buildPublicSequenceProjection(
     encoderHash: context.encoderHash,
 
     // Regenerated composition members are added after digesting.
-    ...(source.bluePathHash !== undefined && {
-      bluePathHash: source.bluePathHash,
+    ...(source.leftPathHash !== undefined && {
+      leftPathHash: source.leftPathHash,
     }),
-    ...(source.redPathHash !== undefined && {
-      redPathHash: source.redPathHash,
+    ...(source.rightPathHash !== undefined && {
+      rightPathHash: source.rightPathHash,
     }),
-    ...(source.blueSoloHash !== undefined && {
-      blueSoloHash: source.blueSoloHash,
+    ...(source.leftSoloHash !== undefined && {
+      leftSoloHash: source.leftSoloHash,
     }),
-    ...(source.redSoloHash !== undefined && {
-      redSoloHash: source.redSoloHash,
+    ...(source.rightSoloHash !== undefined && {
+      rightSoloHash: source.rightSoloHash,
     }),
     ...(source.startPosition !== undefined && {
       startPosition: source.startPosition,
@@ -342,11 +346,11 @@ export async function buildPublicSequenceProjection(
     ...digested,
 
     // Stored for hydration, but excluded because normalization regenerates ids.
-    ...(source.blueSoloProp !== undefined && {
-      blueSoloProp: source.blueSoloProp,
+    ...(source.leftSoloProp !== undefined && {
+      leftSoloProp: source.leftSoloProp,
     }),
-    ...(source.redSoloProp !== undefined && {
-      redSoloProp: source.redSoloProp,
+    ...(source.rightSoloProp !== undefined && {
+      rightSoloProp: source.rightSoloProp,
     }),
     ...(source.stepPairings !== undefined && {
       stepPairings: source.stepPairings,

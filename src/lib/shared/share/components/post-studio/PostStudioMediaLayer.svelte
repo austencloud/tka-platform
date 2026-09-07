@@ -142,9 +142,9 @@
       {sequence}
       {sequencePosition}
       {playing}
-      bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+      leftPropType={cardRenderOptions?.leftPropTypeOverride ??
         cardRenderOptions?.propTypeOverride}
-      redPropType={cardRenderOptions?.redPropTypeOverride ??
+      rightPropType={cardRenderOptions?.rightPropTypeOverride ??
         cardRenderOptions?.propTypeOverride}
     />
   {:else if binding.renderMode === "choreo-card" && displayedBeatNumber !== undefined}
@@ -158,17 +158,17 @@
       {sequence}
       {playing}
       bpm={composition.tempoBpm ?? 60}
-      bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+      leftPropType={cardRenderOptions?.leftPropTypeOverride ??
         cardRenderOptions?.propTypeOverride}
-      redPropType={cardRenderOptions?.redPropTypeOverride ??
+      rightPropType={cardRenderOptions?.rightPropTypeOverride ??
         cardRenderOptions?.propTypeOverride}
     />
   {:else if binding.renderMode === "mandala"}
     <PostStudioMandalaLayer
       {sequence}
-      bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+      leftPropType={cardRenderOptions?.leftPropTypeOverride ??
         cardRenderOptions?.propTypeOverride}
-      redPropType={cardRenderOptions?.redPropTypeOverride ??
+      rightPropType={cardRenderOptions?.rightPropTypeOverride ??
         cardRenderOptions?.propTypeOverride}
     />
   {:else if binding.previewType === "video" || binding.kind === "video"}

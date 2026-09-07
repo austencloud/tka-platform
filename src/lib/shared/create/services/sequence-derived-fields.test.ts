@@ -7,7 +7,7 @@ import {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
   GridMode,
@@ -16,23 +16,23 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 function step(
-  blue: { start: GridLocation; end: GridLocation },
-  red: { start: GridLocation; end: GridLocation },
+  left: { start: GridLocation; end: GridLocation },
+  right: { start: GridLocation; end: GridLocation },
   stale: Partial<StepData> = {}
 ): StepData {
   return {
     ...createStepData({
       ...stale,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          color: MotionColor.BLUE,
-          startLocation: blue.start,
-          endLocation: blue.end,
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
+          startLocation: left.start,
+          endLocation: left.end,
         }),
-        [MotionColor.RED]: createMotionData({
-          color: MotionColor.RED,
-          startLocation: red.start,
-          endLocation: red.end,
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
+          startLocation: right.start,
+          endLocation: right.end,
         }),
       },
     }),
@@ -89,8 +89,8 @@ describe("reconcileStepDerived", () => {
       { start: GridLocation.SOUTHWEST, end: GridLocation.SOUTHEAST }
     );
     const fixed = reconcileStepDerived(s);
-    expect(fixed.motions[MotionColor.BLUE]?.gridMode).toBe(GridMode.BOX);
-    expect(fixed.motions[MotionColor.RED]?.gridMode).toBe(GridMode.BOX);
+    expect(fixed.motions[HandSide.LEFT]?.gridMode).toBe(GridMode.BOX);
+    expect(fixed.motions[HandSide.RIGHT]?.gridMode).toBe(GridMode.BOX);
   });
 
   it("preserves the step-level gridMode field (createStepData-drop trap)", () => {
@@ -126,8 +126,8 @@ describe("reconcileStepDerived", () => {
       ...s,
       motions: {
         ...s.motions,
-        [MotionColor.BLUE]: {
-          ...s.motions[MotionColor.BLUE]!,
+        [HandSide.LEFT]: {
+          ...s.motions[HandSide.LEFT]!,
           startLocation: "xyz" as GridLocation,
         },
       },
@@ -141,7 +141,7 @@ describe("reconcileStepDerived", () => {
     const blank = createStepData({ isBlank: true });
     expect(reconcileStepDerived(blank)).toBe(blank);
     const oneHand = createStepData({
-      motions: { [MotionColor.BLUE]: createMotionData({}) },
+      motions: { [HandSide.LEFT]: createMotionData({}) },
     });
     expect(reconcileStepDerived(oneHand)).toBe(oneHand);
   });
@@ -200,13 +200,13 @@ describe("rotateSequenceGeometry", () => {
       isStartPosition: true,
       id: "sp",
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          color: MotionColor.BLUE,
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
           startLocation: GridLocation.NORTH,
           endLocation: GridLocation.NORTH,
         }),
-        [MotionColor.RED]: createMotionData({
-          color: MotionColor.RED,
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
           startLocation: GridLocation.SOUTH,
           endLocation: GridLocation.SOUTH,
         }),
@@ -215,13 +215,13 @@ describe("rotateSequenceGeometry", () => {
     const step1 = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          color: MotionColor.BLUE,
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
           startLocation: GridLocation.NORTH,
           endLocation: GridLocation.EAST,
         }),
-        [MotionColor.RED]: createMotionData({
-          color: MotionColor.RED,
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
           startLocation: GridLocation.SOUTH,
           endLocation: GridLocation.WEST,
         }),
@@ -242,8 +242,8 @@ describe("rotateSequenceGeometry", () => {
   it("rotates a diamond alpha seed +1 (CW 45°) into box, reconciling positions+gridMode", () => {
     const out = rotateSequenceGeometry(alphaSeq(), 1);
     const sp = out.startPosition!;
-    expect(sp.motions[MotionColor.BLUE]!.startLocation).toBe(GridLocation.NORTHEAST); // N → NE
-    expect(sp.motions[MotionColor.RED]!.startLocation).toBe(GridLocation.SOUTHWEST); // S → SW
+    expect(sp.motions[HandSide.LEFT]!.startLocation).toBe(GridLocation.NORTHEAST); // N → NE
+    expect(sp.motions[HandSide.RIGHT]!.startLocation).toBe(GridLocation.SOUTHWEST); // S → SW
     expect(sp.gridMode).toBe(GridMode.BOX);
     expect(out.steps[0]!.gridMode).toBe(GridMode.BOX);
   });
@@ -251,8 +251,8 @@ describe("rotateSequenceGeometry", () => {
   it("round-trips: +1 then -1 restores original locations + diamond", () => {
     const there = rotateSequenceGeometry(alphaSeq(), 1);
     const back = rotateSequenceGeometry(there, -1);
-    expect(back.steps[0]!.motions![MotionColor.BLUE]!.startLocation).toBe(GridLocation.NORTH);
-    expect(back.steps[0]!.motions![MotionColor.RED]!.endLocation).toBe(GridLocation.WEST);
+    expect(back.steps[0]!.motions![HandSide.LEFT]!.startLocation).toBe(GridLocation.NORTH);
+    expect(back.steps[0]!.motions![HandSide.RIGHT]!.endLocation).toBe(GridLocation.WEST);
     expect(back.steps[0]!.gridMode).toBe(GridMode.DIAMOND);
   });
 

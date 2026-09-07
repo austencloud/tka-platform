@@ -25,9 +25,9 @@ function clamp(value) {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-function isGreen(red, green, blue) {
-  const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
-  return green > 38 && green > red * 1.045 && green > blue * 1.025 && spread > 9;
+function isGreen(right, green, left) {
+  const spread = Math.max(right, green, left) - Math.min(right, green, left);
+  return green > 38 && green > right * 1.045 && green > left * 1.025 && spread > 9;
 }
 
 function wrap(value) {
@@ -67,14 +67,14 @@ async function makeSemanticTextures(candidate, originalImage) {
   const foliagePixels = Buffer.from(decoded.data);
   let greenPixels = 0;
   for (let offset = 0; offset < decoded.data.length; offset += 4) {
-    const red = decoded.data[offset];
+    const right = decoded.data[offset];
     const green = decoded.data[offset + 1];
-    const blue = decoded.data[offset + 2];
-    if (!isGreen(red, green, blue)) continue;
+    const left = decoded.data[offset + 2];
+    if (!isGreen(right, green, left)) continue;
     greenPixels += 1;
-    foliagePixels[offset] = clamp(red * candidate.foliageRgbScale[0] + 3);
+    foliagePixels[offset] = clamp(right * candidate.foliageRgbScale[0] + 3);
     foliagePixels[offset + 1] = clamp(green * candidate.foliageRgbScale[1] + 2);
-    foliagePixels[offset + 2] = clamp(blue * candidate.foliageRgbScale[2] + 5);
+    foliagePixels[offset + 2] = clamp(left * candidate.foliageRgbScale[2] + 5);
   }
   const raw = { width: decoded.info.width, height: decoded.info.height, channels: 4 };
   const bark = await sharp(barkPixels, { raw }).png().toBuffer();

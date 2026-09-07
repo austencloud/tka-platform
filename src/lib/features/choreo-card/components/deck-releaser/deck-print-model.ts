@@ -101,6 +101,31 @@ export interface DeckPrintMetadata {
   deckSummary: string;
 }
 
+export function usesSerializedCardIdentity(
+  cardProfile: "sequence" | "hand-path"
+): boolean {
+  return cardProfile === "sequence";
+}
+
+export function buildHandPathDeckPrintMetadata(input: {
+  deckLabel: string;
+  deckRefPadded: string;
+  cardNames: string[];
+  includeHowToRead: boolean;
+}): DeckPrintMetadata {
+  const contentCount = input.cardNames.length;
+  const printedCount = contentCount + (input.includeHowToRead ? 1 : 0);
+  return {
+    title: `Deck ${input.deckRefPadded}: ${printedCount} cards`,
+    subject:
+      `${contentCount} Timing & Direction hand-path reference cards` +
+      `${input.includeHowToRead ? " + How to Read insert" : ""}. ` +
+      `Cards: ${input.cardNames.join(", ")}.`,
+    keywords: [...input.cardNames, "hand paths", "timing and direction"],
+    deckSummary: `${input.deckLabel}  ·  Hand Path References  ·  ${contentCount} cards`,
+  };
+}
+
 export function buildDeckPrintMetadata(
   input: DeckPrintMetadataInput
 ): DeckPrintMetadata {

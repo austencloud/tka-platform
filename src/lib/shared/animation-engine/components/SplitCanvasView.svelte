@@ -50,12 +50,15 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
   import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import CanvasSurface from "./CanvasSurface.svelte";
   import { untrack } from "svelte";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   let {
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
+    backgroundAlpha = 1,
+    layout = "stacked",
     letter = null,
     stepData = null,
     sequenceData = null,
@@ -64,8 +67,9 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     fireConfig = undefined,
     ledConfig = undefined,
     trailSettings = undefined,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
+    fanAppearance = undefined,
     tipEffectMap = undefined,
     visibilityManagerOverride = undefined,
     showNonRadialPoints = true,
@@ -84,10 +88,12 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     // Fires when the collapse (close) max-height transition finishes.
     onCollapseComplete = () => {},
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
+    backgroundAlpha?: number;
+    layout?: "stacked" | "sidecar";
     letter?: Letter | null;
     stepData?: StartPositionData | StepData | null;
     sequenceData?: SequenceData | null;
@@ -96,8 +102,9 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
+    fanAppearance?: FanAppearance;
     tipEffectMap?: TipEffectMap;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
     showNonRadialPoints?: boolean;
@@ -161,16 +168,17 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
 <div
   class="split-canvases"
   class:expanded={splitExpanded}
+  class:sidecar={layout === "sidecar"}
   bind:this={splitCanvasesEl}
   ontransitionend={handleSplitTransitionEnd}
 >
   <div class="split-canvas">
     <CanvasSurface
-      {blueProp}
-      redProp={null}
+      {leftProp}
+      rightProp={null}
       {gridVisible}
       {gridMode}
-      backgroundAlpha={1}
+      {backgroundAlpha}
       {darkModeEnabled}
       {letter}
       {stepData}
@@ -180,11 +188,13 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {fireConfig}
       {ledConfig}
       {trailSettings}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
+      {fanAppearance}
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}
+      mandalaVisibleOverride={true}
       hideTkaGlyph={true}
       hideStepNumbers={true}
       {resizePaused}
@@ -193,11 +203,11 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
   </div>
   <div class="split-canvas">
     <CanvasSurface
-      blueProp={null}
-      {redProp}
+      leftProp={null}
+      {rightProp}
       {gridVisible}
       {gridMode}
-      backgroundAlpha={1}
+      {backgroundAlpha}
       {darkModeEnabled}
       {letter}
       {stepData}
@@ -207,11 +217,13 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {fireConfig}
       {ledConfig}
       {trailSettings}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
+      {fanAppearance}
       {tipEffectMap}
       {visibilityManagerOverride}
       {showNonRadialPoints}
+      mandalaVisibleOverride={true}
       hideTkaGlyph={true}
       hideStepNumbers={true}
       {resizePaused}
@@ -249,6 +261,26 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       opacity 0.3s ease-out 0.2s;
   }
 
+  /* Embedded square stages place the split pair beside the hero instead of
+     stacking a third square beneath it. Both leaves remain square and share
+     the parent's transparent atmospheric surface. */
+  .split-canvases.sidecar {
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.25rem, 1cqw, 0.75rem);
+  }
+
+  .split-canvases.sidecar.expanded {
+    max-height: 100cqh;
+  }
+
+  .split-canvases.sidecar .split-canvas {
+    width: 100%;
+    flex: 0 1 auto;
+  }
+
   .split-canvas {
     width: 50%;
     aspect-ratio: 1 / 1;
@@ -266,7 +298,6 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     width: 100%;
     height: 100%;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .split-canvases {

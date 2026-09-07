@@ -21,6 +21,7 @@
     "@tka/render-composition": "file:../packages/render-composition",
     "@tka/render-core": "file:../packages/render-core",
     "@tka/sequence-engine": "file:../packages/sequence-engine",
+    "@tka/tka-types": "file:../packages/tka-types",
     "@vtg/domain": "file:../packages/vtg-domain",
     "canvas": "^3.2.1",
     "express": "^5.2.1",

@@ -113,12 +113,12 @@ describe("Flow Fest minimap", () => {
       projectedCrs: "EPSG:26916",
     });
     expect(FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD.at(0)).toEqual({
-      x: -170,
-      z: 21,
+      x: -512,
+      z: 38,
     });
     expect(FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD.at(-1)).toEqual({
-      x: 370,
-      z: -157.5,
+      x: 445.04,
+      z: -245.77,
     });
 
     const point = (x: number, z: number) => ({

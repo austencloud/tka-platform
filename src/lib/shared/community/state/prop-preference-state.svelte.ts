@@ -22,7 +22,7 @@ function catdogStillSelected(
   props: readonly PropType[]
 ): CatdogCombo | null {
   if (!combo) return null;
-  return props.includes(combo.bluePropType) && props.includes(combo.redPropType)
+  return props.includes(combo.leftPropType) && props.includes(combo.rightPropType)
     ? combo
     : null;
 }
@@ -155,11 +155,11 @@ export function createPropPreferenceState(userId: string) {
   async function setCatdogFavorite(combo: CatdogCombo | null) {
     const nextProps = [...propsISpinWith];
     if (combo) {
-      if (!nextProps.includes(combo.bluePropType)) {
-        nextProps.push(combo.bluePropType);
+      if (!nextProps.includes(combo.leftPropType)) {
+        nextProps.push(combo.leftPropType);
       }
-      if (!nextProps.includes(combo.redPropType)) {
-        nextProps.push(combo.redPropType);
+      if (!nextProps.includes(combo.rightPropType)) {
+        nextProps.push(combo.rightPropType);
       }
     }
     await persistSnapshot(

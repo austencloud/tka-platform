@@ -99,9 +99,9 @@ const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
 export function getGridModeForPosition(position: GridPosition): GridMode {
   const locations = POSITION_LOCATIONS[position];
   if (!locations) return GridMode.DIAMOND;
-  const [blueLoc, redLoc] = locations;
+  const [leftLoc, rightLoc] = locations;
   const perimeterLoc =
-    blueLoc === GridLocation.CENTER ? redLoc : blueLoc;
+    leftLoc === GridLocation.CENTER ? rightLoc : leftLoc;
   if (perimeterLoc === GridLocation.CENTER) return GridMode.DIAMOND;
   return CARDINAL_LOCATIONS.has(perimeterLoc) ? GridMode.DIAMOND : GridMode.BOX;
 }
@@ -118,11 +118,11 @@ export function formatPosition(pos: GridPosition): string {
 /** Whether a hand is at center for a given position */
 export function isHandAtCenter(
   position: GridPosition,
-  hand: "blue" | "red"
+  hand: "left" | "right"
 ): boolean {
   const locations = POSITION_LOCATIONS[position];
   if (!locations) return false;
-  const index = hand === "blue" ? 0 : 1;
+  const index = hand === "left" ? 0 : 1;
   return locations[index] === GridLocation.CENTER;
 }
 

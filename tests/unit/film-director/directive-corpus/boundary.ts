@@ -81,12 +81,20 @@ export const entries: CorpusEntry[] = [
     },
   },
   {
-    id: "cast-count-invalid-zero",
-    utterance: "Cast zero performers for this scene.",
-    film: corpusFilm("cast-count-invalid-zero", {
+    id: "cast-count-zero",
+    utterance: "Nobody in this one. Hold on the empty stage.",
+    film: corpusFilm("cast-count-zero", {
       performance: { cast: { count: 0 } },
     }),
-    expect: { outcome: "rejects", messageIncludes: "Too small: expected number to be >=1" },
+    // Gap 21. Zero was a rejection until round 2, when an empty stage became
+    // a shot a director can actually ask for.
+    expect: {
+      outcome: "resolves",
+      assert: (spec) => {
+        if (spec.scenes[0]!.performance.performers.length !== 0)
+          throw new Error("expected an empty cast to resolve");
+      },
+    },
   },
   {
     id: "cast-count-invalid-nine-via-schema",

@@ -18,7 +18,11 @@
     Float32BufferAttribute,
     AdditiveBlending,
     DynamicDrawUsage,
+    Color,
+    type Object3D,
   } from "three";
+  import type { LightHandle } from "../lighting/dynamic-light-manager";
+  import type { SceneEffectsManager3D } from "../scene-effects/scene-effects-manager-3d";
 
   interface Props {
     /** Arc start point */
@@ -44,6 +48,10 @@
     segments?: number;
     /** Frames between path regeneration. From Zap3DParams.regenerateEveryFrames. */
     regenerateEveryFrames?: number;
+    /** Scene owner for the shared, shader-stable effect light pool. */
+    sceneEffectsManager?: SceneEffectsManager3D | null;
+    /** Converts rig-local arc endpoints into the pool's world space. */
+    lightSpaceRoot?: Object3D;
   }
 
   let {
@@ -56,6 +64,8 @@
     displacement = 0.15,
     segments = 9,
     regenerateEveryFrames = 3,
+    sceneEffectsManager = null,
+    lightSpaceRoot,
   }: Props = $props();
 
   /**
@@ -84,6 +94,71 @@
   let mainVisible = $state(false);
   let branchesVisible = $state(false);
   let crackleVisible = $state(false);
+  let startLightHandle: LightHandle | null = null;
+  let endLightHandle: LightHandle | null = null;
+  const lightStart = new Vector3();
+  const lightEnd = new Vector3();
+  const lightColor = new Color();
+
+  function releaseLights(): void {
+    const manager = sceneEffectsManager?.getDynamicLightManager();
+    if (manager && startLightHandle) manager.releaseLight(startLightHandle);
+    if (manager && endLightHandle) manager.releaseLight(endLightHandle);
+    startLightHandle = null;
+    endLightHandle = null;
+  }
+
+  function updateLights(): void {
+    const manager = sceneEffectsManager?.getDynamicLightManager();
+    if (!manager || intensity <= 0.5) {
+      releaseLights();
+      return;
+    }
+
+    lightStart.copy(start);
+    lightSpaceRoot?.localToWorld(lightStart);
+    lightColor.set(color);
+    if (startLightHandle) {
+      manager.updateLight(
+        startLightHandle,
+        lightStart,
+        intensity * 0.5,
+        lightColor,
+        2.5
+      );
+    } else {
+      startLightHandle = manager.requestLight(
+        lightStart,
+        lightColor,
+        intensity * 0.5,
+        2.5
+      );
+    }
+
+    if (mode === "arc" && end) {
+      lightEnd.copy(end);
+      lightSpaceRoot?.localToWorld(lightEnd);
+      if (endLightHandle) {
+        manager.updateLight(
+          endLightHandle,
+          lightEnd,
+          intensity * 0.3,
+          lightColor,
+          2
+        );
+      } else {
+        endLightHandle = manager.requestLight(
+          lightEnd,
+          lightColor,
+          intensity * 0.3,
+          2
+        );
+      }
+    } else if (endLightHandle) {
+      manager.releaseLight(endLightHandle);
+      endLightHandle = null;
+    }
+  }
 
   // The bolt changes shape frequently, but its GPU resources do not need to.
   // Each geometry owns one fixed dynamic position buffer whose draw range is
@@ -331,7 +406,10 @@
 
   // Animation loop
   useTask((delta) => {
-    if (!enabled) return;
+    if (!enabled) {
+      releaseLights();
+      return;
+    }
 
     frameCount++;
     pulsePhase += delta * 3; // Pulse speed
@@ -340,6 +418,7 @@
     if (frameCount % Math.max(1, regenerateEveryFrames) === 0) {
       regeneratePaths();
     }
+    updateLights();
   });
 
   // No position-tracking $effect here on purpose. One used to read start.x/y/z
@@ -352,6 +431,7 @@
   // cadence rather than continuously.
 
   onDestroy(() => {
+    releaseLights();
     mainGeometry.dispose();
     branchGeometry.dispose();
     crackleGeometry.dispose();
@@ -366,9 +446,11 @@
   );
 </script>
 
-{#if enabled}
+<!-- These bounded meshes stay mounted so scene warmup compiles their material
+     path before Zap can be selected. Empty draw ranges keep them inert. -->
+<T.Group visible={enabled}>
   <!-- Main arc (arc mode) -->
-  {#if mainVisible}
+  <T.Group visible={mainVisible}>
     <!-- Core line (bright, thin) -->
     <T.Line geometry={mainGeometry}>
       <T.LineBasicMaterial
@@ -390,10 +472,10 @@
         linewidth={3}
       />
     </T.Line>
-  {/if}
+  </T.Group>
 
   <!-- Branch arcs -->
-  {#if branchesVisible}
+  <T.Group visible={branchesVisible}>
     <!-- Core -->
     <T.LineSegments geometry={branchGeometry}>
       <T.LineBasicMaterial
@@ -415,10 +497,10 @@
         linewidth={2}
       />
     </T.LineSegments>
-  {/if}
+  </T.Group>
 
   <!-- Crackle arcs (crackle mode) -->
-  {#if crackleVisible}
+  <T.Group visible={crackleVisible}>
     <!-- Core -->
     <T.LineSegments geometry={crackleGeometry}>
       <T.LineBasicMaterial
@@ -440,27 +522,5 @@
         linewidth={2}
       />
     </T.LineSegments>
-  {/if}
-
-  <!-- Optional: Point lights at arc endpoints for extra glow -->
-  <!-- Light falloff in METRES: 100/80 lit the entire scene from a prop tip. -->
-  {#if intensity > 0.5}
-    <T.PointLight
-      position={[start.x, start.y, start.z]}
-      color={glowColor}
-      intensity={intensity * 0.5}
-      distance={2.5}
-      decay={2}
-    />
-
-    {#if mode === "arc" && end}
-      <T.PointLight
-        position={[end.x, end.y, end.z]}
-        color={glowColor}
-        intensity={intensity * 0.3}
-        distance={2}
-        decay={2}
-      />
-    {/if}
-  {/if}
-{/if}
+  </T.Group>
+</T.Group>

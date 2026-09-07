@@ -9,14 +9,14 @@
     sections,
     orientationMap,
     onOrientationChange,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
   } = $props<{
     sections: PositionSection[];
     orientationMap: Map<GridPosition, CardOrientations>;
-    onOrientationChange: (position: GridPosition, hand: "blue" | "red", value: Orientation) => void;
-    bluePropType: PropType;
-    redPropType: PropType;
+    onOrientationChange: (position: GridPosition, hand: "left" | "right", value: Orientation) => void;
+    leftPropType: PropType;
+    rightPropType: PropType;
   }>();
 </script>
 
@@ -35,8 +35,8 @@
               {position}
               {orientations}
               {onOrientationChange}
-              {bluePropType}
-              {redPropType}
+              {leftPropType}
+              {rightPropType}
             />
           {/if}
         {/each}

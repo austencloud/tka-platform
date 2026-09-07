@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createSequenceCoreState } from "./sequence-core-state.svelte";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
   GridMode,
@@ -19,13 +19,13 @@ describe("setCurrentSequence reconciles derived fields", () => {
       startPosition: GridPosition.ALPHA2, // STALE
       endPosition: GridPosition.ALPHA4, // STALE
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          color: MotionColor.BLUE,
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
           startLocation: GridLocation.NORTHWEST,
           endLocation: GridLocation.NORTHEAST,
         }),
-        [MotionColor.RED]: createMotionData({
-          color: MotionColor.RED,
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
           startLocation: GridLocation.SOUTHWEST,
           endLocation: GridLocation.SOUTHEAST,
         }),

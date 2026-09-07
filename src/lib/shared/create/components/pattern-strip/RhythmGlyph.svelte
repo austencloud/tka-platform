@@ -19,10 +19,10 @@
 <span class="glyph" aria-hidden="true">
   {#if lanes === 2}
     <span class="row">
-      {#each beats as i}<span class="dot" class:blue={maskAt(sym, i).blue}></span>{/each}
+      {#each beats as i}<span class="dot" class:blue={maskAt(sym, i).left}></span>{/each}
     </span>
     <span class="row">
-      {#each beats as i}<span class="dot" class:red={maskAt(sym, i).red}></span>{/each}
+      {#each beats as i}<span class="dot" class:red={maskAt(sym, i).right}></span>{/each}
     </span>
   {:else}
     <span class="row">

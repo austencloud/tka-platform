@@ -38,10 +38,10 @@ function step(
   letter: string,
   sp: string,
   ep: string,
-  blue: ReturnType<typeof motion>,
-  red: ReturnType<typeof motion>
+  left: ReturnType<typeof motion>,
+  right: ReturnType<typeof motion>
 ): SequenceStep {
-  return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { blue, red } } as unknown as SequenceStep;
+  return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { left, right } } as unknown as SequenceStep;
 }
 
 function makeSequence(): SequenceStep[] {
@@ -70,8 +70,8 @@ function baseOptions(overrides: Partial<GenerationOptions>): GenerationOptions {
 }
 
 const wire: LOOPSpecWire = {
-  blue: { rotated: { period: 2 } },
-  red: { rotated: { period: 2 } },
+  left: { rotated: { period: 2 } },
+  right: { rotated: { period: 2 } },
 };
 
 describe("BuildResultTransformer — loopSpec certificate", () => {

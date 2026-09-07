@@ -21,6 +21,7 @@ import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/mo
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import type { DrawableImage } from '$lib/shared/render/services/svg-image-cache';
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 
 /** Canvas size for the XP era - 256×256 matches a typical XP-era thumbnail */
@@ -246,7 +247,7 @@ export class XPRenderer extends EraRendererBase {
 		prepared: PreparedRenderData,
 		scale: number,
 	): Promise<void> {
-		for (const color of ["blue", "red"] as const) {
+		for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
 			const position = prepared.propPositions[color];
 			const assets = prepared.propAssets[color];
 			if (!position || !assets?.imageSrc) continue;
@@ -261,9 +262,9 @@ export class XPRenderer extends EraRendererBase {
 				const cacheKey = `xp_prop_${color}_${wrapped.svg.length}`;
 				const img = await this.loadSvgImage(wrapped.svg, cacheKey);
 
-				const eraColor = color === "blue" ? BLUE_COLOR : RED_COLOR;
+				const eraColor = color === HandSide.LEFT ? BLUE_COLOR : RED_COLOR;
 				const shadowColor =
-					color === "blue" ? "rgba(0,50,200,0.4)" : "rgba(200,0,0,0.4)";
+					color === HandSide.LEFT ? "rgba(0,50,200,0.4)" : "rgba(200,0,0,0.4)";
 
 				// Props use the viewBox center for their pivot (not a stored center field)
 				const centerX = viewBoxWidth / 2;
@@ -323,7 +324,7 @@ export class XPRenderer extends EraRendererBase {
 		prepared: PreparedRenderData,
 		scale: number,
 	): Promise<void> {
-		for (const color of ["blue", "red"] as const) {
+		for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
 			const position = prepared.arrowPositions[color];
 			const assets = prepared.arrowAssets[color];
 			const shouldMirror = prepared.arrowMirroring[color] ?? false;
@@ -363,7 +364,7 @@ export class XPRenderer extends EraRendererBase {
 					(assets.center?.y ?? viewBoxHeight / 2) - viewBoxMinY + wrapped.offsetY;
 
 				const shadowColor =
-					color === "blue" ? "rgba(0,50,200,0.3)" : "rgba(200,0,0,0.3)";
+					color === "left" ? "rgba(0,50,200,0.3)" : "rgba(200,0,0,0.3)";
 
 				const drawParams = {
 					x: position.x * scale,
@@ -387,7 +388,7 @@ export class XPRenderer extends EraRendererBase {
 				ctx.restore();
 
 				// Tint pass (on top, no shadow)
-				const eraColor = color === "blue" ? BLUE_COLOR : RED_COLOR;
+				const eraColor = color === "left" ? BLUE_COLOR : RED_COLOR;
 				ctx.save();
 				this.drawTintedElement(ctx, img, drawParams, eraColor);
 				ctx.restore();
@@ -410,7 +411,7 @@ export class XPRenderer extends EraRendererBase {
 		prepared: PreparedRenderData,
 		scale: number,
 	): void {
-		for (const color of ["blue", "red"] as const) {
+		for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
 			const position = prepared.propPositions[color];
 			if (!position) continue;
 

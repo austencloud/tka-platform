@@ -74,6 +74,7 @@ export function openTunnelInViewer(
   //    to a one-performer cast around this same sequence — see
   //    collected-tunnel-source.ts for why that fallback now has one owner.
   openSequenceOverlay(collectedTunnelViewerSequence(tunnel), {
+    analyticsSource: "tunnel_collection",
     initialBpm: snap.playback.bpm,
     initialPlaybackMode: snap.playback.playbackMode,
     tunnelComposition: tunnel.composition,

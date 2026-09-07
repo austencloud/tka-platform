@@ -63,15 +63,15 @@ export function handToPropTarget(
 
 export function poseToOptimizerInput(pose: PoseDefinition): OptimizerInput {
   return {
-    blue: handToPropTarget(
-      pose.blueHand.plane,
-      pose.blueHand.position,
-      pose.blueHand.orientation
+    left: handToPropTarget(
+      pose.leftHand.plane,
+      pose.leftHand.position,
+      pose.leftHand.orientation
     ),
-    red: handToPropTarget(
-      pose.redHand.plane,
-      pose.redHand.position,
-      pose.redHand.orientation
+    right: handToPropTarget(
+      pose.rightHand.plane,
+      pose.rightHand.position,
+      pose.rightHand.orientation
     ),
   };
 }

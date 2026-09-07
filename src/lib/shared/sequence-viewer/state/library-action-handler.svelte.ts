@@ -13,12 +13,16 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+import {
+  normalizeCardPresentation,
+  type CardPresentation,
+} from "$lib/shared/share/domain/models/card-presentation";
 
 export interface LibraryActionHandlerDeps {
   getSequence: () => SequenceData | null;
   getIsOwned: () => boolean;
-  getBluePropType: () => PropType | undefined;
-  getRedPropType: () => PropType | undefined;
+  getLeftPropType: () => PropType | undefined;
+  getRightPropType: () => PropType | undefined;
   getCatDogModeEnabled: () => boolean | undefined;
   getHapticService: () => HapticFeedback | null;
   onDeleteSuccess: () => void;
@@ -123,6 +127,25 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     }
   }
 
+  async function saveCardPresentation(
+    presentation: CardPresentation
+  ): Promise<boolean> {
+    const sequence = deps.getSequence();
+    if (!sequence || !isOwnedLibraryRecord || !deps.getIsOwned()) return false;
+    try {
+      const repo = getLibraryRepository() as LibraryRepository;
+      await repo.updateSequence(sequence.id, {
+        cardPresentation: normalizeCardPresentation(presentation),
+      });
+      showToast("Card footer saved", "success");
+      return true;
+    } catch (error) {
+      console.error("[Orchestrator] saveCardPresentation FAILED:", error);
+      showToast("Couldn't save the card footer", "error");
+      return false;
+    }
+  }
+
   async function handleSave() {
     deps.getHapticService()?.trigger("selection");
     const sequence = deps.getSequence();
@@ -138,8 +161,8 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     try {
       const coordinator = await getVisualSequenceSaveCoordinator();
       const outcome = await coordinator.save(sequence, {
-        bluePropType: deps.getBluePropType(),
-        redPropType: deps.getRedPropType(),
+        leftPropType: deps.getLeftPropType(),
+        rightPropType: deps.getRightPropType(),
         catDogModeEnabled: deps.getCatDogModeEnabled(),
         pathShape: getAnimationVisibilityManager().getPathShape(),
       });
@@ -189,6 +212,7 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     handleFavoriteToggle,
     handlePublishAction,
     handleUnpublishAction,
+    saveCardPresentation,
     handleSave,
     handleDelete,
   };

@@ -194,17 +194,17 @@ export class HandPathConstraint implements IVariationConstraint {
     }
 
     // Calculate hand paths for both hands
-    const prevBluePath = this.getHandPath(previousStep.blueMotion);
-    const currBluePath = this.getHandPath(candidate.blueMotion);
-    const prevRedPath = this.getHandPath(previousStep.redMotion);
-    const currRedPath = this.getHandPath(candidate.redMotion);
+    const prevLeftPath = this.getHandPath(previousStep.leftMotion);
+    const currLeftPath = this.getHandPath(candidate.leftMotion);
+    const prevRightPath = this.getHandPath(previousStep.rightMotion);
+    const currRightPath = this.getHandPath(candidate.rightMotion);
 
     // Check for reversals
-    const blueReversal = isHandPathReversal(prevBluePath, currBluePath);
-    const redReversal = isHandPathReversal(prevRedPath, currRedPath);
+    const leftReversal = isHandPathReversal(prevLeftPath, currLeftPath);
+    const rightReversal = isHandPathReversal(prevRightPath, currRightPath);
 
     // Score based on mode
-    return this.scoreReversals(blueReversal, redReversal, prevBluePath, currBluePath, prevRedPath, currRedPath);
+    return this.scoreReversals(leftReversal, rightReversal, prevLeftPath, currLeftPath, prevRightPath, currRightPath);
   }
 
   /**
@@ -221,16 +221,16 @@ export class HandPathConstraint implements IVariationConstraint {
    * Score based on reversal detection and mode
    */
   private scoreReversals(
-    blueReversal: boolean,
-    redReversal: boolean,
-    prevBluePath: HandPath,
-    currBluePath: HandPath,
-    prevRedPath: HandPath,
-    currRedPath: HandPath
+    leftReversal: boolean,
+    rightReversal: boolean,
+    prevLeftPath: HandPath,
+    currLeftPath: HandPath,
+    prevRightPath: HandPath,
+    currRightPath: HandPath
   ): ConstraintScore {
-    const bothReversed = blueReversal && redReversal;
-    const oneReversed = blueReversal || redReversal;
-    const noneReversed = !blueReversal && !redReversal;
+    const bothReversed = leftReversal && rightReversal;
+    const oneReversed = leftReversal || rightReversal;
+    const noneReversed = !leftReversal && !rightReversal;
 
     switch (this.handPathMode) {
       case "maximize": {
@@ -247,7 +247,7 @@ export class HandPathConstraint implements IVariationConstraint {
         return {
           score,
           satisfied: true, // Soft constraint - always "satisfied"
-          reason: this.buildReason(blueReversal, redReversal, prevBluePath, currBluePath, prevRedPath, currRedPath),
+          reason: this.buildReason(leftReversal, rightReversal, prevLeftPath, currLeftPath, prevRightPath, currRightPath),
         };
       }
 
@@ -258,7 +258,7 @@ export class HandPathConstraint implements IVariationConstraint {
           satisfied: noneReversed,
           reason: noneReversed
             ? "Hand paths continuous"
-            : this.buildReason(blueReversal, redReversal, prevBluePath, currBluePath, prevRedPath, currRedPath),
+            : this.buildReason(leftReversal, rightReversal, prevLeftPath, currLeftPath, prevRightPath, currRightPath),
         };
       }
 
@@ -299,20 +299,20 @@ export class HandPathConstraint implements IVariationConstraint {
    * Build human-readable reason string
    */
   private buildReason(
-    blueReversal: boolean,
-    redReversal: boolean,
-    prevBluePath: HandPath,
-    currBluePath: HandPath,
-    prevRedPath: HandPath,
-    currRedPath: HandPath
+    leftReversal: boolean,
+    rightReversal: boolean,
+    prevLeftPath: HandPath,
+    currLeftPath: HandPath,
+    prevRightPath: HandPath,
+    currRightPath: HandPath
   ): string {
     const parts: string[] = [];
 
-    if (blueReversal) {
-      parts.push(`blue ${prevBluePath}→${currBluePath}`);
+    if (leftReversal) {
+      parts.push(`blue ${prevLeftPath}→${currLeftPath}`);
     }
-    if (redReversal) {
-      parts.push(`red ${prevRedPath}→${currRedPath}`);
+    if (rightReversal) {
+      parts.push(`red ${prevRightPath}→${currRightPath}`);
     }
 
     if (parts.length === 0) {

@@ -22,12 +22,12 @@ import { getSequenceMotionVisibility } from "$lib/shared/foundation/services/seq
 export interface WarmOptions {
   /** Scan cards render dark by default. */
   isDark?: boolean;
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
   catDogMode?: boolean;
   /** Participating-hand visibility. Defaults to the sequence's motion profile. */
-  showBlueMotion?: boolean;
-  showRedMotion?: boolean;
+  showLeftMotion?: boolean;
+  showRightMotion?: boolean;
   /** Throw unless every canonical object already exists or uploads successfully. */
   requireComplete?: boolean;
   /** Stop starting more cell work when the requesting render is obsolete. */
@@ -86,11 +86,14 @@ async function renderCanonicalCell(
   // download before rendering and another after upload.
   if (verifyUpload && pictographCloudCache.isCellKnownAvailable(hash)) return;
 
-  // A new browser does not have the persisted positive set yet. Verify the
-  // deterministic object before spending CPU and upload bandwidth rebuilding
-  // a canonical cell that already exists.
+  // Unknown hashes are expected writer misses. Keep this lookup quiet so a
+  // first-time canonical render goes straight to upload without logging a
+  // browser-visible 404 for the object it is about to create.
   if (verifyUpload) {
-    const stored = await pictographCloudCache.download(hash, { signal });
+    const stored = await pictographCloudCache.download(hash, {
+      probeUnknown: false,
+      signal,
+    });
     throwIfAborted(signal);
     if (stored) return;
   }
@@ -158,17 +161,19 @@ export async function warmSequenceCells(
   opts: WarmOptions = {}
 ): Promise<WarmSequenceCellsResult> {
   throwIfAborted(opts.signal);
-  const blueProp = opts.bluePropType;
+  const leftProp = opts.leftPropType;
   const motionVisibility = getSequenceMotionVisibility(sequence);
   const renderOptions: PreviewCellRenderOptions = {
     ...CANONICAL_CARD_VISIBILITY,
     size: CANONICAL_CELL_SIZE,
     showStepNumbers: false,
-    bluePropType: blueProp,
-    redPropType: opts.catDogMode ? (opts.redPropType ?? blueProp) : blueProp,
+    leftPropType: leftProp,
+    rightPropType: opts.catDogMode
+      ? (opts.rightPropType ?? leftProp)
+      : leftProp,
     catDogModeEnabled: opts.catDogMode ?? false,
-    showBlueMotion: opts.showBlueMotion ?? motionVisibility.showBlueMotion,
-    showRedMotion: opts.showRedMotion ?? motionVisibility.showRedMotion,
+    showLeftMotion: opts.showLeftMotion ?? motionVisibility.showLeftMotion,
+    showRightMotion: opts.showRightMotion ?? motionVisibility.showRightMotion,
     probeCloud: true,
     uploadCanonical: true,
   };

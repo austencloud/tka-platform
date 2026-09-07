@@ -144,37 +144,37 @@ function isHandPathReversal(prev: HandPath, current: HandPath): boolean {
 function calculateHandPathScore(
   prev: PictographData,
   current: PictographData
-): { blueScore: number; redScore: number; blueReversal: boolean; redReversal: boolean } {
-  // Get hand paths for blue hand
-  const prevBlueHandPath = getHandpathDirection(
-    prev.blueMotion.startLocation,
-    prev.blueMotion.endLocation
+): { leftScore: number; rightScore: number; leftReversal: boolean; rightReversal: boolean } {
+  // Get hand paths for left hand
+  const prevLeftHandPath = getHandpathDirection(
+    prev.leftMotion.startLocation,
+    prev.leftMotion.endLocation
   );
-  const currentBlueHandPath = getHandpathDirection(
-    current.blueMotion.startLocation,
-    current.blueMotion.endLocation
-  );
-
-  // Get hand paths for red hand
-  const prevRedHandPath = getHandpathDirection(
-    prev.redMotion.startLocation,
-    prev.redMotion.endLocation
-  );
-  const currentRedHandPath = getHandpathDirection(
-    current.redMotion.startLocation,
-    current.redMotion.endLocation
+  const currentLeftHandPath = getHandpathDirection(
+    current.leftMotion.startLocation,
+    current.leftMotion.endLocation
   );
 
-  const blueReversal = isHandPathReversal(prevBlueHandPath, currentBlueHandPath);
-  const redReversal = isHandPathReversal(prevRedHandPath, currentRedHandPath);
+  // Get hand paths for right hand
+  const prevRightHandPath = getHandpathDirection(
+    prev.rightMotion.startLocation,
+    prev.rightMotion.endLocation
+  );
+  const currentRightHandPath = getHandpathDirection(
+    current.rightMotion.startLocation,
+    current.rightMotion.endLocation
+  );
+
+  const leftReversal = isHandPathReversal(prevLeftHandPath, currentLeftHandPath);
+  const rightReversal = isHandPathReversal(prevRightHandPath, currentRightHandPath);
 
   // Only cw ↔ ccw is a reversal (score 0)
   // Everything else (including dash/static transitions) is continuous (score 1)
   return {
-    blueScore: blueReversal ? 0 : 1,
-    redScore: redReversal ? 0 : 1,
-    blueReversal,
-    redReversal,
+    leftScore: leftReversal ? 0 : 1,
+    rightScore: rightReversal ? 0 : 1,
+    leftReversal,
+    rightReversal,
   };
 }
 
@@ -238,27 +238,27 @@ export class HandPathReversalConstraint implements IVariationConstraint {
       };
     }
 
-    const { blueScore, redScore, blueReversal, redReversal } = calculateHandPathScore(
+    const { leftScore, rightScore, leftReversal, rightReversal } = calculateHandPathScore(
       previousStep,
       context.candidate
     );
 
     // For "every" mode, we WANT reversals (invert scoring)
     if (this.handPathMode === "every") {
-      const invertedBlue = blueScore === 0 ? 1 : blueScore === 1 ? 0 : 0.5;
-      const invertedRed = redScore === 0 ? 1 : redScore === 1 ? 0 : 0.5;
-      const avgScore = (invertedBlue + invertedRed) / 2;
+      const invertedLeft = leftScore === 0 ? 1 : leftScore === 1 ? 0 : 0.5;
+      const invertedRight = rightScore === 0 ? 1 : rightScore === 1 ? 0 : 0.5;
+      const avgScore = (invertedLeft + invertedRight) / 2;
 
       // Satisfied if at least one hand reversed
-      const satisfied = blueReversal || redReversal;
+      const satisfied = leftReversal || rightReversal;
 
       let reason: string;
-      if (blueReversal && redReversal) {
+      if (leftReversal && rightReversal) {
         reason = "Both hands reversed path (ideal)";
-      } else if (blueReversal) {
-        reason = "Blue hand path reversal";
-      } else if (redReversal) {
-        reason = "Red hand path reversal";
+      } else if (leftReversal) {
+        reason = "Left hand path reversal";
+      } else if (rightReversal) {
+        reason = "Right hand path reversal";
       } else {
         reason = "No hand path reversals (wanted reversal)";
       }
@@ -267,23 +267,23 @@ export class HandPathReversalConstraint implements IVariationConstraint {
     }
 
     // Normal mode: maximize/enforce continuity
-    const avgScore = (blueScore + redScore) / 2;
+    const avgScore = (leftScore + rightScore) / 2;
 
     // For "enforce" mode, require perfect continuity (both hands score 1 or 0.5 for neutral)
     const satisfied =
       this.handPathMode !== "enforce" ||
-      (blueScore >= 0.5 && redScore >= 0.5 && !blueReversal && !redReversal);
+      (leftScore >= 0.5 && rightScore >= 0.5 && !leftReversal && !rightReversal);
 
     // Build reason string
     let reason: string;
-    if (!blueReversal && !redReversal) {
+    if (!leftReversal && !rightReversal) {
       reason = "Continuous hand paths (no reversals)";
-    } else if (blueReversal && redReversal) {
+    } else if (leftReversal && rightReversal) {
       reason = "Both hands reversed path";
-    } else if (blueReversal) {
-      reason = "Blue hand path reversal";
+    } else if (leftReversal) {
+      reason = "Left hand path reversal";
     } else {
-      reason = "Red hand path reversal";
+      reason = "Right hand path reversal";
     }
 
     return {

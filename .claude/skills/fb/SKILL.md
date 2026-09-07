@@ -21,11 +21,11 @@ $ARGUMENTS - Optional feedback ID (first 8+ characters), or "list"
 
 ### Step 1: Fetch (ONE Bash call)
 
-| Input | Command |
-|-------|---------|
-| No argument | `node scripts/fetch-feedback.js` |
+| Input       | Command                                           |
+| ----------- | ------------------------------------------------- |
+| No argument | `node scripts/fetch-feedback.js`                  |
 | ID provided | `node scripts/fetch-feedback.js claim $ARGUMENTS` |
-| "list" | `node scripts/fetch-feedback.js list` |
+| "list"      | `node scripts/fetch-feedback.js list`             |
 
 Auth is cached. Do not run `whoami`, `mine`, or any other pre-check. Go straight to the command above.
 
@@ -37,12 +37,13 @@ Show: title, ID, type, priority, submitter, module/tab, full description.
 
 If images attached, read each with Read tool AND open for user: `powershell -Command "Invoke-Item '<path>'"`
 
-Assess complexity:
-- **TRIVIAL** (Haiku): String swaps, single-line fixes, known solution
-- **MEDIUM** (Sonnet): CSS fixes, single-file changes, clear bugs with repro
-- **COMPLEX** (Opus): Multi-module, ambiguous requirements, 4+ files, new infra
+Assess complexity without hard-coding a model name:
 
-Announce triage: complexity, model routing, reasoning. Ask for confirmation before implementing.
+- **TRIVIAL** (low effort): String swaps, single-line fixes, known solution
+- **MEDIUM** (medium effort): CSS fixes, single-file changes, clear bugs with repro
+- **COMPLEX** (high effort): Multi-module, ambiguous requirements, 4+ files, new infra
+
+Announce triage: complexity, recommended reasoning effort, reasoning. Ask for confirmation before implementing.
 
 After approval:
 
@@ -59,11 +60,13 @@ another live session owns the item, stop and report the conflict.
 ### Step 3: Implement
 
 Work the item. Use heartbeats for long sessions:
+
 ```bash
 node scripts/fetch-feedback.js heartbeat <id> "status"
 ```
 
 When done:
+
 ```bash
 node scripts/fetch-feedback.js <id> in-review "Brief admin notes"
 ```

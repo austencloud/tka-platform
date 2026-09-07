@@ -52,6 +52,13 @@ describe("resolveInfoCellDisplay", () => {
       .toEqual({ showQRCode: true, showMandala: false });
   });
 
+  it("reserves a guest QR cell only when its scan link is already published", () => {
+    const guest = { ...base, isAuthenticated: false, showQRCode: true, showMandala: false, infoCellChoice: "qr" as const };
+    expect(resolveInfoCellDisplay(guest).showQRCode).toBe(false);
+    expect(resolveInfoCellDisplay({ ...guest, hasPublishedUrl: true }).showQRCode).toBe(true);
+    expect(resolveInfoCellDisplay({ ...guest, hasPublishedUrl: true, showQRCode: false }).showQRCode).toBe(false);
+  });
+
   it("passes globals through when more than one info cell", () => {
     expect(resolveInfoCellDisplay({ ...base, stepCount: 6, showQRCode: true, showMandala: true, infoCellChoice: "mandala" }))
       .toEqual({ showQRCode: true, showMandala: true });

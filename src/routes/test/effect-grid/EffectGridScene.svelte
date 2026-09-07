@@ -30,6 +30,10 @@
     centerPlanes: number;
     /** Optional single-effect hero mode used for close visual verification. */
     focusEffect?: string | null;
+    /** Test-only selection override for timing one live scene across effects. */
+    effectOverride?: string | null;
+    /** Multiple identical formations let activation tests reach an exact rig count. */
+    formationCount?: number;
     /** Review routes can supply a sequence chosen for a specific effect. */
     sequenceId?: string;
     /** The grid locator is useful in the grid and visual noise in hero mode. */
@@ -38,6 +42,8 @@
     onPreviewReady?: (preview: GeneratedSequenceInfo) => void;
     /** Lets the host render a retry state instead of leaving an empty stage. */
     onPreviewError?: (message: string) => void;
+    /** Signals that scene-scoped renderers and rig-local warm pools exist. */
+    onEffectsReadyChange?: (ready: boolean) => void;
   }
   const props: Props = $props();
   const sceneEffectsManager = setSceneEffectsContext(
@@ -47,6 +53,9 @@
     EFFECT_CELLS.find((cell) => cell.id === props.focusEffect) ?? null
   );
   const visibleCells = $derived(focusedCell ? [focusedCell] : EFFECT_CELLS);
+  const formationCopies = $derived(
+    Array.from({ length: Math.max(1, props.formationCount ?? 1) }, (_, i) => i)
+  );
   let generatedSequence = $state<SequenceData | null>(null);
   const resolvedSequenceId = $derived(
     props.sequenceId ?? GENERATED_EFFECT_PREVIEW_SEQUENCE_ID
@@ -95,7 +104,10 @@
   });
 </script>
 
-<SceneEffectsCoordinator3D manager={sceneEffectsManager} />
+<SceneEffectsCoordinator3D
+  manager={sceneEffectsManager}
+  onReadyChange={props.onEffectsReadyChange}
+/>
 
 <!-- Dim key: the effects carry the frame, lighting stays out of their way. -->
 <T.AmbientLight intensity={0.18} color="#0e1420" />
@@ -125,17 +137,19 @@
       />
     {/if}
 
-    <TelekineticFormation3D
-      stationId={`grid-${cell.id}`}
-      worldX={cellX}
-      worldZ={cellZ}
-      sequenceId={resolvedSequenceId}
-      userSequenceDataMap={injectedSequenceMap}
-      presentation="sculpture"
-      effectId={cell.id}
-      showProps={props.showProps}
-      autoPlay={props.playing}
-      centerPlanes={props.centerPlanes}
-    />
+    {#each formationCopies as copyIndex (copyIndex)}
+      <TelekineticFormation3D
+        stationId={`grid-${cell.id}-${copyIndex}`}
+        worldX={cellX}
+        worldZ={cellZ}
+        sequenceId={resolvedSequenceId}
+        userSequenceDataMap={injectedSequenceMap}
+        presentation="sculpture"
+        effectId={props.effectOverride ?? cell.id}
+        showProps={props.showProps}
+        autoPlay={props.playing}
+        centerPlanes={props.centerPlanes}
+      />
+    {/each}
   {/each}
 {/if}

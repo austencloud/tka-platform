@@ -20,12 +20,15 @@
     available = MODE_ORDER,
     availabilityReady = false,
     disabled = false,
+    columns = 6,
     onpick,
   }: {
     selected: VtgMode | null;
     available?: readonly VtgMode[];
     availabilityReady?: boolean;
     disabled?: boolean;
+    /** Tracks in the row. The drill wants all six; a popover wants three. */
+    columns?: number;
     onpick: (mode: VtgMode | null) => void;
   } = $props();
 
@@ -46,16 +49,22 @@
   }
 </script>
 
-<div class="chip-row" role="group" aria-label="Hand path timing and direction">
+<div
+  class="chip-row"
+  style="--chip-row-columns: {columns}"
+  role="group"
+  aria-label="Hand path timing and direction"
+>
   {#each chips as c (c.mode)}
     <RelationshipChoiceChip
       accent={c.el.accentColor}
       icon={c.el.iconPath}
-      code={c.mode}
+      code={c.el.name}
+      compactCode={c.mode}
       label={elementName(c.el.element)}
       active={selected === c.mode}
       disabled={disabled || (availabilityReady && !available.includes(c.mode))}
-      ariaLabel={`${elementName(c.el.element)} (${c.label})${
+      ariaLabel={`${c.mode} ${elementName(c.el.element)} (${c.label})${
         availabilityReady && !available.includes(c.mode)
           ? ", unavailable for these flowers"
           : ""
@@ -68,7 +77,7 @@
 <style>
   .chip-row {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(var(--chip-row-columns, 6), minmax(0, 1fr));
     gap: 0.55rem;
   }
   @container shape-matrix-drill (max-width: 30rem) {

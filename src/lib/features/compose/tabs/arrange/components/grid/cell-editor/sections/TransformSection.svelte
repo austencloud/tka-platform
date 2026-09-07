@@ -23,7 +23,7 @@
   ];
 
   const row2: { type: TransformType; label: string; icon: string }[] = [
-    { type: "swapColors", label: "Swap", icon: "fa-shuffle" },
+    { type: "swapHands", label: "Swap", icon: "fa-shuffle" },
     { type: "rewind", label: "Rewind", icon: "fa-backward" },
     { type: "shiftStart", label: "Shift", icon: "fa-forward" },
   ];
@@ -98,7 +98,9 @@
     color: rgba(255, 255, 255, 0.75);
     font-size: 12px;
     cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease;
   }
 
   .transform-btn i {

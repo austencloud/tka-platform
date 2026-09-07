@@ -160,11 +160,11 @@ export function determineEndPositionForSpec(
   spec: LOOPSpec,
   startPosition: string
 ): string | null {
-  if (!specsAreEqual(spec.blue, spec.red)) return null;
+  if (!specsAreEqual(spec.left, spec.right)) return null;
 
-  const [blueStart, redStart] =
+  const [leftStart, rightStart] =
     gridPositionDeriver.getGridLocationsFromPosition(startPosition);
-  const propSpec = spec.blue ?? spec.red;
+  const propSpec = spec.left ?? spec.right;
   if (!propSpec || propSpec.components.size === 0) return startPosition;
   if (propSpec.components.has(CanonicalLOOPComponent.REWOUND)) return null;
 
@@ -185,20 +185,20 @@ export function determineEndPositionForSpec(
     (!fuseableAtRotationPeriod || reflectionAtRotationPeriod)
   ) {
     return derivePosition(
-      rotateLocation(blueStart, rotation.period),
-      rotateLocation(redStart, rotation.period)
+      rotateLocation(leftStart, rotation.period),
+      rotateLocation(rightStart, rotation.period)
     );
   }
 
   const firstPeriod = firstFuseablePeriod(propSpec);
   if (firstPeriod === null) return startPosition;
 
-  let blueEnd: string | null = blueStart;
-  let redEnd: string | null = redStart;
+  let leftEnd: string | null = leftStart;
+  let rightEnd: string | null = rightStart;
 
   if (rotation?.period === firstPeriod) {
-    blueEnd = rotateLocation(blueEnd, rotation.period);
-    redEnd = rotateLocation(redEnd, rotation.period);
+    leftEnd = rotateLocation(leftEnd, rotation.period);
+    rightEnd = rotateLocation(rightEnd, rotation.period);
   }
 
   for (const component of [
@@ -209,26 +209,26 @@ export function determineEndPositionForSpec(
     if (!componentSpec || componentSpec.period !== firstPeriod) continue;
     const axis = getReflectionAxis(component, componentSpec);
     if (!axis) continue;
-    blueEnd = blueEnd === null ? null : reflectLocation(blueEnd, axis);
-    redEnd = redEnd === null ? null : reflectLocation(redEnd, axis);
+    leftEnd = leftEnd === null ? null : reflectLocation(leftEnd, axis);
+    rightEnd = rightEnd === null ? null : reflectLocation(rightEnd, axis);
   }
 
   const swap = propSpec.components.get(CanonicalLOOPComponent.SWAPPED);
   if (swap?.period === firstPeriod) {
-    [blueEnd, redEnd] = [redEnd, blueEnd];
+    [leftEnd, rightEnd] = [rightEnd, leftEnd];
   }
 
-  return derivePosition(blueEnd, redEnd);
+  return derivePosition(leftEnd, rightEnd);
 }
 
 function derivePosition(
-  blueLocation: string | null,
-  redLocation: string | null
+  leftLocation: string | null,
+  rightLocation: string | null
 ): string | null {
-  if (blueLocation === null || redLocation === null) return null;
+  if (leftLocation === null || rightLocation === null) return null;
   return gridPositionDeriver.getGridPositionFromLocations(
-    blueLocation,
-    redLocation
+    leftLocation,
+    rightLocation
   );
 }
 

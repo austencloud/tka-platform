@@ -12,13 +12,13 @@
   }
 
   let { hand }: Props = $props();
-  const tint = $derived(hand.id === "blue-left" ? "#6ea5ff" : "#ff7887");
+  const tint = $derived(hand.id === "left" ? "#6ea5ff" : "#ff7887");
 </script>
 
 <T.Group
   position={[
     hand.position[0] +
-      (hand.id === "blue-left"
+      (hand.id === "left"
         ? -CONTACT_PALM_X_OFFSET
         : CONTACT_PALM_X_OFFSET),
     0.018,

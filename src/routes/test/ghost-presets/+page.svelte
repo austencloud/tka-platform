@@ -388,8 +388,8 @@
             class:favorite={verdict === "favorite"}
             class:passed={verdict === "pass"}
             style:--preset-accent={preset.previewColor}
-            style:--preset-blue={intent.blueColor}
-            style:--preset-red={intent.redColor}
+            style:--preset-blue={intent.leftColor}
+            style:--preset-red={intent.rightColor}
           >
             <button
               type="button"

@@ -48,7 +48,16 @@ export type Orientation =
 /**
  * Grid locations where hands can be placed.
  */
-export type GridLocation = "n" | "e" | "s" | "w" | "ne" | "se" | "sw" | "nw" | "c";
+export type GridLocation =
+  | "n"
+  | "e"
+  | "s"
+  | "w"
+  | "ne"
+  | "se"
+  | "sw"
+  | "nw"
+  | "c";
 
 /**
  * Categories of letters based on motion type patterns.
@@ -88,8 +97,8 @@ export interface LetterPositionInfo {
 export interface LetterMappingData {
   startPosition: string;
   endPosition: string;
-  blueMotion: string;
-  redMotion: string;
+  leftMotion: string;
+  rightMotion: string;
 }
 
 /**
@@ -125,10 +134,10 @@ export interface SequenceStep {
   startPosition: string;
   /** Ending position */
   endPosition: string;
-  /** Blue hand/prop motion data */
-  blueMotion: MotionData;
-  /** Red hand/prop motion data */
-  redMotion: MotionData;
+  /** Left-hand/prop motion data */
+  leftMotion: MotionData;
+  /** Right-hand/prop motion data */
+  rightMotion: MotionData;
   /** Beat number in the sequence */
   stepNumber: number;
 }

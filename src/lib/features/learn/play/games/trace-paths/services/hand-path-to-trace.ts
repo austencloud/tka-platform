@@ -10,7 +10,7 @@
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { sampleSegmentPath } from "./trace-path-sampler";
 import { TRACE_PATH_SAMPLE_COUNT } from "../domain/trace-config";
 import type {
@@ -76,7 +76,7 @@ function locationsToSegments(
  */
 export function handPathToTraceRound(
   handPath: HandPathData,
-  hand: TraceHand = MotionColor.BLUE
+  hand: TraceHand = HandSide.LEFT
 ): TraceConversionResult {
   const locations = handPath.locations;
   if (locations.length < 2) {
@@ -113,53 +113,53 @@ export function handPathToTraceRound(
  * unequal lengths are a refusal, not a repair.
  */
 export function pairHandPathsToTraceRound(
-  bluePath: HandPathData,
-  redPath: HandPathData
+  leftPath: HandPathData,
+  rightPath: HandPathData
 ): TraceConversionResult {
-  if (bluePath.locations.length < 2 || redPath.locations.length < 2) {
+  if (leftPath.locations.length < 2 || rightPath.locations.length < 2) {
     return { ok: false, error: emptyRoundError("This pair of hand paths") };
   }
 
-  if (bluePath.locations.length !== redPath.locations.length) {
+  if (leftPath.locations.length !== rightPath.locations.length) {
     return {
       ok: false,
       error: {
         code: "unequal-hand-path-lengths",
         message:
           `These two hand paths cover different numbers of beats ` +
-          `(blue ${bluePath.locations.length - 1}, red ${redPath.locations.length - 1}), ` +
+          `(blue ${leftPath.locations.length - 1}, red ${rightPath.locations.length - 1}), ` +
           `so they can't share one timeline.`,
       },
     };
   }
 
-  const blueSegments = locationsToSegments(bluePath.locations);
-  const redSegments = locationsToSegments(redPath.locations);
+  const leftSegments = locationsToSegments(leftPath.locations);
+  const rightSegments = locationsToSegments(rightPath.locations);
 
-  const beats: TraceBeat[] = blueSegments.map((blueSegment, index) => ({
+  const beats: TraceBeat[] = leftSegments.map((blueSegment, index) => ({
     index,
     segments: {
-      [MotionColor.BLUE]: blueSegment,
-      [MotionColor.RED]: redSegments[index] as TraceSegment,
+      [HandSide.LEFT]: blueSegment,
+      [HandSide.RIGHT]: rightSegments[index] as TraceSegment,
     },
   }));
 
   const round: TraceRound = {
-    id: `trace:hand-path-pair:${bluePath.id}+${redPath.id}`,
+    id: `trace:hand-path-pair:${leftPath.id}+${rightPath.id}`,
     // Both paths are verified against the same grid; blue is the tiebreak when
     // a path's implied mode differs (e.g. an all-cardinal red beside a
     // cardinal+intercardinal blue that implies skewed).
-    gridMode: bluePath.impliedGridMode,
+    gridMode: leftPath.impliedGridMode,
     hands: {
-      [MotionColor.BLUE]: {
-        hand: MotionColor.BLUE,
-        start: bluePath.locations[0] as GridLocation,
-        segments: blueSegments,
+      [HandSide.LEFT]: {
+        hand: HandSide.LEFT,
+        start: leftPath.locations[0] as GridLocation,
+        segments: leftSegments,
       },
-      [MotionColor.RED]: {
-        hand: MotionColor.RED,
-        start: redPath.locations[0] as GridLocation,
-        segments: redSegments,
+      [HandSide.RIGHT]: {
+        hand: HandSide.RIGHT,
+        start: rightPath.locations[0] as GridLocation,
+        segments: rightSegments,
       },
     },
     beats,

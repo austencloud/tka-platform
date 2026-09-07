@@ -12,12 +12,12 @@ import type { createCrossfaderState } from "$lib/shared/choreo-card/state/crossf
 
 export interface ChoreoCardRenderLifecycleDeps {
   readonly sequence: SequenceData;
-  readonly bluePropType: PropType | undefined;
-  readonly redPropType: PropType | undefined;
+  readonly leftPropType: PropType | undefined;
+  readonly rightPropType: PropType | undefined;
   readonly browseViewMode: BrowseViewMode | undefined;
   readonly catDogModeEnabled: boolean;
-  readonly blueBuugengFlipped: boolean;
-  readonly redBuugengFlipped: boolean;
+  readonly leftBuugengFlipped: boolean;
+  readonly rightBuugengFlipped: boolean;
   readonly showStepNumbers: boolean;
   readonly showNonRadial: boolean;
   readonly handPointVis: "all" | "active" | "none";
@@ -27,8 +27,8 @@ export interface ChoreoCardRenderLifecycleDeps {
   readonly showElemental: boolean;
   readonly showPositions: boolean;
   readonly showGrid: boolean;
-  readonly showBlueMotion: boolean;
-  readonly showRedMotion: boolean;
+  readonly showLeftMotion: boolean;
+  readonly showRightMotion: boolean;
   readonly includeStartPosition: boolean;
   readonly startPositionLayout: "row" | "column";
   readonly effectiveColumns: number;
@@ -65,11 +65,11 @@ export function createChoreoCardRenderLifecycle(
   function renderKeys(deps: ChoreoCardRenderLifecycleDeps) {
     return buildChoreoCardRenderKeys({
       sequence: deps.sequence,
-      bluePropType: deps.bluePropType,
-      redPropType: deps.redPropType,
+      leftPropType: deps.leftPropType,
+      rightPropType: deps.rightPropType,
       catDogModeEnabled: deps.catDogModeEnabled,
-      blueBuugengFlipped: deps.blueBuugengFlipped,
-      redBuugengFlipped: deps.redBuugengFlipped,
+      leftBuugengFlipped: deps.leftBuugengFlipped,
+      rightBuugengFlipped: deps.rightBuugengFlipped,
       showStepNumbers: deps.showStepNumbers,
       showNonRadial: deps.showNonRadial,
       handPointVis: deps.handPointVis,
@@ -79,8 +79,8 @@ export function createChoreoCardRenderLifecycle(
       showElemental: deps.showElemental,
       showPositions: deps.showPositions,
       showGrid: deps.showGrid,
-      showBlueMotion: deps.showBlueMotion,
-      showRedMotion: deps.showRedMotion,
+      showLeftMotion: deps.showLeftMotion,
+      showRightMotion: deps.showRightMotion,
       includeStartPosition: deps.includeStartPosition,
       startPositionLayout: deps.startPositionLayout,
       effectiveColumns: deps.effectiveColumns,

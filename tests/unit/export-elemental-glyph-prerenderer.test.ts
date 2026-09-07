@@ -7,7 +7,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -28,22 +28,22 @@ function createStep(letter: typeof Letter.A | typeof Letter.W): StepData {
     endPosition: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: createMotionData({
-        color: MotionColor.BLUE,
+      left: createMotionData({
+        hand: HandSide.LEFT,
         motionType: MotionType.PRO,
         startLocation: GridLocation.WEST,
         endLocation: GridLocation.NORTH,
       }),
-      red: createMotionData({
-        color: MotionColor.RED,
+      right: createMotionData({
+        hand: HandSide.RIGHT,
         motionType: MotionType.PRO,
         startLocation: GridLocation.EAST,
         endLocation: GridLocation.SOUTH,
       }),
     },
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   } as unknown as StepData;
 }

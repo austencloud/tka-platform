@@ -28,13 +28,18 @@
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import { resolveFusePictographMotionFrame } from "../services/fuse-pictograph-motion-frame";
   import { createCircularFuseSoloSequence } from "../services/fuse-solo-sequence";
+  import {
+    FUSE_LIVE_GRID_GAP,
+    getBestFuseStepColumns,
+    getFittedFuseCellSize,
+  } from "../services/fuse-workspace-split";
 
   let {
     side,
     full = false,
     compactHero = false,
     toolbarOnly = false,
-    stepCols = 4,
+    stepCols = null,
     onChooseFirstStep,
     onBuildPath,
     firstStepPickerActive = false,
@@ -52,9 +57,9 @@
     /** Compact source identity and actions without a second pictograph. The
      * shared decomposed animator owns the live hand view in this mode. */
     toolbarOnly?: boolean;
-    // Step column count FuseLayout picked to maximize pictograph size for the
-    // current seam width and length. Only used in full (desktop) mode.
-    stepCols?: number;
+    // The stacked desktop solver coordinates this with its draggable seam.
+    // A null value lets a full-height side card fit itself from its own stage.
+    stepCols?: number | null;
     onChooseFirstStep: (side: FuseSide) => void;
     onBuildPath: (side: FuseSide) => void;
     firstStepPickerActive?: boolean;
@@ -68,18 +73,18 @@
 
   const { state: fuseState } = getFuseContext();
   const settings = getSettings();
-  const source = $derived(side === "blue" ? fuseState.blue : fuseState.red);
-  const label = $derived(side === "blue" ? "Blue" : "Red");
+  const source = $derived(side === "left" ? fuseState.left : fuseState.right);
+  const label = $derived(side === "left" ? "Left" : "Right");
   const viewMode = $derived<BrowseViewMode>({
     subject: "props",
     granularity: "solo",
-    color: side,
+    hand: side,
   });
   // The notation stage's live size. ChoreoCard's autoFit reads a landscape
   // stage as "one long row" — 8 tiny cells with dead space above and below.
   // Instead we measure the real stage and pick the column count that maximizes
-  // pictograph size, the same optimization the desktop seam runs. (Full/desktop
-  // keeps FuseLayout's seam-aware count and a start-position left column.)
+  // pictograph size, the same optimization the desktop seam runs. A stacked
+  // full card keeps FuseLayout's seam-aware count; a side card fits itself.
   let stageEl = $state<HTMLDivElement | null>(null);
   let stageW = $state(0);
   let stageH = $state(0);
@@ -107,16 +112,15 @@
     if (!isSymmetryFollower) return source.sequence;
 
     const preview = fuseState.symmetryPreview;
-    const solo = side === "blue" ? preview?.blueSoloProp : preview?.redSoloProp;
+    const solo =
+      side === "left" ? preview?.leftSoloProp : preview?.rightSoloProp;
     if (!solo) return null;
 
     return createCircularFuseSoloSequence(side, solo);
   });
-  const followerTransformLabel = $derived(
-    fuseRuleLabel(fuseState.previewRule)
-  );
+  const followerTransformLabel = $derived(fuseRuleLabel(fuseState.previewRule));
   const driverLabel = $derived(
-    fuseState.previewDriverSide === "blue" ? "Blue" : "Red"
+    fuseState.previewDriverSide === "left" ? "Left" : "Right"
   );
   const followerGlyph = $derived(fuseRuleGlyph(fuseState.previewRule));
   const followerTransformTint = $derived(fuseRuleTint(fuseState.previewRule));
@@ -134,10 +138,9 @@
       : null
   );
 
-  // Full mode: FuseLayout hands down a seam-aware column count. Non-full: pick
-  // the count that maximizes cell size for the measured stage — fewer columns
-  // (more rows) when the stage is tall, more when it's wide — so the pictographs
-  // fill the card instead of shrinking into one thin autoFit row.
+  // The stacked desktop passes its seam-aware count. Full-height side cards and
+  // lean cards solve from their own measured stage, so moving Left and Right
+  // beside the result makes the notation taller instead of merely narrower.
   const STAGE_COL_CANDIDATES = [2, 4, 6, 8] as const;
   function bestStageCols(w: number, h: number, steps: number): number {
     if (w <= 0 || h <= 0 || steps <= 0) return Math.min(4, Math.max(1, steps));
@@ -154,8 +157,10 @@
     }
     return best;
   }
-  const stepColumns = $derived<number | null>(
-    full ? stepCols : bestStageCols(stageW, stageH, stepCount)
+  const stepColumns = $derived(
+    full
+      ? (stepCols ?? getBestFuseStepColumns(stageW, stageH, stepCount, 0))
+      : bestStageCols(stageW, stageH, stepCount)
   );
   const liveGridColumns = $derived(Math.max(1, stepColumns ?? 1));
   const liveGridRows = $derived(
@@ -164,13 +169,16 @@
   const liveGridTotalColumns = $derived(liveGridColumns + (full ? 1 : 0));
   const liveCellSize = $derived(
     Math.max(
-      72,
+      1,
       Math.floor(
-        Math.min(
-          stageW / Math.max(1, liveGridTotalColumns),
-          stageH / Math.max(1, liveGridRows)
+        getFittedFuseCellSize(
+          stageW,
+          stageH,
+          liveGridTotalColumns,
+          liveGridRows,
+          FUSE_LIVE_GRID_GAP
         )
-      ) || 120
+      )
     )
   );
 
@@ -255,7 +263,8 @@
     sequence: SequenceData | null = source.sequence
   ): Promise<void> {
     if (isSavingLoop || !sequence) return;
-    const solo = side === "blue" ? sequence.blueSoloProp : sequence.redSoloProp;
+    const solo =
+      side === "left" ? sequence.leftSoloProp : sequence.rightSoloProp;
     if (!solo) {
       showToast("This path is not ready to save yet", "info");
       return;
@@ -267,7 +276,7 @@
       const result = await getSoloPropSaveOrchestrator().save(solo, {
         name: `${label} ${solo.length}-step LOOP`,
         notes: "Created in Fuse",
-        authoredHand: side === "blue" ? "left" : "right",
+        authoredHand: side,
         ownerId: authState.effectiveUserId ?? undefined,
         ownerDisplayName: authState.user?.displayName ?? undefined,
       });
@@ -326,13 +335,38 @@
     await fuseState.setSource(side, sequence, { kind: "vtg", label });
   }
 
-  const compactSourceMenuItems = $derived([
+  const sourceMenuItems = $derived([
+    {
+      label: "Choose saved LOOP",
+      icon: "fas fa-book",
+      action: () => void openLibraryPicker(),
+    },
+    {
+      label: "Choose a shape",
+      icon: "fas fa-fan",
+      action: openVtgPicker,
+    },
+    {
+      label: "Build a custom path",
+      icon: "fas fa-route",
+      action: (): void => onBuildPath(side),
+    },
     {
       label: "View Choreo Card",
       icon: "fas fa-id-card",
       action: viewChoreoCard,
       disabled: !source.sequence,
     },
+    {
+      label: isSavingLoop ? "Saving to library..." : "Save to library",
+      icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
+      action: (): void => {
+        void saveCurrentLoop();
+      },
+      disabled: isSavingLoop || !source.sequence,
+    },
+  ]);
+  const compactSourceMenuItems = $derived([
     ...(source.canGoBack
       ? [
           {
@@ -344,34 +378,13 @@
           },
         ]
       : []),
-    {
-      label: "Choose saved LOOP",
-      icon: "fas fa-book",
-      action: () => void openLibraryPicker(),
-    },
-    {
-      label: "Choose path",
-      icon: "fas fa-fan",
-      action: openVtgPicker,
-    },
-    {
-      label: "Build a path",
-      icon: "fas fa-route",
-      action: (): void => onBuildPath(side),
-    },
-    {
-      label: isSavingLoop ? "Saving LOOP..." : "Save LOOP",
-      icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
-      action: (): void => {
-        void saveCurrentLoop();
-      },
-      disabled: isSavingLoop || !source.sequence,
-    },
+    ...sourceMenuItems,
   ]);
 </script>
 
 <section
   class="source-card {side}-source"
+  data-fuse-layout-region="source-{side}"
   class:loading={source.isLoading}
   class:compact-hero={compactHero}
   class:compact-toolbar={toolbarOnly}
@@ -386,12 +399,19 @@
       <strong>{label}</strong>
       <span class="toolbar-step">{compactStepLabel}</span>
     </div>
+  {:else if !compactHero}
+    <h3 class="source-identity">
+      <span class="source-dot" aria-hidden="true"></span>
+      {label} path
+    </h3>
   {/if}
 
   <div
     class="notation-stage"
     bind:this={stageEl}
     oncontextmenu={openCardContextMenu}
+    role="group"
+    aria-label="{label} path notation"
   >
     {#if compactHero && compactStep}
       <div class="compact-live-pictograph">
@@ -408,8 +428,8 @@
           showHandPoints={true}
           visibleHand={side}
           darkMode={true}
-          bluePropTypeOverride={settings.bluePropType}
-          redPropTypeOverride={settings.redPropType}
+          leftPropTypeOverride={settings.leftPropType}
+          rightPropTypeOverride={settings.rightPropType}
           stepNumberOverride={false}
           cellIndex={0}
           transitionKey={`fuse-${side}-compact`}
@@ -428,8 +448,8 @@
           includeStart={full}
           showMandala={full}
           highlightedStepIndex={highlightIndex}
-          bluePropType={settings.bluePropType}
-          redPropType={settings.redPropType}
+          leftPropType={settings.leftPropType}
+          rightPropType={settings.rightPropType}
           onStepClick={firstStepPickerActive
             ? (stepIndex) => void chooseInlineFirstStep(stepIndex)
             : undefined}
@@ -461,6 +481,7 @@
         class="compact-derived-indicator"
         class:interactive={Boolean(onEditPairing)}
         type={onEditPairing ? "button" : undefined}
+        role={onEditPairing ? undefined : "status"}
         onclick={onEditPairing}
         title="{followerTransformLabel} of {driverLabel}"
         aria-label={onEditPairing
@@ -488,7 +509,7 @@
           disabled={sourceControlsDisabled}
           ariaLabel="{label} path options"
           placement="bottom"
-          align={side === "blue" ? "left" : "right"}
+          align={side}
         />
       </div>
     {/if}
@@ -529,7 +550,7 @@
         <div>
           <i class="fas fa-arrow-pointer" aria-hidden="true"></i>
           <span
-            ><strong>Choose the new step 1.</strong> Click any beat above.</span
+            ><strong>Choose the new step 1.</strong> Click any step above.</span
           >
         </div>
         <PanelButton variant="secondary" onclick={onCancelFirstStep}>
@@ -544,7 +565,6 @@
           disabled={sourceControlsDisabled || !source.canGoBack}
           onclick={() => fuseState.previous(side)}
         >
-          <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
           Previous
         </PanelButton>
         <!-- The one button most people will press, and the only way to get a
@@ -562,47 +582,25 @@
             Regenerate
           </PanelButton>
         </div>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled || !source.sequence || isSavingLoop}
-          ariaBusy={isSavingLoop}
-          onclick={() => void saveCurrentLoop()}
-        >
-          <i
-            class="fas {isSavingLoop ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
-            aria-hidden="true"
-          ></i>
-          {isSavingLoop ? "Saving..." : "Save LOOP"}
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled}
-          onclick={() => void openLibraryPicker()}
-        >
-          <i class="fas fa-book" aria-hidden="true"></i>
-          Saved LOOP
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled}
-          onclick={openVtgPicker}
-        >
-          <i class="fas fa-fan" aria-hidden="true"></i>
-          Shape path
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          disabled={sourceControlsDisabled}
-          onclick={() => onBuildPath(side)}
-        >
-          <i class="fas fa-route" aria-hidden="true"></i>
-          Build path
-        </PanelButton>
         <FuseSourceActionPopover
           {side}
           disabled={sourceControlsDisabled || !source.sequence}
           {onChooseFirstStep}
         />
+        <div class="source-more">
+          <OverflowMenu
+            items={sourceMenuItems}
+            disabled={sourceControlsDisabled}
+            ariaLabel="More {label} path actions"
+            align="right"
+            triggerPresentation="labelled"
+          >
+            {#snippet trigger()}
+              <span>More</span>
+              <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            {/snippet}
+          </OverflowMenu>
+        </div>
       </div>
     {/if}
   {/if}
@@ -633,8 +631,8 @@
         showNotes={false}
         showLoopGlyph={false}
         darkMode={true}
-        bluePropType={settings.bluePropType}
-        redPropType={settings.redPropType}
+        leftPropType={settings.leftPropType}
+        rightPropType={settings.rightPropType}
         hideSoloHeader={true}
         fitWidth={true}
       />
@@ -665,8 +663,8 @@
     sequence={inspectedSequence}
     presentation="live"
     browseViewMode={viewMode}
-    bluePropType={settings.bluePropType}
-    redPropType={settings.redPropType}
+    leftPropType={settings.leftPropType}
+    rightPropType={settings.rightPropType}
     onClose={() => (inspectedSequence = null)}
   />
 {/if}
@@ -694,13 +692,13 @@
       var(--theme-card-bg, rgba(255, 255, 255, 0.045));
   }
 
-  .blue-source {
-    grid-area: blue;
+  .left-source {
+    grid-area: left;
   }
 
-  .red-source {
+  .right-source {
     --source-color: var(--prop-red, #f44336);
-    grid-area: red;
+    grid-area: right;
   }
 
   .source-card.loading {
@@ -743,12 +741,24 @@
     background: var(--theme-panel-bg);
   }
 
+  .source-identity {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 20px;
+    margin: 0;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    line-height: 1;
+  }
+
   .notation-scroll {
     position: relative;
     z-index: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
   }
 
   .compact-live-pictograph {
@@ -840,6 +850,16 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--settings-spacing-sm, 8px);
     margin-top: auto;
+  }
+
+  .source-more,
+  .source-more :global(.overflow-menu) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .source-more :global(.overflow-dropdown) {
+    min-width: 230px;
   }
 
   .source-actions :global(.panel-btn) {
@@ -1002,8 +1022,8 @@
     );
     color: var(--theme-text, #fff);
     font-weight: 700;
-    box-shadow: 0 0 0 1px
-        color-mix(in srgb, var(--source-color) 45%, transparent),
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--source-color) 45%, transparent),
       0 6px 18px color-mix(in srgb, var(--source-color) 22%, transparent);
   }
 
@@ -1223,37 +1243,11 @@
   /* The toolbar responds to the source card, not the whole Fuse workspace.
      This matters around split-pane and browser-zoom seams where the page can
      be wide while the card itself is still too narrow for seven labels. */
-  @container fuse-source (min-width: 340px) {
-    .source-actions {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @container fuse-source (min-width: 340px) and (max-width: 519px) {
-    .source-actions > :global(:last-child) {
-      grid-column: 1 / -1;
-    }
-  }
-
   @container fuse-source (min-width: 520px) {
     .source-actions {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  /* Seven buttons across eight tracks: Regenerate takes two of them. Equal
-     tracks said all seven choices carry equal weight, and they do not — this
-     is the one you press if you press nothing else. */
-  /* 900, not 940: at 1920 this card's content box measures 935px, five pixels
-     under the old seam, so the one-row layout was falling back to two ragged
-     rows at the most common desktop width. */
-  @container fuse-source (min-width: 900px) {
-    .source-actions {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-    }
-
-    .shuffle-slot {
-      grid-column: span 2;
+      grid-template-columns:
+        minmax(0, 0.8fr) minmax(0, 1.25fr) minmax(0, 1fr)
+        minmax(0, 0.8fr);
     }
   }
 
@@ -1273,7 +1267,7 @@
   /* One-page fit layouts only (mirrors FuseLayout's fr-row conditions).
      min-height: 0 lets the card shrink inside its fr row; anywhere else it
      zeroes the card's minimum contribution and collapses the auto grid rows.
-     The notation stage gives up its tall floor and scrolls internally. */
+     The fitted pictographs shrink with the stage instead of making it scroll. */
   @container fuse (min-width: 600px) and (min-height: 600px) {
     .source-card {
       min-height: 0;

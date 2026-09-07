@@ -16,7 +16,7 @@ export interface SequenceStatsCalculator {
   generateSequenceWord: (sequence: SequenceData) => string;
   calculateSequenceDuration: (sequence: SequenceData) => number;
   getSequenceStatistics: (sequence: SequenceData) => { totalSteps: number; filledSteps: number; emptySteps: number; duration: number };
-  countReversals: (sequence: SequenceData) => { blueReversals: number; redReversals: number; totalReversals: number };
+  countReversals: (sequence: SequenceData) => { leftReversals: number; rightReversals: number; totalReversals: number };
   getAverageBeatDuration: (sequence: SequenceData) => number;
 }
 
@@ -66,21 +66,21 @@ export function getSequenceStatistics(sequence: SequenceData): {
  * Count steps with reversals
  */
 export function countReversals(sequence: SequenceData): {
-  blueReversals: number;
-  redReversals: number;
+  leftReversals: number;
+  rightReversals: number;
   totalReversals: number;
 } {
-  const blueReversals = sequence.steps.filter(
-    (step) => step.blueReversal
+  const leftReversals = sequence.steps.filter(
+    (step) => step.leftReversal
   ).length;
-  const redReversals = sequence.steps.filter(
-    (step) => step.redReversal
+  const rightReversals = sequence.steps.filter(
+    (step) => step.rightReversal
   ).length;
 
   return {
-    blueReversals,
-    redReversals,
-    totalReversals: blueReversals + redReversals,
+    leftReversals,
+    rightReversals,
+    totalReversals: leftReversals + rightReversals,
   };
 }
 

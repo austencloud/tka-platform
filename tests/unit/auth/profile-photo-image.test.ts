@@ -65,7 +65,13 @@ describe("profile photo image preparation", () => {
       harness.dependencies
     );
 
-    expect(prepared).toEqual({ blob: output, width: 512, height: 384 });
+    expect(prepared).toEqual({
+      blob: output,
+      width: 512,
+      height: 384,
+      contentType: "image/webp",
+      fileExtension: "webp",
+    });
     expect(harness.canvas).toMatchObject({ width: 512, height: 384 });
     expect(harness.drawImage).toHaveBeenCalledWith(
       expect.anything(),
@@ -97,7 +103,7 @@ describe("profile photo image preparation", () => {
     expect(harness.qualities).toEqual([0.86, 0.76]);
   });
 
-  it("rejects a browser fallback format that Storage will not accept", async () => {
+  it("accepts Safari's PNG fallback with matching upload metadata", async () => {
     const fallbackPng = new Blob([new Uint8Array([1])], {
       type: "image/png",
     });
@@ -105,10 +111,58 @@ describe("profile photo image preparation", () => {
 
     await expect(
       prepareProfilePhoto(imageFile(), harness.dependencies)
+    ).resolves.toMatchObject({
+      blob: fallbackPng,
+      contentType: "image/png",
+      fileExtension: "png",
+      width: 512,
+      height: 384,
+    });
+    expect(harness.close).toHaveBeenCalledOnce();
+  });
+
+  it("downscales an oversized PNG fallback until Storage will accept it", async () => {
+    const oversizedPng = new Blob(
+      [new Uint8Array(PROFILE_PHOTO_MAX_UPLOAD_BYTES)],
+      { type: "image/png" }
+    );
+    const acceptedPng = new Blob([new Uint8Array([1])], {
+      type: "image/png",
+    });
+    const harness = createHarness([oversizedPng, acceptedPng]);
+
+    const prepared = await prepareProfilePhoto(
+      imageFile(),
+      harness.dependencies
+    );
+
+    expect(prepared).toMatchObject({
+      blob: acceptedPng,
+      contentType: "image/png",
+      fileExtension: "png",
+      width: 448,
+      height: 336,
+    });
+    expect(harness.drawImage).toHaveBeenLastCalledWith(
+      expect.anything(),
+      0,
+      0,
+      448,
+      336
+    );
+  });
+
+  it("rejects a fallback format that Storage will not accept", async () => {
+    const unsupported = new Blob([new Uint8Array([1])], {
+      type: "image/jpeg",
+    });
+    const harness = createHarness([unsupported]);
+
+    await expect(
+      prepareProfilePhoto(imageFile(), harness.dependencies)
     ).rejects.toMatchObject<Partial<ProfilePhotoError>>({
       code: "encode-unsupported",
     });
-    expect(harness.close).toHaveBeenCalledOnce();
   });
 
   it("uses the same 5 MB input boundary as the picker", () => {

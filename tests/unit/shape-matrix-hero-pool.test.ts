@@ -50,15 +50,15 @@ const ALL_FAMILIES = new Set(Object.values(TND_MODE_TO_FAMILY));
 function fmt(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
-function build(mode: string, blueStyle: string, redStyle: string, grid: "diamond" | "box", bt: number, rt: number, blueOri: "in" | "out" = "in", redOri: "in" | "out" = "in"): SequenceData | null {
-  const base = resolveBase(idx, mode as never, blueStyle, redStyle);
+function build(mode: string, leftStyle: string, rightStyle: string, grid: "diamond" | "box", bt: number, rt: number, leftOri: "in" | "out" = "in", rightOri: "in" | "out" = "in"): SequenceData | null {
+  const base = resolveBase(idx, mode as never, leftStyle, rightStyle);
   if (!base) return null;
   const d: CardVariation = {
     turnPattern: `${fmt(bt)}|${fmt(rt)}`,
     gridMode: grid,
     startOriPair: {
-      blue: blueOri === "in" ? Orientation.IN : Orientation.OUT,
-      red: redOri === "in" ? Orientation.IN : Orientation.OUT,
+      left: leftOri === "in" ? Orientation.IN : Orientation.OUT,
+      right: rightOri === "in" ? Orientation.IN : Orientation.OUT,
     },
   };
   return applyVariationDescriptor(base, d, edges).sequence;
@@ -85,19 +85,19 @@ describe("hero pool — closure invariant", () => {
   it("every resolvable cell-mode loop-closes (no snap)", () => {
     let attempts = 0;
     let closed = 0;
-    const run = (blueAxis: typeof diamond, redAxis: typeof diamond, grid: "diamond" | "box") => {
-      for (const blue of blueAxis)
-        for (const red of redAxis)
+    const run = (leftAxis: typeof diamond, rightAxis: typeof diamond, grid: "diamond" | "box") => {
+      for (const left of leftAxis)
+        for (const right of rightAxis)
           for (const mode of MODE_ORDER) {
-            const base = resolveBase(idx, mode, blue.style, red.style);
+            const base = resolveBase(idx, mode, left.style, right.style);
             if (!base) continue;
             attempts++;
             const d: CardVariation = {
-              turnPattern: `${fmt(blue.turns)}|${fmt(red.turns)}`,
+              turnPattern: `${fmt(left.turns)}|${fmt(right.turns)}`,
               gridMode: grid,
               startOriPair: {
-                blue: blue.ori === "in" ? Orientation.IN : Orientation.OUT,
-                red: red.ori === "in" ? Orientation.IN : Orientation.OUT,
+                left: left.ori === "in" ? Orientation.IN : Orientation.OUT,
+                right: right.ori === "in" ? Orientation.IN : Orientation.OUT,
               },
             };
             if (applyVariationDescriptor(base, d, edges).turnLoopClosed) closed++;

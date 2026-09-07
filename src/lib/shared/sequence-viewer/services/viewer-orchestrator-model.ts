@@ -6,6 +6,7 @@ import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
 import type { PendingActionType } from "./pending-action-queue";
 import type { ViewerMode } from "../state/viewer-state.svelte";
 import type { ExportType } from "../domain/viewer-orchestrator-context";
+import type { ViewerUrlParamPatch } from "./viewer-url-state-codec";
 
 export type ViewerEditingPane = "animation" | "image" | "video-upload" | null;
 
@@ -76,6 +77,13 @@ interface ViewerShareDetailsInput {
   darkMode: boolean;
   fallbackUrl: string;
   buildUrl: (sequence: SequenceData, metadata: ShareURLMetadata) => string;
+  /**
+   * Synchronous full-state snapshot (view/pane, effects, etc.) to append to
+   * the share URL — the moment of Share/Copy, not whatever the debounced
+   * address-bar writer last landed. Applied on BOTH the built-URL path and
+   * the fallback path, since both converge on the same `url` variable below.
+   */
+  getStateParams?: () => ViewerUrlParamPatch;
 }
 
 export function buildViewerShareDetails(
@@ -114,6 +122,21 @@ export function buildViewerShareDetails(
       url = input.buildUrl(sequence, metadata);
     } catch {
       // A malformed optional metadata field must not make sharing unavailable.
+    }
+  }
+
+  if (input.getStateParams) {
+    try {
+      const patch = input.getStateParams();
+      const u = new URL(url);
+      for (const name of patch.remove) u.searchParams.delete(name);
+      for (const [name, value] of Object.entries(patch.set)) {
+        u.searchParams.set(name, value);
+      }
+      url = u.toString();
+    } catch {
+      // State params must never break sharing — this covers both the
+      // built-URL path above and the untouched fallback-URL path.
     }
   }
 

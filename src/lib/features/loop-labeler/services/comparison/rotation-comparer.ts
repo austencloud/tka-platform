@@ -16,66 +16,66 @@ import {
  * Detect rotation transformations between beat pairs.
  */
 export function checkRotations(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData
 ): TransformationCheckResult {
   const transformations: string[] = [];
 
-  checkSameColorRotations(b1Blue, b1Red, b2Blue, b2Red, transformations);
-  checkSwappedColorRotations(b1Blue, b1Red, b2Blue, b2Red, transformations);
+  checkSameColorRotations(b1Left, b1Right, b2Left, b2Right, transformations);
+  checkSwappedColorRotations(b1Left, b1Right, b2Left, b2Right, transformations);
 
   return { transformations };
 }
 
 function checkSameColorRotations(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData,
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData,
   transformations: string[]
 ): void {
   // Position checks for same colors
   const positions90CCW =
-    ROTATE_90_CCW[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CCW[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_90_CCW[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CCW[b1Red.endLoc] === b2Red.endLoc;
+    ROTATE_90_CCW[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CCW[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_90_CCW[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CCW[b1Right.endLoc] === b2Right.endLoc;
 
   const positions180 =
-    ROTATE_180[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_180[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_180[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_180[b1Red.endLoc] === b2Red.endLoc;
+    ROTATE_180[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_180[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_180[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_180[b1Right.endLoc] === b2Right.endLoc;
 
   const positions90CW =
-    ROTATE_90_CW[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CW[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_90_CW[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CW[b1Red.endLoc] === b2Red.endLoc;
+    ROTATE_90_CW[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CW[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_90_CW[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CW[b1Right.endLoc] === b2Right.endLoc;
 
   // Rotation direction checks
   const rotDirSameColors =
-    b1Blue.propRotDir === b2Blue.propRotDir &&
-    b1Red.propRotDir === b2Red.propRotDir;
+    b1Left.propRotDir === b2Left.propRotDir &&
+    b1Right.propRotDir === b2Right.propRotDir;
 
   const rotDirInvertedForRotation = areRotDirsInvertedForRotation(
-    b1Blue.propRotDir,
-    b1Red.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir
+    b1Left.propRotDir,
+    b1Right.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir
   );
 
   const canDetermineInversion = hasRotationData(
-    b1Blue.propRotDir,
-    b1Red.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir,
-    b1Blue.motionType,
-    b1Red.motionType,
-    b2Blue.motionType,
-    b2Red.motionType
+    b1Left.propRotDir,
+    b1Right.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir,
+    b1Left.motionType,
+    b1Right.motionType,
+    b2Left.motionType,
+    b2Right.motionType
   );
 
   // Check each rotation type
@@ -114,52 +114,52 @@ function checkSameColorRotations(
 }
 
 function checkSwappedColorRotations(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData,
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData,
   transformations: string[]
 ): void {
   // Position checks for swapped colors
   const positions180Swapped =
-    ROTATE_180[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_180[b1Red.endLoc] === b2Blue.endLoc &&
-    ROTATE_180[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_180[b1Blue.endLoc] === b2Red.endLoc;
+    ROTATE_180[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_180[b1Right.endLoc] === b2Left.endLoc &&
+    ROTATE_180[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_180[b1Left.endLoc] === b2Right.endLoc;
 
   const positions90CCWSwapped =
-    ROTATE_90_CCW[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CCW[b1Red.endLoc] === b2Blue.endLoc &&
-    ROTATE_90_CCW[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CCW[b1Blue.endLoc] === b2Red.endLoc;
+    ROTATE_90_CCW[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CCW[b1Right.endLoc] === b2Left.endLoc &&
+    ROTATE_90_CCW[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CCW[b1Left.endLoc] === b2Right.endLoc;
 
   const positions90CWSwapped =
-    ROTATE_90_CW[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CW[b1Red.endLoc] === b2Blue.endLoc &&
-    ROTATE_90_CW[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CW[b1Blue.endLoc] === b2Red.endLoc;
+    ROTATE_90_CW[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CW[b1Right.endLoc] === b2Left.endLoc &&
+    ROTATE_90_CW[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CW[b1Left.endLoc] === b2Right.endLoc;
 
   // Rotation direction checks for swapped colors
   const rotDirSameSwapped =
-    b1Red.propRotDir === b2Blue.propRotDir &&
-    b1Blue.propRotDir === b2Red.propRotDir;
+    b1Right.propRotDir === b2Left.propRotDir &&
+    b1Left.propRotDir === b2Right.propRotDir;
 
   const rotDirInvertedSwappedForRotation = areRotDirsInvertedForRotation(
-    b1Red.propRotDir,
-    b1Blue.propRotDir, // swapped: red→blue, blue→red
-    b2Blue.propRotDir,
-    b2Red.propRotDir
+    b1Right.propRotDir,
+    b1Left.propRotDir, // swapped: red→blue, blue→red
+    b2Left.propRotDir,
+    b2Right.propRotDir
   );
 
   const canDetermineRotForSwap = hasRotationData(
-    b1Red.propRotDir,
-    b1Blue.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir,
-    b1Red.motionType,
-    b1Blue.motionType,
-    b2Blue.motionType,
-    b2Red.motionType
+    b1Right.propRotDir,
+    b1Left.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir,
+    b1Right.motionType,
+    b1Left.motionType,
+    b2Left.motionType,
+    b2Right.motionType
   );
 
   if (positions180Swapped) {

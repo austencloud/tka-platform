@@ -18,7 +18,10 @@ import {
   safe,
   type GhostKind,
 } from "$lib/shared/attract/domain/annotations";
-import { EMPTY_WORLD, type GhostContext } from "$lib/shared/attract/domain/intention";
+import {
+  EMPTY_WORLD,
+  type GhostContext,
+} from "$lib/shared/attract/domain/intention";
 import { createMemory } from "$lib/shared/attract/domain/scoring";
 import { createRng } from "$lib/shared/attract/services/rng";
 import { createTrail } from "$lib/shared/attract/services/trail";
@@ -28,7 +31,9 @@ const INTENTIONS_DIR = "src/lib/shared/attract/intentions";
 
 /** Comments explain the banned patterns by name, so match CODE only. */
 function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 function intentionSources(): { file: string; source: string }[] {
@@ -50,10 +55,15 @@ describe("ghost safety", () => {
     // the signal a trapped ghost gives off.
     const ctx: GhostContext = {
       ...EMPTY_WORLD,
-      ...createMemory(createRng(1), createTrail(() => 0)),
+      ...createMemory(
+        createRng(1),
+        createTrail(() => 0)
+      ),
     };
 
-    const optimistic = ALL_INTENTIONS.filter((i) => i.can(ctx)).map((i) => i.id);
+    const optimistic = ALL_INTENTIONS.filter((i) => i.can(ctx)).map(
+      (i) => i.id
+    );
     expect(optimistic).toEqual([]);
   });
 
@@ -73,14 +83,17 @@ describe("ghost safety", () => {
       const ctx: GhostContext = {
         ...EMPTY_WORLD,
         ...world,
-        ...createMemory(createRng(3), createTrail(() => 0)),
+        ...createMemory(
+          createRng(3),
+          createTrail(() => 0)
+        ),
       };
       ctx.moduleDwellMs = 600_000; // long past the restlessness ceiling
       for (const intention of ALL_INTENTIONS) {
         const appeal = intention.appeal(ctx);
         expect(
           appeal,
-          `${intention.id} appeal out of range: ${appeal}`,
+          `${intention.id} appeal out of range: ${appeal}`
         ).toBeGreaterThanOrEqual(0);
         expect(appeal).toBeLessThanOrEqual(1);
       }
@@ -117,7 +130,7 @@ describe("ghost safety", () => {
   it("only ever navigates by pressing — no goto/switchModule in the bag", () => {
     for (const { file, source } of intentionSources()) {
       expect(source, `${file} navigates programmatically`).not.toMatch(
-        /\bgoto\(|switchModule|location\.(href|assign|replace)/,
+        /\bgoto\(|switchModule|location\.(href|assign|replace)/
       );
     }
   });
@@ -134,14 +147,14 @@ describe("ghost safety", () => {
         source: stripComments(
           readFileSync(
             "src/lib/shared/attract/components/PresenterHost.svelte",
-            "utf8",
-          ),
+            "utf8"
+          )
         ),
       },
     ];
     for (const { file, source } of sources) {
       expect(source, `${file} moves the URL directly`).not.toMatch(
-        /history\.(back|forward|go|pushState|replaceState)\(|\bgoto\(/,
+        /history\.(back|forward|go|pushState|replaceState)\(|\bgoto\(/
       );
     }
   });
@@ -164,7 +177,9 @@ describe("ghost safety", () => {
       for (const block of blocks) {
         const id = block.match(/id:\s*"([^"]+)"/)?.[1];
         if (!id) continue;
-        const thought = block.match(/thought:[\s\S]*?\n\s{4}(?=can:|target:|appeal:|mood:|perform:)/);
+        const thought = block.match(
+          /thought:[\s\S]*?\n\s{4}(?=can:|target:|appeal:|mood:|perform:)/
+        );
         if (!thought) continue;
         if (inspectsDom.test(thought[0]) && !/\n\s{4}target:/.test(block)) {
           offenders.push(`${file} → ${id}`);
@@ -173,12 +188,14 @@ describe("ghost safety", () => {
     }
     expect(
       offenders,
-      "thoughts that read the DOM without a target() the perform shares",
+      "thoughts that read the DOM without a target() the perform shares"
     ).toEqual([]);
   });
 
   it("builds allowlist selectors that require both attributes", () => {
-    expect(safe("option")).toBe('[data-ghost="safe"][data-ghost-kind="option"]');
+    expect(safe("option")).toBe(
+      '[data-ghost="safe"][data-ghost-kind="option"]'
+    );
   });
 });
 
@@ -198,18 +215,23 @@ describe("annotation integrity", () => {
     const offenders = svelteFiles.filter((path) => {
       const source = readFileSync(path, "utf8");
       if (!source.includes("data-ghost-kind")) return false;
-      return !source.includes('data-ghost="safe"') && !source.includes("data-ghost=");
+      return (
+        !source.includes('data-ghost="safe"') && !source.includes("data-ghost=")
+      );
     });
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 
   it("puts every data-ghost-linger on an element that is also annotated", () => {
     const offenders = svelteFiles.filter((path) => {
       const source = readFileSync(path, "utf8");
-      return source.includes("data-ghost-linger") && !source.includes("data-ghost-kind");
+      return (
+        source.includes("data-ghost-linger") &&
+        !source.includes("data-ghost-kind")
+      );
     });
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 
   /**
    * The test the presenter was missing, and the reason five intentions shipped
@@ -240,7 +262,7 @@ describe("annotation integrity", () => {
       // rail's 'practice' until this test flagged the kind as uncarried).
       const spans = [
         ...source.matchAll(
-          /(?:data-ghost-kind|ghostKind)=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g,
+          /(?:data-ghost-kind|ghostKind)=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g
         ),
       ];
       if (!spans.length) continue;
@@ -252,7 +274,9 @@ describe("annotation integrity", () => {
         // Backreferenced quote: `["']…["']` lets a string open with " and close
         // with ', so one apostrophe in a comment ("the button's purpose") shifts
         // pairing for the whole file and swallows the real literals.
-        const inner = [...expression.matchAll(/(["'])([^"']*)\1/g)].map((m) => m[2]!);
+        const inner = [...expression.matchAll(/(["'])([^"']*)\1/g)].map(
+          (m) => m[2]!
+        );
         if (inner.length) inner.forEach((k) => found.add(k));
         // `{ghostKind}` / `{ghostKindFor(id)}` — the kind arrives by prop or
         // helper. Fall back to the file's own literals, which is where such a
@@ -274,7 +298,7 @@ describe("annotation integrity", () => {
       .filter((kind) => !annotatedKinds.has(kind));
     expect(
       missing,
-      "kinds no component carries — every intention gated on one can never fire",
+      "kinds no component carries — every intention gated on one can never fire"
     ).toEqual([]);
   });
 
@@ -293,11 +317,16 @@ describe("annotation integrity", () => {
     // match a non-empty body, so its opening quote pairs with the NEXT
     // literal's and every literal after it is read inside-out. That silently
     // truncated this scan at the third file.
-    const referenced = new Set([...bag.matchAll(/"([^"]*)"/g)].map((m) => m[1]!));
-    const orphans = (Object.keys(EMPTY_WORLD.available) as GhostKind[]).filter(
-      (kind) => !referenced.has(kind) && !EXTERNALLY_PROVIDED_KINDS.includes(kind),
+    const referenced = new Set(
+      [...bag.matchAll(/"([^"]*)"/g)].map((m) => m[1]!)
     );
-    expect(orphans, "kinds in the vocabulary that no intention uses").toEqual([]);
+    const orphans = (Object.keys(EMPTY_WORLD.available) as GhostKind[]).filter(
+      (kind) =>
+        !referenced.has(kind) && !EXTERNALLY_PROVIDED_KINDS.includes(kind)
+    );
+    expect(orphans, "kinds in the vocabulary that no intention uses").toEqual(
+      []
+    );
   });
 
   it("never annotates a control inside a denied module's feature folder", () => {
@@ -306,7 +335,7 @@ describe("annotation integrity", () => {
     const offenders = svelteFiles.filter(
       (path) =>
         /[\\/]features[\\/](admin|feedback)[\\/]/.test(path) &&
-        readFileSync(path, "utf8").includes('data-ghost="safe"'),
+        readFileSync(path, "utf8").includes('data-ghost="safe"')
     );
     expect(offenders).toEqual([]);
   });

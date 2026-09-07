@@ -12,7 +12,7 @@ import {
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -21,7 +21,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 
 // Position to hand location mapping
-// Format: [blueLocation (left hand), redLocation (right hand)]
+// Format: [leftLocation, rightLocation]
 const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
   // Alpha positions - hands in opposite/inverted directions (180° apart)
   [GridPosition.ALPHA1]: [GridLocation.SOUTH, GridLocation.NORTH],
@@ -178,38 +178,40 @@ export function createStartPositionVariations(
   return positions.map((pos) => {
     const locations = POSITION_LOCATIONS[pos.position];
     if (!locations) {
-      throw new Error(`No location mapping found for position: ${pos.position}`);
+      throw new Error(
+        `No location mapping found for position: ${pos.position}`
+      );
     }
-    const [blueLocation, redLocation] = locations;
+    const [leftLocation, rightLocation] = locations;
 
     // Create proper motion data for both hands
-    const blueMotion = createMotionData({
+    const leftMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: blueLocation,
-      endLocation: blueLocation,
+      startLocation: leftLocation,
+      endLocation: leftLocation,
       startOrientation: Orientation.IN,
       endOrientation: Orientation.IN,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       isVisible: true,
       propType: PropType.STAFF,
-      arrowLocation: blueLocation,
+      arrowLocation: leftLocation,
       gridMode: gridMode,
     });
 
-    const redMotion = createMotionData({
+    const rightMotion = createMotionData({
       motionType: MotionType.STATIC,
-      startLocation: redLocation,
-      endLocation: redLocation,
+      startLocation: rightLocation,
+      endLocation: rightLocation,
       startOrientation: Orientation.IN,
       endOrientation: Orientation.IN,
       rotationDirection: RotationDirection.NO_ROTATION,
       turns: 0,
-      color: MotionColor.RED,
+      hand: HandSide.RIGHT,
       isVisible: true,
       propType: PropType.STAFF,
-      arrowLocation: redLocation,
+      arrowLocation: rightLocation,
       gridMode: gridMode,
     });
 
@@ -219,8 +221,8 @@ export function createStartPositionVariations(
       startPosition: pos.position,
       endPosition: pos.position,
       motions: {
-        [MotionColor.BLUE]: blueMotion,
-        [MotionColor.RED]: redMotion,
+        [HandSide.LEFT]: leftMotion,
+        [HandSide.RIGHT]: rightMotion,
       },
     });
   });

@@ -37,10 +37,10 @@ describe("canonical deck-card visibility", () => {
 
   it("passes prop-type overrides through when provided", () => {
     const { visibilityOverrides: v } = buildCanonicalCardVisibility({
-      bluePropType: "fan" as never,
-      redPropType: "staff" as never,
+      leftPropType: "fan" as never,
+      rightPropType: "staff" as never,
     });
-    expect(v.bluePropType).toBe("fan");
-    expect(v.redPropType).toBe("staff");
+    expect(v.leftPropType).toBe("fan");
+    expect(v.rightPropType).toBe("staff");
   });
 });

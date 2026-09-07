@@ -16,14 +16,14 @@ const TIP = { dx: 120, dy: 0 }; // MANDALA_STANDARD_TIP_DX — the card-back tip
 function step(motionType: "pro" | "anti", turns = 0): StepLike {
   return {
     motions: {
-      blue: {
+      left: {
         motionType,
         rotationDirection: "cw",
         startLocation: "n",
         endLocation: "e",
         turns,
       },
-      red: {
+      right: {
         motionType,
         rotationDirection: "ccw",
         startLocation: "s",
@@ -35,7 +35,7 @@ function step(motionType: "pro" | "anti", turns = 0): StepLike {
 }
 
 const allD = (p: ReturnType<typeof calculate>) =>
-  [...p.blue, ...p.red].map((s) => s.d).join("|");
+  [...p.left, ...p.right].map((s) => s.d).join("|");
 
 describe("motion-aware mandala geometry (card-back hybrid shape)", () => {
   it("anti motions trace a different (concave) path than the arc default", () => {
@@ -56,7 +56,7 @@ describe("motion-aware mandala geometry (card-back hybrid shape)", () => {
     const overridden: StepLike[] = [
       {
         motions: {
-          blue: {
+          left: {
             motionType: "anti",
             rotationDirection: "cw",
             startLocation: "n",
@@ -64,7 +64,7 @@ describe("motion-aware mandala geometry (card-back hybrid shape)", () => {
             turns: 0,
             pathShape: "arc",
           },
-          red: null,
+          right: null,
         },
       },
     ];

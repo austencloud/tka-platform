@@ -47,7 +47,7 @@ export class OrientationPropagator implements IOrientationPropagator {
 
   propagateForColor(
     steps: SequenceStep[],
-    color: "blue" | "red",
+    hand: "left" | "right",
     initialOrientation: Orientation
   ): SequenceStep[] {
     const updatedSteps = [...steps];
@@ -57,7 +57,7 @@ export class OrientationPropagator implements IOrientationPropagator {
       const step = updatedSteps[i];
       if (!step) continue;
 
-      const motion = color === "blue" ? step.motions.blue : step.motions.red;
+      const motion = hand === "left" ? step.motions.left : step.motions.right;
       if (!motion) continue;
 
       const newEndOrientation = this.calculator.calculateEndOrientation(
@@ -78,8 +78,8 @@ export class OrientationPropagator implements IOrientationPropagator {
       updatedSteps[i] = {
         ...step,
         motions: {
-          blue: color === "blue" ? updatedMotion : step.motions.blue,
-          red: color === "red" ? updatedMotion : step.motions.red,
+          left: hand === "left" ? updatedMotion : step.motions.left,
+          right: hand === "right" ? updatedMotion : step.motions.right,
         },
       };
 
@@ -101,11 +101,11 @@ export class OrientationPropagator implements IOrientationPropagator {
 
     let updatedSteps = [...result.steps];
 
-    const blueStartOrientation = (startPosition.motions.blue.endOrientation || "in") as Orientation;
-    updatedSteps = this.propagateForColor(updatedSteps, "blue", blueStartOrientation);
+    const leftStartOrientation = (startPosition.motions.left.endOrientation || "in") as Orientation;
+    updatedSteps = this.propagateForColor(updatedSteps, "left", leftStartOrientation);
 
-    const redStartOrientation = (startPosition.motions.red.endOrientation || "in") as Orientation;
-    updatedSteps = this.propagateForColor(updatedSteps, "red", redStartOrientation);
+    const rightStartOrientation = (startPosition.motions.right.endOrientation || "in") as Orientation;
+    updatedSteps = this.propagateForColor(updatedSteps, "right", rightStartOrientation);
 
     return {
       ...result,

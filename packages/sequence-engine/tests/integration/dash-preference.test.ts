@@ -28,7 +28,7 @@ import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/seq
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
-    color: "blue",
+    hand: "left",
     startLocation: "n",
     endLocation: "s",
     motionType: "pro",
@@ -45,8 +45,8 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
     endPosition: "alpha1",
     timing: "together",
     direction: "together",
-    blueMotion: makeMotion({ color: "blue" }),
-    redMotion: makeMotion({ color: "red" }),
+    leftMotion: makeMotion({ hand: "left" }),
+    rightMotion: makeMotion({ hand: "right" }),
     ...overrides,
   };
 }
@@ -62,15 +62,15 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "α",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
   }),
   makePictograph({
     letter: "α",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
   }),
 
   // A: alpha1 → beta3, pro shift
@@ -78,8 +78,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "A",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "pro", startLocation: "n", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "pro", startLocation: "s", endLocation: "w" }),
+    leftMotion: makeMotion({ motionType: "pro", startLocation: "n", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "pro", startLocation: "s", endLocation: "w" }),
   }),
 
   // B: beta3 → alpha1, pro shift
@@ -87,8 +87,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "B",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "pro", startLocation: "e", endLocation: "n" }),
-    redMotion: makeMotion({ motionType: "pro", startLocation: "w", endLocation: "s" }),
+    leftMotion: makeMotion({ motionType: "pro", startLocation: "e", endLocation: "n" }),
+    rightMotion: makeMotion({ motionType: "pro", startLocation: "w", endLocation: "s" }),
   }),
 
   // X: alpha1 → beta3, dash (both hands)
@@ -96,8 +96,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "X",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "n", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "s", endLocation: "w" }),
+    leftMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "n", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "s", endLocation: "w" }),
   }),
 
   // Y: beta3 → alpha1, dash (both hands)
@@ -105,8 +105,8 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "Y",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "e", endLocation: "n" }),
-    redMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "w", endLocation: "s" }),
+    leftMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "e", endLocation: "n" }),
+    rightMotion: makeMotion({ motionType: "dash", rotationDirection: "noRotation", startLocation: "w", endLocation: "s" }),
   }),
 ];
 
@@ -195,12 +195,12 @@ class MockTransitionGraph implements ITransitionGraph {
   }
 }
 
-function countDashSteps(steps: { motions: { blue: MotionData; red: MotionData } }[], skipStart = true): number {
+function countDashSteps(steps: { motions: { left: MotionData; right: MotionData } }[], skipStart = true): number {
   let count = 0;
   const start = skipStart ? 1 : 0;
   for (let i = start; i < steps.length; i++) {
     const s = steps[i]!;
-    if (s.motions.blue.motionType === "dash" || s.motions.red.motionType === "dash") {
+    if (s.motions.left.motionType === "dash" || s.motions.right.motionType === "dash") {
       count++;
     }
   }

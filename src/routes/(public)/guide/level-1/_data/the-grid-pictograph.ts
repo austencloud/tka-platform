@@ -18,11 +18,11 @@ export const THE_GRID_ALPHA3: PictographData | undefined = alpha3
   ? ({
       ...alpha3,
       motions: {
-        blue: alpha3.motions?.blue
-          ? { ...alpha3.motions.blue, propType: PropType.HAND }
+        left: alpha3.motions?.left
+          ? { ...alpha3.motions.left, propType: PropType.HAND }
           : undefined,
-        red: alpha3.motions?.red
-          ? { ...alpha3.motions.red, propType: PropType.HAND }
+        right: alpha3.motions?.right
+          ? { ...alpha3.motions.right, propType: PropType.HAND }
           : undefined,
       },
     } as unknown as PictographData)

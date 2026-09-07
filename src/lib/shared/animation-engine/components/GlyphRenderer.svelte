@@ -56,8 +56,8 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
   const turnsTuple = $derived.by(() => {
     if (
       !stepData ||
-      !isVisibleMotion(stepData.motions?.blue) ||
-      !isVisibleMotion(stepData.motions?.red)
+      !isVisibleMotion(stepData.motions?.left) ||
+      !isVisibleMotion(stepData.motions?.right)
     ) {
       return "(s, 0, 0)";
     }

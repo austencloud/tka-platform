@@ -17,6 +17,8 @@
     first: Snippet;
     second: Snippet;
     duration?: number;
+    /** Allow a stage-owned toolbar to extend beyond its media slot. */
+    clip?: boolean;
     /** Keeps additive/glowing media from becoming brighter at mid-handoff by
      *  letting the outgoing source recede before the incoming source arrives. */
     profile?: CrossfadeProfile;
@@ -31,11 +33,30 @@
     first,
     second,
     duration = DURATION.normal,
+    clip = true,
     profile = "standard",
     onsettled,
   }: Props = $props();
 
-  const effectiveDuration = $derived(motionDuration(duration));
+  let reducedMotion = $state(
+    typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+
+  $effect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const changed = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+    };
+    query.addEventListener("change", changed);
+    return () => query.removeEventListener("change", changed);
+  });
+
+  // When CSS skips the fade, no transitionend arrives. Notify the host anyway
+  // so a prepared canvas can start, including after a live preference change.
+  const effectiveDuration = $derived(
+    reducedMotion ? 0 : motionDuration(duration)
+  );
   // Reduced motion disables the whole CSS transition below, so the delay can
   // stay a plain token. Keeping it out of motionDuration also makes the style
   // declaration stable during hydration.
@@ -73,6 +94,7 @@
 >
   <div
     class="source"
+    class:unclipped={!clip}
     class:active={active === "first"}
     inert={active !== "first"}
     aria-hidden={active !== "first"}
@@ -83,6 +105,7 @@
   </div>
   <div
     class="source"
+    class:unclipped={!clip}
     class:active={active === "second"}
     inert={active !== "second"}
     aria-hidden={active !== "second"}
@@ -122,6 +145,10 @@
     opacity: 1;
     pointer-events: auto;
     transition-delay: var(--dual-source-in-delay, 0ms);
+  }
+
+  .source.unclipped {
+    contain: layout;
   }
 
   @media (prefers-reduced-motion: reduce) {

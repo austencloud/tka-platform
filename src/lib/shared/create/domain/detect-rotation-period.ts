@@ -1,6 +1,6 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { GridPosition, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { QUARTER_POSITION_MAP_CW, QUARTER_POSITION_MAP_CCW } from "$lib/shared/foundation/domain/models/generation/circular-position-maps";
@@ -8,15 +8,15 @@ import { QUARTER_POSITION_MAP_CW, QUARTER_POSITION_MAP_CCW } from "$lib/shared/f
 const periodCache = new Map<string, number>();
 
 function derivePosition(step: StepData): GridPosition | null {
-	const blue = step.motions?.[MotionColor.BLUE];
-	const red = step.motions?.[MotionColor.RED];
+	const left = step.motions?.[HandSide.LEFT];
+	const right = step.motions?.[HandSide.RIGHT];
 	// Invisible placeholder = hand not really there (both-required Step shape).
-	if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return null;
-	if (!blue.startLocation || !red.startLocation) return null;
+	if (!isVisibleMotion(left) || !isVisibleMotion(right)) return null;
+	if (!left.startLocation || !right.startLocation) return null;
 	try {
 		return getGridPositionFromLocations(
-			blue.startLocation as GridLocation,
-			red.startLocation as GridLocation
+			left.startLocation as GridLocation,
+			right.startLocation as GridLocation
 		);
 	} catch {
 		return null;

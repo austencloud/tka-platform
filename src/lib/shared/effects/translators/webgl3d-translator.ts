@@ -89,6 +89,11 @@ export function resolveFire3D(
     vortexStrength: intent.turbulence * 3.0,
     shadowCasting: false,
     bloomContribution: intent.intensity * 0.6,
+    // A prop flame passes within centimetres of the performer's face. Three.js
+    // point lights use inverse-square falloff, so this stays below half a
+    // candela even at the hottest setting. The particles still own the visible
+    // flame and bloom; this light only lets nearby skin and props catch it.
+    lightIntensity: 0.08 + intent.brightness * 0.22 + intent.intensity * 0.16,
     // brightness 0 → 0.08 (dim ember, stays under the scene bloom threshold
     // even where the flame is dense), 0.5 → 0.53 (tamed woodfire default), 1 →
     // 0.98 (hot, blooms). Low floor + the brightness-scaled shader emission

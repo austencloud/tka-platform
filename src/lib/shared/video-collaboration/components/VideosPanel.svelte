@@ -7,7 +7,7 @@
   A separate presentation from the viewer's SequenceVideos - different host,
   different layout, its own upload sheet - but not a separate list. Both read
   the shared per-sequence store, so a video added in either place shows up in
-  the other. See .claude/rules/canonical-capabilities.md.
+  the other. See docs/architecture/canonical-capabilities.md.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";

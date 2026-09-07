@@ -98,19 +98,19 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
   // holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
   // Source order follows the tablet bento's visual reading order: do
   // (Composer), hold (Choreo Cards), learn (Guide), understand (Notation),
-  // ask (FAQ), and look up (Glossary).
+  // ask (FAQ), and look up (Kinetic Atlas).
   // Deeper theory stays in the Notation dropdown instead of competing with
   // the front doors. Secondary destinations live in the strip.
   {
     id: "notation",
-    href: "/notation",
+    href: "/history",
     heading: "History",
     descriptor: "How flow arts notation developed, 2009 to 2022.",
     span: "2x1",
     color: "#22d3ee",
     icon: "fa-bezier-curve",
     media: "pictograph",
-    morphName: "launchpad-notation",
+    morphName: "launchpad-history",
     chips: [
       { label: "Staves", href: "/notation/staves" },
       { label: "Fans", href: "/notation/fans" },
@@ -130,12 +130,12 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
   },
   {
     id: "glossary",
-    href: "/glossary",
-    heading: "Glossary",
-    descriptor: "TKA terms, defined.",
+    href: "/atlas",
+    heading: "Kinetic Atlas",
+    descriptor: "Explore letters, motion, notation, and technique.",
     span: "1x1",
     color: "#94a3b8",
-    icon: "fa-book-open",
+    icon: "fa-compass",
     media: "dictionary",
     morphName: "launchpad-glossary",
   },

@@ -6,8 +6,11 @@
  */
 
 import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { ISVGGenerator } from "$lib/shared/animation-engine/services/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import { parseFanRenderKey } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+import { parseModelRenderKey } from "$lib/shared/pictograph/prop/domain/prop-look";
 
 /**
  * Prop dimensions
@@ -48,7 +51,9 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   bigfan: { width: 600, height: 566.9 },
 
   // Triad family
-  triad: { width: 248.76, height: 219.09 },
+  // The regular triad is uniformly scaled so every arm reaches the club's
+  // canonical radius without changing its center pivot or proportions.
+  triad: { width: 258.67, height: 227.818 },
   bigtriad: { width: 600, height: 523.5 },
 
   // Hoop family
@@ -71,9 +76,6 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
 
   // Sword
   sword: { width: 572.3, height: 64 },
-
-  // Sickles — one competition kama, with an explicit off-center hand pivot.
-  sickles: { width: 440, height: 260 },
 
   // Energy family (premium cosmetics). Both boxes are padded beyond the prop
   // itself so the blade glow has somewhere to fall off, and both grew that
@@ -160,15 +162,24 @@ export const DEFAULT_PROP_DIMENSIONS: PropDimensions = {
  */
 export function getPropDimensions(propType: string): PropDimensions {
   const normalized = propType.toLowerCase();
-  return PROP_DIMENSIONS[normalized] ?? { ...DEFAULT_PROP_DIMENSIONS };
+  const fanRenderKey = parseFanRenderKey(normalized);
+  if (fanRenderKey) {
+    return fanRenderKey.propType === "bigfan"
+      ? { width: 600, height: 566.9 }
+      : { width: 260, height: 207 };
+  }
+  // A model sprite is captured into the same box as its pictograph artwork.
+  const modelRenderKey = parseModelRenderKey(normalized);
+  const baseType = modelRenderKey?.propType ?? normalized;
+  return PROP_DIMENSIONS[baseType] ?? { ...DEFAULT_PROP_DIMENSIONS };
 }
 
 /**
  * Reactive state for prop textures
  */
 export interface PropTextureState {
-  blueDimensions: PropDimensions;
-  redDimensions: PropDimensions;
+  leftDimensions: PropDimensions;
+  rightDimensions: PropDimensions;
   isLoaded: boolean;
   isLoading: boolean;
   error: string | null;
@@ -193,15 +204,16 @@ export interface IPropTextureLoader {
   ): void;
 
   /**
-   * Load textures for both prop colors
-   * @param bluePropType - Type of blue prop
-   * @param redPropType - Type of red prop
+   * Load textures for both performer hands
+   * @param leftPropType - Type of left-hand prop
+   * @param rightPropType - Type of right-hand prop
    * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
   loadPropTextures(
-    bluePropType: string,
-    redPropType: string,
-    darkMode?: boolean
+    leftPropType: string,
+    rightPropType: string,
+    darkMode?: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<void>;
 
   /**

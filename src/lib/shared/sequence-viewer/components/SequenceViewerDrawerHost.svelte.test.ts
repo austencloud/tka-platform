@@ -87,8 +87,8 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
     mocks.resolveShortCodeWithRecord.mockResolvedValue({
       sequence: resolvedSequence,
       record: {
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       },
     });
     mocks.hydrateSequence.mockResolvedValue(hydratedSequence);
@@ -110,8 +110,8 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
     });
     expect(mocks.resolveShortCodeWithRecord).toHaveBeenCalledWith("COLD42");
     expect(mocks.updateSettings).toHaveBeenCalledWith({
-      bluePropType: PropType.CLUB,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.CLUB,
+      rightPropType: PropType.CLUB,
       catDogMode: false,
     });
   });
@@ -122,8 +122,8 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
     mocks.resolveShortCodeWithRecord.mockResolvedValue({
       sequence: resolvedSequence,
       record: {
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       },
     });
     mocks.hydrateSequence.mockResolvedValue(hydratedSequence);
@@ -156,8 +156,8 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
       loopDetector: expect.any(Object),
     });
     expect(mocks.updateSettings).toHaveBeenCalledWith({
-      bluePropType: PropType.CLUB,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.CLUB,
+      rightPropType: PropType.CLUB,
       catDogMode: false,
     });
   });

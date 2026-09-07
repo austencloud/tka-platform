@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SNAPSHOT_VERSION } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import {
   DEFAULT_TRAIL_SETTINGS,
   TAIL_LENGTH_MAX,
@@ -26,31 +27,38 @@ function tunnel(): CollectedTunnel {
       tunnel: {
         config: { ...DEFAULT_CONFIG },
         gridVisible: true,
-        spectrum: true,
+        colors: {
+          mode: "spectrum",
+          custom: { left: "#2e8bf0", right: "#ed1c24" },
+        },
         section: "tunnel",
+        presetRecipe: null,
       },
-      effects: { tipEffectMap: { "*": { effect: "fire" } } },
-      effort: "medium",
+      effects: {
+        ...DEFAULT_EFFECTS_CONFIG,
+        tipEffectMap: { "*": { effect: "fire" } },
+      },
+      effort: "linear",
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
-        bluePathLines: false,
-        redPathLines: false,
+        leftPathLines: false,
+        rightPathLines: false,
       },
       playback: { bpm: 60, playbackMode: "continuous" },
-      props: { bluePropType: "staff", redPropType: "staff" },
+      props: { leftPropType: "staff", rightPropType: "staff" },
       trailRender: {
         ...DEFAULT_TRAIL_SETTINGS,
         lineWidth: 7,
-        blueColor: "#1e90ff",
-        redColor: "#ff2d55",
+        leftColor: "#1e90ff",
+        rightColor: "#ff2d55",
         glowBlur: 18,
         effect: TrailEffect.GLOW,
         hideProps: false,
         previewMode: true,
       },
     },
-  } as CollectedTunnel;
+  };
 }
 
 describe("posterTrailSettings", () => {
@@ -78,8 +86,8 @@ describe("posterTrailSettings", () => {
     const source = tunnel().snapshot.trailRender;
     const poster = posterTrailSettings(source);
     expect(poster.lineWidth).toBe(source.lineWidth);
-    expect(poster.blueColor).toBe(source.blueColor);
-    expect(poster.redColor).toBe(source.redColor);
+    expect(poster.leftColor).toBe(source.leftColor);
+    expect(poster.rightColor).toBe(source.rightColor);
     expect(poster.glowBlur).toBe(source.glowBlur);
     expect(poster.effect).toBe(source.effect);
   });
@@ -108,7 +116,7 @@ describe("tunnelForPoster", () => {
     expect(forPoster.snapshot.tunnel.config).toEqual(
       original.snapshot.tunnel.config
     );
-    expect(forPoster.snapshot.tunnel.spectrum).toBe(true);
+    expect(forPoster.snapshot.tunnel.colors.mode).toBe("spectrum");
     expect(forPoster.snapshot.effects).toEqual(original.snapshot.effects);
     expect(forPoster.snapshot.props).toEqual(original.snapshot.props);
     expect(forPoster.snapshot.playback).toEqual(original.snapshot.playback);

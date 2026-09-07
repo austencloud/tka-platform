@@ -25,9 +25,10 @@
     quality: AutumnQualityConfig;
     groundY?: number;
     pondCenter?: [number, number, number];
+    active?: boolean;
   }
 
-  let { quality, groundY = 0, pondCenter }: Props = $props();
+  let { quality, groundY = 0, pondCenter, active = true }: Props = $props();
 
   // Leaf area is centered slightly above ground level so the fall looks natural.
   // sporeArea is narrower and lower — motes rise from the forest floor.
@@ -57,6 +58,7 @@
         spin={true}
         opacity={0.94}
         emissionShape="ellipse"
+        {active}
       />
     </T.Group>
   {/each}
@@ -74,6 +76,7 @@
       colors={["#9af9e0", "#00c8b4"]}
       sizeRange={[0.008, 0.022]}
       spin={false}
+      {active}
     />
   </T.Group>
 {/key}
@@ -102,6 +105,7 @@
         sizeRange={[0.12 * cluster.sizeScale, 0.24 * cluster.sizeScale]}
         spin={false}
         emissionShape="ellipse"
+        {active}
       />
     </T.Group>
   {/each}

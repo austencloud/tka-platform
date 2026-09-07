@@ -23,9 +23,9 @@ import type {
 } from "$lib/shared/mandala/domain/mandala-types";
 
 /** Hue drift per hand: blue trails run cyan→indigo, red run amber→magenta. */
-const HAND_STOPS: Record<"blue" | "red", [string, string]> = {
-  blue: ["hsl(187 100% 62%)", "hsl(248 100% 66%)"],
-  red: ["hsl(38 100% 60%)", "hsl(322 100% 62%)"],
+const HAND_STOPS: Record<"left" | "right", [string, string]> = {
+  left: ["hsl(187 100% 62%)", "hsl(248 100% 66%)"],
+  right: ["hsl(38 100% 60%)", "hsl(322 100% 62%)"],
 };
 
 const STAGE_COLOR = "#050508";
@@ -90,7 +90,7 @@ function strokeTrails(
 
 function paint(
   paths: MandalaPaths,
-  show: "blue" | "red" | "both",
+  show: "left" | "right" | "both",
   sizePx: number,
   tipDx: number
 ): string {
@@ -111,30 +111,30 @@ function paint(
 
   // Core width in path space: constant on screen regardless of cell size.
   const coreWidth = 2.2 / fitScale(sizePx, tipDx);
-  if (show === "blue" || show === "both")
-    strokeTrails(ctx, paths.blue, HAND_STOPS.blue, coreWidth);
-  if (show === "red" || show === "both")
-    strokeTrails(ctx, paths.red, HAND_STOPS.red, coreWidth);
+  if (show === "left" || show === "both")
+    strokeTrails(ctx, paths.left, HAND_STOPS.left, coreWidth);
+  if (show === "right" || show === "both")
+    strokeTrails(ctx, paths.right, HAND_STOPS.right, coreWidth);
   ctx.restore();
 
   return canvas.toDataURL("image/png");
 }
 
-/** Poi-trail overlay of one blue flower (rows) with one red flower (columns). */
+/** Poi-trail overlay of one left flower (rows) with one right flower (columns). */
 export function renderPoiCell(
-  blue: MandalaPaths,
-  red: MandalaPaths,
+  left: MandalaPaths,
+  right: MandalaPaths,
   sizePx: number,
   tipDx: number
 ): string {
-  const merged: MandalaPaths = { blue: blue.blue, red: red.red, purple: [] };
+  const merged: MandalaPaths = { left: left.left, right: right.right, purple: [] };
   return paint(merged, "both", sizePx, tipDx);
 }
 
 /** A single poi-trail axis-header flower. */
 export function renderPoiHeader(
   paths: MandalaPaths,
-  hand: "blue" | "red",
+  hand: "left" | "right",
   sizePx: number,
   tipDx: number
 ): string {

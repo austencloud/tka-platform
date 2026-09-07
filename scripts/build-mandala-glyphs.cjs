@@ -9,14 +9,41 @@ const { readFileSync, writeFileSync, mkdirSync } = require("fs");
 const { resolve, dirname } = require("path");
 
 const serviceAccount = JSON.parse(
-  readFileSync(resolve(__dirname, "../serviceAccountKey.json"), "utf8"),
+  readFileSync(resolve(__dirname, "../serviceAccountKey.json"), "utf8")
 );
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
+function normalizeMotion(motion, hand) {
+  if (!motion) return undefined;
+  const { color: _legacyColor, ...rest } = motion;
+  return { ...rest, hand };
+}
+
+function normalizeStep(step) {
+  const motions = step?.motions;
+  if (!motions) return step;
+  const left = motions.left ?? motions.blue;
+  const right = motions.right ?? motions.red;
+  return {
+    ...step,
+    leftReversal: step.leftReversal ?? step.blueReversal ?? false,
+    rightReversal: step.rightReversal ?? step.redReversal ?? false,
+    motions: {
+      ...(left && { left: normalizeMotion(left, "left") }),
+      ...(right && { right: normalizeMotion(right, "right") }),
+    },
+    blueReversal: undefined,
+    redReversal: undefined,
+  };
+}
+
 async function main() {
   const idx = JSON.parse(
-    readFileSync(resolve(__dirname, "../static/data/mandala-index.json"), "utf8"),
+    readFileSync(
+      resolve(__dirname, "../static/data/mandala-index.json"),
+      "utf8"
+    )
   );
 
   // orbitKey → total pathway count across all its glyphs (for a "twin" badge).
@@ -31,7 +58,9 @@ async function main() {
   const glyphs = [];
   for (const [shapeKey, refs] of entries) {
     const rep = refs[0];
-    const snap = await db.doc(`catalogs/${rep.deck}/sequences/${rep.seqId}`).get();
+    const snap = await db
+      .doc(`catalogs/${rep.deck}/sequences/${rep.seqId}`)
+      .get();
     if (!snap.exists) {
       console.warn(`  missing ${rep.deck}/${rep.seqId} — skipped`);
       continue;
@@ -45,7 +74,7 @@ async function main() {
       decks: [...new Set(refs.map((r) => r.deck))].length,
       orbitKey: rep.orbitKey,
       orbitGlyphs: orbitGlyphCount[rep.orbitKey] ?? 1, // distinct glyphs in this orbit
-      steps: seq.steps,
+      steps: seq.steps.map(normalizeStep),
     });
   }
 

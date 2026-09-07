@@ -27,9 +27,9 @@
     scene?: unknown | null;
     mandala?: {
       steps: unknown[];
-      variant: "blue" | "red" | "both";
-      bluePropType?: string;
-      redPropType?: string;
+      variant: "left" | "right" | "both";
+      leftPropType?: string;
+      rightPropType?: string;
       pathShape?: "arc" | "linear" | "concave" | "hybrid";
     } | null;
   };

@@ -20,7 +20,7 @@
     sample: GhostPoseSample<GhostPropPose3D> | null;
     fallbackState: PropState3D;
     propType: PropType;
-    propColor: "blue" | "red";
+    propHand: "left" | "right";
     color: string;
     intensity: number;
     lifetimeSeconds: number;
@@ -33,7 +33,7 @@
     sample,
     fallbackState,
     propType,
-    propColor,
+    propHand,
     color,
     intensity,
     lifetimeSeconds,
@@ -113,7 +113,7 @@
   <Prop3D
     {propType}
     propState={renderedState}
-    color={propColor}
+    color={propHand === "left" ? "blue" : "red"}
     visible={true}
     length={propLength}
   />

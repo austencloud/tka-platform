@@ -36,7 +36,7 @@ function invertMotionType(
   return type;
 }
 
-/** Reverse one color-neutral motion without changing its duration or turns. */
+/** Reverse one hand-neutral motion without changing its duration or turns. */
 export function rewindSoloMotion(motion: MotionData): MotionData {
   return {
     ...motion,

@@ -6,6 +6,6 @@ export interface PropState {
 }
 
 export interface PropStates {
-  blue: PropState;
-  red: PropState;
+  left: PropState;
+  right: PropState;
 }

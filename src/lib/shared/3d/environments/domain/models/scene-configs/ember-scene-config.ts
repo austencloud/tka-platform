@@ -91,6 +91,72 @@ export interface LavaRiversConfig {
   /** Metres the reserved margin drops so its polygon edge tucks into the bank. */
   bankPlunge?: number;
   bankLight?: LavaRiverBankLightConfig;
+  /** How the run is draped onto the baked world mesh. */
+  drape?: LavaRiverDrapeConfig;
+  /** How the run loses heat between the source and the terminus. */
+  thermal?: LavaRiverThermalConfig;
+  /** The spreading, cooling lobe the run ends on. */
+  terminus?: LavaRiverTerminusConfig;
+  /** The emissive breach the run emerges from. */
+  source?: LavaRiverSourceConfig;
+  /** Additive ground skirt that lights the corridor without spending lights. */
+  bankGlow?: LavaRiverBankGlowConfig;
+}
+
+/** Sampling of the ribbon against the baked terrain, done once at build time. */
+export interface LavaRiverDrapeConfig {
+  /** Set false to keep the authored polyline heights. */
+  enabled?: boolean;
+  /** Metres the draped surface floats above the sampled ground. */
+  surfaceOffset?: number;
+  /** Metres the outer margin is pushed below the bank it meets. */
+  marginBury?: number;
+  /** Ceiling on how far the margin chases terrain downward. */
+  maxMarginDrop?: number;
+  /** Centreline samples along the run. Clamped to a floor of 60. */
+  longitudinalSegments?: number;
+  lateralSegments?: number;
+}
+
+/** Downstream cooling, which is what makes the descent legible from the side. */
+export interface LavaRiverThermalConfig {
+  /** Emission multiplier at the tail relative to the source. */
+  falloff?: number;
+  /** Extra crust coverage accumulated by the tail. */
+  crustGain?: number;
+  /** Strength of the transverse pressure ridges on steep sections. */
+  gradeRidges?: number;
+}
+
+export interface LavaRiverTerminusConfig {
+  /** Fraction of the run, measured from the tail, that spreads into the toe. */
+  fraction?: number;
+  /** Half-width multiplier at full spread, before the rounding cap. */
+  spread?: number;
+  /** Where inside the toe the semicircular cap starts closing the outline. */
+  capStart?: number;
+}
+
+export interface LavaRiverSourceConfig {
+  enabled?: boolean;
+  /** Mouth width across the flow, in channel widths. */
+  widthScale?: number;
+  /** Mouth length along the flow, in channel widths. */
+  lengthScale?: number;
+  /** Metres the mouth's centre sits below its rim. */
+  bowlDepth?: number;
+  /** Extra emission at the mouth, on top of the source end of the gradient. */
+  radiance?: number;
+}
+
+export interface LavaRiverBankGlowConfig {
+  enabled?: boolean;
+  /** Half-span of the skirt in channel half-widths. 1 is the channel edge. */
+  reach?: number;
+  /** Peak additive strength just outside the channel edge. */
+  intensity?: number;
+  /** Falloff exponent across the skirt. Higher keeps the glow tight. */
+  softness?: number;
 }
 
 /**
@@ -158,6 +224,12 @@ export interface VolcanicHazeConfig {
   lightningInterval: number;
   lightningIntensity: number;
   innerGlowColor: string;
+  /**
+   * The dome is depth-tested, so this is where it stops being sky: terrain
+   * closer hides it, terrain further away is painted over. Keep it past the
+   * furthest terrain any camera can reach or it cuts a shell across the
+   * ridgelines.
+   */
   radius: number;
   /** Bearing of the distant vent lighting the low haze. Horizontal part only. */
   underglowDirection?: [number, number, number];
@@ -165,6 +237,10 @@ export interface VolcanicHazeConfig {
   underglowColor?: string;
   /** Zero leaves the dome evenly lit at eye level. */
   underglowStrength?: number;
+  /** Falloff exponent of the caldera lobe. Higher is a tighter pool. */
+  underglowFocus?: number;
+  /** Share of the underglow reaching the bearing opposite the vent. */
+  underglowWrap?: number;
 }
 
 export interface EmberSceneConfig {
@@ -209,12 +285,64 @@ export interface EmberSceneConfig {
  * bank instead of stamping a disc on it. The earlier rig sat 0.7 metres above
  * the surface at intensity 86, which put roughly twenty times more light
  * directly beneath it than on the rock it was meant to be illuminating.
+ *
+ * The count stays at three and is clamped again against the adaptive quality
+ * tier at runtime, because the medium tier allows two dynamic lights in total
+ * and the low tier none. Reach comes from `distance`, which costs nothing in a
+ * forward renderer, and from the additive bank-glow skirt below; neither buys
+ * corridor coverage with another light.
  */
 const EMBER_LAVA_RIVER_BANK_LIGHT: LavaRiverBankLightConfig = {
   count: 3,
-  intensity: 58,
-  distance: 30,
-  heightOffset: 2.6,
+  intensity: 40,
+  distance: 52,
+  heightOffset: 3.4,
+};
+
+/**
+ * The authored polyline hovers over the carved bed by 1.16 metres at the head
+ * and 0.01 at the tail, which flattened the apparent profile by more than a
+ * metre before anything was shaded. Draping restores the real 15 metre fall.
+ */
+const EMBER_LAVA_RIVER_DRAPE: LavaRiverDrapeConfig = {
+  enabled: true,
+  surfaceOffset: 0.1,
+  marginBury: 0.14,
+  maxMarginDrop: 1.2,
+  longitudinalSegments: 152,
+  lateralSegments: 16,
+};
+
+const EMBER_LAVA_RIVER_THERMAL: LavaRiverThermalConfig = {
+  falloff: 0.42,
+  crustGain: 0.1,
+  gradeRidges: 0.55,
+};
+
+const EMBER_LAVA_RIVER_TERMINUS: LavaRiverTerminusConfig = {
+  fraction: 0.085,
+  spread: 2.15,
+  capStart: 0.55,
+};
+
+/**
+ * Sized to sit inside the baked crater at the head, whose authored radius is
+ * six metres: a 6.4 metre channel at 1.56 gives a mouth just under ten metres
+ * across, so the rim lands on rock rather than over the crater lip.
+ */
+const EMBER_LAVA_RIVER_SOURCE: LavaRiverSourceConfig = {
+  enabled: true,
+  widthScale: 1.56,
+  lengthScale: 1.25,
+  bowlDepth: 0.55,
+  radiance: 1,
+};
+
+const EMBER_LAVA_RIVER_BANK_GLOW: LavaRiverBankGlowConfig = {
+  enabled: true,
+  reach: 5.2,
+  intensity: 0.85,
+  softness: 2.1,
 };
 
 const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
@@ -294,6 +422,11 @@ export function createDefaultEmberConfig(
       edgeCooling: look.lavaRivers.edgeCooling,
       bankRadiance: look.lavaRivers.bankRadiance,
       bankLight: EMBER_LAVA_RIVER_BANK_LIGHT,
+      drape: EMBER_LAVA_RIVER_DRAPE,
+      thermal: EMBER_LAVA_RIVER_THERMAL,
+      terminus: EMBER_LAVA_RIVER_TERMINUS,
+      source: EMBER_LAVA_RIVER_SOURCE,
+      bankGlow: EMBER_LAVA_RIVER_BANK_GLOW,
     },
     obsidianPillars: {
       enabled: false,

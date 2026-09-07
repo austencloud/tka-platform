@@ -8,7 +8,7 @@ const BIG_UNILATERAL_PROPS = [
 
 const SMALL_UNILATERAL_PROPS = [
   "fan", "club", "minihoop", "triad", "ukulele",
-  "triquetra", "triquetra2", "chicken", "torch", "contactball", "poi", "sickles",
+  "triquetra", "triquetra2", "chicken", "torch", "contactball", "poi",
 ] as const;
 
 const BUUGENG_FAMILY = [
@@ -35,10 +35,10 @@ export function isStrictPlacedProp(propType: string): boolean {
 }
 
 export function pictographRequiresStrictHandpoints(
-  bluePropType: string,
-  redPropType: string
+  leftPropType: string,
+  rightPropType: string
 ): boolean {
-  return isStrictPlacedProp(bluePropType) && isStrictPlacedProp(redPropType);
+  return isStrictPlacedProp(leftPropType) && isStrictPlacedProp(rightPropType);
 }
 
 /**

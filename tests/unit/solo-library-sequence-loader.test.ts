@@ -24,7 +24,7 @@ describe("loadSoloLibrarySequences", () => {
     const sequences = await loadSoloLibrarySequences({
       subject: "hands",
       granularity: "solo",
-      color: "blue",
+      hand: "left",
     });
 
     expect(sequences).toHaveLength(1);

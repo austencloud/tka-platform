@@ -21,8 +21,8 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   interface Props {
     sequence?: SequenceData | null;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     showSettings?: boolean;
     onSaveToLibrary?: () => void | Promise<void>;
     disassembled?: boolean;
@@ -38,8 +38,8 @@
 
   const {
     sequence,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     showSettings = true,
     onSaveToLibrary,
     disassembled = false,
@@ -99,8 +99,8 @@
                 buildVisualSequenceSaveMenuItem(
                   sequence,
                   {
-                    bluePropType,
-                    redPropType,
+                    leftPropType,
+                    rightPropType,
                     pathShape: visibilityManager.getPathShape(),
                   },
                   onSaveToLibrary
