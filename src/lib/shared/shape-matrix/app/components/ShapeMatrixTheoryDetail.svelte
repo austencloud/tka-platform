@@ -41,7 +41,8 @@
   } from "$lib/shared/shape-matrix/components/PropRelationshipChipRow.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import AnimationPanel from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
-  import ShapeMatrixCustomizeDock from "$lib/shared/shape-matrix/components/ShapeMatrixCustomizeDock.svelte";
+  import ShapeMatrixStageActions from "$lib/shared/shape-matrix/components/ShapeMatrixStageActions.svelte";
+  import { registerShapeMatrixPlaybackShortcut } from "../services/shape-matrix-playback-shortcut";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { growFade } from "$lib/shared/transitions/motion";
   import { tick } from "svelte";
@@ -272,6 +273,15 @@
    * it, rather than in a pair of buttons under this stage. One transport
    * control, in one place, on both surfaces.
    */
+  /* Space is the stage's click, reached without a mouse. Through the app's
+     shortcut registry, so it stands aside for text fields and dialogs. */
+  $effect(() =>
+    registerShapeMatrixPlaybackShortcut(
+      () => animationState.togglePlaying(),
+      () => Boolean(pair)
+    )
+  );
+
   const playbackAction = $derived<ControlDockAction>({
     icon: animationState.playing ? "fa-pause" : "fa-play",
     label: animationState.playing ? "Pause" : "Play",
@@ -342,34 +352,58 @@
             </div>
           </header>
 
-          <button
-            type="button"
-            class="stage-window"
-            aria-label={animationState.playing
-              ? "Pause theory animation"
-              : "Play theory animation"}
-            onclick={animationState.togglePlaying}
-          >
-            <!-- The elemental backdrop from the drill, lit by the two elements
+          <!-- The stage is a button, so the gear is its sibling in a shared
+               frame rather than a control nested inside a control. -->
+          <div class="stage-frame">
+            {#if !app.compact}
+              <ShapeMatrixStageActions />
+            {/if}
+            <button
+              type="button"
+              class="stage-window"
+              aria-label={animationState.playing
+                ? "Pause theory animation"
+                : "Play theory animation"}
+              onclick={animationState.togglePlaying}
+            >
+              <!-- The stage toggles playback on a click; this is how a mouse
+                 finds that out. Hover-gated to fine pointers, and inert to
+                 pointer events so it never eats the click it advertises. The
+                 drill's canvas gets the same affordance from AnimatorCanvas
+                 (hoverHint), which this stage is not. -->
+              <span class="stage-hint" aria-hidden="true">
+                <span class="stage-hint-disc">
+                  <i
+                    class="fas {animationState.playing
+                      ? 'fa-pause'
+                      : 'fa-play'}"
+                  ></i>
+                </span>
+                <span class="stage-hint-word">
+                  {animationState.playing ? "Pause" : "Play"}
+                </span>
+              </span>
+              <!-- The elemental backdrop from the drill, lit by the two elements
                  the bridge above names. It is what tied the animation to the
                  relationship being read instead of leaving it a canvas that
                  happens to sit under one. -->
-            <div
-              class="stage-atmosphere"
-              style={`--atmosphere-hand: ${handAccent}; --atmosphere-prop: ${propAccent}`}
-              aria-hidden="true"
-            ></div>
-            <ShapeMatrixLiveRatioStage
-              {hands}
-              {handPeriod}
-              {alignToken}
-              {propReach}
-              {tipAngle}
-              paused={!animationState.playing}
-              playbackMode={animationState.playbackMode}
-              propType={app.propType}
-            />
-          </button>
+              <div
+                class="stage-atmosphere"
+                style={`--atmosphere-hand: ${handAccent}; --atmosphere-prop: ${propAccent}`}
+                aria-hidden="true"
+              ></div>
+              <ShapeMatrixLiveRatioStage
+                {hands}
+                {handPeriod}
+                {alignToken}
+                {propReach}
+                {tipAngle}
+                paused={!animationState.playing}
+                playbackMode={animationState.playbackMode}
+                propType={app.propType}
+              />
+            </button>
+          </div>
         {/if}
 
         <!-- Outside the branch on purpose: it is true of the whole surface.
@@ -447,13 +481,13 @@
       </div>
     {/if}
 
-    <div class="animation-controls" data-shape-matrix-dock>
-      <!-- The drill's dock, unchanged, on the drill's own scope: one Customize
-           button on a wide host, the pill dock on a compact one. `sequence` is
-           null because a spin ratio is not one: it has no letter, no steps and
-           no word, and the panel's sequence-shaped affordances are turned off
-           rather than pointed at nothing. -->
-      {#if app.compact}
+    <!-- Compact hosts only. A wide host reaches Customize from the gear in
+         the stage's corner and playback from the stage itself, so it needs no
+         band here. `sequence` is null because a spin ratio is not one: it has
+         no letter, no steps and no word, and the panel's sequence-shaped
+         affordances are turned off rather than pointed at nothing. -->
+    {#if app.compact}
+      <div class="animation-controls" data-shape-matrix-dock>
         <AnimationPanel
           isExporting={false}
           layout="bottom"
@@ -480,10 +514,8 @@
           closeRequest={animationState.closeRequest}
           regionLabel="Shape animation controls"
         />
-      {:else}
-        <ShapeMatrixCustomizeDock />
-      {/if}
-    </div>
+      </div>
+    {/if}
   </div>
 </aside>
 
@@ -694,6 +726,68 @@
     grid-area: controls;
     min-width: 0;
     min-height: 0;
+  }
+
+  /* The frame is the positioning context the gear hangs off, and it takes
+     the growth the stage used to take so nothing else moves. */
+  .stage-frame {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 9rem;
+  }
+
+  .stage-window {
+    position: relative;
+  }
+
+  .stage-hint {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--duration-fast, 0.15s) ease;
+  }
+
+  .stage-hint-disc {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.42);
+    color: #fff;
+    font-size: 1.15rem;
+  }
+
+  .stage-hint-word {
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.55);
+  }
+
+  /* Mouse only: a touch host has no hover, and showing this permanently would
+     put a scrim over the mandala it is describing. */
+  @media (hover: hover) and (pointer: fine) {
+    .stage-window:hover .stage-hint,
+    .stage-window:focus-visible .stage-hint {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage-hint {
+      transition: none;
+    }
   }
 
   .compact-settings {

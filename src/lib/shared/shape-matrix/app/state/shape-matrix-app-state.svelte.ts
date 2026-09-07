@@ -35,6 +35,9 @@ import {
   theoryRatioFromParts,
 } from "$lib/shared/shape-matrix/domain/theory-ratio";
 
+/** A part of the About modal a reader can be sent straight to. */
+export type ShapeMatrixAboutFocus = "levels" | null;
+
 export type ShapeMatrixAppView = "matrix" | "detail";
 export type ShapeMatrixSurface = "matrix" | "theory";
 export interface ShapeMatrixCompactFocusRequest {
@@ -322,6 +325,10 @@ export function createShapeMatrixAppState(
   );
   let compactFocusRequest = $state<ShapeMatrixCompactFocusRequest | null>(null);
   let aboutOpen = $state(false);
+  /* Which part of About the reader asked for. The modal scrolls to it on
+     open; null is the top, which is what the header's own About button
+     wants. */
+  let aboutFocus = $state<ShapeMatrixAboutFocus>(null);
   let propPickerOpen = $state(false);
   let mandalaHandoff = $state(false);
   /**
@@ -827,11 +834,13 @@ export function createShapeMatrixAppState(
         : "matrix";
     }
   }
-  function openAbout(): void {
+  function openAbout(focus: ShapeMatrixAboutFocus = null): void {
+    aboutFocus = focus;
     aboutOpen = true;
   }
   function closeAbout(): void {
     aboutOpen = false;
+    aboutFocus = null;
   }
   /**
    * One entry point. The Props pill under the animation opens the catalogue
@@ -964,6 +973,9 @@ export function createShapeMatrixAppState(
     },
     get compactFocusRequest() {
       return compactFocusRequest;
+    },
+    get aboutFocus() {
+      return aboutFocus;
     },
     get aboutOpen() {
       return aboutOpen;

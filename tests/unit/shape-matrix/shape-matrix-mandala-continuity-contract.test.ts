@@ -140,9 +140,7 @@ describe("shape matrix mandala continuity", () => {
     const drill = read("components/ShapeMatrixDrill.svelte");
     expect(drill).toContain("class:offstage={layer.pairKey !== pairKey}");
     expect(drill).toMatch(/\.player-layer\.offstage \{\s*visibility: hidden;/);
-    expect(drill).toMatch(
-      /getLayer\(visibleSource\)\?\.pairKey === pairKey/
-    );
+    expect(drill).toMatch(/getLayer\(visibleSource\)\?\.pairKey === pairKey/);
   });
 
   it("flies the whole stage rectangle, with the mandala riding it", () => {
@@ -222,14 +220,14 @@ describe("shape matrix mandala continuity", () => {
     const theoryPane = read("app/components/ShapeMatrixTheoryPane.svelte");
     // Wide hosts: the grid's corner cell owns Surprise and both axis values;
     // the strip above the grid takes over only on compact hosts.
-    expect(matrixPane).toContain("<ShapeMatrixGridCorner surface=\"level\"");
+    expect(matrixPane).toContain('<ShapeMatrixGridCorner surface="level"');
     expect(theoryPane).toContain("<ShapeMatrixGridCorner");
     expect(matrixPane).toMatch(
       /\{#if state\.compact\}\s*<ShapeMatrixRecipeStrip/
     );
     const corner = read("app/components/ShapeMatrixGridCorner.svelte");
-    expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"left\"");
-    expect(corner).toContain("<ShapeMatrixAxisStepper hand=\"right\"");
+    expect(corner).toContain('<ShapeMatrixAxisStepper hand="left"');
+    expect(corner).toContain('<ShapeMatrixAxisStepper hand="right"');
     // Columns (red) sit on the column-header band above Rows (blue), and
     // both axes point with icon arrows rather than thin text glyphs.
     expect(corner.indexOf('class="axis columns"')).toBeLessThan(
@@ -251,7 +249,9 @@ describe("shape matrix mandala continuity", () => {
     expect(controls).not.toContain("Apply to");
     expect(controls).not.toContain("mixed");
     // The tray edits a named axis and stays on the detail pane.
-    expect(popover).toContain("appState.setTurnFor(hand, turn, { stayOnDetail: true })");
+    expect(popover).toContain(
+      "appState.setTurnFor(hand, turn, { stayOnDetail: true })"
+    );
     // Surprise lives with the grid; the header shows a dice only while a
     // compact detail view has hidden the bar.
     expect(shell).toMatch(
@@ -340,11 +340,18 @@ describe("shape matrix mandala continuity", () => {
     expect(popover).toContain("<LevelSelector");
     expect(popover).toContain("<DifficultyBadge level={appState.level}");
     expect(popover).not.toMatch(/L\{appState\.level\}/);
-    expect(popover).toContain("appState.setLevel(level, { stayOnDetail: true })");
-    // One list of levels and blurbs for the ribbon and the popover.
+    expect(popover).toContain(
+      "appState.setLevel(level, { stayOnDetail: true })"
+    );
+    // One list of levels and blurbs, read by everything that names a level:
+    // the popover, the difficulty strip beside the grid, and About. The strip
+    // is where the shell's level control went, so the shell no longer reads it.
     expect(popover).toContain("SHAPE_MATRIX_LEVEL_DESCRIPTIONS");
+    const strip = read("app/components/ShapeMatrixDifficultyStrip.svelte");
+    expect(strip).toContain("SHAPE_MATRIX_LEVEL_DESCRIPTIONS");
+    const about = read("app/components/ShapeMatrixAboutModal.svelte");
+    expect(about).toContain("SHAPE_MATRIX_LEVEL_DESCRIPTIONS");
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
-    expect(shell).toContain("SHAPE_MATRIX_LEVEL_DESCRIPTIONS");
     expect(shell).not.toContain("const LEVEL_DESCRIPTIONS");
   });
 
@@ -370,6 +377,8 @@ describe("shape matrix mandala continuity", () => {
     // The toggle never borrows the back arrow the Matrix button owns.
     expect(detailPane).not.toContain("fa-arrow-left");
     const controls = read("app/components/ShapeMatrixTurnControls.svelte");
-    expect(controls).not.toMatch(/\.turn-editor\.tray[^{]*\{[^}]*(?<![-\w])width: 100%/);
+    expect(controls).not.toMatch(
+      /\.turn-editor\.tray[^{]*\{[^}]*(?<![-\w])width: 100%/
+    );
   });
 });

@@ -80,7 +80,8 @@
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { getShapeMatrixAnimationContext } from "../app/context/shape-matrix-animation-context";
   import { getOptionalShapeMatrixAppContext } from "../app/context/shape-matrix-app-context";
-  import ShapeMatrixCustomizeDock from "./ShapeMatrixCustomizeDock.svelte";
+  import ShapeMatrixStageActions from "./ShapeMatrixStageActions.svelte";
+  import { registerShapeMatrixPlaybackShortcut } from "../app/services/shape-matrix-playback-shortcut";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
 
@@ -217,6 +218,16 @@
     void intent.rightColor;
     return foldTrailIntentIntoSettings(SHAPE_MATRIX_TRAIL_PRESET, intent);
   });
+
+  /* Space is the same toggle the canvas offers a mouse, reached without one.
+     It goes through the app's shortcut registry rather than a listener of our
+     own, so it stands aside for text fields and open dialogs. */
+  $effect(() =>
+    registerShapeMatrixPlaybackShortcut(
+      () => animationState.togglePlaying(),
+      () => Boolean(pair)
+    )
+  );
 
   const playbackAction = $derived<ControlDockAction>({
     icon: animationState.playing ? "fa-pause" : "fa-play",
@@ -1169,7 +1180,11 @@
             onExternalPlayingChange: animationState.setPlaying,
             backgroundAlpha: 0,
             interactive: true,
-            hoverHint: "none",
+            /* The stage is the play button. It toggles on a click, and the
+               badge is how a mouse learns that -- it is hover-gated to fine
+               pointers, so a touch host is unaffected. This replaced a
+               dedicated button in a row below the canvas. */
+            hoverHint: "badge",
             // This is a full TKA animation surface. Its canonical canvas menu
             // supplies Disassemble/Reassemble and the shared display controls.
             disableContextMenu: false,
@@ -1208,32 +1223,32 @@
     : undefined}
 >
   {#if !solo}
-  <div
-    class="mode-picker"
-    data-drill-region="modes"
-    use:claimedViewTransitionName={{
-      name: SHAPE_MATRIX_MODES_NAME,
-      enabled: morphingFrames,
-    }}
-    transition:growFade={{ axis: "y" }}
-  >
-    <ElementChipRow
-      selected={selectedMode}
-      available={availableHandModes}
-      availabilityReady={!building}
-      disabled={!pair}
-      onpick={selectHandMode}
-    />
-    <PropRelationshipChipRow
-      {realizations}
-      {selectedMode}
-      {selectedPropMode}
-      activePropMode={activeReal?.propMode ?? null}
-      disabled={!pair}
-      {building}
-      ontarget={selectPropMode}
-    />
-  </div>
+    <div
+      class="mode-picker"
+      data-drill-region="modes"
+      use:claimedViewTransitionName={{
+        name: SHAPE_MATRIX_MODES_NAME,
+        enabled: morphingFrames,
+      }}
+      transition:growFade={{ axis: "y" }}
+    >
+      <ElementChipRow
+        selected={selectedMode}
+        available={availableHandModes}
+        availabilityReady={!building}
+        disabled={!pair}
+        onpick={selectHandMode}
+      />
+      <PropRelationshipChipRow
+        {realizations}
+        {selectedMode}
+        {selectedPropMode}
+        activePropMode={activeReal?.propMode ?? null}
+        disabled={!pair}
+        {building}
+        ontarget={selectPropMode}
+      />
+    </div>
   {/if}
 
   <div
@@ -1252,6 +1267,9 @@
         enabled: mandalaTransition.claim,
       }}
     >
+      {#if appState && !appState.compact}
+        <ShapeMatrixStageActions />
+      {/if}
       <div class="hero-header">
         <div class="hero-header-ghost" aria-hidden="true">
           <WordHeader word="A" visible={true} darkMode={headerDarkMode} />
@@ -1412,18 +1430,19 @@
        grid, so its bar is one Customize button and the transport. Compact
        hosts keep the pill dock: each pill opens its sheet there, and Props
        routes to the canonical prop sheet. -->
-  <div
-    class="animation-controls"
-    data-drill-region="controls"
-    data-shape-matrix-dock
-    use:claimedViewTransitionName={{
-      name: SHAPE_MATRIX_CONTROLS_NAME,
-      enabled: morphingFrames,
-    }}
-  >
-    {#if appState && !appState.compact}
-      <ShapeMatrixCustomizeDock />
-    {:else}
+  <!-- Compact hosts only. A wide host has no control band at all now: the
+       canvas is the play button and the gear sits in its corner, which gave
+       back a row that was carrying one button at each end of a wide gap. -->
+  {#if !appState || appState.compact}
+    <div
+      class="animation-controls"
+      data-drill-region="controls"
+      data-shape-matrix-dock
+      use:claimedViewTransitionName={{
+        name: SHAPE_MATRIX_CONTROLS_NAME,
+        enabled: morphingFrames,
+      }}
+    >
       <AnimationPanel
         isExporting={false}
         layout="bottom"
@@ -1448,8 +1467,8 @@
         closeRequest={animationState.closeRequest}
         regionLabel="Shape animation controls"
       />
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   {#if onselectRealization}
     <div class="select-action" class:available={visibleRealization !== null}>
