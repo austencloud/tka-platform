@@ -480,14 +480,10 @@ describe("Shape Matrix app boundary", () => {
     expect(shellSource).toContain("appState.soloHand");
   });
 
-  it("shares one link, in the notation the receiver reads", () => {
-    // The address bar carries every setting; Share copies it with the
-    // notation pinned, so a VTG-raised spinner opens in ratios. The copy is
-    // the shared copy button, not a second clipboard path.
-    const shareSource = readFileSync(
-      resolve(APP_ROOT, "components/ShapeMatrixShareButton.svelte"),
-      "utf8"
-    );
+  it("shares the view on the press, with no sheet of its own", () => {
+    // Share is the action, not a menu that offers it: one press reaches the
+    // phone's share sheet or the clipboard. The address bar already carries
+    // every setting, the notation included, so there is nothing to choose.
     const shellSource = readFileSync(
       resolve(APP_ROOT, "components/ShapeMatrixAppShell.svelte"),
       "utf8"
@@ -504,12 +500,20 @@ describe("Shape Matrix app boundary", () => {
       resolve("src/routes/(public)/shape-engine/+page.svelte"),
       "utf8"
     );
-    expect(shareSource).toContain("appState.shareLink()");
-    expect(shareSource).toContain("<CopyForAIButton");
-    expect(shareSource).not.toContain("navigator.clipboard");
-    // The address bar already carries the notation, so the sheet does not
-    // offer a second place to choose one.
-    expect(shareSource).not.toContain("SegmentedControl");
+    const linkShareSource = readFileSync(
+      resolve("src/lib/shared/share/services/link-share.ts"),
+      "utf8"
+    );
+    // The button acts; nothing opens first.
+    expect(shellSource).toContain("onclick={shareThisView}");
+    expect(shellSource).toContain("appState.shareLink()");
+    expect(shellSource).toContain("shareOrCopyLink({");
+    expect(shellSource).not.toContain("ShapeMatrixShareButton");
+    // Handing a link on has one owner: platform sheet, then clipboard.
+    expect(linkShareSource).toContain("platform.share(payload)");
+    expect(linkShareSource).toContain("copyTextToClipboard(link.url)");
+    // No second clipboard path anywhere in the embeddable app.
+    expect(readTree(APP_ROOT)).not.toContain("navigator.clipboard");
     // The route host writes the address; the app only asks for it.
     expect(stateSource).toContain("dependencies.link?.(snapshot())");
     expect(pageSource).toContain("writeShapeMatrixRouteState(url, snapshot);");
