@@ -504,13 +504,14 @@ describe("Shape Matrix app boundary", () => {
       resolve("src/routes/(public)/shape-engine/+page.svelte"),
       "utf8"
     );
-    expect(shareSource).toContain("appState.shareLink(notation)");
+    expect(shareSource).toContain("appState.shareLink()");
     expect(shareSource).toContain("<CopyForAIButton");
     expect(shareSource).not.toContain("navigator.clipboard");
+    // The address bar already carries the notation, so the sheet does not
+    // offer a second place to choose one.
+    expect(shareSource).not.toContain("SegmentedControl");
     // The route host writes the address; the app only asks for it.
-    expect(stateSource).toContain(
-      "dependencies.link?.({ ...snapshot(), labelMode: notation })"
-    );
+    expect(stateSource).toContain("dependencies.link?.(snapshot())");
     expect(pageSource).toContain("writeShapeMatrixRouteState(url, snapshot);");
     expect(shellSource).toContain("{#if appState.canShare}");
     // The level is a difficulty to whoever opens the link.

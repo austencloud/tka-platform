@@ -879,11 +879,11 @@ export function createShapeMatrixAppState(
     dependencies.syncState(snapshot());
   }
 
-  /* A link to the view on screen, opening in the given notation. The
-     notation is the one setting a sender chooses for the receiver; every
-     other setting is the view itself. Null when the host has no route. */
-  function shareLink(notation: MatrixLabelMode): string | null {
-    return dependencies.link?.({ ...snapshot(), labelMode: notation }) ?? null;
+  /* A link to the view on screen, exactly as it stands — the notation
+     included, so switching the header before copying is what sends the other
+     one. Null when the host has no route. */
+  function shareLink(): string | null {
+    return dependencies.link?.(snapshot()) ?? null;
   }
 
   return {

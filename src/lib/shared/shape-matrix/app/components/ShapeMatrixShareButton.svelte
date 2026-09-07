@@ -1,10 +1,9 @@
 <!-- src/lib/shared/shape-matrix/app/components/ShapeMatrixShareButton.svelte
   One link for the view on screen. The address bar already carries every
   setting (surface, level, both axis values, prop, the chosen pair and the
-  notation), so sharing is copying it; what this adds is the choice of the
-  notation the link opens in. A spinner raised on VTG ratios gets a link that
-  reads in ratios from its first paint, whatever notation the sender was
-  using, and the receiver can still switch in the header.
+  notation), so sharing is copying it — including the notation on screen, so
+  a sender reading VTG ratios hands on a link that opens in ratios. Switching
+  the header before you copy is how you send the other one.
 
   The host supplies the trigger, so the button takes the header's own look;
   the popover and the copy belong here. The copy itself is the shared copy
@@ -13,10 +12,8 @@
   import { Popover } from "bits-ui";
   import type { Snippet } from "svelte";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
-  import type { MatrixLabelMode } from "$lib/shared/shape-matrix/domain/matrix-turn-band";
   import { flyFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
 
   interface Props {
@@ -28,30 +25,20 @@
   const appState = getShapeMatrixAppContext();
   const theory = $derived(appState.surface === "theory");
 
-  /* The notation the link opens in. VTG ratios come first: the link exists
-     for someone who reads the matrix that way. */
-  const NOTATION_OPTIONS = [
-    { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
-    { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
-  ];
-
   let open = $state(false);
-  let notation = $state<MatrixLabelMode>("ratios");
 
-  /* Each opening starts from the notation on screen; the choice is made per
-     link, not remembered as a setting. */
-  $effect(() => {
-    if (open) notation = appState.labelMode;
-  });
+  const notationName = $derived(
+    appState.labelMode === "ratios" ? "VTG ratios" : "TKA turns"
+  );
 
   const carries = $derived(
     theory
       ? "The link carries both ratios, their pairing and spins, and the prop."
-      : `The link carries Level ${appState.level}, both axis values, the prop, and the chosen pair.`
+      : `The link carries Level ${appState.level}, both axis values, the prop, the chosen pair, and opens in ${notationName}.`
   );
 
   function shareUrl(): string {
-    const link = appState.shareLink(notation);
+    const link = appState.shareLink();
     if (link === null) throw new Error("This host has no link to share.");
     return link;
   }
@@ -84,21 +71,6 @@
               transition:flyFade={{ y: -6, duration: DURATION.normal }}
             >
               <span class="popover-title">Share this view</span>
-              {#if !theory}
-                <div class="notation-row">
-                  <span class="row-label">Opens in</span>
-                  <SegmentedControl
-                    options={NOTATION_OPTIONS}
-                    value={notation}
-                    onchange={(mode: MatrixLabelMode) => (notation = mode)}
-                    size="sm"
-                    density="tight"
-                    color="accent"
-                    semantics="radiogroup"
-                    ariaLabel="Notation the link opens in"
-                  />
-                </div>
-              {/if}
               <p class="carries">{carries}</p>
               <CopyForAIButton
                 getData={shareUrl}
@@ -155,19 +127,6 @@
   .popover-title {
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
-  }
-
-  .notation-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-  }
-
-  .row-label {
-    font-size: var(--font-size-min, 0.875rem);
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.62));
-    white-space: nowrap;
   }
 
   .carries {
