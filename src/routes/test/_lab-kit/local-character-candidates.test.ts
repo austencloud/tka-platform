@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-  BAKEOFF_CANDIDATES,
+  FIXED_LOCAL_CHARACTERS,
   INTAKE_MANIFEST_URL,
   formatMegabytes,
   loadAvailableCandidates,
   parseIntakeManifest,
-  parseLightingId,
-  parseStressPoseId,
   resolveCandidate,
   stagedCandidate,
-} from "./avatar-bakeoff-data";
+} from "./local-character-candidates";
 
 const valid = {
   id: "kate",
@@ -22,7 +20,7 @@ const valid = {
 const staged = [
   stagedCandidate(parseIntakeManifest({ candidates: [valid] })[0]!),
 ];
-const metaPerson = BAKEOFF_CANDIDATES["personal-metaperson"];
+const metaPerson = FIXED_LOCAL_CHARACTERS["personal-metaperson"];
 const available = [metaPerson, ...staged];
 
 function fixtureFetch(
@@ -64,11 +62,7 @@ describe("bake-off selection", () => {
     expect(resolveCandidate("personal-metaperson", staged)).toBe(staged[0]);
     expect(resolveCandidate("avaturn", [])).toBeNull();
   });
-  it("retains pose, lighting, and size formatting", () => {
-    expect(parseStressPoseId("overhead")).toBe("overhead");
-    expect(parseStressPoseId(null)).toBe("cross-body");
-    expect(parseLightingId("room")).toBe("room");
-    expect(parseLightingId("disco")).toBe("studio");
+  it("formats an unknown local file size", () => {
     expect(formatMegabytes(null)).toBe("local staged file");
   });
 });
@@ -76,7 +70,10 @@ describe("bake-off selection", () => {
 describe("usable intake entries", () => {
   it("keeps Marcus rejected even when a staged file has complete fingers", () => {
     const entries = parseIntakeManifest({
-      candidates: [valid, { ...valid, id: "marcus", file: "intake-marcus.glb" }],
+      candidates: [
+        valid,
+        { ...valid, id: "marcus", file: "intake-marcus.glb" },
+      ],
     });
     expect(entries.map((entry) => entry.id)).toEqual(["kate"]);
   });
