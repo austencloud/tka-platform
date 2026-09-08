@@ -188,10 +188,6 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
         href: "https://vtg-v3.web.app/",
       },
       {
-        label: "Phone app status and web app link · Facebook, February 2026",
-        href: "https://www.facebook.com/vulcantechgospel/posts/pfbid02XdNRd2bER7FomfsHfwWwxexWpNc95y7sAjMpMpKtwyYJti3Awo7tS4WeoueekQ38l",
-      },
-      {
         label: "VTG 3 grid in SpiroAnim · Instagram, August 27, 2026",
         href: "https://www.instagram.com/vulcantechgospel/p/Dci0r-Mve05/",
       },

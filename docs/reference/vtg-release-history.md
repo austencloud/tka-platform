@@ -12,7 +12,6 @@ Facebook and Instagram announcements.
 | February 2, 2019 | [Noel Yee’s VTG 1 retrospective](https://noelyee.com/vulcan-tech-gospel-1-vtg-1-2011/) | Yee announces VTG 3 as the project’s final installment and identifies earlier transition work as its origin. This is an announcement, not evidence of non-publication. |
 | 2019 document; publicly linked in September 2026 | [Original VTG3Draft1.pdf](https://drive.google.com/file/d/11jlw3ezJ4aSzH5zwlaM5_2mtOYy4U3WX/view) | The cover identifies Draft #1. The document presents the VTG 3 snapshot grid and credits Noel Yee, with inspiration from David Cantor and Cassie McKenney. The official Instagram profile links this file as the VTG #3 document. |
 | Available by July 2019 | [Google Play: VTG Flow Arts Resource](https://play.google.com/store/apps/details?hl=en_US&id=net.firestaff.mcp.VTGv3) | The listing explicitly identifies Vulcan Tech Guide Version 3 and its digital layout grid. It names developer Michael Caden Pike (MCP), credits work by MCP and Noel Yee, and describes animations, transitions and quizzes at 1:1, 1:3 and 1:5. July 2019 reviews and a developer reply establish availability by then, not an exact launch day. |
-| February 2026 | [VTG Crew Facebook app-status post](https://www.facebook.com/vulcantechgospel/posts/pfbid02XdNRd2bER7FomfsHfwWwxexWpNc95y7sAjMpMpKtwyYJti3Awo7tS4WeoueekQ38l) | The phone app was down and its development on hold. The post directs readers to the surviving VTG 3 web app. This reports an interruption to phone-app availability, not the absence of VTG 3. |
 | August 25, 2026 | [VTG 3 excerpt on Instagram](https://www.instagram.com/vulcantechgospel/p/Dcd_aH4P5yz/) | The official account continues to present material explicitly labeled VTG #3, immediately before the VTG 4 announcement. |
 | August 27, 2026 | [VTG Elemental Translation announcement](https://www.instagram.com/vulcantechgospel/p/Dci0r-Mve05/) | The VTG Crew identifies @tempmentive’s SpiroAnim work as translating the VTG 3 grid into elemental terminology. This directly establishes reuse of the grid. |
 | August 29, 2026 | [VTG 4 launch on Instagram](https://www.instagram.com/vulcantechgospel/p/DcoQATwFrUA/) | The announcement presents Mentive’s application as VTG 4, building on VTG 3 with quarter placement, quarter timing and ratios beyond 1:1, 1:3 and 1:5. The post credits community contributions. |
@@ -47,7 +46,10 @@ the invention of those concepts. See the broader
 - The public Facebook feed and the relevant Instagram posts, captions and
   reply were read without signing in. The review did not retrieve every
   historical post or establish that Facebook mirrored the VTG 4 launch.
-- Phone-app availability in February 2026 is the VTG Crew’s dated report.
+- The [February 2026 Facebook app-status post](https://www.facebook.com/vulcantechgospel/posts/pfbid02XdNRd2bER7FomfsHfwWwxexWpNc95y7sAjMpMpKtwyYJti3Awo7tS4WeoueekQ38l)
+  is research context for app availability, not a historical milestone. It is
+  retained here rather than in the public entry or chronology: a temporary
+  maintenance problem does not explain the development of the system.
   The Android store listing remains useful evidence of its release, even if
   installation or compatibility later changed. No purchase or installation
   was performed.
