@@ -14,6 +14,14 @@
   import ShareActionMenu from "$lib/shared/share/components/ShareActionMenu.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+  const handColors = $derived(getSettings().primaryPropColors ?? {
+    left: getMotionColor(HandSide.LEFT, getSettings().darkMode ? "dark" : "light"),
+    right: getMotionColor(HandSide.RIGHT, getSettings().darkMode ? "dark" : "light"),
+  });
 
   interface HeaderNavigation {
     label: string;
@@ -166,6 +174,8 @@
 </script>
 
 <header
+  style:--motion-left-color={handColors.left}
+  style:--motion-right-color={handColors.right}
   class="viewer-header"
   class:compact={compactChrome}
   class:labelled={labelledChrome}
