@@ -53,6 +53,9 @@
     variant = "panel",
     flat = false,
     tileDensity = "compact",
+    layout = "grid",
+    heading,
+    actions,
     scrollMode = "internal",
     fill = false,
     includeBareHands = false,
@@ -85,6 +88,10 @@
     flat?: boolean;
     /** Larger scrolling cards when the live preview shares the screen. */
     tileDensity?: "compact" | "comfortable";
+    /** A bounded, sideways-scrolling catalogue beneath a compact toolbar. */
+    layout?: "grid" | "rail";
+    heading?: Snippet;
+    actions?: Snippet;
     /**
      * Drawers own a bounded internal scroller. Embedded inspectors already
      * scroll the whole tab, so their picker contributes its natural height and
@@ -480,9 +487,53 @@
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
   class:flat
+  class:rail={layout === "rail"}
   class:host-scroll={scrollMode === "host"}
   class:fluid-sections={fluidSections}
 >
+  {#snippet sizeControl()}
+    <div class="size-toggle" role="group" aria-label="Prop size">
+      <button
+        type="button"
+        class="size-option"
+        class:active={!sizeIsBig}
+        aria-pressed={!sizeIsBig}
+        onclick={() => chooseSize(false)}>Standard</button
+      >
+      <button
+        type="button"
+        class="size-option"
+        class:active={sizeIsBig}
+        aria-pressed={sizeIsBig}
+        onclick={() => chooseSize(true)}>Big</button
+      >
+    </div>
+  {/snippet}
+  {#snippet fanControl()}
+    <button
+      type="button"
+      class="look-chip"
+      data-testid="fan-look-chip"
+      aria-label={`Fan look: ${fanLook?.label ?? normalizedFanAppearance.build}. Change`}
+      onclick={() => void openDrill({ kind: "fan-look" })}
+    >
+      {#if fanLook}
+        <img class="look-thumb" src={fanLook.image} alt="" draggable="false" />
+      {/if}
+      <span class="look-name"
+        >{fanLook?.label ?? normalizedFanAppearance.build}</span
+      >
+      <i class="fas fa-chevron-right look-caret" aria-hidden="true"></i>
+    </button>
+  {/snippet}
+  {#if layout === "rail"}
+    <header class="rail-toolbar">
+      <div class="rail-heading">{@render heading?.()}</div>
+      {#if showSize}{@render sizeControl()}{/if}
+      {#if showFanLook}{@render fanControl()}{/if}
+      <div class="rail-actions">{@render actions?.()}</div>
+    </header>
+  {/if}
   {#if variant === "panel"}
     <header class="grid-header">
       <h4 class="grid-title">{title}</h4>
@@ -565,7 +616,8 @@
       mode="swap"
       motion="step"
       direction={drill === null ? -1 : 1}
-      animateHeight
+      animateHeight={layout !== "rail"}
+      fill={layout === "rail"}
     >
       {#if drill !== null}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -597,6 +649,7 @@
           {:else}
             <div
               class="drill-tiles"
+              style:--family-count={familyChoices(drill.base).length}
               class:comfortable={tileDensity === "comfortable"}
               class:fill={drillLayout !== null}
               class:flat-grid={flat && drillLayout === null}
@@ -664,55 +717,17 @@
     </Crossfade>
   </div>
 
-  {#if showSize && drill === null}
+  {#if showSize && drill === null && layout !== "rail"}
     <div class="look-dock size-dock" transition:growFade={{ axis: "y" }}>
       <span class="look-label">Size</span>
-      <div class="size-toggle" role="group" aria-label="Prop size">
-        <button
-          type="button"
-          class="size-option"
-          class:active={!sizeIsBig}
-          aria-pressed={!sizeIsBig}
-          onclick={() => chooseSize(false)}
-        >
-          Standard
-        </button>
-        <button
-          type="button"
-          class="size-option"
-          class:active={sizeIsBig}
-          aria-pressed={sizeIsBig}
-          onclick={() => chooseSize(true)}
-        >
-          Big
-        </button>
-      </div>
+      {@render sizeControl()}
     </div>
   {/if}
 
-  {#if showFanLook && drill === null}
+  {#if showFanLook && drill === null && layout !== "rail"}
     <div class="look-dock" transition:growFade={{ axis: "y" }}>
       <span class="look-label">Fan look</span>
-      <button
-        type="button"
-        class="look-chip"
-        data-testid="fan-look-chip"
-        aria-label={`Fan look: ${fanLook?.label ?? normalizedFanAppearance.build}. Change`}
-        onclick={() => void openDrill({ kind: "fan-look" })}
-      >
-        {#if fanLook}
-          <img
-            class="look-thumb"
-            src={fanLook.image}
-            alt=""
-            draggable="false"
-          />
-        {/if}
-        <span class="look-name"
-          >{fanLook?.label ?? normalizedFanAppearance.build}</span
-        >
-        <i class="fas fa-chevron-right look-caret" aria-hidden="true"></i>
-      </button>
+      {@render fanControl()}
     </div>
   {/if}
 
@@ -734,6 +749,90 @@
 </div>
 
 <style>
+  .rail-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem 0.625rem;
+    padding: 0.375rem 0.75rem;
+    flex: 0 0 auto;
+  }
+  .rail-heading {
+    flex: 1;
+    min-width: 3rem;
+  }
+  .rail-actions {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+  .rail-toolbar .size-toggle {
+    padding: 0;
+    gap: 0;
+  }
+  .rail-toolbar .size-option {
+    min-height: 44px;
+    padding-inline: 0.625rem;
+  }
+  .rail-toolbar .look-chip {
+    max-width: 11rem;
+  }
+  .rail-toolbar .look-thumb {
+    width: 40px;
+  }
+  .rail .grid-scroll {
+    overflow: hidden;
+    padding: 0.25rem 0.5rem 0.5rem;
+    container: prop-rail / size;
+  }
+  .rail .flat-grid {
+    height: 100%;
+    grid-template-columns: none;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(8.5rem, 24cqw, 12rem);
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.25rem;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.25rem;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+  .rail .flat-grid > :global(*) {
+    min-height: 0;
+    scroll-snap-align: start;
+  }
+  .rail .flat-grid :global(.prop-button) {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+  .rail .drill-view {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.375rem;
+  }
+  .rail .drill-tiles.flat-grid {
+    grid-template-columns: repeat(var(--family-count), minmax(8.5rem, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .rail .drill-view > :global(.fan-style-options) {
+    overflow-y: auto;
+    min-height: 0;
+  }
+  @container prop-rail (max-height: 15rem) {
+    .rail .flat-grid {
+      grid-template-rows: minmax(0, 1fr);
+    }
+  }
+  @container prop-grid (max-width: 500px) {
+    .rail-toolbar .look-chip {
+      order: 1;
+      margin-left: auto;
+    }
+  }
   .prop-grid-root {
     position: relative;
     display: flex;

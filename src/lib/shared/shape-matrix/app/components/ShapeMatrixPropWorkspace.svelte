@@ -38,36 +38,34 @@
 <svelte:window onkeydown={onKeydown} />
 
 <section class="prop-workspace" aria-label="Choose a prop">
-  <header>
-    <div class="selection" aria-live="polite">
-      <span>Prop</span>
-      <strong>{selectedName}</strong>
-    </div>
-    <PanelButton
-      variant="primary"
-      bind:ref={done}
-      onclick={app.closePropPicker}
-    >
-      <i class="fas fa-check" aria-hidden="true"></i>
-      Done
-    </PanelButton>
-  </header>
-  <div class="choices">
-    <BentoPropGrid
-      selectedPropType={app.propType}
-      onSelect={(next) => void app.setPropType(next)}
-      variant="inline"
-      accessMode="educational"
-      flat
-      tileDensity="comfortable"
-    />
-  </div>
+  <BentoPropGrid
+    selectedPropType={app.propType}
+    onSelect={(next) => void app.setPropType(next)}
+    variant="inline"
+    accessMode="educational"
+    flat
+    tileDensity="comfortable"
+    layout="rail"
+  >
+    {#snippet heading()}
+      <strong class="selection" aria-live="polite">{selectedName}</strong>
+    {/snippet}
+    {#snippet actions()}
+      <PanelButton
+        variant="primary"
+        bind:ref={done}
+        onclick={app.closePropPicker}
+      >
+        <i class="fas fa-check" aria-hidden="true"></i>
+        Done
+      </PanelButton>
+    {/snippet}
+  </BentoPropGrid>
 </section>
 
 <style>
   .prop-workspace {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
     height: 100%;
     min-height: 0;
     overflow: hidden;
@@ -75,27 +73,10 @@
     border-radius: 20px 20px 0 0;
     background: var(--theme-panel-bg, #0a0f14);
   }
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.6rem 1rem;
-  }
   .selection {
-    display: grid;
-    gap: 0.1rem;
+    display: block;
     min-width: 0;
-  }
-  .selection span {
-    font-size: var(--font-size-compact, 0.75rem);
-    color: var(--theme-text-dim, #a1a1aa);
-  }
-  .selection strong {
     font-size: var(--font-size-min, 0.875rem);
-  }
-  .choices {
-    min-height: 0;
-    overflow: hidden;
+    overflow-wrap: anywhere;
   }
 </style>
