@@ -1,50 +1,120 @@
 # Motion paths
 
-Review state: DRAFT
+Review state: IMPLEMENTED under delegated editorial approval, September 8, 2026.
 
-## Proposed page copy
+Austen requested the AI-bust review and instructed the agent to finish the explanation page without further questions while he was at the park. This supersedes the earlier exact-copy approval checkpoint. It does not claim that Austen personally reviewed the final wording.
+
+## AI-bust review
+
+Applied [.agents/skills/ai-bust/SKILL.md](../../../.agents/skills/ai-bust/SKILL.md) to the page, explorer labels, and new navigation/help links. Result: Clean after tightening indirect phrasing in the third-order section. No banned openers, blacklisted words, em dashes, promotional claims, negative-to-positive flips, or uniform sentence rhythm remain in the delivered copy. Existing code comments were excluded.
+
+The prior draft's per-hand reset description was corrected from inheriting the sequence setting to returning to the current default, matching Composer's implementation.
+
+## Delivered page copy
 
 ### Motion paths
 
-Keep the sequence. Change how the hands travel between its positions.
+The same sequence can draw a different mandala. Pick a path and watch how the hands travel.
 
-### Compare the paths
+The interactive comparison loads in your browser.
 
-Arc follows the circle. Linear connects the endpoints with a straight line. Concave curves inward between the endpoints.
+### What changes?
 
-Hybrid chooses a path for each motion: pro uses Arc and anti uses Concave. Dashes stay straight. Static hands stay in place.
+A path sets how a hand travels between its positions. The sequence keeps its letters and turns.
 
-Switch paths while the sequence plays. Compare the hand trace with the mandala. The same sequence can produce different drawings when you change its paths.
+**Arc**
 
-### Which setting am I changing?
+The hand follows the circle around the grid center.
 
-Choosing a path in the viewer previews it for this sequence, including steps with saved path exceptions. Restore saved paths returns to the original choices.
+**Linear**
 
-Save paths keeps the preview on a sequence you own. Make default sets the starting choice for sequences without a saved path setting. In Composer, you can set a different path for either hand on an individual step, or let it inherit the sequence setting.
+The hand takes a straight line between the endpoints.
 
-Show path lines controls the drawn guides. It does not change the movement.
+**Concave**
 
-### Motion paths and third order
+The hand curves inward between the endpoints.
 
-One way to explore the connection is to build the path itself from moving parts, then add the prop's rotation. The Third Order toy lets you move smaller grids along a sequence or a flower path and play sequences inside those grids.
+**Hybrid**
 
-Arc and Concave are useful starting points for comparing circular and inward-curving travel. The current Concave setting is not an exact four-petal antispin construction. Comparing it with a constructed flower is part of the exploration.
+Pro motions use Arc. Anti motions use Concave.
 
-### When a path feels awkward
+Dashes stay straight. Static hands stay at their grid point, even when the prop rotates. Float uses the underlying fixed path when Hybrid is on.
 
-A mandala shows the accumulated drawing. Watch the movement too, especially where one step meets the next. A drawing you like may come from a transition you would choose to change.
+Try Pro + anti with Hybrid. Each hand follows a different kind of path. Switch the trace between Hands and Prop tips to see what the prop’s rotation adds.
 
-## Evidence map
+### Where the setting applies
 
-- Path interpolation, pro/anti mapping and dash/static behavior: `src/lib/shared/animation-engine/services/prop-interpolator.ts`.
-- Preview/save/default descriptions: this task's viewer path-session implementation and tests. Verify before publishing.
-- Per-hand editing: `StepEditorCoordinator.svelte`, `PropTurnsControl.svelte`, `path-shape-handler.ts`.
-- Path-line visibility: `DisplayPanel.svelte`, separate from interpolation policy.
-- Third-order composition: `third-order-composition.ts`, `third-order-flower-path.ts`, `ThirdOrderCompositionSampler.ts`.
-- Exact antispin equivalence is deliberately not asserted: Concave currently uses `2 * straightPoint - circlePoint`, not the flower decomposition.
-- Awkward sequences and differing mandalas: Austen's September 8 request; no claim of physical ease or feasibility.
-- Current-turn Flow Arts MCP glossary checks did not contain “concave” or “third order”; these are application behavior descriptions, not newly asserted canonical TKA definitions.
+In the sequence viewer, open Motion on desktop or Playback on a phone. You can also right-click the animation canvas and open Motion Paths. Choose Arc to turn Hybrid off.
 
-## Pending
+**Preview**
 
-Austen's approval of the exact wording. No approval recorded yet.
+A path choice applies to the sequence you’re viewing. It also overrides any saved step exceptions while you compare.
+
+**Restore saved paths**
+
+Returns to the sequence’s saved choices, including its step exceptions.
+
+**Save paths**
+
+Keeps the preview on a sequence already saved in your library that you own.
+
+**Make default**
+
+Sets your starting choice for sequences without a saved path setting. Saved step exceptions still take precedence.
+
+In Composer, select a step to set a different path for either hand. The reset arrow clears that hand’s exception and returns it to the current default.
+
+Path lines are the drawn guides. You can hide them while keeping the same movement.
+
+### The connection to third order
+
+The hand’s path can be a motion of its own. In Third Order, a moving grid carries another sequence. The outer motion moves the grid; the inner sequence moves within it.
+
+Explore extension and antispin by starting with circular travel, then trying a flower as the carrier path. A flower can be built from two rotations before the prop adds its own rotation.
+
+The current Concave option bends an arc inward. It is not an exact four-petal antispin construction. Use the flower carrier in Third Order when you want to work with the constructed path and its spin ratio.
+
+Open Third Order
+
+Spin ratios and petals
+
+Third Order requires sign-in.
+
+### When the drawing works but the motion doesn’t
+
+A mandala shows the whole trace at once. It can hide a sharp change where two steps meet.
+
+Watch those joins in the animation, including the return to the first step. Compare Arc with Concave, then try a per-hand exception in Composer. Keep the path that suits the movement you want to perform.
+
+Open Composer
+
+## Explorer copy and interaction
+
+- Examples: Pro, Anti, Pro + anti; Your sequence appears after a selection.
+- Choose a sequence opens the existing community/library picker.
+- Arc, Linear, Concave, Hybrid use the shared PathShapePanel and canonical SequenceMandala renderer.
+- Hands traces the hand centers. Prop tips includes the staff rotation.
+- Changes here stay in this explorer. Your saved paths and defaults stay as they were.
+- Play/Pause and Path lines operate only in this explorer. Reduced-motion preference starts playback paused.
+- Loading animation… / Loading sequence picker… / The sequence picker could not load. / Close.
+
+## Evidence and teaching boundaries
+
+- Hand paths and Hybrid mapping: src/lib/shared/animation-engine/services/prop-interpolator.ts. Concave uses 2 \* straightPoint - circlePoint; it is not the exact flower construction.
+- Preview/save/default and authored exception behavior: src/lib/shared/sequence-viewer/services/sequence-path-policy.ts, animation-visibility-state.svelte.ts, and their tests.
+- Per-hand reset: PropTurnsControl.svelte and path-shape-handler.ts.
+- Path-line visibility is separate from movement policy.
+- Third Order: third-order-composition.ts, third-order-flower-path.ts, and ThirdOrderCompositionSampler.ts. Links lead to the toy and existing ratios reference rather than duplicating petal formulas.
+- Fresh Flow Arts MCP glossary checks covered pro, anti, dash, static, and float. Concave and third order were absent from the glossary; the copy describes verified application behavior.
+- AAAA, BBBB, and CCCC examples are the unedited data returned by Flow Arts MCP on September 8 with smooth constraints, adapted through the canonical factories. Closure is tested.
+- This is a public reference and comparison tool, not a new mastery lesson or a change to the concept progression. Inline lead applied the Teacher briefing. User review of the completed experience is pending; no learning outcome or satisfaction claim is inferred.
+
+## Verification
+
+- Fifteen focused tests passed across the explorer, sequence path preview, and mandala path policy suites. They cover source preservation, scoped state, Hybrid float behavior, render identity changes, and closure of the example sequences.
+- Svelte check reported zero errors and warnings. A separate full TypeScript run reported two existing option-type errors in the unchanged `an-slice.test.ts` and ten external scene/camera diagnostics; none referenced this task's changed files.
+- Direct browser inspection covered 375×667, 960×412, 820×1180, 1440×900, 1920×1080, 2560×1440, and 3840×2160 for the new page, viewer help entry, and Learn navigation. No horizontal overflow was observed. Path controls and navigation links meet the 44px target minimum, allowing subpixel measurement rounding.
+- Verified Hybrid → Arc, hand versus tip traces, playback, path lines, and reduced-motion startup. A real AABB gallery selection loaded into the explorer after registering the canonical loop detector on the public route.
+- Checked equivalent 200% reflow at 720×450 CSS pixels. This was viewport emulation, not a native browser zoom measurement.
+- Third Order is sign-in gated; the page states that requirement. No authenticated save or account mutation was performed.
+- Screenshots are stored outside the repository in `C:/Users/Austen/.codex/visualizations/2026/09/08/motion-path-guide`.

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -8,13 +8,18 @@
 
   let {
     onSettingChange,
+    preview,
+    showHelp = true,
   }: {
     onSettingChange?: (previousValue: string, value: string) => void;
+    preview?: Snippet<["arc" | "linear" | "concave" | "hybrid", number]>;
+    showHelp?: boolean;
   } = $props();
 
   const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
   const viewerPaths = getViewerPathContext();
   let session = $state(vm.getPathSession());
+  let previewWidth = $state(0);
 
   let pathShape = $state(vm.getPathShape());
   let motionAware = $state(vm.getMotionAwarePaths());
@@ -120,7 +125,11 @@
   >
 </div>
 
-<div class="path-shape-grid">
+<div
+  class="path-shape-grid"
+  class:with-preview={!!preview}
+  bind:clientWidth={previewWidth}
+>
   {#each options as option (option.id)}
     <button
       class="path-btn"
@@ -130,14 +139,23 @@
       onclick={() => select(option)}
       style:--path-color={option.color}
     >
-      <svg class="path-glyph" viewBox="0 0 24 12" aria-hidden="true">
-        {#each option.glyph as d}
-          <path {d} />
-        {/each}
-        {#each option.dots as [cx, cy]}
-          <circle {cx} {cy} r="1.8" />
-        {/each}
-      </svg>
+      {#if preview}
+        <span class="path-preview" aria-hidden="true">
+          {@render preview(
+            option.id === "byMotion" ? "hybrid" : option.id,
+            Math.max(1, (previewWidth - 8) / 2 - 20)
+          )}
+        </span>
+      {:else}
+        <svg class="path-glyph" viewBox="0 0 24 12" aria-hidden="true">
+          {#each option.glyph as d}
+            <path {d} />
+          {/each}
+          {#each option.dots as [cx, cy]}
+            <circle {cx} {cy} r="1.8" />
+          {/each}
+        </svg>
+      {/if}
       <span>{option.label}</span>
     </button>
   {/each}
@@ -168,7 +186,45 @@
   </div>
 {/if}
 
+{#if showHelp}
+  <a
+    class="path-help"
+    href="/guide/motion-paths"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    About motion paths <span class="sr-only">(opens in a new tab)</span>
+  </a>
+{/if}
+
 <style>
+  .path-help {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--min-touch-target, 44px);
+    color: var(--theme-accent);
+    font-size: var(--font-size-sm, 14px);
+    text-underline-offset: 3px;
+  }
+  .path-help:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+  .path-shape-grid.with-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-sm, 8px);
+  }
+  .path-preview {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    min-width: 0;
+    pointer-events: none;
+  }
+  .with-preview .path-btn {
+    padding: var(--spacing-sm, 8px);
+    min-width: 0;
+  }
   .path-scope {
     color: var(--theme-text-muted);
     font-size: var(--font-size-sm, 14px);
