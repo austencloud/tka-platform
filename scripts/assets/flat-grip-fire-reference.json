@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "source": "https://forgedfans.com/products/flat-grip-fire-fans",
+  "source_image": "https://forgedfans.com/cdn/shop/products/flatgrip_530x%402x.jpg?v=1584390029",
+  "provenance": "Original geometry reconstructed from the left fan in the maker's paired product photo. Published envelope and stock sizes set the scale; curves, secondary loops and wick diameter are photographic estimates. No photograph or vendor mesh is redistributed.",
+  "published_dimensions_m": [0.4826, 0.3302],
+  "ring_inside_radius_m": 0.0254,
+  "outer_stock_radius_m": 0.00238125,
+  "inner_stock_radius_m": 0.0015875,
+  "wick_length_m": 0.0381,
+  "wick_radius_m": 0.014,
+  "wick_centers_m": [
+    [-0.222, 0.11],
+    [-0.128, 0.216],
+    [0, 0.259],
+    [0.128, 0.216],
+    [0.222, 0.11]
+  ],
+  "wick_directions": [
+    [-1, 0],
+    [-0.7071067812, 0.7071067812],
+    [0, 1],
+    [0.7071067812, 0.7071067812],
+    [1, 0]
+  ],
+  "rear_ring_centers_m": [
+    [-0.035, -0.037],
+    [0.035, -0.037]
+  ],
+  "rear_ring_inside_radius_m": 0.0165,
+  "flat_grip_m": {
+    "center": [0, -0.053],
+    "width": 0.067,
+    "height": 0.007,
+    "depth": 0.0035
+  },
+  "right_outer_curve_m": [
+    [0.029, -0.014],
+    [0.135, 0.037],
+    [0.193, 0.067],
+    [0.208, 0.11]
+  ],
+  "right_rails_m": [
+    [
+      [0.014, 0.024],
+      [0.07, 0.116],
+      [0.208, 0.11]
+    ],
+    [
+      [0.07, 0.116],
+      [0.118, 0.206]
+    ],
+    [
+      [0.118, 0.206],
+      [0, 0.121],
+      [0, 0.247]
+    ],
+    [
+      [0.07, 0.116],
+      [0, 0.247]
+    ],
+    [
+      [0, 0.121],
+      [0, 0.028]
+    ]
+  ]
+}
