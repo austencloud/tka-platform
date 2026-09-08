@@ -29,6 +29,10 @@ system-bar insets and launch appearance still need an uninterrupted device
 pass. Browser inspection is not proof of those native behaviors. No perfect
 score or exhaustive functionality claim is made.
 
+The shared app currently labels Level 4 pictographs as being in visual
+calibration; the animation and quarter-turn controls render, but that existing
+readout is not a completed pictograph timeline.
+
 The icon is provisionally option 1. Four alternatives are in `assets/options`;
 the user's final choice was pending when this build was packaged.
 
