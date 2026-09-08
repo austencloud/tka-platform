@@ -514,10 +514,12 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       // new account through the same path a fresh Library visit uses.
       lastEffectiveUserId = currentEffectiveUserId;
       lastFullAccount = currentFullAccount;
-      poolLoadRevision += 1;
       libraryCache = null;
       libraryCacheUserId = null;
       if (source === "my-library") {
+        // Public community requests are independent of account identity. Only
+        // invalidate a request here when replacing the account-owned pool.
+        poolLoadRevision += 1;
         allSequences = [];
         sectionsReady = false;
         if (initialized) void loadLibrarySequences();

@@ -27,13 +27,11 @@ vi.mock("$lib/shared/library/get-library-repository", () => ({
   }),
 }));
 
-vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-  authState: {
-    effectiveUserId: "owner",
-    isAuthenticated: true,
-    isFullAccount: true,
-  },
-}));
+vi.mock("$lib/shared/auth/state/auth-state.svelte", async () => {
+  const { browseEngineAuthTestState } =
+    await import("./browse-engine-auth-test-state.svelte");
+  return { authState: browseEngineAuthTestState };
+});
 
 vi.mock("$lib/shared/settings/state/settings-state.svelte", () => ({
   settingsService: {
@@ -56,6 +54,7 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
 }));
 
 import { createBrowseEngineForTest } from "./browse-engine-test-helpers.svelte";
+import { browseEngineAuthTestState } from "./browse-engine-auth-test-state.svelte";
 
 function deferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
@@ -80,12 +79,35 @@ function sequence(id: string): SequenceData {
 }
 
 beforeEach(() => {
+  browseEngineAuthTestState.effectiveUserId = "owner";
+  browseEngineAuthTestState.isAuthenticated = true;
+  browseEngineAuthTestState.isFullAccount = true;
   mocks.loadSequenceMetadata.mockReset().mockResolvedValue([]);
   mocks.refreshFromFirestore.mockReset().mockResolvedValue([]);
   mocks.getLibrarySequences.mockReset().mockResolvedValue([]);
 });
 
 describe("BrowseEngine community load revisions", () => {
+  it("finishes the public community load when account identity changes", async () => {
+    const community = deferred<SequenceData[]>();
+    mocks.loadSequenceMetadata.mockReturnValueOnce(community.promise);
+    const { engine, dispose } = createBrowseEngineForTest({ persistKey: null });
+    const load = engine.initialize();
+    await tick();
+    browseEngineAuthTestState.effectiveUserId = "another-account";
+    await tick();
+    community.resolve([sequence("public-sequence")]);
+    await load;
+    await tick();
+    expect(engine.allSequences.map(({ id }) => id)).toEqual([
+      "public-sequence",
+    ]);
+    expect(engine.isLoading).toBe(false);
+    expect(engine.sectionsReady).toBe(true);
+    engine.destroy();
+    dispose();
+  });
+
   it("does not let a late community load overwrite the library", async () => {
     const community = deferred<SequenceData[]>();
     mocks.loadSequenceMetadata.mockReturnValueOnce(community.promise);
