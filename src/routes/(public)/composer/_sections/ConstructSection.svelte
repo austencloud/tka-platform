@@ -134,7 +134,7 @@
   // viewer-parity seek affordances: click a workspace cell to snap the
   // animation to that step, click the start cell to restart.
   let playerController: AnimationPlaybackController | null = null;
-  let playerIsPlaying = false;
+  let playerIsPlaying = $state(false);
   let startHoldTimer: ReturnType<typeof setTimeout> | null = null;
   let compactPane = $state<CompactPane>("build");
   const compactDemoQuery =
