@@ -59,7 +59,7 @@
             >
           </a>
           {#if explore.kind === "tool"}<p class="link-context">
-              An interactive tool made for this site.
+              An interactive viewer built for this archive.
             </p>{/if}
         {/if}
       </div>
