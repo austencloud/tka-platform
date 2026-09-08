@@ -224,6 +224,14 @@ function buildPathShapeChildren(
       checked: motionAware,
       action: () => vm.setMotionAwarePaths(true),
     },
+    {
+      id: "path-explanation",
+      label: "About motion paths",
+      icon: "fa-circle-info",
+      action: () => {
+        window.open("/guide/motion-paths", "_blank", "noopener,noreferrer");
+      },
+    },
     ...(vm.getPathSession()
       ? [
           {
