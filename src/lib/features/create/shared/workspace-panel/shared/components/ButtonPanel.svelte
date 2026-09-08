@@ -76,6 +76,9 @@
     return tabState?.currentSequence ?? null;
   });
   const isConstructTab = $derived(navigationState.activeTab === "construct");
+  const usesWorkspacePlayback = $derived(
+    isConstructTab || navigationState.activeTab === "generate"
+  );
   const shouldShowOptionInteractionBanner = $derived.by(() => {
     if (
       !isConstructTab ||
@@ -109,7 +112,7 @@
   });
 
   function handleFullSequencePlay() {
-    if (!isConstructTab) {
+    if (!usesWorkspacePlayback) {
       onViewSequence?.();
       return;
     }
@@ -120,11 +123,14 @@
     if (!currentSequence) return;
     panelState.startWorkspacePlayback(
       currentSequence,
-      CreateModuleState.getActiveTabSequenceState().currentSequenceRevision
+      CreateModuleState.getActiveTabSequenceState().currentSequenceRevision,
+      navigationState.activeTab
     );
 
-    logConstructFullPlay(currentSequence?.steps.length ?? 0);
-    constructTutorialState.recordFullPlay();
+    if (isConstructTab) {
+      logConstructFullPlay(currentSequence.steps.length);
+      constructTutorialState.recordFullPlay();
+    }
   }
 
   // Count center-zone buttons to key the container (for smooth cross-fade on
@@ -203,7 +209,7 @@
                     ? "play-sequence"
                     : undefined}
                 >
-                  {#if isConstructTab}
+                  {#if usesWorkspacePlayback}
                     <div class="expand-viewer-action">
                       <ViewSequenceButton
                         purpose="expand-viewer"
@@ -217,7 +223,7 @@
                   <ViewSequenceButton
                     onclick={handleFullSequencePlay}
                     isActive={isExportPanelOpen}
-                    isStopping={isConstructTab &&
+                    isStopping={usesWorkspacePlayback &&
                       !!panelState.workspacePlayback}
                     purpose="play"
                   />

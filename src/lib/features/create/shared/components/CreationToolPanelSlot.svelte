@@ -213,7 +213,7 @@
     class:is-active={isGeneratePanelActive}
     aria-hidden={!isGeneratePanelActive}
     aria-busy={isGeneratePanelActive && generateLoadStatus === "loading"}
-    inert={!isGeneratePanelActive}
+    inert={!isGeneratePanelActive || !!panelState.workspacePlayback}
   >
     <div class="sub-tab-content" data-tab="generate">
       <LazyMount
