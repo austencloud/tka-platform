@@ -47,7 +47,8 @@ roles are not required dependencies and are not active pilot agents.
   demonstrate the target beside the artifact and make retry actionable. Use
   canonical action glyphs. Progress must not resemble reference selection.
   Dragging must visibly acknowledge pickup, show destinations and the landing
-  target, and confirm release or cancellation. See the [UX audit](hand-positions-ux-audit.md#drag-feedback-and-unambiguous-completion)
+  target, and confirm release or cancellation without replaying the completed
+  drag. See the [UX audit](hand-positions-ux-audit.md#drop-continuity-and-adjacent-examples-september-8)
   for scope and evidence. These are requested gates, not final acceptance.
 - **Carry the learner forward.** The [Grid copy review](copy-reviews/grid.md)
   records the approved continuation into Hand Positions. Connect through the

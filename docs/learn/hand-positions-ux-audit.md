@@ -2,6 +2,70 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Integrated playground and background recovery, September 8
+
+Austen accepted the drop correction, then rejected the family-only highlight,
+padded example outlines, duplicate glyph/name label, and disconnected spacing.
+The examples now retain the last complete pair per family and grid for this
+lesson session. Clearing does not erase them. A highlighted example matches
+both hand locations; selecting it restores that exact arrangement, including
+either Gamma handedness. Practice progression remains independent of examples.
+
+Canonical TKAWordGlyph art labels the board and examples inside their rectangles.
+The existing selection.css full-perimeter treatment and hit target cover the
+actual example pictograph, without an extra padded card or separate text button.
+The narrower mode switch, quieter instruction, larger desktop artifact and
+proportional example column compose the same existing workshop/stage owners.
+
+The recurring gradient-only background has a reproduced package cause:
+backgrounds 0.7.12 Cosmic.setQuality constructs new, uninitialized star and
+nebula systems. Its star update path cannot seed these empty layers. BackgroundHost
+now adapts the controller's quality-change event to its public forceRefresh API,
+after the active frame completes. Adaptive quality and pause/suppression owners
+remain intact; no polling, extra render loop, package mutation, or forced high
+quality is introduced. A live singleton is also repaired when the host remounts.
+
+Focused tests reproduce the real cosmic star loss/reseed and cover deferred,
+coalesced recovery, disposal, non-cosmic exclusion, exact example memory,
+placement history and existing practice transitions: 37 tests pass. The browser
+exercise covers all six builds, incorrect-answer correction, Gamma recall,
+clearing and grid switching. Final presentation remains pending hands-on review.
+All seven CSS viewport tiers and the reported 1660×1540 pane were inspected;
+the tall-pane board is about 896px wide with a proportional example column.
+Phone and short landscape retain scroll access to editing and examples. The
+final laptop and wider tiers keep the action/editing controls in the viewport.
+Drag release still has zero prop interpolation and the selected preview matches
+both hand locations. Reduced motion and a 640×450 zoom-equivalent reflow check
+retain a 16px root and keyboard access (not an actual browser-zoom test).
+The background remained painted after leaving the task tab and returning.
+
+## Drop continuity and adjacent examples, September 8
+
+Austen found that release replayed the move from the original point and that
+the vertical-only composition wasted the available width. The shared renderer's
+existing direct-positioning mode is now exposed through PictographContainer and
+enabled during a location drag and its landing. Click-driven changes, Undo,
+and Construct orientation/motion controls retain their existing interpolation.
+No second gesture or prop renderer is introduced.
+
+The lesson composes the board, its toolbar, Next, and editing controls beside
+a compact column of the same canonical example pictographs when the available
+container is at least 48rem wide. Columns size around the actual board, not an
+empty flexible track. Examples and board respect available height. Narrow
+containers stack; practice without references returns to a centered board.
+The existing stage motion owns success and reference-disclosure recomposition.
+
+Verification: all six practice rounds, incorrect-answer correction, completion,
+both grid modes, overlapping hands, drag release and Undo were exercised in the
+browser. Immediate post-release samples stay at the target with zero prop
+transition duration; Undo restores normal interpolation. The 32 focused tests
+pass and Svelte check reports zero errors and warnings. This continues the same
+Teacher task, using the briefing inline; hands-on acceptance remains pending.
+Seven viewport tiers (375×667 through 3840×2160) and the reported 1660×1540
+pane were inspected with no horizontal overflow. A 640×450 zoom-equivalent
+reflow check retains a 16px root and keyboard access; this is not an actual
+browser-zoom test. Short screens scroll rather than shrinking touch targets.
+
 ## Drag feedback and unambiguous completion
 
 Austen's next September 5 review found insufficient visual response during
