@@ -129,9 +129,7 @@
       {:else}
         <div class="index-sticky">
           <h2>Browse the archive</h2>
-          <p class="index-note">
-            Each entry explains its date.
-          </p>
+          <p class="index-note">Each entry explains its date.</p>
           <div
             class="index-scroll"
             bind:this={indexScroll}
@@ -252,7 +250,7 @@
     grid-template-rows: auto 1fr auto;
     min-height: calc(100dvh - var(--marketing-header-h, 64px));
     box-sizing: border-box;
-    max-width: 100rem;
+    max-width: 224rem;
     margin-inline: auto;
     padding: var(--archive-room-padding);
     padding-bottom: 1.25rem;
@@ -300,8 +298,8 @@
   }
   .archive-layout {
     display: grid;
-    grid-template-columns: 17rem minmax(0, 1fr);
-    gap: clamp(2rem, 4vw, 5rem);
+    grid-template-columns: clamp(17rem, 12vw, 22rem) minmax(0, 1fr);
+    gap: clamp(2rem, 3vw, 6rem);
     align-items: start;
   }
   .entry-index {
@@ -391,6 +389,7 @@
     margin: 0 0 0.75rem;
   }
   .archive-about p {
+    max-width: 65ch;
     font-size: var(--font-size-min, 0.875rem);
     line-height: 1.5;
     color: var(--theme-text-dim);
