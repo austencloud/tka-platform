@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
+  import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -40,6 +41,30 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
+  let turnPopover: ShapeMatrixTurnPopover | undefined;
+
+  /** Native Back uses the same dismissal owners as the web interface. */
+  export function handleBack(): boolean {
+    if (getEscapeLayerManager().dismissTopLayer() !== "unhandled") return true;
+    if (turnPopover?.dismiss()) return true;
+    if (appState.aboutOpen) {
+      appState.closeAbout();
+      return true;
+    }
+    if (appState.propPickerOpen) {
+      appState.closePropPicker();
+      return true;
+    }
+    if (animationState.activeSection !== null) {
+      animationState.showRelationships();
+      return true;
+    }
+    if (appState.compact && appState.activeView === "detail") {
+      appState.showMatrix();
+      return true;
+    }
+    return false;
+  }
 
   /* Share hands the address on directly, on the press itself: the phone's own
      share sheet where there is one, the clipboard everywhere else. Both need
@@ -394,6 +419,7 @@
              opens both axis ratios together. -->
         <ShapeMatrixSurfaceControl compact />
         <ShapeMatrixTurnPopover
+          bind:this={turnPopover}
           onratiofocuschange={(hand) => (theoryEditingAxis = hand)}
         />
       </div>
