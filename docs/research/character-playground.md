@@ -22,6 +22,18 @@ The playground enables the rig's existing palm attachment (`weldGrip`) through t
 
 Randomization varies geometry, facial proportions, presentation, skin, hair and outfits. This is the authored MakeHuman mesh and rig pipeline, not an AI image-to-mesh service. Finger bones are present and bend toward the palm, but precise thumb and staff contact still need refinement. Generation does not automatically promote a character into the production catalog.
 
+## Thumb frame correction
+
+The original MPFB conversion gave the thumb the same flexion plane as the four fingers. The runtime's staff pose therefore curled it away from the index side of the grip. `mpfb-proof.py` now gives the three thumb joints a mirrored quarter-turn in their rest frames, before clothes and export copies are created. Joint locations and body proportions remain unchanged. New generation records identify this as `handFrameVersion: 2`.
+
+This correction belongs to the MPFB exporter. It does not change the shared runtime pose presets or the MetaPerson and Mixamo assets. Candidate model URLs include the intake SHA-256 so repaired files invalidate the loader cache while keeping their character IDs and saved links.
+
+For a regenerated character, run `node --import tsx scripts/characters/verify-mpfb-grip.mjs <previous.glb> <repaired.glb>`. The check uses the runtime `FingerAnimator` and staff pose, verifies all 52 rest joint positions, checks thumb proximity to the curled index finger relative to palm size, and checks bilateral symmetry. It measures joints, not skin collision or pressure on the shaft.
+
+Seeds 1, 7 and 1617475689 passed this comparison: distal-thumb-to-index-joint distance fell from 68–82 mm to 12–14 mm. The real playground was inspected with fire staffs, extended and bent arms, and mixed spinning examples. The sideways thumb extension is corrected; exact skin contact, clothing deformation at deep bends, and arbitrary body/prop combinations still require visual evaluation. The candidate and generation suites now pass 28 tests, and the full Svelte check reports no errors or warnings.
+
+All eleven MPFB models staged at the time of repair (the proof and ten seeded characters) were regenerated and passed the same comparison. Original GLBs and manifest entries are backed up under `E:/3D-Models/mpfb-proof-20260908/playground/grip-v2-backup`; the new editable sources and intake reports are in adjacent `grip-v2-*` job folders. Unrelated character entries were preserved while a generation lock protected each staging update.
+
 ## Verification, September 8, 2026
 
 - 27 focused tests pass for candidate availability, rejected entries and generation request boundaries, concurrency and failure cleanup. `npm run check` reports no errors or warnings.
