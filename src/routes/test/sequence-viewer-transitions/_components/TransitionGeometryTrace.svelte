@@ -330,6 +330,20 @@
       <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
       <span>Mode commit: {modeCommitSummary || "n/a"}</span>
       {#if trace.command.includes("studio")}
+        {@const coveredFrames = workspaceSamples.filter(
+          (sample) => sample.sharedTransportCovered
+        ).length}
+        {@const rasterDensity = workspaceSamples
+          .filter((sample) => sample.sharedRasterDensity != null)
+          .at(-1)?.sharedRasterDensity}
+        <span data-problem={coveredFrames > 0}
+          >Canvas covering scrubber: {coveredFrames} frames</span
+        >
+        <span
+          >Final canvas raster density: {rasterDensity == null
+            ? "unmeasured"
+            : `${rasterDensity.toFixed(2)}× device pixels`}</span
+        >
         {#each Object.entries(summarizeStudioSurfaceMotion(trace.samples)) as [name, motion]}
           <span
             data-problem={motion.backtrackPx > 2 || motion.sizeBacktrackPx > 2}
