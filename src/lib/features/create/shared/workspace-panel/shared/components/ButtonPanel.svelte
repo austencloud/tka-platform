@@ -372,6 +372,7 @@
       --workspace-action-padding-inline: 16px;
       --workspace-action-radius: 999px;
       --workspace-play-action-width: auto;
+      --workspace-play-action-height: var(--min-touch-target, 44px);
       --share-trigger-label-display: inline;
       --share-trigger-width: auto;
       --share-trigger-gap: 8px;
