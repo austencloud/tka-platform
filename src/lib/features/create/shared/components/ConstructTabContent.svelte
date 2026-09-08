@@ -120,12 +120,6 @@
       </div>
     </div>
   </div>
-  {#if panelState.workspacePlayback}
-    <div class="playback-note" role="status">
-      <i class="fas fa-play" aria-hidden="true"></i>
-      <span>Stop playback to keep building</span>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -150,20 +144,6 @@
 
   .content-container[inert] {
     opacity: 0.45;
-  }
-
-  .playback-note {
-    position: absolute;
-    inset: auto 0 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px;
-    background: var(--theme-panel-bg);
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 14px);
-    pointer-events: none;
   }
 
   .construct-scroll-area {

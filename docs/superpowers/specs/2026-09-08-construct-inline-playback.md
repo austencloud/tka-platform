@@ -42,8 +42,8 @@ audition, workspace button layout, retained crossfade.
 - Extend `panel-coordination-state.svelte.ts` with temporary playback ownership.
 - Use `DualSourceCrossfade` to retain the card and freeze the outgoing player
   during the return transition. Load the player only on playback intent.
-- Extend the existing Play button with Stop presentation. Use `PanelButton` for
-  the separate expand action and retain the existing viewer callback.
+- Extend the existing workspace viewer button with Play, Stop, and Expand
+  presentations, retaining the existing viewer callback.
 
 ## Verification
 
@@ -65,3 +65,16 @@ Responsive inspection caught title crowding from an initial header placement;
 Expand now sits beside Play. A real editor-return check also caught the drawer's
 external-close callback clearing selection. The step editor coordinator now
 preserves that selection while playback temporarily hides its drawer.
+
+## Visual correction after review
+
+Austen rejected the detached notice beneath the option picker, the mismatched
+Expand control, and the off-center Stop glyph. The notice is removed. Expand now
+uses the existing workspace viewer button with a blue gradient and matching
+secondary-button dimensions and icon size. The triangular Play glyph's optical
+offset no longer applies to the square Stop glyph. Compact controls align on
+their centers; the wide layout retains its shared bottom edge.
+
+Focused Chrome inspection covers phone, short landscape, desktop, and the wide
+labeled controls. The icon-only Stop glyph measures zero horizontal and vertical
+offset from its button center. The affected components compile without warnings.

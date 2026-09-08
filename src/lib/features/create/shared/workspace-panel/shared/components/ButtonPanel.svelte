@@ -24,7 +24,6 @@
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
   import ShareButton from "./buttons/ShareButton.svelte";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { workspaceButtonsInZone } from "../workspace-button-layout";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
@@ -205,20 +204,14 @@
                     : undefined}
                 >
                   {#if isConstructTab}
-                    <div
-                      class="expand-viewer-action"
-                      title="Open sequence viewer"
-                    >
-                      <PanelButton
-                        ariaLabel="Expand sequence viewer"
-                        accentColor="var(--theme-accent)"
+                    <div class="expand-viewer-action">
+                      <ViewSequenceButton
+                        purpose="expand-viewer"
                         onclick={() => {
                           panelState.stopWorkspacePlayback();
                           onViewSequence?.();
                         }}
-                      >
-                        <i class="fas fa-expand" aria-hidden="true"></i>
-                      </PanelButton>
+                      />
                     </div>
                   {/if}
                   <ViewSequenceButton
@@ -359,12 +352,6 @@
     position: absolute;
     right: calc(100% + 8px);
     bottom: 0;
-  }
-
-  .expand-viewer-action :global(.panel-btn) {
-    width: var(--min-touch-target);
-    padding-inline: 0;
-    border-radius: 50%;
   }
 
   /* Remove mobile tap highlight (blue selection box) */
@@ -522,6 +509,10 @@
       min-width: 50px;
       gap: 0;
       transform: none;
+    }
+
+    .expand-viewer-action {
+      bottom: calc((50px - var(--min-touch-target)) / 2);
     }
 
     .left-zone > div,

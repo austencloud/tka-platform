@@ -18,7 +18,7 @@
   } = $props<{
     onclick?: () => void;
     isActive?: boolean;
-    purpose?: "open-viewer" | "play";
+    purpose?: "open-viewer" | "expand-viewer" | "play";
     isStopping?: boolean;
   }>();
 
@@ -27,14 +27,18 @@
       ? "fa-stop"
       : purpose === "play"
         ? "fa-play"
-        : WORKSPACE_BUTTON_ICON.view.icon
+        : purpose === "expand-viewer"
+          ? "fa-expand"
+          : WORKSPACE_BUTTON_ICON.view.icon
   );
   const accessibleLabel = $derived(
     isStopping
       ? "Stop playback and return to card"
       : purpose === "play"
         ? WORKSPACE_BUTTON_ICON.view.actionLabel
-        : "Open sequence viewer"
+        : purpose === "expand-viewer"
+          ? "Expand sequence viewer"
+          : "Open sequence viewer"
   );
   const visibleLabel = $derived(
     isStopping
@@ -65,6 +69,8 @@
   class="view-sequence-button glass-button"
   class:active={isActive}
   class:play-purpose={purpose === "play"}
+  class:expand-purpose={purpose === "expand-viewer"}
+  class:stopping={isStopping}
   onclick={handleClick}
   aria-label={accessibleLabel}
   data-ghost={isActive ? undefined : "safe"}
@@ -127,6 +133,40 @@
       play-glow 2.4s ease-in-out 0.5s infinite;
   }
 
+  .view-sequence-button.expand-purpose {
+    border-color: color-mix(in srgb, var(--semantic-info) 72%, white);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-info) 84%, white) 0%,
+      color-mix(in srgb, var(--semantic-info) 74%, #075985) 100%
+    );
+    box-shadow:
+      0 5px 14px color-mix(in srgb, var(--semantic-info) 52%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    animation: none;
+  }
+
+  .view-sequence-button.expand-purpose i {
+    font-size: var(--font-size-lg);
+  }
+
+  .view-sequence-button.expand-purpose:hover {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-info) 76%, white) 0%,
+      color-mix(in srgb, var(--semantic-info) 68%, #075985) 100%
+    );
+    box-shadow: 0 6px 16px
+      color-mix(in srgb, var(--semantic-info) 64%, transparent);
+    transform: scale(1.05);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .view-sequence-button.expand-purpose:hover {
+      transform: none;
+    }
+  }
+
   .workspace-action-label {
     display: var(--workspace-action-label-display, none);
     font-size: var(--font-size-min, 14px);
@@ -162,6 +202,9 @@
 
   .view-sequence-button.play-purpose i {
     font-size: clamp(1.25rem, 5cqi, 1.75rem);
+  }
+
+  .view-sequence-button.play-purpose:not(.stopping) i {
     transform: translateX(0.08em);
   }
 
