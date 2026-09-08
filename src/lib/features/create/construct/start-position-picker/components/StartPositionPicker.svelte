@@ -348,14 +348,18 @@ Controls moved below the grid for better UX
   data-testid="start-position-picker"
 >
   {#if !embedded}
-    <div class="workspace-heading" class:heading-suppressed={suppressHeading}>
-      {#if !suppressHeading}
-        {#if heading}
-          {@render heading()}
-        {:else}
-          <p class="workspace-hint">Choose your start position</p>
+    <div class="heading-region">
+      <Crossfade key={suppressHeading} animateHeight duration={DURATION.emphasis}>
+        {#if !suppressHeading}
+          <div class="workspace-heading">
+            {#if heading}
+              {@render heading()}
+            {:else}
+              <p class="workspace-hint">Choose your start position</p>
+            {/if}
+          </div>
         {/if}
-      {/if}
+      </Crossfade>
     </div>
   {/if}
 
@@ -496,18 +500,17 @@ Controls moved below the grid for better UX
     container-type: inline-size;
   }
 
-  .workspace-heading {
+  .heading-region {
     flex-shrink: 0;
+  }
+
+  .workspace-heading {
     display: grid;
     align-items: start;
-    height: clamp(96px, 14vh, 148px);
+    min-height: clamp(96px, 14vh, 148px);
     padding: clamp(12px, 4vh, 52px)
       calc(1rem + var(--picker-leading-action-offset, 0px)) 0;
     box-sizing: border-box;
-    overflow: hidden;
-    transition:
-      height var(--duration-emphasis) var(--transition-easing, ease),
-      padding var(--duration-emphasis) var(--transition-easing, ease);
   }
 
   .workspace-hint {
@@ -530,7 +533,7 @@ Controls moved below the grid for better UX
      height on the board someone is aiming at. Bounded by vh so it only tightens
      where the screen is actually short. */
   .start-pos-picker.build-path .workspace-heading {
-    height: clamp(72px, 9vh, 96px);
+    min-height: clamp(72px, 9vh, 96px);
     padding-top: clamp(12px, 3vh, 36px);
   }
 
@@ -567,10 +570,13 @@ Controls moved below the grid for better UX
       box-sizing: border-box;
     }
 
-    .start-pos-picker.build-path .workspace-heading {
+    .start-pos-picker.build-path .heading-region {
       grid-area: hint;
       align-self: center;
-      height: auto;
+    }
+
+    .start-pos-picker.build-path .workspace-heading {
+      min-height: 0;
       padding: 0 0 0 var(--picker-leading-action-offset, 0px);
     }
 
@@ -600,7 +606,7 @@ Controls moved below the grid for better UX
      the top and everything it isn't using goes to the board. */
   @media (max-height: 780px) {
     .start-pos-picker.build-path .workspace-heading {
-      height: 74px;
+      min-height: 74px;
       padding-top: 6px;
     }
 
@@ -872,15 +878,4 @@ Controls moved below the grid for better UX
     }
   }
 
-  .start-pos-picker .workspace-heading.heading-suppressed,
-  .start-pos-picker.build-path .workspace-heading.heading-suppressed {
-    height: 0;
-    padding: 0;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .workspace-heading {
-      transition: none;
-    }
-  }
 </style>
