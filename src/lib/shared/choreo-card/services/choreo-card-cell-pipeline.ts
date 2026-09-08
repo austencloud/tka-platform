@@ -71,7 +71,12 @@ export function getPreviewCacheKey(
   // probe adopts the other mode's cells while the frame sizes for this mode,
   // reserving a phantom start row that spreads the step rows apart.
   const sp = includeStartPosition ? "sp1" : "sp0";
-  return `${seq.id ?? seq.word ?? "?"}-${sequenceContentKey}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedLeft}-${resolvedRight}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-${sp}-d:${durationFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
+  // This cache is checked before the palette-aware cell cache. It must also
+  // distinguish colors or a reactive repaint will simply adopt the old images.
+  const paletteKey = opts.primaryPropColors
+    ? `-colors:${opts.primaryPropColors.left}:${opts.primaryPropColors.right}`
+    : "";
+  return `${seq.id ?? seq.word ?? "?"}-${sequenceContentKey}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedLeft}-${resolvedRight}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-${sp}-d:${durationFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}${paletteKey}`;
 }
 
 /**
