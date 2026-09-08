@@ -70,6 +70,7 @@
     allowedProps,
     accessMode = "standard",
     fluidSections = false,
+    showAppearance = true,
   } = $props<{
     selectedPropType: PropType | null;
     color?: "blue" | "red" | (string & {});
@@ -117,6 +118,8 @@
     accessMode?: "standard" | "educational";
     /** Let a roomy host use all available width for each family row. */
     fluidSections?: boolean;
+    /** Collection metadata chooses a type without editing account appearance. */
+    showAppearance?: boolean;
   }>();
 
   const allowedPropSet = $derived(
@@ -379,7 +382,9 @@
   // tile, not a family of tiles. It docks as one chip once a fan is current,
   // the same way Buugeng chirality docks, and drills into the full chooser.
   const showFanLook = $derived(
-    selectedPropType !== null && isFanPropType(selectedPropType)
+    showAppearance &&
+      selectedPropType !== null &&
+      isFanPropType(selectedPropType)
   );
 
   // Size is a property of the current prop, not a prop of its own. Every big

@@ -390,6 +390,7 @@
         <SequenceViewerOrchestrator
           sequence={overlay.sequence}
           isMobile={isMobileWidth}
+          collectionPropType={overlay.collectionPropType}
           initialBpm={overlay.initialBpm}
           initialPlaybackMode={overlay.initialPlaybackMode}
           initialStep={overlay.initialStep}
