@@ -5,6 +5,15 @@ wholesale. Each row names the behavior owner. Verify the path in current code
 before relying on it. Add a row only for shared behavior or an intentional
 keep-separate decision, not for every component.
 
+Standalone 3D workspaces compose `shared/3d/components/Viewer3DFullscreen.svelte`,
+which owns the scene canvas, adaptive `SceneControlWorkspace`, and shared
+timeline/tempo controls. Local character generators extend its HUD and inspector
+slots. `shared/3d/context/character-catalog-context.ts` supplies a reactive,
+host-scoped catalog to the existing `PerformerCharacterPicker`; other hosts keep
+the standard catalog. Searches: scene workspace, environment picker, performer
+selection, BPM, generated characters. Sequence selection remains with
+`shared/components/sequence-picker/SequencePickerModal.svelte`.
+
 Static placement transforms reuse `PictographContainer`'s `motionStartData`,
 `motionStep`, and `motionProgress` seam. `pictograph-motion-positioner` maps the
 2D animator's paths onto exact prepared start/end poses; `prop-placement-view-model`
@@ -13,6 +22,10 @@ the readiness-gated clock. Construct's arrival and placement editor keep their
 existing consumers. Searches: static pictograph animation, mirror, flip, swap,
 rotation, arrival motion. Learn queues actions and shares one clock across its
 three examples; it does not own another renderer or interpolation system.
+For synchronized grid rotation, `PictographContainer.gridRotation` carries that
+clock's cumulative angle through `PictographRenderer` to `GridSvg.rotationOverride`.
+This opt-in bypasses the grid's independent mode-change animation and global
+direction setting; other pictograph consumers retain their existing behavior.
 
 Timing-and-direction route continuity composes the existing `HandMotionPlayer`,
 `reparentToInspector` mounted-node action (also consumed by `ArtPane`), and

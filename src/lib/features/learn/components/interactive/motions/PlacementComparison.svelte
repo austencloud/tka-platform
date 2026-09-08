@@ -29,7 +29,14 @@
   let betaSwapped = $state(false);
   let transitions = $state<PlacementTransition[]>([]);
   let epoch = $state(0);
+  let gridRotation = $state(0);
+  let gridRotationStart = $state(0);
   const motion = createPropPlacementMotionState();
+  const animatedGridRotation = $derived(
+    motion.active
+      ? gridRotationStart + (gridRotation - gridRotationStart) * motion.progress
+      : gridRotation
+  );
   const ready = new Set<number>();
   type Action = "rotate" | "mirror" | "flip" | "swap";
   const pending: { action: Action; rotationSteps: number }[] = [];
@@ -57,6 +64,7 @@
     if (!next) return;
     const { action, rotationSteps } = next;
     const previous = examples.map((example) => example.data);
+    gridRotationStart = gridRotation;
     pairs = pairs.map((pair) =>
       transformPosition(
         pair.left,
@@ -68,8 +76,10 @@
         }
       )
     );
-    if (action === "rotate")
+    if (action === "rotate") {
+      gridRotation += 45 * rotationSteps;
       gridMode = getToggledGridMode(gridMode, rotationSteps);
+    }
     if (action === "swap") betaSwapped = !betaSwapped;
     announcement = `${action === "rotate" ? "Rotated 45 degrees" : action === "mirror" ? "Mirrored left and right" : action === "flip" ? "Flipped up and down" : "Hands swapped"}. Alpha, Beta and Gamma are unchanged. ${gridMode === GridMode.BOX ? "Box" : "Diamond"} grid.`;
     if (reducedMotion()) {
@@ -111,6 +121,7 @@
             motionStartData={transitions[index]?.startData}
             motionStep={transitions[index]?.transitionStep}
             motionProgress={motion.active ? motion.progress : null}
+            gridRotation={animatedGridRotation}
             readyEpoch={epoch}
             onReady={() => pictographReady(index)}
             disableTransitions
