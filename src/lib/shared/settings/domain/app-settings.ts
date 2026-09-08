@@ -31,6 +31,7 @@ export interface PropPreset {
 }
 
 export interface AppSettings {
+  propViewingMode?: "my-props" | "as-saved";
   // Metadata for sync tracking (not persisted to Firebase)
   _localTimestamp?: number;
 

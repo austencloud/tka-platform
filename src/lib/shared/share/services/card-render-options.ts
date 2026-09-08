@@ -13,6 +13,8 @@
  * impossible: add a toggle here once and all paths honor it.
  */
 
+import { resolveViewingProps } from "$lib/shared/foundation/services/prop-viewing";
+import type { ResolvedPropConfig } from "$lib/shared/foundation/services/recorded-prop-intent";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
@@ -33,6 +35,7 @@ import {
 } from "$lib/shared/share/domain/models/card-presentation";
 
 export interface CardRenderOptionsInput {
+  propConfig?: ResolvedPropConfig;
   /**
    * Theme. The viewer passes its export-panel value (exportOptions.imageDarkMode);
    * the share/download paths pass the composition manager's darkMode. Explicit so
@@ -139,7 +142,13 @@ export function buildCardRenderOptions(
     isAuthenticated,
   });
 
+  const props =
+    input.propConfig ?? resolveViewingProps(getSettings(), sequence).config;
   return {
+    ...(!isHandPath && {
+      leftPropTypeOverride: props.leftPropType,
+      rightPropTypeOverride: props.rightPropType,
+    }),
     includeStartPosition: ic.includeStartPosition,
     startPositionLayout,
     columnCount,

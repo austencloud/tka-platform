@@ -18,6 +18,7 @@
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
 <script lang="ts">
+  import PropViewingControl from "$lib/shared/browse/components/PropViewingControl.svelte";
   import { onDestroy, onMount, untrack, type Snippet } from "svelte";
   import { createViewerStudioSurfaces } from "../state/viewer-studio-surfaces.svelte";
   import { setViewerStudioSurfaces } from "../context/viewer-studio-surfaces-context";
@@ -720,8 +721,7 @@
       showInlineExportProgress={false}
       showTempoControls={false}
       showPathShape={false}
-      onPropChange={ctx.collectionPropLocked ||
-      ctx.effectiveSequence?.sequenceKind === "hand-path"
+      onPropChange={ctx.effectiveSequence?.sequenceKind === "hand-path"
         ? undefined
         : (prop) => {
             studioSurfaces.controls?.setProp(prop);
@@ -822,6 +822,13 @@
         { count: reason !== "item" }
       )}
   />
+
+  {#if !ctx.isFullscreen && (ctx.leftPropType !== "hand" || ctx.rightPropType !== "hand")}
+    <PropViewingControl
+      sequence={ctx.effectiveSequence ?? sequence}
+      collectionPropType={ctx.collectionPropType}
+    />
+  {/if}
 
   {#if contextContent && !ctx.isFullscreen}
     {@render contextContent()}
@@ -979,9 +986,7 @@
                         onBpmChange={(bpm) =>
                           interactions.handleBpmChange(bpm, "viewer")}
                         onSaveToLibrary={interactions.handleSave}
-                        onPropChange={ctx.collectionPropLocked
-                          ? undefined
-                          : (prop) =>
+                        onPropChange={(prop) =>
                           interactions.handlePropChange(prop, "viewer")}
                         onFanAppearanceChange={ctx.handleFanAppearanceChange}
                         playback={layout.showVideoGallery ||

@@ -42,6 +42,14 @@ describe("buildCardRenderOptions", () => {
     expect(buildCardRenderOptions(seq, { darkMode: false }).visibilityOverrides?.primaryPropColors)
       .toEqual({ left: "#00ff88", right: "#ff8800" });
   });
+  it("exports the selected presentation instead of the account props", () => {
+    const options = buildCardRenderOptions(seq, {
+      darkMode: false,
+      propConfig: { leftPropType: "fan", rightPropType: "buugeng", catDogMode: true } as never,
+    });
+    expect(options.leftPropTypeOverride).toBe("fan");
+    expect(options.rightPropTypeOverride).toBe("buugeng");
+  });
   beforeEach(() => {
     ic._cols = 4;
     ic._layout = "row";
