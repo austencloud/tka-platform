@@ -5,6 +5,7 @@ import type {
   PreparedRenderData,
 } from "../domain/models/prepared-pictograph-data";
 import type { PrepareOptions } from "./types";
+import { bootProfiler } from "$lib/shared/analytics/boot-profiler";
 import type { ArrowLifecycleManager } from "../../arrow/orchestration/services/arrow-lifecycle-manager";
 import type { PropSvgLoader } from "../../prop/services/prop-svg-loader";
 import type { PropPlacer } from "../../prop/services/prop-placer";
@@ -140,8 +141,10 @@ export class PictographPreparer {
       MotionData,
     ][]) {
       if (!isVisibleMotion(motion)) continue;
-      if (color === HandSide.LEFT && options?.showLeftMotion === false) continue;
-      if (color === HandSide.RIGHT && options?.showRightMotion === false) continue;
+      if (color === HandSide.LEFT && options?.showLeftMotion === false)
+        continue;
+      if (color === HandSide.RIGHT && options?.showRightMotion === false)
+        continue;
       if (!motion.propPlacementData) continue;
       if (!prepared.propAssets[color]) return true;
     }
@@ -156,7 +159,8 @@ export class PictographPreparer {
 
     const settings = {
       leftPropType: options?.leftPropType ?? DEFAULT_PROP_SETTINGS.leftPropType,
-      rightPropType: options?.rightPropType ?? DEFAULT_PROP_SETTINGS.rightPropType,
+      rightPropType:
+        options?.rightPropType ?? DEFAULT_PROP_SETTINGS.rightPropType,
     };
 
     const effectiveLeftProp = settings.leftPropType;
@@ -182,17 +186,28 @@ export class PictographPreparer {
     };
 
     const showLeft = isVisibleMotion(pictographWithPropOverrides.motions.left);
-    const showRight = isVisibleMotion(pictographWithPropOverrides.motions.right);
+    const showRight = isVisibleMotion(
+      pictographWithPropOverrides.motions.right
+    );
     const soloMode = showLeft !== showRight;
 
-    const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
-      pictographWithPropOverrides,
-      { themeMode: options?.themeMode, gridMode, soloMode }
-    );
-    const { propPositions, propAssets } = await this.calculateProps(
-      pictographWithPropOverrides,
-      options
-    );
+    // Both render layers read the same motion snapshot. Prop assets and
+    // placement do not depend on arrows finishing their asset/placement load.
+    const [arrowResult, { propPositions, propAssets }] = await Promise.all([
+      bootProfiler.measureAsync("pictograph:prepare-arrows", () =>
+        this.arrowManager.coordinateArrowLifecycle(
+          pictographWithPropOverrides,
+          {
+            themeMode: options?.themeMode,
+            gridMode,
+            soloMode,
+          }
+        )
+      ),
+      bootProfiler.measureAsync("pictograph:prepare-props", () =>
+        this.calculateProps(pictographWithPropOverrides, options)
+      ),
+    ]);
 
     return {
       gridMode,
@@ -304,7 +319,8 @@ export class PictographPreparer {
     const assets: Partial<Record<HandSide, PropAssets>> = {};
     const settings = {
       leftPropType: options?.leftPropType ?? DEFAULT_PROP_SETTINGS.leftPropType,
-      rightPropType: options?.rightPropType ?? DEFAULT_PROP_SETTINGS.rightPropType,
+      rightPropType:
+        options?.rightPropType ?? DEFAULT_PROP_SETTINGS.rightPropType,
       // Chirality decides whether the beta offset fires at all: two
       // opposite-chirality buugeng nest into an infinity symbol and must share
       // the hand point. Omitting these here made the beta calc read both props
@@ -385,8 +401,7 @@ export class PictographPreparer {
     options?: PrepareOptions
   ): [HandSide, MotionData][] {
     return (
-      Object.entries(pictograph.motions || {}) as [HandSide, MotionData][]
-    )
+      (Object.entries(pictograph.motions || {}) as [HandSide, MotionData][])
         // invisible placeholder = hand not really there (both-required Step shape)
         .filter((entry): entry is [HandSide, MotionData] => {
           const [hand, motion] = entry;
@@ -420,7 +435,8 @@ export class PictographPreparer {
             ];
           }
           return [hand, motion] as [HandSide, MotionData];
-        });
+        })
+    );
   }
 
   private transformForHandPath(pictograph: PictographData): PictographData {

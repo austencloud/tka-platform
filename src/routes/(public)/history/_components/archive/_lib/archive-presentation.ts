@@ -28,14 +28,14 @@ const ARTIFACTS: Record<string, ArchiveArtifactPresentation> = {
     note: "A visualization made for this site to illustrate the trochoid model.",
   },
   "nine-square": {
-    kind: "demonstration",
-    label: "Visual explanation",
-    note: "A grid visualization made for this site. Cushing’s original lessons are linked below.",
+    kind: "original",
+    label: "From the original lessons",
+    note: "Frames from Charlie Cushing’s video series. Choose a lesson to find its original video.",
   },
   qft: {
     kind: "demonstration",
     label: "Interactive explanation",
-    note: "A demonstration made for this site to illustrate QFT notation. The original primer is linked below.",
+    note: "A demonstration made for this site to illustrate QFT notation. The original primer is listed under Sources.",
   },
   poinotation: {
     kind: "demonstration",

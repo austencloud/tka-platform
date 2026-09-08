@@ -92,9 +92,9 @@ describe("warmSequenceCells", () => {
     expect(renderCell).toHaveBeenCalledTimes(3);
     expect(cloudDownload).toHaveBeenCalledTimes(3);
     expect(cloudDownload.mock.calls).toEqual([
-      ["hash-alpha", { probeUnknown: false, signal: undefined }],
-      ["hash-A", { probeUnknown: false, signal: undefined }],
-      ["hash-B", { probeUnknown: false, signal: undefined }],
+      ["hash-alpha", { probeUnknown: true, signal: undefined }],
+      ["hash-A", { probeUnknown: true, signal: undefined }],
+      ["hash-B", { probeUnknown: true, signal: undefined }],
     ]);
     const options = renderCell.mock.calls[0]![3] as {
       size: number;
@@ -123,6 +123,17 @@ describe("warmSequenceCells", () => {
 
     expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
     expect(cloudDownload).not.toHaveBeenCalled();
+    expect(renderCell).not.toHaveBeenCalled();
+  });
+
+  it("reuses server images on a fresh browser without rendering or uploading", async () => {
+    cloudDownload.mockResolvedValue(
+      new Blob(["already published"], { type: "image/webp" })
+    );
+    expect(knownCloudHashes.size).toBe(0);
+    const result = await warmSequenceCells(sequence, { requireComplete: true });
+    expect(result.ready).toBe(3);
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
     expect(renderCell).not.toHaveBeenCalled();
   });
 
