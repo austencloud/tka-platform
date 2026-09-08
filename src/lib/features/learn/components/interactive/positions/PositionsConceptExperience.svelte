@@ -307,74 +307,76 @@
     {/snippet}
 
     {#snippet artifact()}
-      {#if freePlay}
-        <div class="board-toolbar" data-position-stage="board-tools">
-          <div class="live-position" aria-live="polite" aria-atomic="true">
-            <Crossfade key={built}>
-              <div class="position-name">
-                {#if built}
-                  <span aria-hidden="true"
-                    ><TKAWordGlyph
-                      word={POSITION_TYPE_INFO[built].symbol}
-                      height={28}
-                      darkMode
-                    /></span
-                  >
-                  <strong>{POSITION_TYPE_INFO[built].label}</strong>
-                {:else}<strong>Your position</strong>{/if}
+      <div class="workshop" class:exploring class:has-reference={referencesVisible}>
+        <div class="board-column">
+          {#if freePlay}
+            <div class="board-toolbar" data-position-stage="board-tools">
+              <div class="live-position" aria-live="polite" aria-atomic="true">
+                <Crossfade key={built}>
+                  <div class="position-name">
+                    {#if built}
+                      <span aria-hidden="true"
+                        ><TKAWordGlyph
+                          word={POSITION_TYPE_INFO[built].symbol}
+                          height={28}
+                          darkMode
+                        /></span
+                      >
+                      <strong>{POSITION_TYPE_INFO[built].label}</strong>
+                    {:else}<strong>Your position</strong>{/if}
+                  </div>
+                </Crossfade>
               </div>
-            </Crossfade>
-          </div>
-          <SegmentedControl
-            options={[
-              { value: GridMode.DIAMOND, label: "Diamond" },
-              { value: GridMode.BOX, label: "Box" },
-            ]}
-            value={gridMode}
-            onchange={changeGrid}
-            semantics="radiogroup"
-            ariaLabel="Grid mode"
-            color="accent"
-          />
-        </div>
-      {/if}
-      <div
-        class="placement-instructions"
-        class:incorrect
-        data-position-stage="instructions"
-      >
-        <div class="current-task" class:incorrect aria-live="polite">
-          {#if incorrect}<i class="fa-solid fa-circle-xmark" aria-hidden="true"
-            ></i>{/if}
-          <Crossfade key={instruction}>{instruction}</Crossfade>
-        </div>
-        {#if correctionPreview && workshop.challenge}
-          <figure class="correction-guide">
-            <div class="correction-art" aria-hidden="true">
-              <PictographContainer
-                pictographData={correctionPreview}
-                showTKA={false}
-                showPositions={false}
-                showReversals={false}
-                showTnD={false}
-                showElemental={false}
-                leftPropTypeOverride={PropType.HAND}
-                rightPropTypeOverride={PropType.HAND}
+              <SegmentedControl
+                options={[
+                  { value: GridMode.DIAMOND, label: "Diamond" },
+                  { value: GridMode.BOX, label: "Box" },
+                ]}
+                value={gridMode}
+                onchange={changeGrid}
+                semantics="radiogroup"
+                ariaLabel="Grid mode"
+                color="accent"
               />
             </div>
-            <figcaption class="sr-only">
-              {positionCorrection(
-                placement.leftLocation!,
-                placement.rightLocation!,
-                workshop.challenge.kind,
-                gridMode
-              )}
-            </figcaption>
-          </figure>
-        {/if}
-      </div>
-      <div class="workshop" class:exploring>
-        <div class="board-column">
+          {/if}
+          <div
+            class="placement-instructions"
+            class:incorrect
+            data-position-stage="instructions"
+          >
+            <div class="current-task" class:incorrect aria-live="polite">
+              {#if incorrect}<i
+                  class="fa-solid fa-circle-xmark"
+                  aria-hidden="true"
+                ></i>{/if}
+              <Crossfade key={instruction}>{instruction}</Crossfade>
+            </div>
+            {#if correctionPreview && workshop.challenge}
+              <figure class="correction-guide">
+                <div class="correction-art" aria-hidden="true">
+                  <PictographContainer
+                    pictographData={correctionPreview}
+                    showTKA={false}
+                    showPositions={false}
+                    showReversals={false}
+                    showTnD={false}
+                    showElemental={false}
+                    leftPropTypeOverride={PropType.HAND}
+                    rightPropTypeOverride={PropType.HAND}
+                  />
+                </div>
+                <figcaption class="sr-only">
+                  {positionCorrection(
+                    placement.leftLocation!,
+                    placement.rightLocation!,
+                    workshop.challenge.kind,
+                    gridMode
+                  )}
+                </figcaption>
+              </figure>
+            {/if}
+          </div>
           <div
             class="board"
             data-position-stage="board"
@@ -546,18 +548,48 @@
 
 <style>
   .positions-experience {
+    container-type: inline-size;
     display: flex;
     flex: 1 0 auto;
     width: 100%;
     min-height: 100%;
     color: var(--theme-text);
     --position-board-size: clamp(18.5rem, calc(100svh - 36rem), 32rem);
-    --lesson-workshop-max: 32rem;
+    --lesson-workshop-max: 52rem;
   }
   .workshop,
   .board-column,
   .lesson-side {
     display: contents;
+  }
+  .workshop {
+    display: grid;
+    width: min(100%, 32rem);
+    margin-inline: auto;
+  }
+  @container (min-width: 48rem) {
+    .workshop.has-reference {
+      --position-board-size: clamp(18.5rem, calc(100svh - 32rem), 36rem);
+      width: min(100%, calc(var(--position-board-size) + 13.5rem));
+      grid-template-columns: minmax(0, 1fr) 11rem;
+      gap: 2.5rem;
+      align-items: start;
+    }
+    .has-reference .board-column,
+    .has-reference .lesson-side {
+      display: block;
+      min-width: 0;
+    }
+    .lesson-side {
+      padding-top: 0.75rem;
+    }
+    .lesson-side .examples {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .lesson-side .example-art {
+      max-width: clamp(5rem, calc((100svh - 34rem) / 3), 9rem);
+    }
   }
   .board {
     aspect-ratio: 1;
@@ -643,6 +675,8 @@
     gap: 0.75rem;
   }
   .board-toolbar {
+    width: min(100%, var(--position-board-size));
+    margin-inline: auto;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
