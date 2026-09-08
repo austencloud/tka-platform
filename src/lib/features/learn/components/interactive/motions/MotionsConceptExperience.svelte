@@ -220,6 +220,7 @@
 <div
   bind:this={experienceElement}
   class="motions-experience"
+  class:device-fit={timingDirectionOnly}
   class:is-intro={!activeMotion && !isComparison}
   class:has-focused-comparison={comparisonFocused}
   onkeydown={handleKeydown}
@@ -264,7 +265,7 @@
         {#snippet first()}
           <Crossfade
             key={activeMotion?.name ?? "timing-intro"}
-            fill={!!activeMotion}
+            fill={!!activeMotion || timingDirectionOnly}
           >
             {#if activeMotion}
               <div class="artifact-state motion-state">
@@ -418,7 +419,8 @@
     --lesson-workshop-max: clamp(96rem, 80vw, 160rem);
     --lesson-artifact-wide-max: clamp(96rem, 80vw, 160rem);
   }
-  .motions-experience.is-intro :global(.dual-source > .source:first-child) {
+  .motions-experience.is-intro:not(.device-fit)
+    :global(.dual-source > .source:first-child) {
     position: relative;
   }
 
@@ -526,6 +528,104 @@
 
     .timing-direction-state {
       place-items: start center;
+    }
+  }
+
+  /* The lesson uses the space allocated by Learn, not another viewport inside it.
+     Only the examples scroll; the title and lesson navigation stay in reach. */
+  .motions-experience.device-fit {
+    height: 100%;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+    container-type: size;
+  }
+
+  .motions-experience.device-fit :global(.lesson-stage-frame) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-content: stretch;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    padding: 4.5rem clamp(0.75rem, 3cqw, 4rem)
+      max(0.75rem, env(safe-area-inset-bottom));
+    gap: clamp(0.75rem, 1.5cqh, 1.5rem);
+    --lesson-artifact-wide-max: 100%;
+  }
+
+  .device-fit :global(.stage-artifact) {
+    container-type: size;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .device-fit :global(.artifact-inner.wide) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .device-fit :global(.dual-source > .source:first-child) {
+    position: absolute;
+  }
+
+  .device-fit .timing-direction-state,
+  .device-fit .comparison-state {
+    display: block;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .device-fit :global(.stage-controls) {
+    position: static;
+    width: 100%;
+    min-height: 0;
+    padding-block: 0.5rem;
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .device-fit :global(.lesson-stage-controls) {
+    gap: 0.65rem;
+  }
+
+  .device-fit :global(.comparison-board:not(.has-focus)) {
+    min-height: 28rem;
+  }
+
+  @container learn-tab (max-width: 850px) {
+    .device-fit :global(.comparison-board:not(.has-focus)) {
+      min-height: 48rem;
+    }
+  }
+
+  @media (max-height: 540px) and (min-width: 641px) {
+    .motions-experience.device-fit :global(.lesson-stage-frame) {
+      padding-top: 0.75rem;
+      gap: 0.5rem;
+    }
+
+    .device-fit :global(.stage-heading) {
+      width: calc(100% - 22rem);
+      min-height: 44px;
+      display: grid;
+      align-items: center;
+    }
+
+    .device-fit :global(.lesson-stage-heading .description) {
+      display: none;
+    }
+
+    .device-fit :global(.progress-stack) {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
   }
 </style>
