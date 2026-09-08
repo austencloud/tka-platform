@@ -1,8 +1,7 @@
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
+  import SequenceTransformActions from "$lib/shared/create/components/SequenceTransformActions.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getToggledGridMode } from "$lib/shared/create/services/rotation-helpers";
@@ -18,7 +17,6 @@
   let pairs = $state(
     POSITION_KINDS.map((kind) => positionExample(kind, GridMode.DIAMOND))
   );
-  let axis = $state<0 | 1 | 2 | 3>(0);
   let announcement = $state("");
   const descriptions = {
     alpha: "Opposite points",
@@ -36,7 +34,6 @@
     pairs = pairs.map((pair) =>
       transformPosition(pair.left, pair.right, action, {
         rotationSteps,
-        reflectionAxis: axis,
       })
     );
     if (action === "rotate")
@@ -90,41 +87,19 @@
     role="group"
     aria-label="Transform all three positions"
   >
-    <div class="rotate-actions">
-      <PanelButton
-        onclick={() => transform("rotate", -1)}
-        ariaLabel="Rotate all positions left 45 degrees"
-        ><i class="fa-solid fa-rotate-left" aria-hidden="true"
-        ></i>45°</PanelButton
-      >
-      <PanelButton
-        onclick={() => transform("rotate", 1)}
-        ariaLabel="Rotate all positions right 45 degrees"
-        ><i class="fa-solid fa-rotate-right" aria-hidden="true"
-        ></i>45°</PanelButton
-      >
-    </div>
-    <div class="reflect-actions">
-      <select aria-label="Reflection axis" bind:value={axis}>
-        <option value={0}>Vertical axis</option><option value={2}
-          >Horizontal axis</option
-        >
-        <option value={1}>NE / SW axis</option><option value={3}
-          >NW / SE axis</option
-        >
-      </select>
-      <PanelButton
-        onclick={() => transform("mirror")}
-        ariaLabel="Reflect all positions across the selected axis"
-        ><i class="fa-solid fa-left-right" aria-hidden="true"
-        ></i>Mirror</PanelButton
-      >
-    </div>
-    <PanelButton
-      onclick={() => transform("swap")}
-      ariaLabel="Swap hands in all positions"
-      ><SwapIcon size="1.2em" />Swap</PanelButton
-    >
+    <SequenceTransformActions
+      toolbar
+      hasSequence={true}
+      hasSelection={false}
+      isTransforming={false}
+      showEditInConstructor={false}
+      actionSubject="all positions"
+      rotationDegrees={45}
+      onMirror={() => transform("mirror")}
+      onSwap={() => transform("swap")}
+      onRotateCCW={() => transform("rotate", -1)}
+      onRotateCW={() => transform("rotate", 1)}
+    />
   </div>
   <p class="grid-label">
     {gridMode === GridMode.BOX ? "Box" : "Diamond"} grid
@@ -183,27 +158,6 @@
     align-items: center;
     gap: 0.75rem 1.5rem;
     margin-top: clamp(1.5rem, 3cqw, 2.5rem);
-  }
-  .rotate-actions,
-  .reflect-actions {
-    display: flex;
-    gap: 0.4rem;
-    align-items: center;
-  }
-  select {
-    min-height: 44px;
-    max-width: 11rem;
-    font: inherit;
-    font-size: 1rem;
-    color: var(--theme-text);
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-  }
-  select:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 3px;
   }
   .grid-label {
     text-align: center;
@@ -267,9 +221,7 @@
     p {
       font-size: 1.5rem;
     }
-    .grid-label,
-    select,
-    .transform-bar :global(.panel-btn) {
+    .grid-label {
       font-size: 1.25rem;
     }
   }
