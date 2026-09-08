@@ -22,153 +22,182 @@
   style:--artifact-accent="var(--theme-accent)"
   aria-labelledby={`entry-title-${entry.id}`}
 >
-  <header class="entry-heading">
-    <p class="entry-meta">
-      <span>{entry.dateLabel}</span><span>{archiveLane(entry.lane).label}</span>
-    </p>
-    <h2 id={`entry-title-${entry.id}`}>{entry.title}</h2>
-    <p class="entry-people">{entry.people}</p>
-  </header>
-
-  <div class="entry-introduction" class:with-artifact={artifact !== null}>
-    <div class="entry-copy">
-      <p class="entry-summary">{entry.summary}</p>
-      {#if entry.evidenceBasis === "unresolved" && entry.evidenceNote}
-        <p class="source-caution">{entry.evidenceNote}</p>
-      {/if}
-      {#if explore}
-        <a
-          class="explore-link"
-          href={explore.href}
-          target={explore.href.startsWith("/") ? undefined : "_blank"}
-          rel={explore.href.startsWith("/") ? undefined : "noopener noreferrer"}
+  <div
+    class="entry-composition"
+    class:with-artifact={artifact !== null}
+    class:balanced-visual={artifact?.kind === "demonstration" &&
+      !applications.length &&
+      !works.length &&
+      !videos.length}
+  >
+    <header class="entry-heading">
+      <p class="entry-meta">
+        <span>{entry.dateLabel}</span><span
+          >{archiveLane(entry.lane).label}</span
         >
-          {explore.label}
-          <span aria-hidden="true"
-            >{explore.kind === "original" ? "↗" : "→"}</span
+      </p>
+      <h2 id={`entry-title-${entry.id}`}>{entry.title}</h2>
+      <p class="entry-people">{entry.people}</p>
+    </header>
+
+    <div class="entry-introduction" class:with-artifact={artifact !== null}>
+      <div class="entry-copy">
+        <p class="entry-summary">{entry.summary}</p>
+        {#if entry.evidenceBasis === "unresolved" && entry.evidenceNote}
+          <p class="source-caution">{entry.evidenceNote}</p>
+        {/if}
+        {#if explore}
+          <a
+            class="explore-link"
+            href={explore.href}
+            target={explore.href.startsWith("/") ? undefined : "_blank"}
+            rel={explore.href.startsWith("/")
+              ? undefined
+              : "noopener noreferrer"}
           >
-        </a>
-        {#if explore.kind === "tool"}<p class="link-context">
-            An interactive tool made for this site.
-          </p>{/if}
-      {/if}
-    </div>
-    {#if artifact}
-      <figure class="entry-artifact" data-artifact-kind={artifact.kind}>
-        <div class="artifact-label">{artifact.label}</div>
-        <div
-          class="artifact-stage"
-          class:portrait={entry.id === "lorq"}
-          class:document={artifact.kind === "document"}
-        >
-          <ArchiveRecordVisual {entry} active />
-        </div>
-        <figcaption>{artifact.note}</figcaption>
-      </figure>
-    {/if}
-    <div class="entry-details">
-      {#if applications.length}
-        <section
-          class="applications"
-          aria-labelledby={`applications-${entry.id}`}
-        >
-          <h3 id={`applications-${entry.id}`}>From notation to software</h3>
-          {#each applications as application (application.href)}
-            <div
-              class="application"
-              class:main-product={application.role === "product"}
+            {explore.label}
+            <span aria-hidden="true"
+              >{explore.kind === "original" ? "↗" : "→"}</span
             >
-              <h4>{application.label}</h4>
-              <p>{application.description}</p>
-              <a href={application.href}
-                >Open {application.label} <span aria-hidden="true">→</span></a
-              >
-            </div>
-          {/each}
-        </section>
+          </a>
+          {#if explore.kind === "tool"}<p class="link-context">
+              An interactive tool made for this site.
+            </p>{/if}
+        {/if}
+      </div>
+      {#if artifact}
+        <figure class="entry-artifact" data-artifact-kind={artifact.kind}>
+          <div class="artifact-label">{artifact.label}</div>
+          <div
+            class="artifact-stage"
+            class:portrait={entry.id === "lorq"}
+            class:document={artifact.kind === "document"}
+          >
+            <ArchiveRecordVisual {entry} active />
+          </div>
+          <figcaption>{artifact.note}</figcaption>
+        </figure>
       {/if}
-
-      {#if works.length}
-        <section class="entry-section" aria-labelledby={`works-${entry.id}`}>
-          <h3 id={`works-${entry.id}`}>Works in this entry</h3>
-          <dl class="works-list">
-            {#each works as work (work.name)}
-              <div>
-                <dt>{work.name}</dt>
-                <dd>{work.note}</dd>
+      <div class="entry-details">
+        {#if applications.length}
+          <section
+            class="applications"
+            aria-labelledby={`applications-${entry.id}`}
+          >
+            <h3 id={`applications-${entry.id}`}>From notation to software</h3>
+            {#each applications as application (application.href)}
+              <div
+                class="application"
+                class:main-product={application.role === "product"}
+              >
+                <h4>{application.label}</h4>
+                <p>{application.description}</p>
+                <a href={application.href}
+                  >Open {application.label} <span aria-hidden="true">→</span></a
+                >
               </div>
             {/each}
-          </dl>
-        </section>
-      {/if}
+          </section>
+        {/if}
 
-      {#if videos.length}
-        <section class="entry-section" aria-labelledby={`videos-${entry.id}`}>
-          <h3 id={`videos-${entry.id}`}>Watch the original lessons</h3>
-          <ul class="resource-list">
-            {#each videos as video (video.id)}
+        {#if works.length}
+          <section class="entry-section" aria-labelledby={`works-${entry.id}`}>
+            <h3 id={`works-${entry.id}`}>Works in this entry</h3>
+            <dl class="works-list">
+              {#each works as work (work.name)}
+                <div>
+                  <dt>{work.name}</dt>
+                  <dd>{work.note}</dd>
+                </div>
+              {/each}
+            </dl>
+          </section>
+        {/if}
+
+        {#if videos.length}
+          <section class="entry-section" aria-labelledby={`videos-${entry.id}`}>
+            <h3 id={`videos-${entry.id}`}>Watch the original lessons</h3>
+            <ul class="resource-list">
+              {#each videos as video (video.id)}
+                <li>
+                  <a
+                    href={`https://www.youtube.com/watch?v=${video.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >{video.title} <span aria-hidden="true">↗</span></a
+                  >
+                  <p>
+                    {video.creator}{video.year
+                      ? ` · ${video.year}`
+                      : ""}{video.note ? `. ${video.note}` : ""}
+                  </p>
+                </li>
+              {/each}
+            </ul>
+          </section>
+        {/if}
+
+        <section class="entry-section" aria-labelledby={`sources-${entry.id}`}>
+          <h3 id={`sources-${entry.id}`}>Sources</h3>
+          <ol class="source-list">
+            {#each entry.citations as citation (citation.href)}
               <li>
                 <a
-                  href={`https://www.youtube.com/watch?v=${video.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >{video.title} <span aria-hidden="true">↗</span></a
+                  href={citation.href}
+                  target={citation.href.startsWith("/") ? undefined : "_blank"}
+                  rel={citation.href.startsWith("/")
+                    ? undefined
+                    : "noopener noreferrer"}
+                  >{citation.label}
+                  <span aria-hidden="true"
+                    >{citation.href.startsWith("/") ? "→" : "↗"}</span
+                  ></a
                 >
-                <p>
-                  {video.creator}{video.year
-                    ? ` · ${video.year}`
-                    : ""}{video.note ? `. ${video.note}` : ""}
-                </p>
+                <p>{citation.supports}</p>
+                <small>{EVIDENCE_BASIS_LABELS[citation.basis]}</small>
               </li>
             {/each}
-          </ul>
+          </ol>
+          {#if entry.evidenceNote || activity}
+            <div class="source-note">
+              {#if entry.evidenceBasis !== "unresolved" && entry.evidenceNote}<p
+                >
+                  {entry.evidenceNote}
+                </p>{/if}
+              {#if activity}<p>
+                  <strong>{activity}.</strong>
+                  {entry.activity?.note}
+                </p>{/if}
+            </div>
+          {/if}
         </section>
-      {/if}
-
-      <section class="entry-section" aria-labelledby={`sources-${entry.id}`}>
-        <h3 id={`sources-${entry.id}`}>Sources</h3>
-        <ol class="source-list">
-          {#each entry.citations as citation (citation.href)}
-            <li>
-              <a
-                href={citation.href}
-                target={citation.href.startsWith("/") ? undefined : "_blank"}
-                rel={citation.href.startsWith("/")
-                  ? undefined
-                  : "noopener noreferrer"}
-                >{citation.label}
-                <span aria-hidden="true"
-                  >{citation.href.startsWith("/") ? "→" : "↗"}</span
-                ></a
-              >
-              <p>{citation.supports}</p>
-              <small>{EVIDENCE_BASIS_LABELS[citation.basis]}</small>
-            </li>
-          {/each}
-        </ol>
-        {#if entry.evidenceNote || activity}
-          <div class="source-note">
-            {#if entry.evidenceBasis !== "unresolved" && entry.evidenceNote}<p>
-                {entry.evidenceNote}
-              </p>{/if}
-            {#if activity}<p>
-                <strong>{activity}.</strong>
-                {entry.activity?.note}
-              </p>{/if}
-          </div>
-        {/if}
-      </section>
+      </div>
     </div>
   </div>
 </article>
 
 <style>
   .archive-entry {
+    /* The host supplies the available space after its navigation and footer.
+       Content remains intrinsically sized when it needs more room. */
+    min-height: var(--archive-entry-space, 0px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     min-width: 0;
     container-type: inline-size;
   }
+  .entry-composition {
+    display: grid;
+    gap: clamp(1.75rem, calc(var(--archive-entry-space, 0px) * 0.04), 3.5rem);
+    min-width: 0;
+  }
+  .entry-composition:not(.with-artifact) {
+    width: 100%;
+    max-width: 48rem;
+    align-self: center;
+  }
   .entry-heading {
-    margin-bottom: 1.75rem;
     padding-top: 0.15rem;
   }
   .entry-meta {
@@ -397,20 +426,48 @@
     font-weight: 600;
   }
   @container (min-width: 760px) {
-    .entry-introduction.with-artifact {
+    .entry-composition.with-artifact {
+      align-items: start;
       grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-      grid-template-rows: auto 1fr;
-      gap: 1.5rem 2rem;
+      /* Equal outer tracks center the title, copy and sources beside a taller visual
+         without stretching the individual paragraphs or citation rows. */
+      grid-template-rows: 1fr auto auto auto 1fr;
+      gap: 0 2rem;
+    }
+    .entry-introduction.with-artifact {
+      display: contents;
+    }
+    .with-artifact .entry-heading {
+      grid-column: 1;
+      grid-row: 2;
+      margin-bottom: clamp(
+        1.75rem,
+        calc(var(--archive-entry-space, 0px) * 0.04),
+        3.5rem
+      );
+    }
+    .with-artifact .entry-copy {
+      grid-column: 1;
+      grid-row: 3;
     }
     .with-artifact .entry-details {
       grid-column: 1;
-      grid-row: 2;
+      grid-row: 4;
+      margin-top: clamp(
+        1.5rem,
+        calc(var(--archive-entry-space, 0px) * 0.03),
+        3rem
+      );
     }
     .with-artifact .entry-artifact {
       grid-column: 2;
-      grid-row: 1 / span 2;
+      grid-row: 1 / span 5;
       position: sticky;
       top: calc(var(--marketing-header-h, 64px) + 1rem);
+    }
+    .balanced-visual .entry-artifact {
+      align-self: center;
+      position: static;
     }
   }
 </style>
