@@ -2,11 +2,15 @@
 
 `/test/character-playground` replaces the retired Avatar Bake Off. Old links redirect, preserving the chosen character when its file is available.
 
-The page mounts `Viewer3DCanvas` with an isolated, seeded viewer state. It uses the production performer rig, prop rendering, grid and environments. The app's `AnimationPlaybackController` supplies the fractional playhead, with ephemeral animation and visibility state so playback controls do not change saved preferences. Examples come from the verified combination fixtures. Character selection registers existing local intake files in the scene catalog before mounting the renderer. The page requests the main-thread backend because these local definitions are not shipped to the worker catalog.
+The route mounts the shared `Viewer3DFullscreen` workspace with isolated, seeded viewer state. That owner supplies the canvas, `SceneControlWorkspace`, performer management, formations, camera controls, complete scene/environment picker, `UnifiedTimeline`, and tempo controls. The host adds a Randomize action and a generator information panel through the workspace's existing snippet slots. It does not maintain a separate scene toolbar or a list of six sequence choices.
+
+`SequencePickerModal` opens the existing community/library browser. It applies sequences through `viewer.loadSequenceScoped`, including the shared undo history and multi-selection behavior. The app's `AnimationPlaybackController` supplies the fractional playhead with ephemeral animation and visibility state. A verified combination fixture is only the initial sequence. Changes from either sequence picker update the same viewer state and playback controller.
+
+Saved local characters use the existing `PerformerCharacterPicker`, including keyboard selection, loading feedback and live previews. `character-catalog-context.ts` lets this host add an availability-checked, reactive local catalog alongside deployed characters, including the default X-Bot used by Add performer. Other hosts retain their existing catalog source. Dynamic registration still feeds the package's GLB loader. The calibrated palm attachment selects the main-thread renderer because local definitions are not shipped to the worker catalog.
 
 ## Local MPFB generation
 
-Randomize runs Blender locally, then routes the result through `character-intake.mjs` for normalization, optimization, rig checks, provenance and staging. The current performer keeps playing during generation. A successful character is selected and kept in the local manifest, so it remains available after reload. Missing models and rejected Marcus entries stay out of the picker.
+Randomize runs Blender locally, then routes the result through `character-intake.mjs` for normalization, optimization, rig checks, provenance and staging. The current cast keeps playing during generation. A successful character replaces the selected performers through the shared edit owner and remains in the local manifest. If selection changes while generation runs, the result is saved in the picker without replacing the newly selected performer. Missing models and rejected Marcus entries stay out of this host's picker.
 
 `scripts/characters/mpfb-proof.py --seed <integer>` uses MPFB's randomization service for adult body macros and symmetric facial targets. It selects fitted clothing, skin and hair from the official CC0 system assets. It preserves the proof's finger bone-roll correction and bakes evaluated shape keys before applying export masks. The seed, macros, detail targets and chosen assets are recorded in `generation.json`; the editable Blender source is saved alongside the raw GLB.
 
@@ -34,9 +38,18 @@ Seeds 1, 7 and 1617475689 passed this comparison: distal-thumb-to-index-joint di
 
 All eleven MPFB models staged at the time of repair (the proof and ten seeded characters) were regenerated and passed the same comparison. Original GLBs and manifest entries are backed up under `E:/3D-Models/mpfb-proof-20260908/playground/grip-v2-backup`; the new editable sources and intake reports are in adjacent `grip-v2-*` job folders. Unrelated character entries were preserved while a generation lock protected each staging update.
 
-## Verification, September 8, 2026
+## Original playground verification, September 8, 2026
 
 - 27 focused tests pass for candidate availability, rejected entries and generation request boundaries, concurrency and failure cleanup. `npm run check` reports no errors or warnings.
 - Seeds 1, 7 and 42 were generated through the CLI; seed 2120506931 was created and selected through the browser's Randomize button in 10.6 seconds. Each passed intake and retained all 30 finger bones.
 - Browser inspection exercised playback, pause, half speed, sequence switching, character switching, grid visibility and hand/body framing. The initial floating-prop defect reproduced in this viewer and the existing palm attachment removed the visible gap.
 - All seven prescribed CSS viewport sizes reported no horizontal overflow and controls retained 44px targets. The in-app browser's emulated screenshots showed stale compositor fragments outside the current layout, so those captures do not establish pixel-perfect rendering at every size. Normal viewport inspection was used to judge the character and grip. Temporary viewport and page-scale overrides were cleared.
+
+## Shared workspace verification, September 8, 2026
+
+- Replaced the custom controls with the fullscreen scene owner. Browser checks loaded the actual 593-sequence community gallery, selected AKEJ for a second performer, changed BPM to 90, and switched Forest to Void through the ten-environment picker.
+- Randomize created seed 1324700290 and applied it through the scoped edit owner. A second generation, seed 1966878994, completed after performer selection changed: the original performer stayed intact and the result appeared in the picker. Both retain editable sources and intake reports; new generation uses hand frame version 2.
+- Found and corrected two shared integration defects: loop-off now reaches the parent animation clock, and the canvas transport no longer covers compact scene sheets. Verified actual playback stops with looping disabled and the generator sheet button receives pointer hits. Existing character-owned loop behavior is preserved.
+- The personal badge appears only on Austen's MetaPerson. Generated characters have no misleading “You” badge, and the picker retains a keyboard entry point even when an active character is outside a host catalog.
+- All seven prescribed CSS viewport sizes measured no horizontal overflow and no native selects. Phone, short landscape and laptop captures establish usable control composition. Large emulated captures repeat compositor tiles beyond the host view; a scaled capture exposed the complete 4K composition, but this remains a capture limitation, not a clean pixel-level pass at every large tier. An 800×450 CSS viewport exercised the reflow equivalent of doubling the normal 1600×900 view; actual browser zoom was not changed. Reduced-motion mode and the real sequence modal were exercised. Overrides were cleared.
+- 50 focused tests pass across candidate availability, generation boundaries, playback adapter, scene layout and catalog boundaries. The full Svelte check reports zero errors and warnings. Screenshots and viewport measurements are retained under `E:/3D-Models/mpfb-proof-20260908/playground/workspace-verification`.
