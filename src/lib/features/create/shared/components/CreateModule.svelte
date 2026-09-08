@@ -677,6 +677,7 @@
   // EVENT HANDLERS (Delegated to Services)
   // ============================================================================
   async function handleOptionSelected(option: PictographData): Promise<void> {
+    if (panelState.workspacePlayback) return;
     if (!handlers) {
       error = "Handlers service not initialized";
       return;
