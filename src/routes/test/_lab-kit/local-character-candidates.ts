@@ -1,22 +1,10 @@
 export const CANDIDATE_IDS = ["personal-metaperson"] as const;
 
-export const STRESS_POSE_IDS = [
-  "neutral",
-  "overhead",
-  "cross-body",
-  "depth",
-  "low",
-] as const;
-
-export const LIGHTING_IDS = ["studio", "room"] as const;
-
 export type FixedCandidateId = (typeof CANDIDATE_IDS)[number];
 export type StagedCandidateId = `intake-${string}`;
 export type CandidateId = FixedCandidateId | StagedCandidateId;
-export type StressPoseId = (typeof STRESS_POSE_IDS)[number];
-export type LightingId = (typeof LIGHTING_IDS)[number];
 
-export interface BakeoffCandidate {
+export interface LocalCharacterCandidate {
   id: CandidateId;
   label: string;
   source: string;
@@ -26,7 +14,10 @@ export interface BakeoffCandidate {
   note: string;
 }
 
-export const BAKEOFF_CANDIDATES: Record<FixedCandidateId, BakeoffCandidate> = {
+export const FIXED_LOCAL_CHARACTERS: Record<
+  FixedCandidateId,
+  LocalCharacterCandidate
+> = {
   "personal-metaperson": {
     id: "personal-metaperson",
     label: "Personal MetaPerson",
@@ -35,20 +26,6 @@ export const BAKEOFF_CANDIDATES: Record<FixedCandidateId, BakeoffCandidate> = {
     bytes: 12_150_852,
     continuity: "current",
     note: "Evaluation-only LOD1 GLB with the standard 73-joint MetaPerson skeleton and 1K PBR textures.",
-  },
-};
-
-export const LIGHTING_OPTIONS: Record<
-  LightingId,
-  { label: string; note: string }
-> = {
-  studio: {
-    label: "Studio lights",
-    note: "Hemisphere and three directional lights with no environment map. This is closest to the production viewer, which lights performers with an ambient and one key light.",
-  },
-  room: {
-    label: "Room environment",
-    note: "Adds a prefiltered neutral room as the scene environment so roughness and metalness have something to reflect. Compare the same pose under both to separate what the character brings from what the rig withholds.",
   },
 };
 
@@ -115,7 +92,9 @@ export function stagedCandidateId(entryId: string): StagedCandidateId {
   return `intake-${entryId}`;
 }
 
-export function stagedCandidate(entry: StagedIntakeEntry): BakeoffCandidate {
+export function stagedCandidate(
+  entry: StagedIntakeEntry
+): LocalCharacterCandidate {
   return {
     id: stagedCandidateId(entry.id),
     label: entry.label,
@@ -125,13 +104,13 @@ export function stagedCandidate(entry: StagedIntakeEntry): BakeoffCandidate {
     continuity: "current",
     note:
       entry.note ||
-      "Locally staged intake. Review every stress pose before catalog promotion.",
+      "Locally staged character. Inspect motion and grip before catalog promotion.",
   };
 }
 
 export async function loadStagedIntakeCandidates(
   fetchImpl: typeof fetch = fetch
-): Promise<BakeoffCandidate[]> {
+): Promise<LocalCharacterCandidate[]> {
   try {
     const response = await fetchImpl(INTAKE_MANIFEST_URL, {
       cache: "no-store",
@@ -147,9 +126,9 @@ export async function loadStagedIntakeCandidates(
 // them before offering a button; the dev server may return HTML for a bad URL.
 export async function loadAvailableCandidates(
   fetchImpl: typeof fetch = fetch
-): Promise<BakeoffCandidate[]> {
+): Promise<LocalCharacterCandidate[]> {
   const staged = await loadStagedIntakeCandidates(fetchImpl);
-  const candidates = [...Object.values(BAKEOFF_CANDIDATES), ...staged];
+  const candidates = [...Object.values(FIXED_LOCAL_CHARACTERS), ...staged];
   const available = await Promise.all(
     candidates.map(async (candidate) => {
       try {
@@ -171,29 +150,17 @@ export async function loadAvailableCandidates(
     })
   );
   return available.filter(
-    (candidate): candidate is BakeoffCandidate => candidate !== null
+    (candidate): candidate is LocalCharacterCandidate => candidate !== null
   );
 }
 
 export function resolveCandidate(
   id: string | null,
-  available: readonly BakeoffCandidate[]
-): BakeoffCandidate | null {
+  available: readonly LocalCharacterCandidate[]
+): LocalCharacterCandidate | null {
   return (
     available.find((candidate) => candidate.id === id) ?? available[0] ?? null
   );
-}
-
-export function parseStressPoseId(value: string | null): StressPoseId {
-  return STRESS_POSE_IDS.includes(value as StressPoseId)
-    ? (value as StressPoseId)
-    : "cross-body";
-}
-
-export function parseLightingId(value: string | null): LightingId {
-  return LIGHTING_IDS.includes(value as LightingId)
-    ? (value as LightingId)
-    : "studio";
 }
 
 export function formatMegabytes(bytes: number | null): string {

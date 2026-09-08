@@ -9,6 +9,7 @@ MPFB source and the official CC0 system asset pack are external prerequisites.
 import argparse
 import importlib
 import json
+import random
 import sys
 import types
 from pathlib import Path
@@ -20,6 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--source", type=Path, required=True)
 parser.add_argument("--assets", type=Path, required=True)
 parser.add_argument("--output", type=Path, required=True)
+parser.add_argument("--seed", type=int)
 args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
 args.output.mkdir(parents=True, exist_ok=True)
 
@@ -37,6 +39,7 @@ HumanService = importlib.import_module(mpfb.__name__ + ".services.humanservice")
 TargetService = importlib.import_module(mpfb.__name__ + ".services.targetservice").TargetService
 ExportService = importlib.import_module(mpfb.__name__ + ".services.exportservice").ExportService
 ObjectService = importlib.import_module(mpfb.__name__ + ".services.objectservice").ObjectService
+RandomizationService = importlib.import_module(mpfb.__name__ + ".services.randomizationservice").RandomizationService
 
 
 def asset(subdir, name):
@@ -51,10 +54,38 @@ bpy.ops.object.delete(use_global=False)
 macros = TargetService.get_default_macro_info_dict()
 macros.update(gender=0.0, age=0.35, muscle=0.5, weight=0.5)
 macros["race"] = {"african": 0.0, "asian": 0.0, "caucasian": 1.0}
+hair = "ponytail01"
+outfit = "female_sportsuit01"
+skin = "young_caucasian_female"
+details = {}
+if args.seed is not None:
+    rng = random.Random(args.seed)
+    spec = RandomizationService.get_default_phenotype_spec()
+    # Adult bodies, with moderate variation that the bundled outfits can fit.
+    spec["phenotype"]["discrete_age"] = False
+    spec["phenotype"]["attributes"]["age"].update(neutral=0.55, deviation=0.2)
+    for key in ["weight", "muscle", "height", "proportions"]:
+        spec["phenotype"]["attributes"][key]["deviation"] = 0.3
+    macros = RandomizationService.randomize_macro_info_dict(spec, rng)
+    gender = "female" if macros["gender"] < 0.5 else "male"
+    race = max(macros["race"], key=macros["race"].get)
+    age = "young" if macros["age"] < 0.5 else "middleage"
+    skin = f"{age}_{race}_{gender}"
+    hair = rng.choice(["short01", "short02", "short03", "bob01", "ponytail01", "afro01"])
+    outfit = rng.choice(["female_casualsuit01", "female_casualsuit02", "female_sportsuit01"] if gender == "female" else ["male_casualsuit01", "male_casualsuit02", "male_casualsuit03"])
 body = HumanService.create_human(macro_detail_dict=macros)
 body.name = "MPFB Proof"
+if args.seed is not None:
+    target_data = json.loads((args.source / "src/mpfb/data/targets/target.json").read_text())
+    sections = {name: section.get("categories", []) for name, section in target_data.items()
+                if name in ["head", "nose", "eyes", "mouth", "chin", "ears"]}
+    detail_spec = RandomizationService.get_default_detail_spec(list(sections))
+    for section in detail_spec["sections"].values():
+        section.update(min=1, max=3, deviation=0.3)
+    details = RandomizationService.pick_random_details(detail_spec, sections, rng)
+    TargetService.bulk_load_targets(body, details)
 HumanService.set_character_skin(
-    asset("skins", "young_caucasian_female.mhmat"), body, skin_type="GAMEENGINE"
+    asset("skins", skin + ".mhmat"), body, skin_type="GAMEENGINE"
 )
 # This is MPFB's authored rig/weights, not a Mixamo cloud re-rig.
 HumanService.add_builtin_rig(body, "mixamo")
@@ -81,8 +112,8 @@ parts = [
     ("eyelashes", "eyelashes01.mhclo", "Eyelashes"),
     ("tongue", "tongue01.mhclo", "Tongue"),
     ("teeth", "teeth_base.mhclo", "Teeth"),
-    ("hair", "ponytail01.mhclo", "Hair"),
-    ("clothes", "female_sportsuit01.mhclo", "Clothes"),
+    ("hair", hair + ".mhclo", "Hair"),
+    ("clothes", outfit + ".mhclo", "Clothes"),
     ("clothes", "shoes01.mhclo", "Clothes"),
 ]
 for subdir, name, kind in parts:
@@ -121,7 +152,8 @@ bpy.ops.export_scene.gltf(
 rigs = [o for o in bpy.context.selected_objects if o.type == "ARMATURE"]
 (args.output / "generation.json").write_text(json.dumps({
     "mpfbVersion": list(mpfb.VERSION), "blenderVersion": bpy.app.version_string,
-    "macros": macros, "rig": "mixamo", "assets": parts,
+    "seed": args.seed, "macros": macros, "details": details,
+    "skin": skin, "rig": "mixamo", "assets": parts,
     "bones": {r.name: [b.name for b in r.data.bones] for r in rigs},
 }, indent=2))
 print("MPFB_PROOF_COMPLETE", args.output)
