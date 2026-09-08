@@ -65,7 +65,7 @@ def write_svg(rails, rings):
     svg += '<title>Flat Grip Fire fan</title>\n<g data-fan-frame="" fill="none" stroke="#2E3192" stroke-linecap="round" stroke-linejoin="round">\n'
     svg += '\n'.join(frame) + '\n</g>\n<g data-fan-wicks="" fill="#f5e6b8">\n'
     svg += '\n'.join(wicks) + '\n</g>\n</svg>\n'
-    (ROOT / "static/images/props/appearances/fan-flat-grip.svg").write_text(svg)
+    (ROOT / "static/images/props/appearances/fan-flat-grip.svg").write_text(svg, newline="\n")
 
 
 def main():

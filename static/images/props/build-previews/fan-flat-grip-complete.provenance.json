@@ -8,8 +8,8 @@
   },
   "sourceSha256": {
     "scripts/assets/flat-grip-fire-reference.json": "fdad7b5bbf8619697e8827d8b6b709c0fd1febcf329469ac1725afa241dd1913",
-    "scripts/build-flat-grip-fan.py": "66c590adb7c602c4a558e74e14597f8e428903e2796cf5dfc3214e8778565eb8",
+    "scripts/build-flat-grip-fan.py": "6bd165a03c30ffeeaf1361ee6d63e00811b32e48faa914ecaae35624ed14e00c",
     "static/models/props/fan-flat-grip.glb": "e65215c1c996cb34f7039b511cd9a96e336eacd5280c3fc7cbb7c8412f322d20",
-    "static/images/props/appearances/fan-flat-grip.svg": "31cc183cff1db8ce11471a03840724344731922aee3d15c80169e572ffef3513"
+    "static/images/props/appearances/fan-flat-grip.svg": "b86dd04a1a7afb868eed483dbc8e5ecd5454c2a8036950cd6b3725e0f9288fc5"
   }
 }
