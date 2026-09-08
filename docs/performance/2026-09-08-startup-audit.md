@@ -1,5 +1,12 @@
 # Create and Construct startup audit
 
+Integration status: implementation and verification are complete on
+`codex/startup-performance-20260908`. The guarded finish command was attempted
+with `/create/construct` and refused integration because the primary checkout has
+an unrelated in-progress Git operation (`MERGE_HEAD`, a pull waiting in an editor).
+The clean task branch/worktree is preserved. The other task's merge and staged
+files were left untouched; these changes have not been deployed.
+
 September 8, 2026. Initial audit checkout: `cca82c61e7`. Implementation follows
 Austen's approval to trace and fix startup. Fix commit: `f2bfb6b3e1`.
 
