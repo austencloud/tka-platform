@@ -81,6 +81,7 @@ interface ViewerOrchestratorContextInputs {
   getCardReady: () => boolean;
   getResolvedCardAutoLayout: () => ResolvedAutoLayout | null;
   getIsHandPath: () => boolean;
+  getCollectionPropType?: () => PropType | null | undefined;
   getLeftPropType: () => PropType;
   getRightPropType: () => PropType;
   getCatDogModeEnabled: () => boolean;
@@ -142,6 +143,7 @@ export function createViewerOrchestratorContextState(
     mirrorEnabled: inputs.playback.mirrorEnabled,
     handleToggleMirror: inputs.playback.handleToggleMirror,
 
+    collectionPropType: inputs.getCollectionPropType?.() ?? null,
     leftPropType: inputs.getLeftPropType(),
     rightPropType: inputs.getRightPropType(),
     catDogModeEnabled: inputs.getCatDogModeEnabled(),

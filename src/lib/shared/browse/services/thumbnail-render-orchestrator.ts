@@ -171,24 +171,31 @@ export async function saveCloudBlobToLocal(
 // Static thumbnail manifest - loaded once, lists all bundled thumbnails
 let staticManifest: Set<string> | null = null;
 let staticManifestLoading: Promise<Set<string>> | null = null;
+let staticManifestRetryAt = 0;
+const STATIC_MANIFEST_RETRY_COOLDOWN_MS = 5_000;
+const UNAVAILABLE_STATIC_MANIFEST = new Set<string>();
 
 async function getStaticManifest(): Promise<Set<string>> {
-  if (staticManifest) return staticManifest;
+  if (staticManifest !== null) return staticManifest;
   if (staticManifestLoading) return staticManifestLoading;
+  if (Date.now() < staticManifestRetryAt) return UNAVAILABLE_STATIC_MANIFEST;
 
   staticManifestLoading = (async () => {
     try {
       const response = await fetch("/thumbnails/manifest.json");
       if (!response.ok) {
-        staticManifest = new Set();
-        return staticManifest;
+        throw new Error(
+          `Static thumbnail manifest returned ${response.status}`
+        );
       }
       const data = (await response.json()) as { keys: string[] };
       staticManifest = new Set(data.keys);
+      staticManifestRetryAt = 0;
       return staticManifest;
-    } catch {
-      staticManifest = new Set();
-      return staticManifest;
+    } catch (error) {
+      staticManifestRetryAt = Date.now() + STATIC_MANIFEST_RETRY_COOLDOWN_MS;
+      console.warn("[Static] Thumbnail manifest unavailable:", error);
+      return UNAVAILABLE_STATIC_MANIFEST;
     } finally {
       staticManifestLoading = null;
     }
@@ -340,6 +347,7 @@ export class ThumbnailRenderOrchestrator {
     cloudCacheModule.clearMemoryCache(true);
     // Reset static manifest so stale bundled thumbnails aren't served
     staticManifest = new Set();
+    staticManifestRetryAt = 0;
   }
 
   getCached(hash: string): string | null {

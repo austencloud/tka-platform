@@ -134,6 +134,28 @@ export class LayerCompositor {
       reversalFromCache: false,
     };
 
+    // A custom palette uses the full renderer so none of the canonical blue/red
+    // layer caches can leak into a personalized card. The caller still caches
+    // the final image under its palette-specific pictograph key.
+    if (options.primaryPropColors) {
+      const renderer = await this.ensureCanvas2DRenderer();
+      const core = await renderer.renderPictograph(pictograph, {
+        size: options.size,
+        visibility: { ...options, ...visibility },
+      });
+      const width = Math.round(options.size * (options.widthMultiplier ?? 1));
+      const canvas = createCanvas(width, options.size);
+      const ctx = canvas.getContext("2d")! as RenderContext2D;
+      ctx.fillStyle = options.darkMode ? "#0a0a0f" : "#d8d8d2";
+      ctx.fillRect(0, 0, width, options.size);
+      ctx.drawImage(core, Math.round((width - options.size) / 2), 0);
+      if (typeof stepNumber === "number" && stepNumber !== -1) {
+        this.drawStepNumber(ctx, stepNumber, options.size, options.darkMode);
+      }
+      timing.totalMs = performance.now() - totalStart;
+      return { canvas, timing, cacheStats };
+    }
+
     const baseStart = performance.now();
     const baseResult = await this.renderBaseLayer(pictograph, options);
     timing.baseLayerMs = performance.now() - baseStart;

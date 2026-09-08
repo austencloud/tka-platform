@@ -19,6 +19,7 @@ Usage:
 -->
 
 <script lang="ts">
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
   import {
     isVisibleMotion,
@@ -402,6 +403,8 @@ Usage:
 
   // Parse direction from turns tuple for direction dot
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
+  const effectiveLeftColor = $derived(leftColorOverride ?? getSettings().primaryPropColors?.left);
+  const effectiveRightColor = $derived(rightColorOverride ?? getSettings().primaryPropColors?.right);
 </script>
 
 <div class="pictograph-renderer">
@@ -471,8 +474,8 @@ Usage:
               directPositioning={directPropPositioning ||
                 propPositionOverrides?.[hand] !== undefined}
               colorOverride={hand === HandSide.LEFT
-                ? leftColorOverride
-                : rightColorOverride}
+                ? effectiveLeftColor
+                : effectiveRightColor}
             />
           </g>
         {/if}
@@ -499,8 +502,8 @@ Usage:
                   {darkMode}
                   renderPart="shaft"
                   colorOverride={hand === HandSide.LEFT
-                    ? leftColorOverride
-                    : rightColorOverride}
+                    ? effectiveLeftColor
+                    : effectiveRightColor}
                 />
               </g>
             {/if}
@@ -522,8 +525,8 @@ Usage:
                   {darkMode}
                   renderPart="tip"
                   colorOverride={hand === HandSide.LEFT
-                    ? leftColorOverride
-                    : rightColorOverride}
+                    ? effectiveLeftColor
+                    : effectiveRightColor}
                 />
               </g>
             {/if}
@@ -546,8 +549,8 @@ Usage:
                   {transitionKey}
                   {darkMode}
                   colorOverride={hand === HandSide.LEFT
-                    ? leftColorOverride
-                    : rightColorOverride}
+                    ? effectiveLeftColor
+                    : effectiveRightColor}
                 />
               </g>
             {/if}
@@ -575,6 +578,9 @@ Usage:
     <!-- Turns Column (part of TKA) -->
     <g opacity={glyphOpacity}>
       <TurnsColumn
+        leftColorOverride={effectiveLeftColor}
+        rightColorOverride={effectiveRightColor}
+        {darkMode}
         {turnsTuple}
         letter={pictograph.letter}
         pictographData={pictograph}
@@ -613,6 +619,8 @@ Usage:
 
     <!-- Reversal indicators -->
     <ReversalIndicators
+      leftColorOverride={effectiveLeftColor}
+      rightColorOverride={effectiveRightColor}
       {leftReversal}
       {rightReversal}
       {hasValidData}

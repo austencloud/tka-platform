@@ -3,6 +3,7 @@ import { PropType } from "./enums/prop-type";
 export const FAN_BUILDS = [
   "pictograph",
   "fire",
+  "flat-grip",
   "lotus",
   "day",
   "moon",
@@ -96,6 +97,9 @@ export function resolveFanRenderKey(
   if (appearance.build === "moon") {
     return `${normalized}__moon`;
   }
+  if (appearance.build === "flat-grip") {
+    return `${normalized}__flat-grip`;
+  }
   return `${normalized}__lotus`;
 }
 
@@ -108,6 +112,15 @@ export interface FanRenderKey {
 
 export function parseFanRenderKey(value: string): FanRenderKey | null {
   const normalized = value.toLowerCase();
+  const flatGrip = /^(fan|bigfan)__flat-grip$/.exec(normalized);
+  if (flatGrip) {
+    return {
+      propType: flatGrip[1] as FanRenderKey["propType"],
+      build: "flat-grip",
+      frameColor: DEFAULT_FAN_APPEARANCE.frameColor,
+      cover: DEFAULT_FAN_APPEARANCE.cover,
+    };
+  }
   const lotus = /^(fan|bigfan)__lotus$/.exec(normalized);
   if (lotus) {
     return {
@@ -155,6 +168,9 @@ export function fanAppearanceArtwork(
   cover: FanCover = "bare"
 ): string | null {
   if (build === "pictograph") return null;
+  if (build === "flat-grip") {
+    return "/images/props/appearances/fan-flat-grip.svg?v=1";
+  }
   if (build === "fire") {
     const file = cover === "covered" ? "fan-fire-covered.svg" : "fan-fire.svg";
     return `/images/props/appearances/${file}?v=2`;
@@ -215,6 +231,9 @@ export function applyFanFrameColor(svg: string, color: string): string {
 }
 
 export function fanPreviewImage(appearance: FanAppearance): string {
+  if (appearance.build === "flat-grip") {
+    return previewImage("fan-flat-grip-complete.webp");
+  }
   if (appearance.build === "pictograph") {
     return previewImage("fan-pictograph-front.webp");
   }
@@ -258,6 +277,15 @@ export function fanBuildPreviewOptions(
         originator: "Home of Poi",
         sourceUrl:
           "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
+      },
+    },
+    {
+      id: "flat-grip",
+      label: "Flat Grip Fire",
+      image: fanPreviewImage({ ...appearance, build: "flat-grip" }),
+      designCredit: {
+        originator: "Forged Creations",
+        sourceUrl: "https://forgedfans.com/products/flat-grip-fire-fans",
       },
     },
     {

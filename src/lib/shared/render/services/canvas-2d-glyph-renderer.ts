@@ -198,7 +198,7 @@ export async function drawTurnsColumn(
   scale: number,
   isDarkMode: boolean,
   turnsTupleGeneratorGetter?: () => TurnsTupleGenerator | undefined,
-  motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
+  motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean; primaryPropColors?: { left: string; right: string } | null }
 ): Promise<void> {
   let turnsTuple = "(s, 0, 0)";
   try {
@@ -226,6 +226,10 @@ export async function drawTurnsColumn(
     pictograph.letter,
     pictograph
   );
+
+  const displayColor = (color: string) => color === BLUE_HEX
+    ? motionVisibility?.primaryPropColors?.left ?? color
+    : color === RED_HEX ? motionVisibility?.primaryPropColors?.right ?? color : color;
 
   const isColorHidden = (color: string) => {
     if (color === BLUE_HEX && motionVisibility?.showLeftMotion === false) return true;
@@ -270,10 +274,10 @@ export async function drawTurnsColumn(
             const drawWidth = topOwnWidth * scale;
             const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
-            drawColoredImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, turnColors.top);
+            drawColoredImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, displayColor(turnColors.top));
           }
         } catch {
-          drawTurnText(ctx, parsed.top, turnColors.top, baseX + positions.top.x * scale, baseY + positions.top.y * scale, scale);
+          drawTurnText(ctx, parsed.top, displayColor(turnColors.top), baseX + positions.top.x * scale, baseY + positions.top.y * scale, scale);
         }
       }
     }
@@ -284,7 +288,7 @@ export async function drawTurnsColumn(
         if (markImg) {
           const markX = baseX + (positions.top.x + topOffsetX + topOwnWidth + MARK_GAP) * scale;
           const markY = baseY + positions.top.y * scale;
-          drawColoredImage(ctx, markImg, markX, markY, markWidth * scale, TURN_NUMBER_HEIGHT * scale, turnColors.top);
+          drawColoredImage(ctx, markImg, markX, markY, markWidth * scale, TURN_NUMBER_HEIGHT * scale, displayColor(turnColors.top));
         }
       } catch {
         // No text fallback for the mark - the number (if any) already
@@ -305,10 +309,10 @@ export async function drawTurnsColumn(
             const drawWidth = bottomOwnWidth * scale;
             const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
-            drawColoredImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, turnColors.bottom);
+            drawColoredImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, displayColor(turnColors.bottom));
           }
         } catch {
-          drawTurnText(ctx, parsed.bottom, turnColors.bottom, baseX + positions.bottom.x * scale, baseY + positions.bottom.y * scale, scale);
+          drawTurnText(ctx, parsed.bottom, displayColor(turnColors.bottom), baseX + positions.bottom.x * scale, baseY + positions.bottom.y * scale, scale);
         }
       }
     }
@@ -319,7 +323,7 @@ export async function drawTurnsColumn(
         if (markImg) {
           const markX = baseX + (positions.bottom.x + bottomOffsetX + bottomOwnWidth + MARK_GAP) * scale;
           const markY = baseY + positions.bottom.y * scale;
-          drawColoredImage(ctx, markImg, markX, markY, markWidth * scale, TURN_NUMBER_HEIGHT * scale, turnColors.bottom);
+          drawColoredImage(ctx, markImg, markX, markY, markWidth * scale, TURN_NUMBER_HEIGHT * scale, displayColor(turnColors.bottom));
         }
       } catch {
         // No text fallback for the mark - see the top-slot comment above.
@@ -642,7 +646,7 @@ export function drawReversalIndicators(
   pictograph: PictographData | StepData,
   size: number,
   isDarkMode: boolean,
-  motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean }
+  motionVisibility?: { showLeftMotion?: boolean; showRightMotion?: boolean; primaryPropColors?: { left: string; right: string } | null }
 ): void {
   let leftReversal = false;
   let rightReversal = false;
@@ -659,7 +663,8 @@ export function drawReversalIndicators(
   const scale = size / VIEWBOX_SIZE;
 
   for (const dot of dots) {
-    ctx.fillStyle = dot.color;
+    const hand = dot.color.toLowerCase() === getMotionColor(HandSide.LEFT, isDarkMode ? "dark" : "light").toLowerCase() ? "left" : "right";
+    ctx.fillStyle = motionVisibility?.primaryPropColors?.[hand] ?? dot.color;
     ctx.beginPath();
     ctx.arc(dot.cx * scale, dot.cy * scale, dot.r * scale, 0, Math.PI * 2);
     ctx.fill();

@@ -3,6 +3,7 @@ import { hashSequenceContent } from "$lib/shared/foundation/services/content-has
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface ChoreoCardRenderKeyInputs {
+  primaryPropColors?: { left: string; right: string } | null;
   sequence: SequenceData | null | undefined;
   leftPropType: PropType | undefined;
   rightPropType: PropType | undefined;
@@ -78,7 +79,8 @@ export function buildChoreoCardRenderKeys(
   // overlay-only bucket.
   const ch = `${i.leftBuugengFlipped ? "1" : "0"}${i.rightBuugengFlipped ? "1" : "0"}`;
   const gv = `${i.showTnD ? "1" : "0"}${i.showElemental ? "1" : "0"}${i.showPositions ? "1" : "0"}${i.showGrid ? "1" : "0"}`;
-  const imageKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.leftPropType}-${i.rightPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showLeftMotion ? "1" : "0"}${i.showRightMotion ? "1" : "0"}-ch:${ch}-gv:${gv}`;
+  const paletteKey = i.primaryPropColors ? `-colors:${i.primaryPropColors.left}:${i.primaryPropColors.right}` : "";
+  const imageKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.leftPropType}-${i.rightPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showLeftMotion ? "1" : "0"}${i.showRightMotion ? "1" : "0"}-ch:${ch}-gv:${gv}${paletteKey}`;
   // startPositionLayout (row vs column) changes where the start cell sits and
   // therefore where every step cell AND the QR cell land. It's in the CONTENT
   // (layout) key but NOT imageKey/gridStableKey/structuralKey: a pure row↔column

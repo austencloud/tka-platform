@@ -1,4 +1,6 @@
 <script lang="ts">
+  import SavePropDialog from "$lib/shared/library/components/SavePropDialog.svelte";
+  import { resolveViewingProps } from "$lib/shared/foundation/services/prop-viewing";
   import { onMount, onDestroy, type Snippet } from "svelte";
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
   import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
@@ -88,7 +90,7 @@
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { logShareAction } from "$lib/shared/analytics/services/posthog-activity-logger";
   import {
-    getSettings,
+    getSettings as getAppSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -146,6 +148,7 @@
   interface Props {
     sequence: SequenceData | null;
     isMobile: boolean;
+    collectionPropType?: PropType | null;
     initialBpm?: number;
     initialPlaybackMode?: PlaybackMode;
     initialStep?: number;
@@ -192,6 +195,7 @@
   let {
     sequence,
     isMobile,
+    collectionPropType = null,
     initialBpm = 60,
     initialPlaybackMode = "continuous",
     initialStep = 0,
@@ -417,6 +421,9 @@
   const accessibilityHelper = createModalAccessibilityHelper();
 
   const exportCoord = createExportCoordinator({
+    getPropConfig: () =>
+      resolveViewingProps(getAppSettings(), sequence, collectionPropType)
+        .config,
     viewer3DState,
     accessibilityHelper,
     // Read lazily at export time: viewerVisibility is created further down and
@@ -438,6 +445,14 @@
   ): void {
     if (hasSameResolvedCardLayout(resolvedCardAutoLayout, layout)) return;
     resolvedCardAutoLayout = layout;
+  }
+
+  function getSettings() {
+    const settings = getAppSettings();
+    return {
+      ...settings,
+      ...resolveViewingProps(settings, sequence, collectionPropType).config,
+    };
   }
 
   const imgComp = createImageCompositionSync();
@@ -621,6 +636,7 @@
       imageComposition: imgComp,
       getSequence: () => sequence,
       getHandPathMode: () => handPathMode,
+      getCollectionPropType: () => collectionPropType,
       getInitialLeftVisible: () => initialLeftVisible,
       getInitialRightVisible: () => initialRightVisible,
       getAnimationServicesReady: () => interactive.animationServicesReady,
@@ -897,6 +913,7 @@
   });
 
   onDestroy(() => {
+    libraryActions.finishPropChoice(false);
     anStores.visibility.unregisterObserver(anVisibilityObserver);
     // Restore FIRST, while writes are still suppressed, then resume — so the
     // borrowed globals go back to the visitor's own state without the link
@@ -988,6 +1005,7 @@
   }
 
   function handleClose() {
+    libraryActions.finishPropChoice(false);
     playback.stopPracticeIfActive();
 
     if (playback.isPlayingLocal && interactive.playbackController) {
@@ -1138,6 +1156,7 @@
     getCardReady: () => cardReady,
     getResolvedCardAutoLayout: () => resolvedCardAutoLayout,
     getIsHandPath: () => propVisibility.isHandPath,
+    getCollectionPropType: () => collectionPropType,
     getLeftPropType: () => propVisibility.activeLeftProp,
     getRightPropType: () => propVisibility.activeRightProp,
     getCatDogModeEnabled: () => propVisibility.activeCatDog,
@@ -1161,6 +1180,13 @@
 </script>
 
 {@render children(contextState.value)}
+{#if libraryActions.saveProps}
+  <SavePropDialog
+    bind:value={libraryActions.saveProps}
+    onSave={() => libraryActions.finishPropChoice(true)}
+    onCancel={() => libraryActions.finishPropChoice(false)}
+  />
+{/if}
 
 <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
   {accessibilityHelper.announcement}

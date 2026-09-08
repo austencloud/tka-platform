@@ -33,6 +33,8 @@ import type { RenderCanvas } from "./types";
 import { captureException } from "$lib/shared/analytics/services/posthog";
 import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
+import { applyColorToSvg, SELECTIVE_COLOR_PROP_TYPES } from "$lib/shared/utils/svg-color-utils";
+
 const VIEWBOX_SIZE = 950;
 
 const BASE_GRID_POINTS = {
@@ -443,7 +445,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         const viewBoxWidth = viewBoxParts[0] || 100;
         const viewBoxHeight = viewBoxParts[1] || 100;
 
-        const wrapped = wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, false);
+        const displayColor = options.visibility.primaryPropColors?.[color];
+        const artwork = displayColor ? applyColorToSvg(assets.imageSrc, displayColor, {
+          selectiveColorMode: (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(String(assets.propType ?? pictograph.motions?.[color]?.propType).toLowerCase()),
+        }) : assets.imageSrc;
+        const wrapped = wrapSvgContent(artwork, viewBoxWidth, viewBoxHeight, false);
 
         const cacheKey = `prop_${color}_${this.hashString(wrapped.svg)}`;
         const img = await svgCache.getImage(wrapped.svg, cacheKey);
@@ -526,7 +532,9 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         const viewBoxHeight = assets.viewBox.height || 100;
         const fullViewBox = assets.viewBox.fullViewBox;
 
-        const wrapped = wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, true, fullViewBox, {
+        const displayColor = options.visibility.primaryPropColors?.[hand];
+        const artwork = displayColor ? applyColorToSvg(assets.imageSrc, displayColor) : assets.imageSrc;
+        const wrapped = wrapSvgContent(artwork, viewBoxWidth, viewBoxHeight, true, fullViewBox, {
           id: `arrow-halo-${hand}`,
           isDarkMode,
         });

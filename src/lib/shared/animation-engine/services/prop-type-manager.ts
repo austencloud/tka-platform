@@ -169,7 +169,7 @@ export class PropTypeManager {
     const nextLook = normalizePropLook(
       this.settingsService?.currentSettings?.propArtwork
     );
-    const nextBaseColors = props.tunnelPropColors ?? null;
+    const nextBaseColors = props.tunnelPropColors ?? props.primaryPropColors ?? null;
     const newLeftRender = this.baseRenderKey(
       newLeft,
       nextAppearance,
@@ -246,7 +246,7 @@ export class PropTypeManager {
       this.loadPropTextures(
         state,
         prevDarkMode,
-        props.tunnelPropColors ?? null
+        props.tunnelPropColors ?? props.primaryPropColors ?? null
       ).then(() => {
         // Clear trails again after texture load to discard any points
         // captured during the async gap with old prop dimensions
@@ -403,9 +403,11 @@ export class PropTypeManager {
     const layerCount = additionalLayers.length;
     const spectrum = props.tunnelSpectrum ?? true;
     const exactColors = props.tunnelPropColors ?? null;
-    this.currentBaseColors = exactColors;
-    const colorSig = exactColors
-      ? `${exactColors.left}:${exactColors.right}`
+    const baseColors = exactColors ?? props.primaryPropColors ?? null;
+    const layerColors = exactColors ?? (spectrum ? null : baseColors);
+    this.currentBaseColors = baseColors;
+    const colorSig = layerColors
+      ? `${layerColors.left}:${layerColors.right}`
       : "";
     // Signature of every layer's per-hand prop type. Empty entries fall back to
     // the global prop, so an all-default set yields "|"-joined blanks — a
@@ -445,7 +447,7 @@ export class PropTypeManager {
           this.additionalLayerTexturesLoading[i] = true;
 
           const { left: leftColor, right: rightColor } =
-            this.additionalLayerColors(i, layerCount, spectrum, exactColors);
+            this.additionalLayerColors(i, layerCount, spectrum, layerColors);
           // Each performer's per-hand prop; falls back to the global prop when a
           // layer carries no explicit type (default 1-skin appearance = today).
           const leftPropType = layer.leftPropType ?? state.currentLeftPropType;
@@ -487,11 +489,12 @@ export class PropTypeManager {
 
     this.publishAdditionalLayerTextureStatus(props, layerCount);
 
-    if (colorSig !== this.lastBasePropColorSig) {
-      this.lastBasePropColorSig = colorSig;
+    const baseColorSig = baseColors ? `${baseColors.left}:${baseColors.right}` : "";
+    if (baseColorSig !== this.lastBasePropColorSig) {
+      this.lastBasePropColorSig = baseColorSig;
       this.animationRenderer?.prepareLeftPropCrossfade();
       this.animationRenderer?.prepareRightPropCrossfade();
-      void this.loadPropTextures(state, darkMode, exactColors).then(() => {
+      void this.loadPropTextures(state, darkMode, baseColors).then(() => {
         this.animationRenderer?.startLeftPropCrossfade();
         this.animationRenderer?.startRightPropCrossfade();
         this.triggerRenderWithLatestFrame(state);
