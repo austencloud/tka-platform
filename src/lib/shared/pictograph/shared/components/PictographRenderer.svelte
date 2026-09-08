@@ -89,6 +89,7 @@ Usage:
     animateVisibility = false,
     // Grid mode override (if provided, takes precedence over calculated mode)
     gridModeOverride = null,
+    gridRotation = null,
     // Show only one hand's prop/arrow (null = show both)
     visibleHand = null,
     // Enable arrow selection for adjustment (admin feature)
@@ -170,6 +171,7 @@ Usage:
     /** Keep overlays mounted while hidden so opacity fades play (live DOM, not export) */
     animateVisibility?: boolean;
     gridModeOverride?: GridMode | null;
+    gridRotation?: number | null;
     visibleHand?: HandSideValue | null;
     arrowsClickable?: boolean;
     /** Renderable option: hide arrows entirely (props + grid still render). Default true. */
@@ -455,6 +457,7 @@ Usage:
       {#if showGrid || previewMode || animateVisibility}
         <GridSvg
           layer={gridPointsOnTop ? "base" : "all"}
+          rotationOverride={gridRotation}
           {gridMode}
           {showNonRadialPoints}
           {handPointVisibility}
@@ -575,6 +578,7 @@ Usage:
       {#if gridPointsOnTop && showGrid}
         <GridSvg
           layer="points"
+          rotationOverride={gridRotation}
           {gridMode}
           {showNonRadialPoints}
           {handPointVisibility}
