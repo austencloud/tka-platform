@@ -40,7 +40,7 @@ describe("Tunnel pictograph hand colors", () => {
     );
   });
 
-  it("reloads the base prop textures when an exact pair changes", async () => {
+  it.each(["tunnelPropColors", "primaryPropColors"] as const)("reloads base textures when %s changes", async (colorSource) => {
     const loadPropTextures = vi.fn(() => Promise.resolve());
     const manager = new PropTypeManager();
     manager.updateRefs({
@@ -75,7 +75,7 @@ describe("Tunnel pictograph hand colors", () => {
     manager.handleAdditionalLayers(
       {
         ...baseProps,
-        tunnelPropColors: { left: "#123456", right: "#abcdef" },
+        [colorSource]: { left: "#123456", right: "#abcdef" },
       },
       state,
       frame,
@@ -90,7 +90,7 @@ describe("Tunnel pictograph hand colors", () => {
     manager.handleAdditionalLayers(
       {
         ...baseProps,
-        tunnelPropColors: { left: "#654321", right: "#fedcba" },
+        [colorSource]: { left: "#654321", right: "#fedcba" },
       },
       state,
       frame,

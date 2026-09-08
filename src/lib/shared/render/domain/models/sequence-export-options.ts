@@ -62,6 +62,7 @@ export interface SequenceExportOptions {
   leftVisible: boolean;
 
   visibilityOverrides?: {
+    primaryPropColors?: { left: string; right: string } | null;
     showTKA?: boolean;
     showTnD?: boolean;
     showElemental?: boolean;
