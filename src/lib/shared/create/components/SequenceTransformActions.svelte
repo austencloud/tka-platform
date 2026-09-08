@@ -591,7 +591,7 @@
     box-shadow: none;
   }
 
-  .toolbar .grid-btn .btn-icon {
+  .toolbar .grid-btn[class] .btn-icon {
     color: white;
     background: none;
   }
