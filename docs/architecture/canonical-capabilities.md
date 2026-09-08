@@ -19,6 +19,13 @@ Its `reparentToInspector` flight opts into `createLayoutMotion` with
 surface flights retain transform scaling. Searches: playback continuity,
 scrubber replacement, transport resizing.
 
+Shared-surface stacking extends `reparentToInspector`: control flights use the
+controls layer and may wait for the canvas to dock, using viewer-local
+`canvasMoving` rather than the aggregate moving flag. Canvas raster sizing
+remains owned by `CanvasResizer`; it measures untransformed layout pixels, not
+the flight's painted rectangle. Searches: blurry canvas, backing-store density,
+scrubber occlusion, flight stacking.
+
 Sequence Viewer ↔ Post Studio surface continuity uses the same
 `reparentToInspector` action with `createLayoutMotion`. Viewer-local
 `createViewerStudioSurfaces` owns the canvas/inspector/Card/transport loan and composition-clock
