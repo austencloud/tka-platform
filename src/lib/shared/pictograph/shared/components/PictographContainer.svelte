@@ -134,6 +134,7 @@ with pre-prepared data for better performance.
     // renderer while its props travel from the prepared start pose to this step.
     motionStartData = null,
     motionProgress = null,
+    directPropPositioning = false,
     arrowOpacity = 1,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
@@ -198,6 +199,8 @@ with pre-prepared data for better performance.
     motionStartData?: PictographData | null;
     /** 0..1 interpolation progress. null renders the finished pictograph normally. */
     motionProgress?: number | null;
+    /** Direct manipulation has already moved the props; do not replay that move. */
+    directPropPositioning?: boolean;
     /** Opacity for the existing pictograph arrow layer. */
     arrowOpacity?: number;
   }>();
@@ -702,6 +705,7 @@ with pre-prepared data for better performance.
         {transitionKey}
         {duration}
         propPositionOverrides={motionPropPositionOverrides}
+        {directPropPositioning}
         {arrowOpacity}
         onGridReady={handleGridReady}
       />
@@ -750,6 +754,7 @@ with pre-prepared data for better performance.
             {transitionKey}
             {duration}
             propPositionOverrides={motionPropPositionOverrides}
+            {directPropPositioning}
             {arrowOpacity}
             onGridReady={handleGridReady}
           />

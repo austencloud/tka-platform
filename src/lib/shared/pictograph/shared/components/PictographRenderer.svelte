@@ -122,6 +122,7 @@ Usage:
     // Live motion geometry. When present, the same prop SVGs used by
     // the finished pictograph render at these interpolated coordinates.
     propPositionOverrides = null,
+    directPropPositioning = false,
     // The arrow layer stays mounted so a completed motion can reveal it without
     // swapping renderers or rebuilding arrow assets.
     arrowOpacity = 1,
@@ -190,6 +191,7 @@ Usage:
     transitionKey?: string | null;
     /** Per-hand live positions for an in-place pictograph motion. */
     propPositionOverrides?: Partial<Record<HandSideValue, PropPosition>> | null;
+    directPropPositioning?: boolean;
     /** Opacity applied to the complete arrow layer. */
     arrowOpacity?: number;
     /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
@@ -469,7 +471,8 @@ Usage:
                 : undefined}
               {cellIndex}
               {transitionKey}
-              directPositioning={propPositionOverrides?.[hand] !== undefined}
+              directPositioning={directPropPositioning ||
+                propPositionOverrides?.[hand] !== undefined}
               colorOverride={hand === HandSide.LEFT
                 ? effectiveLeftColor
                 : effectiveRightColor}

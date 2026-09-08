@@ -2,6 +2,33 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Drop continuity and adjacent examples, September 8
+
+Austen found that release replayed the move from the original point and that
+the vertical-only composition wasted the available width. The shared renderer's
+existing direct-positioning mode is now exposed through PictographContainer and
+enabled during a location drag and its landing. Click-driven changes, Undo,
+and Construct orientation/motion controls retain their existing interpolation.
+No second gesture or prop renderer is introduced.
+
+The lesson composes the board, its toolbar, Next, and editing controls beside
+a compact column of the same canonical example pictographs when the available
+container is at least 48rem wide. Columns size around the actual board, not an
+empty flexible track. Examples and board respect available height. Narrow
+containers stack; practice without references returns to a centered board.
+The existing stage motion owns success and reference-disclosure recomposition.
+
+Verification: all six practice rounds, incorrect-answer correction, completion,
+both grid modes, overlapping hands, drag release and Undo were exercised in the
+browser. Immediate post-release samples stay at the target with zero prop
+transition duration; Undo restores normal interpolation. The 32 focused tests
+pass and Svelte check reports zero errors and warnings. This continues the same
+Teacher task, using the briefing inline; hands-on acceptance remains pending.
+Seven viewport tiers (375×667 through 3840×2160) and the reported 1660×1540
+pane were inspected with no horizontal overflow. A 640×450 zoom-equivalent
+reflow check retains a 16px root and keyboard access; this is not an actual
+browser-zoom test. Short screens scroll rather than shrinking touch targets.
+
 ## Drag feedback and unambiguous completion
 
 Austen's next September 5 review found insufficient visual response during
