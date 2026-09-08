@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { collectionPropSettings } from "$lib/shared/library/domain/collection-prop";
+  import SavePropDialog from "$lib/shared/library/components/SavePropDialog.svelte";
+  import { resolveViewingProps } from "$lib/shared/foundation/services/prop-viewing";
   import { onMount, onDestroy, type Snippet } from "svelte";
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
   import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
@@ -420,6 +421,9 @@
   const accessibilityHelper = createModalAccessibilityHelper();
 
   const exportCoord = createExportCoordinator({
+    getPropConfig: () =>
+      resolveViewingProps(getAppSettings(), sequence, collectionPropType)
+        .config,
     viewer3DState,
     accessibilityHelper,
     // Read lazily at export time: viewerVisibility is created further down and
@@ -444,7 +448,11 @@
   }
 
   function getSettings() {
-    return collectionPropSettings(getAppSettings(), collectionPropType);
+    const settings = getAppSettings();
+    return {
+      ...settings,
+      ...resolveViewingProps(settings, sequence, collectionPropType).config,
+    };
   }
 
   const imgComp = createImageCompositionSync();
@@ -628,7 +636,7 @@
       imageComposition: imgComp,
       getSequence: () => sequence,
       getHandPathMode: () => handPathMode,
-      getCollectionPropLocked: () => collectionPropType != null,
+      getCollectionPropType: () => collectionPropType,
       getInitialLeftVisible: () => initialLeftVisible,
       getInitialRightVisible: () => initialRightVisible,
       getAnimationServicesReady: () => interactive.animationServicesReady,
@@ -905,6 +913,7 @@
   });
 
   onDestroy(() => {
+    libraryActions.finishPropChoice(false);
     anStores.visibility.unregisterObserver(anVisibilityObserver);
     // Restore FIRST, while writes are still suppressed, then resume — so the
     // borrowed globals go back to the visitor's own state without the link
@@ -996,6 +1005,7 @@
   }
 
   function handleClose() {
+    libraryActions.finishPropChoice(false);
     playback.stopPracticeIfActive();
 
     if (playback.isPlayingLocal && interactive.playbackController) {
@@ -1146,7 +1156,7 @@
     getCardReady: () => cardReady,
     getResolvedCardAutoLayout: () => resolvedCardAutoLayout,
     getIsHandPath: () => propVisibility.isHandPath,
-    getCollectionPropLocked: () => collectionPropType != null,
+    getCollectionPropType: () => collectionPropType,
     getLeftPropType: () => propVisibility.activeLeftProp,
     getRightPropType: () => propVisibility.activeRightProp,
     getCatDogModeEnabled: () => propVisibility.activeCatDog,
@@ -1170,6 +1180,13 @@
 </script>
 
 {@render children(contextState.value)}
+{#if libraryActions.saveProps}
+  <SavePropDialog
+    bind:value={libraryActions.saveProps}
+    onSave={() => libraryActions.finishPropChoice(true)}
+    onCancel={() => libraryActions.finishPropChoice(false)}
+  />
+{/if}
 
 <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
   {accessibilityHelper.announcement}

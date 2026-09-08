@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PropViewingControl from "./PropViewingControl.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onMount, onDestroy } from "svelte";
   import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
@@ -359,6 +360,10 @@
         {resultTotal}
       />
     {/if}
+  {/if}
+
+  {#if engine.viewMode.subject !== "hands"}
+    <PropViewingControl {collectionPropType} />
   {/if}
 
   {#if showFilterBar}

@@ -17,6 +17,8 @@ Variation support:
 
 -->
 <script lang="ts">
+  import { resolveViewingProps } from "$lib/shared/foundation/services/prop-viewing";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
@@ -629,6 +631,11 @@ Variation support:
 </script>
 
 {#snippet cardContents()}
+  {@const viewing = resolveViewingProps(
+    getSettings(),
+    displayedSequence,
+    collectionPropType
+  ).config}
   <!-- view-transition-name enables Google Photos-style morph animation to
        /sequence/[id]. Undefined on any duplicate copy of this sequence that is
        mounted at the same time (see the morph-name claim above). -->
@@ -641,9 +648,9 @@ Variation support:
     <PropAwareThumbnail
       bind:this={thumbnailRef}
       sequence={displayedSequence}
-      {leftPropType}
-      {rightPropType}
-      {catDogModeEnabled}
+      leftPropType={viewing.leftPropType}
+      rightPropType={viewing.rightPropType}
+      catDogModeEnabled={viewing.catDogMode}
       {lightMode}
       {eager}
       {handPathMode}

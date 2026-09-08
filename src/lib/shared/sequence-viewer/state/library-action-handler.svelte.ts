@@ -1,4 +1,8 @@
 import {
+  captureActivePropConfig,
+  type ResolvedPropConfig,
+} from "$lib/shared/foundation/services/recorded-prop-intent";
+import {
   isFavorite as checkIsFavorite,
   toggleFavorite as doToggleFavorite,
 } from "$lib/shared/library/services/collection-manager";
@@ -29,6 +33,14 @@ export interface LibraryActionHandlerDeps {
 }
 
 export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
+  let saveProps = $state<ResolvedPropConfig | null>(null);
+  let resolveSaveProps: ((config: ResolvedPropConfig | null) => void) | null =
+    null;
+  function finishPropChoice(save: boolean) {
+    resolveSaveProps?.(save ? saveProps : null);
+    resolveSaveProps = null;
+    saveProps = null;
+  }
   let isSaved = $state(true);
   let isSaving = $state(false);
   let isFavorite = $state(false);
@@ -153,7 +165,18 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
       showToast("No sequence to save", "info");
       return;
     }
-    if (isSaving) return;
+    if (isSaving || saveProps) return;
+    saveProps = captureActivePropConfig({
+      leftPropType: deps.getLeftPropType(),
+      rightPropType: deps.getRightPropType(),
+      catDogMode: deps.getCatDogModeEnabled(),
+    });
+    const selectedProps = await new Promise<ResolvedPropConfig | null>(
+      (resolve) => {
+        resolveSaveProps = resolve;
+      }
+    );
+    if (!selectedProps) return;
 
     savedStateRevision += 1;
     isSaving = true;
@@ -161,9 +184,9 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     try {
       const coordinator = await getVisualSequenceSaveCoordinator();
       const outcome = await coordinator.save(sequence, {
-        leftPropType: deps.getLeftPropType(),
-        rightPropType: deps.getRightPropType(),
-        catDogModeEnabled: deps.getCatDogModeEnabled(),
+        leftPropType: selectedProps.leftPropType,
+        rightPropType: selectedProps.rightPropType,
+        catDogModeEnabled: selectedProps.catDogMode,
         pathShape: getAnimationVisibilityManager().getPathShape(),
       });
       if (outcome.status === "failed") return;
@@ -195,6 +218,13 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
   }
 
   return {
+    get saveProps() {
+      return saveProps;
+    },
+    set saveProps(value: ResolvedPropConfig | null) {
+      saveProps = value;
+    },
+    finishPropChoice,
     get isSaved() {
       return isSaved;
     },

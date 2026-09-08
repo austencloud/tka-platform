@@ -10,6 +10,7 @@
  * Extracted from SequenceViewerOrchestrator.
  */
 
+import type { ResolvedPropConfig } from "$lib/shared/foundation/services/recorded-prop-intent";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -53,6 +54,7 @@ type Viewer3DState = ReturnType<typeof createViewer3DState>;
 type AccessibilityHelper = ReturnType<typeof createModalAccessibilityHelper>;
 
 export interface ExportCoordinatorDeps {
+  getPropConfig?: () => ResolvedPropConfig;
   viewer3DState: Viewer3DState;
   accessibilityHelper: AccessibilityHelper;
   /**
@@ -668,6 +670,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       // start-layout) + hand-path suppression come from the one canonical builder,
       // so the downloaded PNG matches the live ChoreoCard preview.
       const renderOptions = buildCardRenderOptions(effectiveSequence, {
+        propConfig: deps.getPropConfig?.(),
         darkMode: exportOptions.imageDarkMode,
         isHandPath,
         resolvedAutoLayout,

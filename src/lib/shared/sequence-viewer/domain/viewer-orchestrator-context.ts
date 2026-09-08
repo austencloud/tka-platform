@@ -83,7 +83,7 @@ export interface OrchestratorContext {
   mirrorEnabled: boolean;
   handleToggleMirror: () => void;
 
-  collectionPropLocked?: boolean;
+  collectionPropType?: PropType | null;
   leftPropType: PropType | undefined;
   rightPropType: PropType | undefined;
   catDogModeEnabled: boolean | undefined;

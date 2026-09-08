@@ -14,7 +14,7 @@
 
 <div class="collection-prop-field">
   <span class="label">Collection prop</span>
-  <p>Show every sequence in this collection with the same prop.</p>
+  <p>Used for every sequence when a viewer chooses As saved.</p>
   <div class="actions">
     <PanelButton
       variant="secondary"
@@ -30,7 +30,7 @@
       {/if}
       {value
         ? getPropTypeDisplayInfo(value).label
-        : "Use normal prop selection"}
+        : "Use each sequence’s saved props"}
       <i class="fas fa-chevron-down" aria-hidden="true"></i>
     </PanelButton>
     {#if value}
