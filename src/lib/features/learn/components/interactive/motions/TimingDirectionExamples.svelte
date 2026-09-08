@@ -457,7 +457,7 @@
       margin-top: 0.25rem;
     }
   }
-  @container examples (max-width: 850px) {
+  @container examples (max-width: 850px) or (max-aspect-ratio: 3/2) {
     .examples {
       grid-template-columns: 1fr;
       grid-template-rows: repeat(3, minmax(12rem, 1fr));
@@ -479,7 +479,11 @@
       border-top: 1px solid var(--theme-stroke);
     }
     .picture {
-      width: min(100%, 16rem);
+      width: min(
+        100%,
+        max(9rem, calc((100cqh / 3 - 1.5rem) * 320 / 300)),
+        28rem
+      );
       justify-self: center;
     }
     .example-copy {
