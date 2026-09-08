@@ -16,6 +16,7 @@
   import type { IToolPanelMethods } from "../types/create-module-types";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import WorkspacePanel from "../workspace-panel/core/WorkspacePanel.svelte";
+  import WorkspaceSequenceHeader from "../workspace-panel/sequence-display/components/WorkspaceSequenceHeader.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
@@ -52,6 +53,7 @@
   const playback = $derived(panelState.workspacePlayback);
   let readyPlayback = $state.raw<typeof playback>(null);
   let retainedPlayback = $state.raw<typeof playback>(null);
+  let playbackStep = $state(0);
 
   $effect(() => {
     if (playback) retainedPlayback = playback;
@@ -148,6 +150,7 @@
           sequence: session.sequence,
           active: playback === session && readyPlayback === session,
           onready: () => (readyPlayback = session),
+          onStepChange: (step: number) => (playbackStep = Math.floor(step)),
         }}
         onStatusChange={(status) => {
           if (status === "error") readyPlayback = session;
@@ -177,14 +180,24 @@
   <!-- CRITICAL: {#key} block ensures fresh StepGrid instances per tab
        This prevents animation state pollution (step-grid-display-state.svelte)
        But we DON'T key the parent layout to avoid workspace visibility timing issues -->
-  <DualSourceCrossfade
-    active={playback && readyPlayback === playback ? "second" : "first"}
-    first={card}
-    second={animation}
-    onsettled={(source) => {
-      if (source === "first" && !playback) retainedPlayback = null;
-    }}
+  <WorkspaceSequenceHeader
+    sequenceState={activeSequenceState}
+    word={currentDisplayWord}
+    {letterSources}
+    activeStepNumber={playback
+      ? playbackStep
+      : (animatingStepNumber ?? practiceStepIndex)}
   />
+  <div class="workspace-content">
+    <DualSourceCrossfade
+      active={playback && readyPlayback === playback ? "second" : "first"}
+      first={card}
+      second={animation}
+      onsettled={(source) => {
+        if (source === "first" && !playback) retainedPlayback = null;
+      }}
+    />
+  </div>
   {#if playback && readyPlayback !== playback}
     <div class="playback-loading" role="status">Loading playback…</div>
   {/if}
@@ -206,6 +219,12 @@
 
   .workspace-panel-wrapper :global(.source > .workspace-panel) {
     height: 100%;
+  }
+
+  .workspace-content {
+    position: relative;
+    flex: 1;
+    min-height: 0;
   }
 
   .playback-loading {

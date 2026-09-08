@@ -7,10 +7,12 @@
     sequence,
     active,
     onready,
+    onStepChange,
   }: {
     sequence: SequenceData;
     active: boolean;
     onready: () => void;
+    onStepChange?: (step: number) => void;
   } = $props();
 
   let currentStep = $state(0);
@@ -19,31 +21,36 @@
 
 <div class="workspace-playback" data-testid="workspace-playback">
   <div class="playback-layout">
-    <div class="animation-stage">
-      <div class="square-stage">
+    <div class="playback-media">
+      <div class="player-stage">
         <InlineAnimationPlayer
           {sequence}
           chrome="minimal"
           fill
+          scrubbable
           autoPlay={active}
           autoPlayDelay={0}
           playbackAllowed={active}
           onCanvasInitialized={onready}
           onLoadError={onready}
-          onStepChange={(step) => (currentStep = step)}
+          onStepChange={(step) => {
+            currentStep = step;
+            onStepChange?.(step);
+          }}
           onSeekRef={(callback) => (seek = callback)}
         />
       </div>
-    </div>
-    <div class="notation-rail" role="group" aria-label="Sequence pictographs">
-      <StepStrip
-        {sequence}
-        {currentStep}
-        bpm={60}
-        density="compact"
-        fillHeight
-        onCellClick={(step) => seek?.(step)}
-      />
+      <div class="notation-rail" role="group" aria-label="Sequence pictographs">
+        <StepStrip
+          {sequence}
+          {currentStep}
+          bpm={60}
+          density="compact"
+          presentation="strip"
+          fillHeight
+          onCellClick={(step) => seek?.(step)}
+        />
+      </div>
     </div>
   </div>
 </div>
@@ -55,42 +62,42 @@
     height: 100%;
     container-type: size;
   }
-
   .playback-layout {
+    --notation-height: 0px;
+    --sequence-seek-target-size: 32px;
     position: absolute;
-    inset: 60px 12px 8px;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr);
-    min-width: 0;
-    min-height: 0;
-  }
-
-  .animation-stage {
+    inset: 4px 12px 8px;
     container-type: size;
-    display: grid;
-    place-items: center;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
   }
-
-  .square-stage {
-    width: min(100cqw, 100cqh);
-    height: min(100cqw, 100cqh);
+  .playback-media {
+    /* The seek target has its own reserved row; the canvas stays square. */
+    --canvas-size: min(
+      100cqw,
+      calc(100cqh - var(--notation-height) - var(--sequence-seek-target-size))
+    );
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--canvas-size);
+    height: calc(
+      var(--canvas-size) + var(--sequence-seek-target-size) +
+        var(--notation-height)
+    );
   }
-
+  .player-stage {
+    width: 100%;
+    height: calc(100% - var(--notation-height));
+  }
   .notation-rail {
     display: none;
-    min-width: 0;
+    height: var(--notation-height);
     overflow: hidden;
   }
-
-  @container (min-width: 520px) and (min-height: 440px) {
+  @container (min-width: 520px) and (min-height: 360px) {
     .playback-layout {
-      grid-template-rows: minmax(0, 1fr) clamp(96px, 20cqh, 160px);
-      gap: 12px;
+      --notation-height: clamp(72px, 14cqh, 104px);
     }
-
     .notation-rail {
       display: block;
     }
