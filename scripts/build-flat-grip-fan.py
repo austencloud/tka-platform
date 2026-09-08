@@ -21,24 +21,20 @@ ref = json.loads(reference_path.read_text())
 
 def geometry():
     rails = []
-    for sign in [-1, 1]:
-        controls = ref["right_outer_curve_m"]
+    for controls in ref["outer_curves_m"]:
         curve = []
-        for i in range(49):
-            t = i / 48
+        for i in range(65):
+            t = i / 64
             weights = [(1-t)**3, 3*(1-t)**2*t, 3*(1-t)*t*t, t**3]
-            curve.append([sign * sum(p[0]*w for p, w in zip(controls, weights)),
-                          sum(p[1]*w for p, w in zip(controls, weights))])
+            curve.append([sum(p[axis]*w for p, w in zip(controls, weights)) for axis in [0, 1]])
         rails.append((curve, ref["outer_stock_radius_m"]))
-        for index, points in enumerate(ref["right_rails_m"]):
-            if sign == -1 and index in [4]:
-                continue
-            rails.append(([[sign*x, y] for x, y in points], ref["inner_stock_radius_m"]))
+    rails += [(points, ref["inner_stock_radius_m"]) for points in ref["rails_m"]]
+    # Each welded fork continues inside the roll, so no wire stops short of its cap.
+    for center, direction, length in zip(ref["wick_centers_m"], ref["wick_directions"], ref["wick_lengths_m"]):
+        rails.append(([[c-d*length/2 for c,d in zip(center,direction)], center], ref["inner_stock_radius_m"]))
     rings = [([0, 0], ref["ring_inside_radius_m"], ref["outer_stock_radius_m"])]
     rings += [(center, ref["rear_ring_inside_radius_m"], ref["inner_stock_radius_m"])
               for center in ref["rear_ring_centers_m"]]
-    for sign in [-1, 1]:
-        rails.append(([[sign*.021, -.018], [sign*.025, -.024]], ref["inner_stock_radius_m"]))
     return rails, rings
 
 
@@ -59,8 +55,8 @@ def write_svg(rails, rings):
     wicks = []
     for index, (center, direction) in enumerate(zip(ref["wick_centers_m"], ref["wick_directions"])):
         angle = math.degrees(math.atan2(direction[0], direction[1]))
-        length, radius = ref["wick_length_m"]*scale, ref["wick_radius_m"]*scale
-        wicks.append(f'<rect data-flat-grip-wick="{index+1}" x="{-length/2}" y="{-radius}" width="{length}" height="{2*radius}" rx="2" transform="translate({point(center)}) rotate({angle})"/>')
+        length, radius = ref["wick_lengths_m"][index]*scale, ref["wick_radii_m"][index]*scale
+        wicks.append(f'<rect data-flat-grip-wick="{index+1}" x="{-length/2}" y="{-radius}" width="{length}" height="{2*radius}" rx="0.7" transform="translate({point(center)}) rotate({angle})"/>')
     svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 207" data-generated-from="scripts/assets/flat-grip-fire-reference.json">\n'
     svg += '<title>Flat Grip Fire fan</title>\n<g data-fan-frame="" fill="none" stroke="#2E3192" stroke-linecap="round" stroke-linejoin="round">\n'
     svg += '\n'.join(frame) + '\n</g>\n<g data-fan-wicks="" fill="#f5e6b8">\n'
@@ -94,8 +90,10 @@ def main():
     objects.append(fan.finish_mesh(bar, grip_steel, bevel=0.001))
     for index, (center, direction) in enumerate(zip(ref["wick_centers_m"], ref["wick_directions"])):
         c, d = Vector((*center,0)), Vector((*direction,0))
-        half = ref["wick_length_m"] / 2
-        objects.append(fan.add_woven_cylinder_between(f"Fan_FlatGrip_Wick_{index+1}", c-d*half, c+d*half, ref["wick_radius_m"], wick, group, radial_segments=32, axial_segments=20))
+        half = ref["wick_lengths_m"][index] / 2
+        objects.append(fan.add_woven_cylinder_between(f"Fan_FlatGrip_Wick_{index+1}", c-d*half, c+d*half, ref["wick_radii_m"][index], wick, group, radial_segments=40, axial_segments=28))
+    for index, center in enumerate(ref["weld_centers_m"]):
+        objects.append(fan.add_weld_boss(f"Fan_FlatGrip_Weld_{index}", (*center, 0), (.004, .005, .002), index, steel, group))
     fan.export_glb(ROOT / "static/models/props/fan-flat-grip.glb", root, {"flat-grip":group}, objects)
     write_svg(rails, rings)
     camera = fan.configure_proof_scene()

@@ -93,11 +93,11 @@ export const FAN_FIRE_WICK_CENTERS_M = [
 
 // The same grip-relative metres used by scripts/assets/flat-grip-fire-reference.json.
 export const FAN_FLAT_GRIP_WICK_CENTERS_M = [
-  { x: -0.222, y: 0.11, z: 0 },
-  { x: -0.128, y: 0.216, z: 0 },
-  { x: 0, y: 0.259, z: 0 },
-  { x: 0.128, y: 0.216, z: 0 },
-  { x: 0.222, y: 0.11, z: 0 },
+  { x: -0.236230672, y: 0.118622269, z: 0 },
+  { x: -0.134844118, y: 0.224064286, z: 0 },
+  { x: 0.0, y: 0.261577311, z: 0 },
+  { x: 0.127747059, y: 0.215953361, z: 0 },
+  { x: 0.212911765, y: 0.110511345, z: 0 },
 ] as const;
 
 /**

@@ -49,6 +49,39 @@ describe("Flat Grip Fire", () => {
         expect(actual[axis]).toBeCloseTo(value, 6);
       });
     });
+    const reference = JSON.parse(
+      readFileSync("scripts/assets/flat-grip-fire-reference.json", "utf8")
+    );
+    const svg = readFileSync(
+      "static/images/props/appearances/fan-flat-grip.svg",
+      "utf8"
+    );
+    reference.wick_directions.forEach((direction: number[], index: number) => {
+      const wick = gltf.nodes.find(
+        (node: { name: string }) =>
+          node.name === `Fan_FlatGrip_Wick_${index + 1}`
+      );
+      const axis = new Vector3(0, 1, 0)
+        .applyQuaternion(new Quaternion().fromArray(wick.rotation))
+        .applyQuaternion(new Quaternion().fromArray(root.rotation));
+      expect(axis.x).toBeCloseTo(direction[0], 5);
+      expect(axis.y).toBeCloseTo(direction[1], 5);
+      expect(axis.z).toBeCloseTo(0, 5);
+      const svgAngle = Number(
+        svg.match(
+          new RegExp(
+            `data-flat-grip-wick="${index + 1}"[^>]*rotate\\(([^)]+)\\)`
+          )
+        )?.[1]
+      );
+      expect(svgAngle).toBeCloseTo(
+        (Math.atan2(direction[0], direction[1]) * 180) / Math.PI,
+        6
+      );
+    });
+    // The photographed diagonal rolls follow their mounting forks, not 45-degree spokes.
+    expect(Math.abs(reference.wick_directions[1][0])).toBeLessThan(0.65);
+    expect(Math.abs(reference.wick_directions[3][0])).toBeLessThan(0.6);
     const big = resolvePropTipAnchors3D("bigfan", 0.4, build);
     big.forEach(({ offset }, index) => {
       expect(offset.x).toBeCloseTo(anchors[index].offset.x * 1.4, 6);
@@ -74,12 +107,11 @@ describe("Flat Grip Fire", () => {
     const anchors = resolvePropTipAnchors3D("fan", 0.4, build);
     expect(anchors).toHaveLength(5);
     expect(anchors).toEqual(resolvePropTipAnchors3D("fan", 0.8, build));
-    expect(anchors.map(({ offset }) => offset)).toEqual([
-      { x: -0.222, y: 0.11, z: 0 },
-      { x: -0.128, y: 0.216, z: 0 },
-      { x: 0, y: 0.259, z: 0 },
-      { x: 0.128, y: 0.216, z: 0 },
-      { x: 0.222, y: 0.11, z: 0 },
-    ]);
+    const reference = JSON.parse(
+      readFileSync("scripts/assets/flat-grip-fire-reference.json", "utf8")
+    );
+    anchors.forEach(({ offset }, index) => {
+      expect([offset.x, offset.y]).toEqual(reference.wick_centers_m[index]);
+    });
   });
 });
