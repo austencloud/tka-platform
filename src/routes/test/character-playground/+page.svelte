@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { replaceState } from "$app/navigation";
   import {
     AVATAR_DEFINITIONS,
     Plane,
+    userProportionsState,
     type AvatarId,
   } from "@austencloud/scene-3d";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -16,6 +18,7 @@
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     loadAvailableCandidates,
     resolveCandidate,
@@ -31,7 +34,7 @@
     camera: null,
     navMode: "orbit",
     activeCameraPreset: "manual",
-    defaultProp: "staff",
+    defaultProp: PropType.CAPSULE_BATON,
     visiblePlanes: [Plane.WALL],
     showGridLabels: true,
     effectToggles: { fire: false, led: false, trails: false },
@@ -54,6 +57,7 @@
   let width = $state(1000);
   let height = $state(700);
   let speed = $state(1);
+  let prop = $state(PropType.CAPSULE_BATON);
   let focus = $state<"body" | "hands">("body");
   const sequence = $derived(
     ALL_FIXTURE_LOOPS.find(([id]) => id === example)![1]
@@ -82,20 +86,27 @@
     performer?.setCharacter(id as AvatarId);
     const url = new URL(window.location.href);
     url.searchParams.set("character", id);
-    window.history.replaceState(null, "", url);
+    replaceState(url, {});
   }
 
   function frame(nextFocus = focus) {
     focus = nextFocus;
     const portrait = width / height < 0.85;
-    const distance = nextFocus === "hands" ? 2.7 : portrait ? 8 : 5.8;
+    const distance = nextFocus === "hands" ? 2.6 : portrait ? 5.4 : 4.2;
+    const x = performer?.position.x ?? 0;
+    const z = performer?.position.z ?? 0;
+    const targetY =
+      viewer.stageGroundOffset +
+      (nextFocus === "hands"
+        ? 0
+        : userProportionsState.groundY + userProportionsState.heightCm / 200);
     viewer.snapCameraTo(
       {
-        x: nextFocus === "hands" ? 0.45 : 0,
-        y: nextFocus === "hands" ? 1.5 : 2,
-        z: distance,
+        x: x + (nextFocus === "hands" ? 0.45 : 0),
+        y: targetY + 0.25,
+        z: z + distance,
       },
-      { x: 0, y: nextFocus === "hands" ? 1.35 : 1.05, z: 0 },
+      { x, y: targetY, z },
       undefined,
       false
     );
@@ -228,9 +239,10 @@
           sequenceData={sequence}
           currentStep={animation.currentStep}
           isPlaying={animation.isPlaying}
-          leftPropType="staff"
-          rightPropType="staff"
+          leftPropType={prop}
+          rightPropType={prop}
           rendererHandleRequired
+          weldPerformerGrip
           hideOverlays
           hidePerformerBadges
           hideOrientationHelpers
@@ -284,6 +296,16 @@
         </div>
       </div>
       <div class="scene-controls">
+        <label for="prop">Props</label>
+        <select
+          id="prop"
+          bind:value={prop}
+          onchange={() => performer?.setProp(prop)}
+        >
+          <option value={PropType.CAPSULE_BATON}>LED batons</option>
+          <option value={PropType.FIRE_DOUBLE_STAFF}>Fire staffs</option>
+          <option value={PropType.STAFF}>Notation staffs</option>
+        </select>
         <label for="example">Spinning example</label>
         <select
           id="example"

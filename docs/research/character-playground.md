@@ -18,4 +18,13 @@ If the entire dev server is forcibly killed during generation, inspect `playgrou
 
 ## Scope of the result
 
+The playground enables the rig's existing palm attachment (`weldGrip`) through the production viewer. The older attachment clamped corrections to six centimeters, which left a visible gap on some generated bodies. This opt-in follows the achieved palm and knuckle line and requires the main-thread renderer. Other viewer hosts retain their existing setting.
+
 Randomization varies geometry, facial proportions, presentation, skin, hair and outfits. This is the authored MakeHuman mesh and rig pipeline, not an AI image-to-mesh service. Finger bones are present and bend toward the palm, but precise thumb and staff contact still need refinement. Generation does not automatically promote a character into the production catalog.
+
+## Verification, September 8, 2026
+
+- 27 focused tests pass for candidate availability, rejected entries and generation request boundaries, concurrency and failure cleanup. `npm run check` reports no errors or warnings.
+- Seeds 1, 7 and 42 were generated through the CLI; seed 2120506931 was created and selected through the browser's Randomize button in 10.6 seconds. Each passed intake and retained all 30 finger bones.
+- Browser inspection exercised playback, pause, half speed, sequence switching, character switching, grid visibility and hand/body framing. The initial floating-prop defect reproduced in this viewer and the existing palm attachment removed the visible gap.
+- All seven prescribed CSS viewport sizes reported no horizontal overflow and controls retained 44px targets. The in-app browser's emulated screenshots showed stale compositor fragments outside the current layout, so those captures do not establish pixel-perfect rendering at every size. Normal viewport inspection was used to judge the character and grip. Temporary viewport and page-scale overrides were cleared.
