@@ -30,6 +30,10 @@ describe("prepared QR reuse", () => {
     expect(await anotherInstance.get(record.key)).toEqual(first);
     expect(fetcher).toHaveBeenCalledOnce();
     expect(fetcher.mock.calls[0]![0]).toBe(preparedQrUrl(record.key));
+    // A local result does not prove that its upload reached other viewers.
+    fetcher.mockResolvedValueOnce(new Response(null, { status: 404 }));
+    expect(await anotherInstance.getShared(record.key)).toBeNull();
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
   it("falls back on a missing cache, invalid target, or mismatched record", async () => {

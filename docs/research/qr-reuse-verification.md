@@ -34,3 +34,26 @@ enable shared reads and writes. Until then local reuse works and shared-cache
 failures fall back to existing preparation. The application change also needs
 the normal release before production viewers use this path. Records accumulate
 as cards are prepared; this change does not run a production backfill.
+
+## Bulk baking
+
+A read-only inventory on September 8 found 22,070 durable Firestore shortcodes
+and no objects under `prepared-qrs/`. The standard viewer uses 200px modern QR
+artwork; baking the saved prop configuration in both themes means at most
+44,140 images before content deduplication. Other prop selections, view modes
+or export sizes remain generated on demand.
+
+`startScanQrBake` in `shared`'s consumer
+`src/lib/features/library/services/warm-all-scan-cells.ts` extends the existing
+backfill with QR publication. It preserves each existing code via
+`ShortCodeManager.urlForExistingCode`, rather than allocating replacement
+links. Both scan themes must finish warming before artwork is published;
+publication is checked against public Storage independently of local caches.
+Four sequence lanes bound QR work. Cancellation and failed-code lists reuse
+the existing backfill contract; pass a failed-code list through `listCodes` to
+retry. Already published artwork is reused.
+
+The bulk extension passed 17 focused tests and Svelte check with zero errors
+and warnings. It has not been run against production. The task branch remains
+blocked from integration by the primary checkout's existing `MERGE_HEAD`;
+the prepared Storage rules also require deployment authorization.

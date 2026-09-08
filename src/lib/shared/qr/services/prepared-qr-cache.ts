@@ -64,11 +64,16 @@ export class PreparedQrCache implements PreparedQrStore {
     const cached = await this.local.get(localKey);
     if (cached?.prepared)
       return { svg: cached.svg, dataUrl: cached.dataUrl, ...cached.prepared };
+    return this.getShared(key);
+  }
+
+  /** Bulk baking verifies the public object, independently of this device's cache. */
+  async getShared(key: string, timeoutMs = 1500): Promise<QRCodeResult | null> {
     try {
       // An absent or unreachable shared cache must not add an unbounded wait
       // before the existing local preparation path can proceed.
       const response = await fetch(preparedQrUrl(key), {
-        signal: AbortSignal.timeout(1500),
+        signal: AbortSignal.timeout(timeoutMs),
       });
       if (
         !response.ok ||
@@ -99,7 +104,7 @@ export class PreparedQrCache implements PreparedQrStore {
         encodedUrl: record.encodedUrl,
         shortCode: record.shortCode,
       };
-      await this.remember(localKey, result);
+      await this.remember(`${PREFIX}:${key}`, result);
       return result;
     } catch {
       return null;
