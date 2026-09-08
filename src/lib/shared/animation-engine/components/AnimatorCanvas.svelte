@@ -873,7 +873,8 @@ Last audit: 2025-12-27
         <SequenceProgressBar
           {currentStep}
           totalSteps={sequenceData?.steps?.length ?? 0}
-          visible={progressBarVisible && !hideProgressBar}
+          visible={(progressBarVisible || !!onProgressBarSeek) &&
+            !hideProgressBar}
           darkMode={darkModeEnabled}
           onSeek={onProgressBarSeek
             ? (ratio) => playbackAdapter.seek(ratio)
