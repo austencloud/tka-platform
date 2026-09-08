@@ -223,6 +223,12 @@
 
 <style>
   .archive-room {
+    /* The record area uses spare screen height so the footer ends the page,
+       including when the selected record is shorter than a tall viewport. */
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: calc(100dvh - var(--marketing-header-h, 64px));
+    box-sizing: border-box;
     max-width: 100rem;
     margin-inline: auto;
     padding: clamp(1.25rem, 3vw, 3.5rem);
@@ -383,6 +389,7 @@
   @media (max-width: 1099px) {
     .archive-layout {
       grid-template-columns: minmax(0, 1fr);
+      align-content: start;
       gap: 1.5rem;
     }
     .archive-header {
