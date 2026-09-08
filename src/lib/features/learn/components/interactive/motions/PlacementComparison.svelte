@@ -6,7 +6,6 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getToggledGridMode } from "$lib/shared/create/services/rotation-helpers";
-  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { createPropPlacementMotionState } from "$lib/shared/pictograph/grid/state/prop-placement-motion.svelte";
   import {
     buildPlacementTransformTransition,
@@ -30,7 +29,14 @@
   let betaSwapped = $state(false);
   let transitions = $state<PlacementTransition[]>([]);
   let epoch = $state(0);
+  let gridRotation = $state(0);
+  let gridRotationStart = $state(0);
   const motion = createPropPlacementMotionState();
+  const animatedGridRotation = $derived(
+    motion.active
+      ? gridRotationStart + (gridRotation - gridRotationStart) * motion.progress
+      : gridRotation
+  );
   const ready = new Set<number>();
   type Action = "rotate" | "mirror" | "flip" | "swap";
   const pending: { action: Action; rotationSteps: number }[] = [];
@@ -58,6 +64,7 @@
     if (!next) return;
     const { action, rotationSteps } = next;
     const previous = examples.map((example) => example.data);
+    gridRotationStart = gridRotation;
     pairs = pairs.map((pair) =>
       transformPosition(
         pair.left,
@@ -70,8 +77,7 @@
       )
     );
     if (action === "rotate") {
-      // The grid cannot infer a turn's direction from diamond/box mode alone.
-      setGridRotationDirection(rotationSteps < 0 ? -1 : 1);
+      gridRotation += 45 * rotationSteps;
       gridMode = getToggledGridMode(gridMode, rotationSteps);
     }
     if (action === "swap") betaSwapped = !betaSwapped;
@@ -115,6 +121,7 @@
             motionStartData={transitions[index]?.startData}
             motionStep={transitions[index]?.transitionStep}
             motionProgress={motion.active ? motion.progress : null}
+            gridRotation={animatedGridRotation}
             readyEpoch={epoch}
             onReady={() => pictographReady(index)}
             disableTransitions

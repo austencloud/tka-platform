@@ -12,6 +12,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   let {
     gridMode = GridMode.DIAMOND,
+    rotationOverride = null,
     showNonRadialPoints = false,
     previewMode = false,
     visible = true,
@@ -27,6 +28,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   } = $props<{
     /** Grid mode - derived from motion data */
     gridMode?: GridMode;
+    /** Caller-owned cumulative degrees keep this grid in step with animated props. */
+    rotationOverride?: number | null;
     /** Show non-radial points (layer 2 diagonal points) */
     showNonRadialPoints?: boolean;
     /** Preview mode: show "off" elements at 40% opacity instead of hidden */
@@ -541,6 +544,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   // SKEWED mode: no rotation needed (shows all 8 positions without rotation)
   $effect(() => {
     // First render - set initial rotation without animation
+    if (rotationOverride !== null) return;
     if (previousGridMode === null) {
       // SKEWED mode: no rotation (already shows all positions)
       // BOX mode: 45° rotation
@@ -622,7 +626,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   class:dark-mode-override={darkMode === true}
   class:light-mode-override={darkMode === false}
   data-grid-mode={gridMode}
-  transform="rotate({cumulativeRotation}, 475, 475)"
+  transform="rotate({rotationOverride ?? cumulativeRotation}, 475, 475)"
 >
   {#if !hasError && styledGridSvg}
     <g class="grid-layer">

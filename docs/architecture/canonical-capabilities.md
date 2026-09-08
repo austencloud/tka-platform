@@ -22,6 +22,10 @@ the readiness-gated clock. Construct's arrival and placement editor keep their
 existing consumers. Searches: static pictograph animation, mirror, flip, swap,
 rotation, arrival motion. Learn queues actions and shares one clock across its
 three examples; it does not own another renderer or interpolation system.
+For synchronized grid rotation, `PictographContainer.gridRotation` carries that
+clock's cumulative angle through `PictographRenderer` to `GridSvg.rotationOverride`.
+This opt-in bypasses the grid's independent mode-change animation and global
+direction setting; other pictograph consumers retain their existing behavior.
 
 Timing-and-direction route continuity composes the existing `HandMotionPlayer`,
 `reparentToInspector` mounted-node action (also consumed by `ArtPane`), and
