@@ -272,21 +272,23 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
   // --- Derived: filtering + sorting pipeline ---
 
+  const searchedPool = $derived.by(() =>
+    _searchQuery.trim()
+      ? applyBrowseFilter(
+          allSequences,
+          BrowseFilterType.CONTAINS_LETTERS,
+          _searchQuery
+        )
+      : allSequences
+  );
+
   const filteredAndSorted = $derived.by(() => {
-    let result = allSequences;
+    let result = searchedPool;
 
     if (activeFilters.size > 0) {
       // applyFilters is generic over `T extends ActiveFilter`, so the engine's
       // richer ActiveFilter (with `locked`) passes structurally — no cast needed.
       result = applyMultiFilters(result, activeFilters, connectives);
-    }
-
-    if (_searchQuery.trim()) {
-      result = applyBrowseFilter(
-        result,
-        BrowseFilterType.CONTAINS_LETTERS,
-        _searchQuery
-      );
     }
 
     const sorted = browseSortSequences(result, sortMethod);
@@ -972,15 +974,8 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       // Compose the ACTUAL result pipeline (filters AND search) — counts
       // are previews of results, and ignoring an active search let a
       // count>0 pick land on a zero-result grid.
-      const base = _searchQuery.trim()
-        ? applyBrowseFilter(
-            allSequences,
-            BrowseFilterType.CONTAINS_LETTERS,
-            _searchQuery
-          )
-        : allSequences;
       return getMultiFilteredCount(
-        base,
+        searchedPool,
         candidateType,
         candidateValue,
         activeFilters,
