@@ -46,6 +46,7 @@
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
   import ViewSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ViewSequenceButton.svelte";
+  import HorizontalTransportRow from "$lib/shared/sequence-viewer/components/HorizontalTransportRow.svelte";
   import ClearSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ClearSequenceButton.svelte";
   import UndoGlyph from "$lib/features/create/shared/workspace-panel/shared/components/buttons/UndoGlyph.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -487,6 +488,13 @@
     }, 700);
   }
 
+  function seekRelative(delta: number) {
+    const current = playingStepNumber ?? 0;
+    playerController?.seekToStep(
+      Math.max(0, Math.min(steps.length, current + delta))
+    );
+  }
+
   function clearStartHold() {
     if (startHoldTimer !== null) {
       clearTimeout(startHoldTimer);
@@ -628,7 +636,12 @@
         {/if}
 
         {#if isContinuous}
-          <div class="continuous-preview" aria-label="Live motion preview">
+          <div
+            class="continuous-preview"
+            class:has-motion={!!playSequence}
+            role="region"
+            aria-label="Live motion preview"
+          >
             {#if playSequence}
               {@render player(playSequence)}
             {:else}
@@ -638,7 +651,7 @@
         {/if}
 
         <!-- WORKSPACE: the real WorkspaceGrid — start column + step columns. -->
-        <div class="workspace">
+        <div class="workspace" class:has-sequence={!!startStepData}>
           <!-- Canonical word display: the same WordLabel the real workspace shows
            top-center (TKA glyphs, click-to-copy, letter highlighting during
            playback). No step counter — the app doesn't count steps at you. -->
@@ -744,22 +757,37 @@
               <Crossfade key={phase} duration={DURATION.normal} mode="swap">
                 <div class="action-swap-state">
                   {#if phase === "add-step"}
-                    <span
-                      data-demo-play
-                      style:visibility={steps.length > 0 ? "visible" : "hidden"}
-                    >
-                      <ViewSequenceButton
-                        purpose="play"
-                        onclick={() => {
-                          if (isContinuous) {
-                            playerToggle?.();
-                          } else {
+                    {#if isContinuous}
+                      <span
+                        style:visibility={steps.length > 0
+                          ? "visible"
+                          : "hidden"}
+                      >
+                        <HorizontalTransportRow
+                          isPlaying={playerIsPlaying}
+                          onPlaybackToggle={() => playerToggle?.()}
+                          onRestartToStart={() =>
+                            playerController?.seekToStep(0)}
+                          onStepFullFwd={() => seekRelative(1)}
+                          onStepFullBack={() => seekRelative(-1)}
+                        />
+                      </span>
+                    {:else}
+                      <span
+                        data-demo-play
+                        style:visibility={steps.length > 0
+                          ? "visible"
+                          : "hidden"}
+                      >
+                        <ViewSequenceButton
+                          purpose="play"
+                          onclick={() => {
                             playing = true;
                             compactPane = "build";
-                          }
-                        }}
-                      />
-                    </span>
+                          }}
+                        />
+                      </span>
+                    {/if}
                   {:else if phase === "play" && !isCompactDemo}
                     {@render playPhaseActions()}
                   {/if}
@@ -818,7 +846,7 @@
         <!-- Turns imply "you can change the playing sequence's turns" — not true
          during playback, so they slide away for the play phase (freeing their
          strip for the player) and return on Keep building / Build another. -->
-        {#if phase !== "play" && !isGuidedBuild}
+        {#if phase !== "play" && !isGuidedBuild && (!isContinuous || phase !== "pick-start")}
           <div
             class="turns-pair"
             transition:slide={{ duration: motionDuration(DURATION.normal) }}
@@ -856,7 +884,7 @@
                2") — the same thing said twice, in two typographic voices. -->
           <div
             class="guided-build-status"
-            aria-live={tookOver ? "polite" : "off"}
+            aria-live={isContinuous || tookOver ? "polite" : "off"}
           >
             <span class="region-label">
               {isContinuous && editingStepNumber
@@ -1077,7 +1105,36 @@
   }
 
   .continuous-workspace .compact-layout .sequence-column .workspace {
-    min-height: clamp(13rem, 32svh, 18rem);
+    min-height: 7rem;
+  }
+
+  .continuous-workspace
+    .compact-layout
+    .sequence-column
+    .workspace.has-sequence {
+    min-height: 10rem;
+  }
+
+  .continuous-workspace.compact-demo .continuous-preview {
+    flex-basis: 4.5rem;
+    min-height: 4.5rem;
+  }
+
+  .continuous-workspace.compact-demo .continuous-preview.has-motion {
+    flex-basis: 9rem;
+    min-height: 9rem;
+  }
+
+  .continuous-workspace .compact-layout .sequence-column .ws-frame {
+    height: 5rem;
+  }
+
+  .continuous-workspace
+    .compact-layout
+    .sequence-column
+    .workspace.has-sequence
+    .ws-frame {
+    height: 8rem;
   }
 
   .continuous-workspace .compact-layout .build-column .picker-pane {
@@ -1580,14 +1637,21 @@
   }
 
   .continuous-preview {
-    display: grid;
-    place-items: center;
+    display: flex;
     flex: 0 0 clamp(10rem, 22vh, 17rem);
     min-height: 10rem;
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 0.75rem;
     background: var(--theme-card-bg, rgba(10, 10, 18, 0.72));
+  }
+
+  .continuous-preview .play-pane,
+  .continuous-preview .player-frame {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
   .continuous-preview > p {
