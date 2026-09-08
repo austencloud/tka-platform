@@ -37,6 +37,8 @@ Props:
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
 
   let {
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     turnsTuple = "(0, 0)",
     letter = null,
     letterDimensions = { width: 100, height: 100 },
@@ -55,6 +57,8 @@ Props:
     // Disable opacity transition (for animation canvas overlay where parent handles transitions)
     instantAppear = false,
   } = $props<{
+    leftColorOverride?: string;
+    rightColorOverride?: string;
     turnsTuple: string;
     letter: string | null | undefined;
     letterDimensions?: Dimensions;
@@ -88,8 +92,8 @@ Props:
   // Light mode: darker colors for visibility on light backgrounds
   // Dark mode: brighter colors for visibility on dark backgrounds
   const STATIC_COLORS = {
-    light: { blue: "#3D44B8", red: "#DC2626" }, // Matches :root --dm-motion-*
-    dark: { blue: "#3575E2", red: "#ED1C24" }, // Matches :root.dark --dm-motion-*
+    light: { left: "#3D44B8", right: "#DC2626" }, // Matches :root --dm-motion-*
+    dark: { left: "#3575E2", right: "#ED1C24" }, // Matches :root.dark --dm-motion-*
   };
 
   // Track colors from centralized cache (only used when darkMode is not explicitly provided)
@@ -107,18 +111,18 @@ Props:
   // Get motion colors - use static colors when darkMode is explicitly provided (preview isolation)
   // Otherwise use centralized cache (global mode)
   const BLUE_COLOR = $derived(
-    darkMode !== undefined
+    leftColorOverride ?? (darkMode !== undefined
       ? darkMode
-        ? STATIC_COLORS.dark.blue
-        : STATIC_COLORS.light.blue
-      : cachedColors.blue
+        ? STATIC_COLORS.dark.left
+        : STATIC_COLORS.light.left
+      : cachedColors.left)
   );
   const RED_COLOR = $derived(
-    darkMode !== undefined
+    rightColorOverride ?? (darkMode !== undefined
       ? darkMode
-        ? STATIC_COLORS.dark.red
-        : STATIC_COLORS.light.red
-      : cachedColors.red
+        ? STATIC_COLORS.dark.right
+        : STATIC_COLORS.light.right
+      : cachedColors.right)
   );
 
   // Track loaded letter dimensions with $state for reactivity
@@ -245,7 +249,7 @@ Props:
   function isColorHidden(color: string | undefined | null): boolean {
     if (!viewerVisibility || !color) return false;
     const isRed = color === "#ED1C24";
-    return isRed ? !viewerVisibility.redMotion : !viewerVisibility.blueMotion;
+    return isRed ? !viewerVisibility.rightMotion : !viewerVisibility.leftMotion;
   }
 
   // Check visibility. A slot renders if it has a displayable number OR is

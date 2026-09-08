@@ -143,10 +143,10 @@
     } ${to[0]} ${to[1]}`;
   }
 
-  const bluePath = $derived(
+  const leftPath = $derived(
     chord([16, 74], [74, 16], motionAware ? "arc" : pathShape)
   );
-  const redPath = $derived(
+  const rightPath = $derived(
     chord([84, 26], [26, 84], motionAware ? "concave" : pathShape)
   );
   const mandalaPathShape = $derived<MandalaPathShape>(
@@ -179,8 +179,8 @@
   </svg>
 {:else if kind === "paths"}
   <svg class="art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-    <path d={bluePath} class="path-line blue" />
-    <path d={redPath} class="path-line red" />
+    <path d={leftPath} class="path-line blue" />
+    <path d={rightPath} class="path-line red" />
     <circle cx="16" cy="74" r="6" class="dot blue" />
     <circle cx="74" cy="16" r="6" class="dot blue" />
     <circle cx="84" cy="26" r="6" class="dot red" />

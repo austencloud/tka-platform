@@ -1,7 +1,13 @@
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionType,
+  HandSide,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -20,17 +26,17 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 // A hand that moves → PRO shift (hand-path mode converts to FLOAT); a hand
 // that stays → STATIC (no arrow). Positions/elemental/numbers all derive
 // downstream from the motions.
-const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+const motion = (color: HandSide, from: GridLocation, to: GridLocation) =>
   createMotionData({
     motionType: from === to ? MotionType.STATIC : MotionType.PRO,
     startLocation: from,
     endLocation: to,
-    color,
+    hand: color,
     propType: PropType.HAND,
     gridMode: GridMode.DIAMOND,
   });
 
-// [blueFrom, blueTo, redFrom, redTo]; Start boxes hold (from === to).
+// [leftFrom, leftTo, rightFrom, rightTo]; Start boxes hold (from === to).
 type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
 const box = (m: Move, step: number, letter: Letter | null = null): StepData =>
   ({
@@ -40,13 +46,13 @@ const box = (m: Move, step: number, letter: Letter | null = null): StepData =>
     startPosition: getGridPositionFromLocations(m[0], m[2]),
     endPosition: getGridPositionFromLocations(m[1], m[3]),
     motions: {
-      blue: motion(MotionColor.BLUE, m[0], m[1]),
-      red: motion(MotionColor.RED, m[2], m[3]),
+      left: motion(HandSide.LEFT, m[0], m[1]),
+      right: motion(HandSide.RIGHT, m[2], m[3]),
     },
     stepNumber: step,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   }) as unknown as StepData;
 
@@ -58,7 +64,11 @@ const box = (m: Move, step: number, letter: Letter | null = null): StepData =>
 // separated placement. No other strip has a same-edge box.
 type Cell = { m: Move; step: number; letter?: Letter | null } | null;
 type Strip = { rows: Cell[][] };
-const c = (m: Move, step: number, letter: Letter | null = null): Cell => ({ m, step, letter });
+const c = (m: Move, step: number, letter: Letter | null = null): Cell => ({
+  m,
+  step,
+  letter,
+});
 
 const STRIPS: Strip[] = [
   // γ→γ Quarter-Opp - opposite spin, hands 90° apart the whole loop.
@@ -112,14 +122,23 @@ const STRIPS: Strip[] = [
 const stripSteps = (strip: Strip): PictographData[] =>
   strip.rows
     .flat()
-    .filter((cell): cell is { m: Move; step: number; letter?: Letter | null } => cell !== null)
-    .map((cell) => box(cell.m, cell.step, cell.letter ?? null)) as unknown as PictographData[];
+    .filter(
+      (cell): cell is { m: Move; step: number; letter?: Letter | null } =>
+        cell !== null
+    )
+    .map((cell) =>
+      box(cell.m, cell.step, cell.letter ?? null)
+    ) as unknown as PictographData[];
 
 /** HAND props - matching GammaPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
 
 export const hmGammaContent: GuideBlock[] = [
-  { kind: "heading", level: 1, text: "Gamma: Quarter-Opposite and Quarter-Same" },
+  {
+    kind: "heading",
+    level: 1,
+    text: "Gamma: Quarter-Opposite and Quarter-Same",
+  },
   {
     kind: "prose",
     html:
@@ -156,7 +175,10 @@ export const hmGammaContent: GuideBlock[] = [
       "When in gamma, you can move to any other variation of gamma.<br>" +
       "These examples are continuous, but non-continuous sequence are also possible.",
   },
-  { kind: "prose", html: "Here’s one that switches between Quarter-Opp and Quarter-Same:" },
+  {
+    kind: "prose",
+    html: "Here’s one that switches between Quarter-Opp and Quarter-Same:",
+  },
   {
     kind: "pictographGroup",
     items: stripSteps(STRIPS[2]!),
@@ -168,7 +190,7 @@ export const hmGammaContent: GuideBlock[] = [
   {
     kind: "prose",
     html:
-      "<strong>Practice using <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> " +
+      '<strong>Practice using <span class="cy">Dual</span><span class="pu">-Shifts</span> ' +
       "to create other non-continuous γ→γ variations!</strong>",
   },
 ];

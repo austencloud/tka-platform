@@ -16,6 +16,10 @@
 -->
 <script lang="ts">
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+  import {
+    createRenderActivityGate,
+    renderGateTarget,
+  } from "$lib/shared/render-gating/render-activity-gate";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import { onMount, onDestroy, untrack } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
@@ -64,8 +68,8 @@
     onStepChange,
     previewDarkMode = null,
     layout = "vertical" as "vertical" | "horizontal",
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     onTogglePlaybackRef,
     onControllerReady,
     hideProgressBar = false,
@@ -87,8 +91,8 @@
     onStepChange?: (stepIndex: number | null, isPlaying: boolean) => void;
     previewDarkMode?: boolean | null;
     layout?: "vertical" | "horizontal";
-    bluePropType?: PropType | null;
-    redPropType?: PropType | null;
+    leftPropType?: PropType | null;
+    rightPropType?: PropType | null;
     /** Callback to receive reference to toggle playback function (for external keyboard control) */
     onTogglePlaybackRef?: (toggleFn: () => void) => void;
     /** Called when the internal playback controller is initialized, exposing it for external sync */
@@ -124,6 +128,12 @@
   // Services (standalone mode only)
   let controller = $state<AnimationPlaybackController | null>(null);
 
+  // Off-screen / hidden-tab gating for the playhead loop. Standalone mode only:
+  // in context mode the viewer shell owns the controller and its gating, and a
+  // second gate on the shared singleton would fight it. The canvas render loop
+  // is gated independently inside CanvasSurface.
+  const activityGate = createRenderActivityGate({ name: "animation-player" });
+
   // State (standalone mode only)
   const animState = createAnimationPanelState();
 
@@ -143,15 +153,15 @@
   const currentStep = $derived(
     useContext ? (ctx?.state?.currentStep ?? 0) : (animState?.currentStep ?? 0)
   );
-  const bluePropState = $derived(
+  const leftPropState = $derived(
     useContext
-      ? (ctx?.state?.bluePropState ?? null)
-      : (animState?.bluePropState ?? null)
+      ? (ctx?.state?.leftPropState ?? null)
+      : (animState?.leftPropState ?? null)
   );
-  const redPropState = $derived(
+  const rightPropState = $derived(
     useContext
-      ? (ctx?.state?.redPropState ?? null)
-      : (animState?.redPropState ?? null)
+      ? (ctx?.state?.rightPropState ?? null)
+      : (animState?.rightPropState ?? null)
   );
   const sequenceData = $derived(
     useContext
@@ -239,8 +249,8 @@
 
     if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
       const hasBilateral =
-        (bluePropType != null && isBilateralProp(String(bluePropType))) ||
-        (redPropType != null && isBilateralProp(String(redPropType)));
+        (leftPropType != null && isBilateralProp(String(leftPropType))) ||
+        (rightPropType != null && isBilateralProp(String(rightPropType)));
       if (!hasBilateral) {
         settings.trackingMode = TrackingMode.RIGHT_END;
       }
@@ -260,6 +270,7 @@
 
     try {
       controller = getAnimationPlaybackController();
+      controller.setActivityGate(activityGate);
       loading = false;
       // Expose toggle function to parent for keyboard control
       onTogglePlaybackRef?.(togglePlayback);
@@ -272,6 +283,10 @@
 
   onDestroy(() => {
     if (!useContext) {
+      // Identity-scoped: the shared singleton must never be left gated to this
+      // host's detached element after a newer host has claimed it.
+      controller?.clearActivityGate(activityGate);
+      activityGate.dispose();
       // Owner-scoped release so a stale teardown can't clobber a newer host
       // that already re-claimed the shared singleton (HMR remount overlap).
       controller?.dispose(animState);
@@ -392,7 +407,11 @@
   const cancelExport = () => ctx?.actions.onCancelExport();
 </script>
 
-<div class="animation-player" class:horizontal={layout === "horizontal"}>
+<div
+  class="animation-player"
+  class:horizontal={layout === "horizontal"}
+  use:renderGateTarget={useContext ? null : activityGate}
+>
   {#if loading}
     <div class="state-msg">
       <ProgressRing percent={-1} size={32} strokeWidth={3} /><span
@@ -406,8 +425,8 @@
     <div class="horizontal-row">
       <div class="canvas-wrap">
         <AnimatorCanvas
-          blueProp={bluePropState}
-          redProp={redPropState}
+          leftProp={leftPropState}
+          rightProp={rightPropState}
           gridVisible={true}
           {gridMode}
           {letter}
@@ -423,8 +442,8 @@
           {trailSettings}
           onCanvasReady={handleCanvasReady}
           {previewDarkMode}
-          {bluePropType}
-          {redPropType}
+          {leftPropType}
+          {rightPropType}
           {tipEffectMap}
           progressBarVariant="minimal"
           {hideProgressBar}
@@ -479,8 +498,8 @@
     <!-- Vertical mode: original layout -->
     <div class="canvas-wrap">
       <AnimatorCanvas
-        blueProp={bluePropState}
-        redProp={redPropState}
+        leftProp={leftPropState}
+        rightProp={rightPropState}
         gridVisible={true}
         {gridMode}
         {letter}
@@ -495,8 +514,8 @@
         {trailSettings}
         onCanvasReady={handleCanvasReady}
         {previewDarkMode}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         {tipEffectMap}
         progressBarVariant="minimal"
         {hideProgressBar}

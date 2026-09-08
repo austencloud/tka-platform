@@ -44,8 +44,8 @@ function loadVariations(csvPath: string): PictographData[] {
       endPosition: c[2]!,
       timing: c[3]!,
       direction: c[4]!,
-      blueMotion: {
-        color: "blue",
+      leftMotion: {
+        hand: "left",
         motionType: c[5]!,
         rotationDirection: c[6]!,
         startLocation: c[7]!,
@@ -53,8 +53,8 @@ function loadVariations(csvPath: string): PictographData[] {
         startOrientation: "in",
         endOrientation: "in",
       },
-      redMotion: {
-        color: "red",
+      rightMotion: {
+        hand: "right",
         motionType: c[9]!,
         rotationDirection: c[10]!,
         startLocation: c[11]!,
@@ -233,8 +233,8 @@ describe("SequenceBuilder — targetLayerPattern", () => {
       expect(signature, `level ${level}`).toBe("1".repeat(signature.length));
 
       const turns = (result.sequence.slice(1) as never as Array<{
-        motions: { blue: { turns: unknown }; red: { turns: unknown } };
-      }>).flatMap((s) => [s.motions.blue.turns, s.motions.red.turns]);
+        motions: { left: { turns: unknown }; right: { turns: unknown } };
+      }>).flatMap((s) => [s.motions.left.turns, s.motions.right.turns]);
       for (const turn of turns) {
         if (typeof turn === "number") {
           expect(Number.isInteger(turn), `level ${level} turn ${turn}`).toBe(true);
@@ -259,12 +259,12 @@ describe("SequenceBuilder — crossing parity for four-repetition LOOPs", () => 
     });
 
     const steps = result.sequence.slice(1) as never as Array<{
-      motions: { blue: never; red: never };
+      motions: { left: never; right: never };
     }>;
-    const blue = steps.filter((s) => flipsLayer(s.motions.blue)).length;
-    const red = steps.filter((s) => flipsLayer(s.motions.red)).length;
-    expect(blue % 2).toBe(1);
-    expect(red % 2).toBe(0);
+    const left = steps.filter((s) => flipsLayer(s.motions.left)).length;
+    const right = steps.filter((s) => flipsLayer(s.motions.right)).length;
+    expect(left % 2).toBe(1);
+    expect(right % 2).toBe(0);
     // An odd crossing count is exactly what stops the layers coming home.
     expect(isLayerClosed(layerPatternOf(result.sequence.slice(1) as never))).toBe(
       false

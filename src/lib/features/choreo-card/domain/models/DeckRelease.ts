@@ -2,6 +2,7 @@ import type { ResolvedReversalPattern } from "../reversal-transform";
 import type { VariationConfig } from "../../services/deck-variation";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
+import type { HandPathReferenceCardId } from "../hand-path-reference-card-manifest";
 
 export interface CardFooter {
   left?: string;
@@ -35,10 +36,12 @@ export interface CardVariation {
   /** Explicit per-hand start-orientation override (e.g. VTG-lab exploration).
    *  Overrides the paired `startOriMode` register; a hand left undefined keeps
    *  the register/default. Applied after box-mode, before reversal/turns. */
-  startOriPair?: { blue?: Orientation; red?: Orientation };
+  startOriPair?: { left?: Orientation; right?: Orientation };
 }
 
 export interface DeckReleaseCard {
+  /** Durable sequence link; shared by copies of a hand-path reference card. */
+  qrUrl?: string;
   sequenceId: string;
   sourceCatalogId: string;
   stepCount: number;
@@ -99,8 +102,8 @@ export interface DeckRecipe {
   /** New LOOP axis: start-position subset as GridPosition strings ("alpha1", …). Absent/empty ⇒ any. */
   startPositionIds?: string[];
   /** Start orientation per hand ("in"|"out"|"clock"|"counter") for live generation. */
-  startOriBlue?: string;
-  startOriRed?: string;
+  startOriLeft?: string;
+  startOriRight?: string;
   /** Style axes (Smooth/Mixed/Choppy). Props drives prop-reversal density (live);
    *  hands + dashes are stamped intent for the live-generation phase. */
   propStyle?: "smooth" | "mixed" | "choppy";
@@ -130,12 +133,20 @@ export interface DeckRelease {
   description?: string;
   theme: string;
   /** Prop types snapshotted at release time so cached card renders stay valid across setting changes. */
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   cardCount: number;
   notes: string;
   sequences: DeckReleaseCard[];
   stepCountDistribution: Record<number, number>;
+  /**
+   * Hand-path presentation and ordering. Saved sequence records and QR links
+   * live in sequences[]; legacy manifests without them use authored references.
+   */
+  handPathCards?: {
+    version: number;
+    cardIds: HandPathReferenceCardId[];
+  };
   /**
    * The "How to Read" insert that ships as card 1 of the printed deck. It is a
    * flag rather than a `sequences[]` entry because it carries none of a card
@@ -153,8 +164,8 @@ export const INSERT_CARD_VERSION = 1;
 
 /**
  * Physical cards in the printed deck — the number to give a print vendor.
- * `cardCount` deliberately keeps its original meaning (sequence cards only) so
- * manifests released before the insert stay accurate.
+ * `cardCount` is the content-card count. It equals `sequences.length` for older
+ * releases and also includes manifest-declared reference cards in newer ones.
  */
 export function getPrintedCardCount(release: DeckRelease): number {
   return release.cardCount + (release.insertCard ? 1 : 0);

@@ -1,6 +1,7 @@
 import { BackgroundType } from "@austencloud/backgrounds";
 
 import { oceanFloraSceneUrl } from "../environments/scenes/ocean/authored/ocean-flora-url";
+import { AUTUMN_MOON_TEXTURE_URL } from "../environments/scenes/autumn/runtime/lighting/autumn-moon";
 
 /**
  * What each 3D environment downloads before its loading curtain can lift, so
@@ -31,14 +32,7 @@ export const SCENE_ASSET_MANIFEST: Readonly<
 > = {
   [BackgroundType.AUTUMN]: ["/models/autumn/autumn-environment.glb"],
   [BackgroundType.BLOSSOM]: ["/models/blossom/blossom_environment.glb"],
-  [BackgroundType.CELESTIAL]: [
-    "/models/celestial/seraphic-vault-integrated-sanctuaries.glb",
-    "/models/celestial/olive-cloudbreak-production-slice.glb",
-    "/models/celestial/cloudbreak/source/olive-west-ancient.glb",
-    "/models/celestial/cloudbreak/source/olive-east-windswept.glb",
-    "/models/celestial/cloudbreak/rocks/coast-rocks-05.glb",
-    "/models/celestial/cloudbreak/rocks/sand-rocks-small-01.glb",
-  ],
+  [BackgroundType.CELESTIAL]: ["/models/celestial/sky-citadel.glb"],
   [BackgroundType.COSMIC]: [
     "/models/cosmic/cosmic-reliquary.glb",
     "/models/cosmic/cosmic-stage.glb",
@@ -56,9 +50,25 @@ export const SCENE_ASSET_MANIFEST: Readonly<
     "/models/forest/forest-stage.glb",
   ],
   [BackgroundType.OCEAN]: ["/models/ocean/ocean-environment.glb"],
-  [BackgroundType.PRIDE]: [],
+  [BackgroundType.PRIDE]: ["/models/rainbow/spectrum-commons.glb"],
   [BackgroundType.VOID]: [],
-  [BackgroundType.WINTER]: ["/models/winter/winter-environment.glb"],
+  [BackgroundType.WINTER]: ["/models/winter/blue-hour-lodge.glb"],
+};
+
+/**
+ * Runtime textures that should already be in the HTTP cache when a scene
+ * starts. They live outside the GLB manifest because the static contract above
+ * intentionally scans model ownership only.
+ */
+const SCENE_TEXTURE_PREFETCH: Partial<
+  Readonly<Record<BackgroundType, readonly string[]>>
+> = {
+  [BackgroundType.AUTUMN]: [
+    "/textures/autumn-floor/ground-detail-modulation.ktx2",
+    "/textures/water/Water_1_M_Normal.jpg",
+    "/textures/water/Water_2_M_Normal.jpg",
+    AUTUMN_MOON_TEXTURE_URL,
+  ],
 };
 
 /**
@@ -75,6 +85,7 @@ export const DECODER_RUNTIME_URLS: readonly string[] = [
 
 export function sceneAssetUrls(background: BackgroundType): readonly string[] {
   const listed = SCENE_ASSET_MANIFEST[background] ?? [];
-  if (background !== BackgroundType.OCEAN) return listed;
-  return [...listed, oceanFloraSceneUrl()];
+  const textures = SCENE_TEXTURE_PREFETCH[background] ?? [];
+  if (background !== BackgroundType.OCEAN) return [...listed, ...textures];
+  return [...listed, ...textures, oceanFloraSceneUrl()];
 }

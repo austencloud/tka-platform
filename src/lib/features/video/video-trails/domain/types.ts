@@ -88,7 +88,7 @@ export interface TrailEffectConfig {
   fade: number;
   width: number;
   glow: boolean;
-  color: { blue: string; red: string };
+  color: { left: string; right: string };
 }
 
 export interface CharcoalEffectConfig {
@@ -188,7 +188,7 @@ export const DEFAULT_DETECTION_CONFIG: DetectionConfig = {
 export const DEFAULT_EFFECT_CONFIG: EffectConfig = {
   fire: { enabled: false, intensity: 1.0, flameHeight: 1.0, colorBlend: 0.5, preset: "white-gas" },
   led: { enabled: false, glare: DEFAULT_GLARE_WEIGHT, patternId: "solid", color: "#ffffff", brightness: 1.0 },
-  trails: { enabled: true, mode: "fade" as TrailMode, length: 60, fade: 0.95, width: 3, glow: true, color: { blue: "#4a90d9", red: "#d94a4a" } },
+  trails: { enabled: true, mode: "fade" as TrailMode, length: 60, fade: 0.95, width: 3, glow: true, color: { left: "#4a90d9", right: "#d94a4a" } },
   charcoal: { enabled: false, gravity: 50, burstThreshold: 500 },
 };
 

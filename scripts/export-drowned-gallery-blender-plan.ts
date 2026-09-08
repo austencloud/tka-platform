@@ -45,11 +45,22 @@ export function createDrownedGalleryBlenderManifest() {
     );
   }
 
-  // The GLB is authored around the water bay's centre so the review route can
-  // mount it at the origin. Runtime consumers translate by this origin.
+  // The GLB is authored around the centre of the three ROOMS' union so the
+  // review route can mount it at the origin. Not `bayBounds`: that bbox also
+  // holds the corridors the museum routes to the bay's neighbours, and those
+  // differ between this standalone cave plan and the full museum (which adds
+  // a dogleg south of the approach door). Runtime consumers translate by this
+  // origin, derived the same way (DrownedGalleryAuthored.svelte).
+  const rooms = [layout.approach, layout.gallery, layout.grotto];
   const origin = {
-    x: (layout.bayBounds.minX + layout.bayBounds.maxX) / 2,
-    z: (layout.bayBounds.minZ + layout.bayBounds.maxZ) / 2,
+    x:
+      (Math.min(...rooms.map((r) => r.minX)) +
+        Math.max(...rooms.map((r) => r.maxX))) /
+      2,
+    z:
+      (Math.min(...rooms.map((r) => r.minZ)) +
+        Math.max(...rooms.map((r) => r.maxZ))) /
+      2,
   };
 
   const contract = {

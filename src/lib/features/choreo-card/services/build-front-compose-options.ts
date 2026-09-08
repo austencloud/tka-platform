@@ -13,6 +13,7 @@ import type { SequenceExportOptions } from "$lib/shared/render/domain/models/seq
 import type { PrintRenderOptions } from "./types";
 import { buildCanonicalCardVisibility } from "../domain/canonical-card-visibility";
 import { getCardFrameContentInset } from "./card-front-frame";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 // MPC poker card defaults (822x1122 at 300 DPI with 36px bleed).
 const MPC_WIDTH = 822;
@@ -63,9 +64,10 @@ export function buildFrontComposeOptions(
   // Source word + pictograph visibility from the canonical locked profile.
   const canonical = buildCanonicalCardVisibility({
     tndElement: options.tndElement,
-    bluePropType: options.bluePropType,
-    redPropType: options.redPropType,
+    leftPropType: options.leftPropType,
+    rightPropType: options.rightPropType,
   });
+  const isHandPath = options.cardProfile === "hand-path";
 
   const composeOptions: Partial<SequenceExportOptions> = {
     deckCard: { contentWidth: contentW, contentHeight: contentH },
@@ -79,17 +81,19 @@ export function buildFrontComposeOptions(
     // visibly right, so these cards keep equal physical gutters instead.
     ...(options.tndElement && { gridCentering: "geometric" as const }),
     addStepNumbers: true,
-    addWord: canonical.addWord,
-    addDifficultyLevel: true,
+    addWord: isHandPath ? true : canonical.addWord,
+    customName: options.customName,
+    renderWordAsText: isHandPath,
+    addDifficultyLevel: !isHandPath,
     stepSize: 300,
     stepScale: 1,
     margin: 0,
     format: "PNG",
     quality: 1,
     scale: 1,
-    redVisible: true,
-    blueVisible: true,
-    addReversalSymbols: true,
+    rightVisible: true,
+    leftVisible: true,
+    addReversalSymbols: !isHandPath,
     combinedGrids: false,
     notes: options.notes ?? "",
     showNotes: !!(
@@ -104,9 +108,20 @@ export function buildFrontComposeOptions(
     accentColor: options.tndElement?.accentColor,
     accentTintOpacity: options.tndElement?.cardTintOpacity,
     loopType: sequence.loopType ?? undefined,
-    showLoopGlyph: true,
-    ...(options.bluePropType && { bluePropTypeOverride: options.bluePropType }),
-    ...(options.redPropType && { redPropTypeOverride: options.redPropType }),
+    showLoopGlyph: !isHandPath,
+    ...(isHandPath
+      ? {
+          leftPropTypeOverride: PropType.HAND,
+          rightPropTypeOverride: PropType.HAND,
+        }
+      : {
+          ...(options.leftPropType && {
+            leftPropTypeOverride: options.leftPropType,
+          }),
+          ...(options.rightPropType && {
+            rightPropTypeOverride: options.rightPropType,
+          }),
+        }),
     ...(options.deckId && { deckId: options.deckId }),
     ...(options.deckName && { deckName: options.deckName }),
     visibilityOverrides: {
@@ -116,6 +131,15 @@ export function buildFrontComposeOptions(
       // Explicit QR override (shop preview fan drops it); unset = canonical.
       ...(options.showQRCode !== undefined && {
         showQRCode: options.showQRCode,
+      }),
+      ...(isHandPath && {
+        leftPropType: PropType.HAND,
+        rightPropType: PropType.HAND,
+        handPathMode: true,
+        showTKA: false,
+        showReversals: false,
+        showQRCode: options.showQRCode ?? true,
+        showMandala: false,
       }),
     },
   };

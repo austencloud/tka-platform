@@ -174,8 +174,8 @@ export class LOOPDetector implements ILOOPDetector {
     const layeredPath: LayeredPathResult =
       this.layeredPathService?.detectLayeredPath(rawSequence) ?? {
         isLayeredPath: false,
-        blueCycle: null,
-        redCycle: null,
+        leftCycle: null,
+        rightCycle: null,
         rhythmType: null,
         polyrhythmRatio: null,
         zoneCoverage: null,
@@ -673,8 +673,8 @@ export class LOOPDetector implements ILOOPDetector {
         const s2 = steps[j];
         if (!s1 || !s2) continue;
         const inverted =
-          s1.blue.motionType !== s2.blue.motionType ||
-          s1.red.motionType !== s2.red.motionType;
+          s1.left.motionType !== s2.left.motionType ||
+          s1.right.motionType !== s2.right.motionType;
         if (firstInverted === null) {
           firstInverted = inverted;
         } else if (inverted !== firstInverted) {

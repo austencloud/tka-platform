@@ -1,48 +1,34 @@
-# MCP Ground Truth — ENFORCED
+---
+paths:
+  - "mcp-server/**/*"
+  - "src/lib/shared/{foundation,notation,pictograph,sequence-engine}/**/*"
+  - "src/lib/features/{learn,train}/**/*"
+  - "docs/learn/**/*"
+---
 
-TKA domain facts come from the Flow Arts Knowledge MCP server, never from
-training data — the training data does not contain authoritative TKA data, and
-hallucinated domain facts have cost hours of debugging. Any claim about
-letters, VTG, positions, pictographs, terms, word feasibility, how a motion
-looks or feels, or why an example teaches something requires an MCP call in the
-current turn, or a direct quote of one made earlier in the same conversation.
-Memory of prior conversations doesn't count. "Connective" lesson prose is not
-exempt: if a sentence explains TKA, it is a domain claim.
+# TKA Ground-Truth Contract
 
-| Claim type                                       | Tool                                                                       |
-| ------------------------------------------------ | -------------------------------------------------------------------------- |
-| What a letter does (motion, grip, shift)         | `get_letter_explanation` / `get_alphabet_info`                             |
-| Pictograph structure                             | `get_pictograph_data`                                                      |
-| VTG pattern/shape/category meaning               | `get_vtg_pattern`, `get_vtg_shape`, `get_vtg_category`                     |
-| Transition between letters or VTGs               | `get_vtg_transition` / `get_vtg_transition_between`                        |
-| TKA term definition                              | `get_term_definition`                                                      |
-| Deep topic (orientation algebra, base rotation…) | `get_domain_topic`                                                         |
-| Which letters exist, by type/variation           | `list_available_letters`, `list_letter_variations`, `list_letters_by_type` |
-| Word feasibility                                 | `analyze_word_feasibility`                                                 |
-| Loop detection                                   | `detect_loop_pattern`                                                      |
-| Shared behavior between letters                  | `compare_letters`                                                          |
+Use the Flow Arts MCP server for user-facing claims about letters, VTG,
+positions, pictographs, terminology, word feasibility, transitions, or physical
+execution. Use a current-turn result or a result already present in the same
+conversation; do not rely on model memory or existing UI copy.
 
-Unsure which tool: `get_domain_topic` or `get_term_definition` — ~50-token
-lookups. If the MCP server is unavailable: stop and tell Austen; don't
-best-effort domain answers from memory.
+| Claim                                       | Preferred lookup                                  |
+| ------------------------------------------- | ------------------------------------------------- |
+| Letter behavior or alphabet structure       | `get_letter_explanation`, `get_alphabet_info`     |
+| Pictograph structure                        | `get_pictograph_data`                             |
+| VTG pattern, shape, category, or transition | matching `get_vtg_*` tool                         |
+| Term or deep topic                          | `get_term_definition`, `get_domain_topic`         |
+| Available letters or variations             | matching `list_*` tool                            |
+| Word feasibility or LOOP structure          | `analyze_word_feasibility`, `detect_loop_pattern` |
+| Comparison                                  | `compare_letters`                                 |
 
-## User-Facing TKA Copy Gate
+If the server is unavailable, stop the domain-dependent portion and report the
+missing capability. Routine interface language without a TKA claim does not
+need MCP evidence.
 
-Before editing educational or marketing copy that explains TKA:
-
-1. Map every proposed explanatory sentence to evidence from a current-turn MCP
-   result and, when the curriculum cites one, the canonical guide page.
-2. Treat existing copy as untrusted. Its presence in the repository is not
-   evidence that it is correct.
-3. Flag any sentence about ease, feel, intuition, learning benefit, visual
-   effect, or physical execution unless the evidence explicitly supports it.
-   Do not invent these claims to make copy flow.
-4. Show Austen the exact proposed explanation and wait for explicit approval
-   before putting it in a component. Approval of the concept is not approval of
-   a paraphrase; materially changed wording goes back through review.
-5. Record Learn-lesson approvals in
-   `docs/learn/copy-reviews/<concept-id>.md`, including the exact approved text,
-   sources, approval date, and approval state.
-
-Routine interface labels such as Back, Next, Retry, and question counts do not
-need copy approval unless they contain a TKA claim.
+For educational or marketing copy, map each substantive TKA claim to current
+evidence. Material claims about ease, intuition, pedagogy, visual effect, or
+physical feel need explicit support; do not invent them to improve prose. A
+separate approval or review record is required only when the user or the owning
+curriculum workflow asks for one.

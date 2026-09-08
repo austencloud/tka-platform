@@ -148,14 +148,14 @@
     // at the user's current period (unchanged behavior).
     const effPeriod = rhythm.period ?? period;
     if (binding.lanes === 2) {
-      const { blue, red } = stampPerHand(
+      const { left, right } = stampPerHand(
         rhythm,
         effPeriod,
         stampValue(0),
         stampValue(1),
         binding.base
       );
-      onChange([blue, red]);
+      onChange([left, right]);
     } else {
       onChange([stampSingle(rhythm, effPeriod, stampValue(0), binding.base)]);
     }

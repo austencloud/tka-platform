@@ -12,8 +12,8 @@ import { resolveTriGridPosition } from './domain/trigrid-positions';
  */
 export function getTriGridPositionResolver(): {
 	resolvePosition: (
-		blueLocation: GridLocation,
-		redLocation: GridLocation,
+		leftLocation: GridLocation,
+		rightLocation: GridLocation,
 		mode: TriGridMode,
 	) => TriGridPositionInfo | null;
 } {

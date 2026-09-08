@@ -22,9 +22,9 @@ export interface TurnPatternEntry {
   /** 0-based index into the sequence steps array */
   readonly stepIndex: number;
   /** Blue motion turn value, or null if no blue motion on this beat */
-  readonly blue: TurnValue | null;
+  readonly left: TurnValue | null;
   /** Red motion turn value, or null if no red motion on this beat */
-  readonly red: TurnValue | null;
+  readonly right: TurnValue | null;
 }
 
 /**
@@ -70,8 +70,8 @@ export function isTurnPatternEntry(obj: unknown): obj is TurnPatternEntry {
   const entry = obj as Record<string, unknown>;
   return (
     typeof entry.stepIndex === "number" &&
-    (entry.blue === null || isTurnValue(entry.blue)) &&
-    (entry.red === null || isTurnValue(entry.red))
+    (entry.left === null || isTurnValue(entry.left)) &&
+    (entry.right === null || isTurnValue(entry.right))
   );
 }
 
@@ -126,7 +126,7 @@ export function clampLanesToLevel(
   lanes: TurnLanes,
   level: number,
   maxTurnIntensity: number
-): { blue: TurnValue[]; red: TurnValue[] } {
+): { left: TurnValue[]; right: TurnValue[] } {
   const pool = getTurnPool(level, maxTurnIntensity, { allowFloat: level >= 3 });
   const ceiling = pool.reduce<number>(
     (highest, value) =>
@@ -140,7 +140,7 @@ export function clampLanesToLevel(
       return atLevel === "fl" ? "fl" : Math.min(atLevel, ceiling);
     });
 
-  return { blue: clamp(lanes.blue), red: clamp(lanes.red) };
+  return { left: clamp(lanes.left), right: clamp(lanes.right) };
 }
 
 /**

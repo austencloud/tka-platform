@@ -9,11 +9,14 @@ import type { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
 
 interface HarnessOptions {
   sequence: SequenceData;
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
   generateForSequence: ReturnType<
     typeof getQRCodeGenerator
   >["generateForSequence"];
+  generateForUrl?: ReturnType<typeof getQRCodeGenerator>["generateForUrl"];
+  isAuthenticated?: boolean;
+  qrUrl?: string;
 }
 
 export function createChoreoCardQrStateHarness(options: HarnessOptions) {
@@ -21,14 +24,16 @@ export function createChoreoCardQrStateHarness(options: HarnessOptions) {
     sequence: options.sequence,
     showQRCode: true,
     darkMode: false,
-    isAuthenticated: true,
-    bluePropType: options.bluePropType,
-    redPropType: options.redPropType,
+    isAuthenticated: options.isAuthenticated ?? true,
+    qrUrl: options.qrUrl,
+    leftPropType: options.leftPropType,
+    rightPropType: options.rightPropType,
     browseViewMode: undefined,
   });
 
   const generator = {
     generateForSequence: options.generateForSequence,
+    generateForUrl: options.generateForUrl,
   } as ReturnType<typeof getQRCodeGenerator>;
 
   let qrState!: ReturnType<typeof createChoreoCardQrState>;
@@ -42,11 +47,14 @@ export function createChoreoCardQrStateHarness(options: HarnessOptions) {
     get qrState() {
       return qrState;
     },
-    setProps(bluePropType: PropType, redPropType: PropType) {
-      deps = { ...deps, bluePropType, redPropType };
+    setProps(leftPropType: PropType, rightPropType: PropType) {
+      deps = { ...deps, leftPropType, rightPropType };
     },
     setViewMode(browseViewMode: BrowseViewMode | undefined) {
       deps = { ...deps, browseViewMode };
+    },
+    setQrUrl(qrUrl: string | undefined) {
+      deps = { ...deps, qrUrl };
     },
     dispose,
   } as const;

@@ -9,7 +9,7 @@
 import type { ConceptCategory, LearnConcept } from "./types";
 
 /**
- * Complete TKA Learning Path - 29 Concepts
+ * Complete TKA Learning Path
  * Based on "The Kinetic Alphabet Level 1" curriculum
  */
 export const TKA_CONCEPTS: LearnConcept[] = [
@@ -21,7 +21,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     category: "foundation",
     name: "The Grid",
     shortName: "Grid",
-    description: "Master the 4-point diamond and box grid system",
+    description: "Find your way around the diamond and box grids.",
     icon: "fa-border-all",
     pdfPages: [7],
     prerequisites: [],
@@ -54,9 +54,9 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     id: "hand-motions-intro",
     order: 3,
     category: "foundation",
-    name: "Hand Motions Overview",
-    shortName: "Motions",
-    description: "Understand the three fundamental hand motions",
+    name: "Hand Motions",
+    shortName: "Hand Motions",
+    description: "Shift, dash, and static: three ways a hand can move.",
     icon: "fa-arrow-right",
     pdfPages: [9],
     prerequisites: ["hand-positions"],
@@ -65,6 +65,23 @@ export const TKA_CONCEPTS: LearnConcept[] = [
       "Shift - move to adjacent point",
       "Dash - move to opposite point",
       "Static - remain at current point",
+    ],
+  },
+  {
+    id: "timing-and-direction",
+    order: 3.5,
+    category: "foundation",
+    name: "Timing and Direction",
+    shortName: "Timing & Direction",
+    description: "Explore timing and direction, then combine them in six ways.",
+    icon: "fa-arrows-left-right",
+    pdfPages: [9, 10, 11],
+    prerequisites: ["hand-motions-intro"],
+    estimatedMinutes: 6,
+    concepts: [
+      "Together, split, and quarter timing",
+      "Same and opposite direction",
+      "The six timing and direction relationships",
     ],
   },
   {
@@ -265,17 +282,20 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     id: "letter-codex-intro",
     order: 15,
     category: "letters",
-    name: "Letter Codex Overview",
-    shortName: "Codex Intro",
-    description: "Introduction to the TKA letter system",
+    name: "Pictograph Anatomy",
+    shortName: "Pictographs",
+    description: "A pictograph shows one step of motion.",
     icon: "fa-book",
     pdfPages: [18, 19, 20],
     prerequisites: ["negative-space"],
     estimatedMinutes: 10,
     concepts: [
-      "Type 1-6 motion categories",
-      "Pro, Anti, Hybrid patterns",
-      "Letter organization system",
+      "Top left: the step number.",
+      "Top center: where the hands start and end.",
+      "Bottom left: the TKA letter and its turns.",
+      "Bottom right: the hands’ time and direction.",
+      "Top right: the props’ time and direction.",
+      "In the middle: the props and the paths your hands follow.",
     ],
   },
   {
@@ -415,15 +435,15 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     category: "combinations",
     name: "TKA 1: Learning Letters",
     shortName: "Learning Letters",
-    description: "The 19 words in the Learning Letters deck",
+    description: "Learn the six Alpha and Beta words one at a time",
     icon: "fa-spell-check",
     pdfPages: [29, 30],
     prerequisites: ["type456-dash-static"],
     estimatedMinutes: 20,
     concepts: [
-      "The 19 Learning Letters words",
-      "Six T&D families",
-      "Card and motion review",
+      "AAAA, BBBB, and CCCC",
+      "GGGG, HHHH, and IIII",
+      "Performance, animation, and Choreo Card review",
     ],
   },
   {

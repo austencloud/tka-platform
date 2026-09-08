@@ -46,6 +46,7 @@ export const LibrarySequenceDocSchema = z
   .object({
     id: z.string(),
     name: z.string().default(""),
+    sequenceKind: z.enum(["prop", "hand-path"]).optional(),
     displayName: z.string().optional(),
     intendedWord: z.string().optional(),
     word: z.string().default(""),

@@ -34,6 +34,7 @@ captureEffectDiagnostics to the context menu.
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -41,11 +42,16 @@ captureEffectDiagnostics to the context menu.
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { TrailSettings } from "../domain/types/trail-types";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+  import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
-  import { AnimationEngine } from "../services/animation-engine.svelte";
+  import {
+    AnimationEngine,
+    type AdditionalLayerTextureStatus,
+  } from "../services/animation-engine.svelte";
+  import { createRenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
   import {
     getAnimationVisibilityManager,
     type AnimationVisibilityStateManager,
@@ -67,15 +73,22 @@ captureEffectDiagnostics to the context menu.
   import { getRenderContextRegistry } from "../get-render-context-registry";
   import { installAnimatorDiagnostics } from "../debug/animator-diagnostics";
   import type { QualityTier } from "../domain/types/quality-types";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "../domain/glyph-overlay-frame";
+  import PanelState from "$lib/shared/components/panel/PanelState.svelte";
 
   let {
     // Engine-driving props
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     additionalLayers = [],
+    preloadAdditionalLayers = [],
     tunnelSpectrum = true,
+    tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
+    gridOpacity = undefined,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
@@ -84,13 +97,15 @@ captureEffectDiagnostics to the context menu.
     currentStep = 0,
     isPlaying = false,
     trailSettings: externalTrailSettings = $bindable(),
-    bluePropType = null,
-    redPropType = null,
-    blueBuugengFlipped = undefined,
-    redBuugengFlipped = undefined,
+    leftPropType = null,
+    rightPropType = null,
+    fanAppearance = undefined,
+    leftBuugengFlipped = undefined,
+    rightBuugengFlipped = undefined,
     previewDarkMode = null,
     isSeamlesslyLoopable = undefined,
     showNonRadialPoints = true,
+    mandalaVisibleOverride = undefined,
     fireConfig = undefined,
     ledConfig = undefined,
     tipEffectMap: cellTipEffectMap = undefined,
@@ -103,10 +118,12 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     elementalGlyphVisible = false,
+    propElementalType = null,
+    glyphFrame = "pictograph",
     effectiveBeatNumbersVisible = false,
     positionGlyphVisible = false,
-    bluePathLinesVisible = false,
-    redPathLinesVisible = false,
+    leftPathLinesVisible = false,
+    rightPathLinesVisible = false,
     suppress2DOverlays = false,
     // Engine wiring props
     resizePaused = false,
@@ -119,6 +136,7 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady = () => {},
     onInitialized = undefined,
     onEffectError = undefined,
+    onAdditionalLayerTextureStatusChange = undefined,
     // Bound back to the parent so it can drive resize + diagnostics
     engine = $bindable(),
     // Optional overlay pinned inside the square .canvas-wrapper (position:relative),
@@ -126,12 +144,15 @@ captureEffectDiagnostics to the context menu.
     // header/progress stack. Undefined → nothing rendered.
     cornerControl = undefined,
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
+    tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
+    gridOpacity?: number;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
@@ -140,13 +161,15 @@ captureEffectDiagnostics to the context menu.
     currentStep?: number;
     isPlaying?: boolean;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
+    fanAppearance?: FanAppearance;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     previewDarkMode?: boolean | null;
     isSeamlesslyLoopable?: boolean;
     showNonRadialPoints?: boolean;
+    mandalaVisibleOverride?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
     tipEffectMap?: TipEffectMap;
@@ -160,11 +183,13 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     elementalGlyphVisible?: boolean;
+    propElementalType?: ElementalType | null;
+    glyphFrame?: GlyphOverlayFrameMode;
     effectiveBeatNumbersVisible?: boolean;
     /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
     positionGlyphVisible?: boolean;
-    bluePathLinesVisible?: boolean;
-    redPathLinesVisible?: boolean;
+    leftPathLinesVisible?: boolean;
+    rightPathLinesVisible?: boolean;
     suppress2DOverlays?: boolean;
     resizePaused?: boolean;
     visibilityManagerOverride?: AnimationVisibilityStateManager;
@@ -178,6 +203,9 @@ captureEffectDiagnostics to the context menu.
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onInitialized?: () => void;
     onEffectError?: (effectName: string, error: Error) => void;
+    onAdditionalLayerTextureStatusChange?: (
+      status: AdditionalLayerTextureStatus
+    ) => void;
     /** The engine instance, bound back to the parent for resize + diagnostics control. */
     engine?: AnimationEngine;
     /** Optional overlay pinned inside the square canvas (e.g. a corner toggle). */
@@ -190,11 +218,29 @@ captureEffectDiagnostics to the context menu.
   let containerElement: HTMLDivElement | undefined = $state();
 
   // Engine instance - created here in the leaf and bound back out to the parent.
-  const engineInstance = new AnimationEngine();
-  if (initialQualityTier) {
-    engineInstance.setInitialQualityTier(initialQualityTier);
+  function createEngine() {
+    const nextEngine = new AnimationEngine();
+    if (initialQualityTier) {
+      nextEngine.setInitialQualityTier(initialQualityTier);
+    }
+    return nextEngine;
   }
+
+  let engineInstance = $state(createEngine());
   engine = engineInstance;
+
+  // Off-screen / hidden-tab gating. Every on-screen animated canvas goes
+  // through the one owner in `shared/render-gating`: while this surface is
+  // scrolled away or the tab is hidden, its rAF stops entirely and the canvas
+  // holds its last painted frame. Created here (no DOM work, SSR-safe) and
+  // attached once the container element exists. The offscreen export engine is
+  // built by `render-context-factory`, never by this component, so it never
+  // receives a gate and is never paused.
+  let activityGate = createRenderActivityGate({ name: resolvedContextId });
+  engineInstance.setActivityGate(activityGate);
+
+  let initializationError = $state<Error | null>(null);
+  let retryInitialization = $state<(() => void) | null>(null);
 
   // Sync 2D overlay suppression (for 3D mode)
   $effect.pre(() => {
@@ -256,8 +302,8 @@ captureEffectDiagnostics to the context menu.
   $effect(() => {
     if (!viewerVisibilityCtx) return;
     engineInstance.setMotionVisibility(
-      viewerVisibilityCtx.blueMotion,
-      viewerVisibilityCtx.redMotion
+      viewerVisibilityCtx.leftMotion,
+      viewerVisibilityCtx.rightMotion
     );
   });
 
@@ -332,6 +378,10 @@ captureEffectDiagnostics to the context menu.
     const el = containerElement;
     if (!el) return;
 
+    const currentEngine = engineInstance;
+    const currentActivityGate = activityGate;
+    currentActivityGate.attach(el);
+
     // Register the render context AFTER the (async) engine init resolves.
     // getRenderContext returns null until the awaited lifecycle init has created
     // the renderer/renderLoop/trailCapturer/resizer. The previous queueMicrotask
@@ -341,34 +391,50 @@ captureEffectDiagnostics to the context menu.
     // `disposed` guard prevents registering a context for an engine that was torn
     // down before init finished.
     let disposed = false;
-    untrack(() => {
-      void engineInstance
-        .initialize(el, {
-          onCanvasReady,
-          onTrailSettingsChange: (settings) => {
-            externalTrailSettings = settings;
-          },
-          onEffectError,
-          prewarmEffects,
-        })
-        .then(() => {
-          if (disposed) return;
-          const ctx = engineInstance.getRenderContext(resolvedContextId, el);
-          if (ctx) {
-            getRenderContextRegistry().register(ctx);
-          }
-        })
-        .catch((err) => {
-          // Effect-level failures surface via onEffectError, but a throw from
-          // init itself means NO canvas gets created at all — an empty stage.
-          // Swallowing it silently once hid a DataCloneError for a full
-          // evening; always leave a trace.
-          console.error(
-            "[CanvasSurface] engine initialize() failed — canvas never created:",
-            err
-          );
-        });
-    });
+    let initializationRevision = 0;
+
+    function initialize() {
+      const revision = ++initializationRevision;
+      initializationError = null;
+
+      untrack(() => {
+        void currentEngine
+          .initialize(el, {
+            onCanvasReady,
+            onTrailSettingsChange: (settings) => {
+              externalTrailSettings = settings;
+            },
+            onEffectError,
+            prewarmEffects,
+          })
+          .then(() => {
+            if (disposed || revision !== initializationRevision) return;
+            const ctx = currentEngine.getRenderContext(resolvedContextId, el);
+            if (ctx) {
+              getRenderContextRegistry().register(ctx);
+            }
+          })
+          .catch((err) => {
+            if (disposed || revision !== initializationRevision) return;
+            const failure = err instanceof Error ? err : new Error(String(err));
+            initializationError = failure;
+            console.error(
+              "[CanvasSurface] Animation initialization failed:",
+              failure
+            );
+          });
+      });
+    }
+
+    retryInitialization = () => {
+      initializationError = null;
+      activityGate = createRenderActivityGate({ name: resolvedContextId });
+      engineInstance = createEngine();
+      engineInstance.setActivityGate(activityGate);
+      engine = engineInstance;
+    };
+
+    initialize();
 
     // Dev-only: install the LED/fire console diagnostics on window. Gated on
     // import.meta.env.DEV so production never gets these window globals. The
@@ -383,27 +449,38 @@ captureEffectDiagnostics to the context menu.
 
     return () => {
       disposed = true;
+      ++initializationRevision;
+      retryInitialization = null;
       untrack(() => {
         disposeDiagnostics?.();
+        currentActivityGate.dispose();
         getRenderContextRegistry().unregister(resolvedContextId);
-        engineInstance.dispose();
+        currentEngine.dispose();
       });
     };
   });
 
   // Single effect to pass all props to engine
   $effect(() => {
+    // Resizing clears the canvas even while paused. Read the completed-resize
+    // signal here so the current pose is repainted without advancing playback.
+    if (isInitialized) void engineInstance.canvasResizeCount;
     const currentFireConfig = fireConfig;
     const currentLedConfig = ledConfig;
     const currentCellTipEffectMap = cellTipEffectMap;
     const currentCellTipEffortMap = cellTipEffortMap;
     const props = {
-      blueProp,
-      redProp,
+      leftProp,
+      rightProp,
       additionalLayers,
+      preloadAdditionalLayers,
+      onAdditionalLayerTextureStatusChange,
       tunnelSpectrum,
+      tunnelPropColors,
+      primaryPropColors: getSettings().primaryPropColors ?? null,
       tunnelSelectedLayer,
       gridVisible,
+      gridOpacity,
       gridMode,
       backgroundAlpha,
       letter,
@@ -412,14 +489,16 @@ captureEffectDiagnostics to the context menu.
       currentStep,
       isPlaying,
       externalTrailSettings,
-      bluePropType,
-      redPropType,
-      blueBuugengFlipped,
-      redBuugengFlipped,
+      leftPropType,
+      rightPropType,
+      fanAppearance,
+      leftBuugengFlipped,
+      rightBuugengFlipped,
       previewDarkMode,
       isSeamlesslyLoopable,
       virtualTime,
       showNonRadialPoints,
+      mandalaVisibleOverride,
     };
     untrack(() => {
       if (currentFireConfig) {
@@ -494,6 +573,8 @@ captureEffectDiagnostics to the context menu.
       {stepData}
       tkaGlyphVisible={effectiveTkaGlyphVisible}
       {elementalGlyphVisible}
+      {propElementalType}
+      {glyphFrame}
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}
@@ -508,15 +589,15 @@ captureEffectDiagnostics to the context menu.
         currentStep >= (sequenceData.steps?.length ?? 0) + 0.99}
     />
 
-    <!-- Always mounted: PathLinesOverlay self-gates on showBlue/showRed and owns
+    <!-- Always mounted: PathLinesOverlay self-gates on showLeft/showRight and owns
          its own fade in/out, so the overlay must stay in the tree for its
          out-transition to play when the Paths toggle flips off. -->
     <PathLinesOverlay
       {sequenceData}
       {currentStep}
       {stepData}
-      showBlue={bluePathLinesVisible}
-      showRed={redPathLinesVisible}
+      showLeft={leftPathLinesVisible}
+      showRight={rightPathLinesVisible}
       vm={visibilityManager}
     />
 
@@ -528,6 +609,18 @@ captureEffectDiagnostics to the context menu.
   {/if}
 
   {@render cornerControl?.()}
+
+  {#if initializationError}
+    <div class="initialization-error">
+      <PanelState
+        type="error"
+        title="Animation unavailable"
+        message="The animation could not start."
+        onretry={() => retryInitialization?.()}
+        compact
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -561,6 +654,15 @@ captureEffectDiagnostics to the context menu.
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+
+  .initialization-error {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    background: var(--theme-panel-bg, #f5f5f5);
   }
 
   @media (prefers-reduced-motion: reduce) {

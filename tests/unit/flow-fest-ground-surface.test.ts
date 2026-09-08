@@ -38,8 +38,9 @@ const ecology: FlowFestForestEcologyLayout = {
     grassRouteIntrusions: 0,
     groundLifeRouteIntrusions: 0,
     sourceTreeFamilies: 0,
-    plantFactoryTreePlacements: 0,
+    sourceTreeSpecies: 0,
     measuredCanopyPlacements: 0,
+    infillTreePlacements: 0,
     grassPlacements: 0,
     groundLifePlacements: 1,
   },
@@ -119,11 +120,11 @@ function dominantFamily(
     )
   );
   const offset = (pixelY * mask.width + pixelX) * 4;
-  const red = mask.data[offset]!;
+  const right = mask.data[offset]!;
   const green = mask.data[offset + 1]!;
-  const blue = mask.data[offset + 2]!;
-  const fourth = Math.max(0, 255 - red - green - blue);
-  const weights = [red, green, blue, fourth];
+  const left = mask.data[offset + 2]!;
+  const fourth = Math.max(0, 255 - right - green - left);
+  const weights = [right, green, left, fourth];
   const names = ["packed", "meadow", "litter", "damp"] as const;
   let winner = 0;
   for (let index = 1; index < weights.length; index += 1) {

@@ -43,6 +43,7 @@ import {
   dimHex,
   spotlightFactor,
   tunnelPropColor,
+  type TunnelLayerSelection,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import type { FireTipUpdateResult } from "./fire-tip-tracker";
@@ -53,7 +54,10 @@ import { MandalaPathPreparer } from "$lib/shared/mandala/services/mandala-path-p
 import {
   DEFAULT_MANDALA_OVERLAY_CONFIG,
   type MandalaOverlayConfig,
+  MANDALA_GUIDE_FLOOR_OPACITY,
 } from "$lib/shared/mandala/domain/mandala-overlay-types";
+import type { MandalaHandVisibility } from "$lib/shared/mandala/domain/mandala-types";
+import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
 
 // Longtask observer singleton - one PerformanceObserver shared across every
 // AnimationRenderLoop instance. Without this, each loop attaches its own
@@ -113,9 +117,10 @@ const MANDALA_GUIDE_CONFIG: MandalaOverlayConfig = {
   ...DEFAULT_MANDALA_OVERLAY_CONFIG,
   enabled: true,
   mode: "guide",
-  // Match the Shape Matrix's ghost-guide treatment so the live trail remains
-  // the brightest read while it runs directly over the mandala path.
-  opacity: 0.55,
+  // Shared with the Shape Matrix hero floor so the live trail remains the
+  // brightest read while it runs directly over the mandala path, and the
+  // still floor → live guide handoff changes nothing on screen.
+  opacity: MANDALA_GUIDE_FLOOR_OPACITY,
 };
 
 /**
@@ -127,11 +132,14 @@ interface EffectDispatchContext {
   params: RenderFrameParams;
   currentTime: number;
   renderedTransforms:
-    | { blue: RenderedPropTransform | null; red: RenderedPropTransform | null }
+    | {
+        left: RenderedPropTransform | null;
+        right: RenderedPropTransform | null;
+      }
     | undefined;
   /** Live prop sprite images — echo ghosts these at past poses. */
   propImages:
-    | { blue: HTMLImageElement | null; red: HTMLImageElement | null }
+    | { left: HTMLImageElement | null; right: HTMLImageElement | null }
     | undefined;
   loopDetectedThisFrame: boolean;
   isSeamlesslyLoopable: boolean;
@@ -193,8 +201,8 @@ export class AnimationRenderLoop {
   // The texture-load/crossfade signals can begin a render tick after the frame
   // parameters switch to the new prop type. Remember the last geometry identity
   // seen by the trail path so that exact boundary frame is always segmented.
-  private previousBlueTrailPropType: string | null | undefined = undefined;
-  private previousRedTrailPropType: string | null | undefined = undefined;
+  private previousLeftTrailPropType: string | null | undefined = undefined;
+  private previousRightTrailPropType: string | null | undefined = undefined;
   private rafId: number | null = null;
   // When true, the free-running rAF loop is disabled (offscreen export). The
   // deterministic renderSync() path still renders; start()/triggerRender() and
@@ -202,6 +210,10 @@ export class AnimationRenderLoop {
   // and race the export driver (which pinned prop fade alpha to 0 → props
   // dropped from fire/charcoal/LED exports).
   private externallyDriven = false;
+  // Canonical off-screen / hidden-tab gate. Null means "always render" (the
+  // pre-gating behavior), which is what every deterministic driver keeps.
+  private activityGate: RenderActivityGate | null = null;
+  private unsubscribeGate: (() => void) | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
   private isDisposed: boolean = false; // Prevent RAF from continuing after disposal
@@ -268,12 +280,12 @@ export class AnimationRenderLoop {
 
   // CRITICAL: Reusable arrays to prevent GC pressure on mobile
   // These are reused every frame instead of allocating new arrays
-  private reusableBlueTrailPoints: TrailPoint[] = [];
-  private reusableRedTrailPoints: TrailPoint[] = [];
+  private reusableLeftTrailPoints: TrailPoint[] = [];
+  private reusableRightTrailPoints: TrailPoint[] = [];
   // Additional tunnel layer trail points (lazily populated)
   private reusableAdditionalLayerTrails: Array<{
-    blue: TrailPoint[];
-    red: TrailPoint[];
+    left: TrailPoint[];
+    right: TrailPoint[];
   }> = [];
 
   initialize(config: RenderLoopConfig): void {
@@ -286,8 +298,8 @@ export class AnimationRenderLoop {
     this.ledSampler = config.ledSampler ?? null;
     this.onEffectError = config.onEffectError ?? null;
     this.mandalaOverlay = config.mandalaOverlay ?? null;
-    this.previousBlueTrailPropType = undefined;
-    this.previousRedTrailPropType = undefined;
+    this.previousLeftTrailPropType = undefined;
+    this.previousRightTrailPropType = undefined;
 
     // Merge the initial renderers record into the Map.
     if (config.renderers) {
@@ -357,9 +369,84 @@ export class AnimationRenderLoop {
     if (this.externallyDriven) return;
     this.getFrameParamsCallback = getFrameParams;
     this.framesRenderedSinceStart = 0;
+    if (!this.gateAllows()) return;
     if (this.rafId === null && this.renderer) {
       this.rafId = requestAnimationFrame(this.renderLoop);
     }
+  }
+
+  /**
+   * Route this loop through the canonical off-screen / hidden-tab gate.
+   * See `shared/render-gating/render-activity-gate.ts`.
+   *
+   * While the gate is closed the rAF stops entirely: the canvas keeps its last
+   * painted frame and costs nothing. When it reopens, the frame clock is
+   * re-seeded before the first frame so a surface parked off screen for thirty
+   * seconds cannot resume with a thirty-second timestep, and the loop restarts
+   * from whatever the last caller asked for.
+   *
+   * An externally driven loop (offscreen export) is never gated — it has no
+   * rAF to pause and its frames are produced deliberately.
+   */
+  setActivityGate(gate: RenderActivityGate | null): void {
+    if (gate === this.activityGate) return;
+    this.unsubscribeGate?.();
+    this.unsubscribeGate = null;
+    this.activityGate = gate;
+    if (gate) {
+      this.unsubscribeGate = gate.subscribe((active) => {
+        if (active) this.resumeFromGate();
+        else this.pauseForGate();
+      });
+      if (!gate.active) this.pauseForGate();
+      return;
+    }
+    this.resumeFromGate();
+  }
+
+  private gateAllows(): boolean {
+    if (this.externallyDriven) return true;
+    return this.activityGate === null || this.activityGate.active;
+  }
+
+  /**
+   * Park the loop without touching the render state it will resume into. Unlike
+   * stop(), this keeps `getFrameParamsCallback` and the effect-error bookkeeping
+   * so scrolling back into view resumes the same picture rather than re-running
+   * a cold start.
+   */
+  private pauseForGate(): void {
+    if (this.rafId === null) return;
+    cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    this.resetFrameClocks();
+  }
+
+  private resumeFromGate(): void {
+    if (this.isDisposed || this.externallyDriven) return;
+    if (this.rafId !== null) return;
+    if (!this.renderer || !this.getFrameParamsCallback) return;
+    this.resetFrameClocks();
+    // A surface that has been frozen needs one frame drawn on arrival even if
+    // nothing else is "active work", or it reveals a stale composite.
+    this.needsRender = true;
+    this.consecutiveIdleFrames = 0;
+    this.framesRenderedSinceStart = 0;
+    this.rafId = requestAnimationFrame(this.renderLoop);
+  }
+
+  /**
+   * Drop every wall-clock anchor so the next frame derives its own delta from
+   * scratch. `lastFrameTime = 0` makes dtSeconds fall back to 1/60 instead of
+   * the full paused span; the trail and loop anchors re-seed the same way.
+   */
+  private resetFrameClocks(): void {
+    this.lastFrameTime = 0;
+    this.lastTrailFrameTime = 0;
+    this.lastStampedTrailTime = null;
+    this.loopStartTime = 0;
+    this.effectLastFrameTime.clear();
+    this.fpsWindowStart = 0;
   }
 
   /** See IAnimationRenderLoop.setExternallyDriven. Disables the rAF loop for
@@ -405,6 +492,8 @@ export class AnimationRenderLoop {
     this.needsRender = true;
     this.consecutiveIdleFrames = 0; // Reset idle counter - new work incoming
     this.getFrameParamsCallback = getFrameParams;
+    // Off screen or hidden tab: remember the request, draw it on resume.
+    if (!this.gateAllows()) return;
     if (this.rafId === null && this.renderer) {
       this.framesRenderedSinceStart = 0; // Reset warm-up on loop restart
       this.rafId = requestAnimationFrame(this.renderLoop);
@@ -464,6 +553,9 @@ export class AnimationRenderLoop {
     // Mark as disposed FIRST to stop any pending RAF callbacks
     this.isDisposed = true;
     this.stop();
+    this.unsubscribeGate?.();
+    this.unsubscribeGate = null;
+    this.activityGate = null;
     this.longTaskSubscriberDispose?.();
     this.longTaskSubscriberDispose = null;
     this.renderer = null;
@@ -476,8 +568,8 @@ export class AnimationRenderLoop {
     this.mandalaOverlay = null;
     this.mandalaPathPreparer.clearCache();
     this.previousMandalaPaths = null;
-    this.previousBlueTrailPropType = undefined;
-    this.previousRedTrailPropType = undefined;
+    this.previousLeftTrailPropType = undefined;
+    this.previousRightTrailPropType = undefined;
     // Dispose all renderers in the registry map.
     // AnimationRenderLoop does not own the renderers' DOM canvas elements
     // (EffectRendererManager owns those); we only hold the reference.
@@ -485,8 +577,8 @@ export class AnimationRenderLoop {
     // renderers (EffectRendererManager.dispose()) will call dispose() on them.
     this.renderers.clear();
     // Clear reusable arrays to free memory
-    this.reusableBlueTrailPoints.length = 0;
-    this.reusableRedTrailPoints.length = 0;
+    this.reusableLeftTrailPoints.length = 0;
+    this.reusableRightTrailPoints.length = 0;
     this.reusableAdditionalLayerTrails.length = 0;
   }
 
@@ -510,9 +602,12 @@ export class AnimationRenderLoop {
     params: RenderFrameParams
   ): EmitterTip[] {
     const layerCount = params.props.additionalLayers.length;
-    const spectrum = params.props.tunnelSpectrum ?? true;
-    const baseBlue = params.trailSettings.blueColor;
-    const baseRed = params.trailSettings.redColor;
+    const spectrum =
+      (params.props.tunnelSpectrum ?? true) && !params.props.tunnelPropColors;
+    const baseLeft =
+      params.props.tunnelPropColors?.left ?? params.trailSettings.leftColor;
+    const baseRight =
+      params.props.tunnelPropColors?.right ?? params.trailSettings.rightColor;
     const out: EmitterTip[] = [];
     for (const t of tips) {
       if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== effect)
@@ -527,8 +622,8 @@ export class AnimationRenderLoop {
           t.propIndex,
           layerCount,
           spectrum,
-          baseBlue,
-          baseRed,
+          baseLeft,
+          baseRight,
           params.props.tunnelSelectedLayer ?? null
         ),
       });
@@ -538,13 +633,13 @@ export class AnimationRenderLoop {
 
   /**
    * Build array-of-tips input for bloom and pulse (effects that need
-   * {x, y, propIndex, tipIndex, blueColor, redColor}[] with center fallback).
+   * {x, y, propIndex, tipIndex, leftColor, rightColor}[] with center fallback).
    */
   /**
    * Resolve a tip's prop color the way the trail overlay does: the base pair
    * (propIndex 0/1) uses the trail colors; overlaid tunnel layers (propIndex >= 2)
    * fan across the spectrum when the rainbow toggle is on, base colors by parity
-   * (even = blue family, odd = red) when off. Shared by buildEmitterTips and
+   * (even = left family, odd = right) when off. Shared by buildEmitterTips and
    * buildArrayTips so every per-tip effect — bloom and pulse included —
    * color-matches the staff it sits on instead of collapsing every copy to red.
    */
@@ -552,21 +647,21 @@ export class AnimationRenderLoop {
     propIndex: number,
     layerCount: number,
     spectrum: boolean,
-    baseBlue: string,
-    baseRed: string,
-    selectedLayer: number | null = null
+    baseLeft: string,
+    baseRight: string,
+    selectedLayer: TunnelLayerSelection = null
   ): string {
-    const isBlue = propIndex % 2 === 0;
+    const isLeft = propIndex % 2 === 0;
     const raw =
       propIndex <= 1
-        ? isBlue
-          ? baseBlue
-          : baseRed
+        ? isLeft
+          ? baseLeft
+          : baseRight
         : spectrum
           ? tunnelPropColor(propIndex, layerCount).hex
-          : isBlue
-            ? baseBlue
-            : baseRed;
+          : isLeft
+            ? baseLeft
+            : baseRight;
     // Spotlight: dim the tip's color when another performer is selected.
     return dimHex(
       raw,
@@ -581,8 +676,8 @@ export class AnimationRenderLoop {
     params: RenderFrameParams,
     renderedTransforms:
       | {
-          blue: RenderedPropTransform | null;
-          red: RenderedPropTransform | null;
+          left: RenderedPropTransform | null;
+          right: RenderedPropTransform | null;
         }
       | undefined
   ): {
@@ -595,9 +690,12 @@ export class AnimationRenderLoop {
     velocityY?: number;
   }[] {
     const layerCount = params.props.additionalLayers.length;
-    const spectrum = params.props.tunnelSpectrum ?? true;
-    const baseBlue = params.trailSettings.blueColor;
-    const baseRed = params.trailSettings.redColor;
+    const spectrum =
+      (params.props.tunnelSpectrum ?? true) && !params.props.tunnelPropColors;
+    const baseLeft =
+      params.props.tunnelPropColors?.left ?? params.trailSettings.leftColor;
+    const baseRight =
+      params.props.tunnelPropColors?.right ?? params.trailSettings.rightColor;
     const result: {
       x: number;
       y: number;
@@ -622,41 +720,41 @@ export class AnimationRenderLoop {
           t.propIndex,
           layerCount,
           spectrum,
-          baseBlue,
-          baseRed,
+          baseLeft,
+          baseRight,
           params.props.tunnelSelectedLayer ?? null
         ),
       });
     }
     // Center fallback for props with no tip-tracker output (base pair only).
-    const blueTransform = renderedTransforms?.blue;
+    const leftTransform = renderedTransforms?.left;
     if (
-      params.props.blueProp &&
-      blueTransform &&
+      params.props.leftProp &&
+      leftTransform &&
       resolveEffect(0, 0, tipMap, {}) === effect &&
       !result.some((t) => t.propIndex === 0)
     ) {
       result.push({
-        x: blueTransform.centerX,
-        y: blueTransform.centerY,
+        x: leftTransform.centerX,
+        y: leftTransform.centerY,
         propIndex: 0,
         tipIndex: globalTipIndex++,
-        color: baseBlue,
+        color: baseLeft,
       });
     }
-    const redTransform = renderedTransforms?.red;
+    const rightTransform = renderedTransforms?.right;
     if (
-      params.props.redProp &&
-      redTransform &&
+      params.props.rightProp &&
+      rightTransform &&
       resolveEffect(1, 0, tipMap, {}) === effect &&
       !result.some((t) => t.propIndex === 1)
     ) {
       result.push({
-        x: redTransform.centerX,
-        y: redTransform.centerY,
+        x: rightTransform.centerX,
+        y: rightTransform.centerY,
         propIndex: 1,
         tipIndex: globalTipIndex++,
-        color: baseRed,
+        color: baseRight,
       });
     }
     return result;
@@ -723,28 +821,28 @@ export class AnimationRenderLoop {
           height: number;
           flipped: boolean;
         }> = [];
-        if (rt?.blue && imgs?.blue && p.props.blueProp) {
+        if (rt?.left && imgs?.left && p.props.leftProp) {
           props.push({
             id: 0,
-            image: imgs.blue,
-            centerX: rt.blue.centerX,
-            centerY: rt.blue.centerY,
-            angle: rt.blue.angle,
-            width: p.props.bluePropDimensions.width * rt.blue.scaleFactor,
-            height: p.props.bluePropDimensions.height * rt.blue.scaleFactor,
-            flipped: p.bluePropFlipped ?? false,
+            image: imgs.left,
+            centerX: rt.left.centerX,
+            centerY: rt.left.centerY,
+            angle: rt.left.angle,
+            width: p.props.leftPropDimensions.width * rt.left.scaleFactor,
+            height: p.props.leftPropDimensions.height * rt.left.scaleFactor,
+            flipped: p.leftPropFlipped ?? false,
           });
         }
-        if (rt?.red && imgs?.red && p.props.redProp) {
+        if (rt?.right && imgs?.right && p.props.rightProp) {
           props.push({
             id: 1,
-            image: imgs.red,
-            centerX: rt.red.centerX,
-            centerY: rt.red.centerY,
-            angle: rt.red.angle,
-            width: p.props.redPropDimensions.width * rt.red.scaleFactor,
-            height: p.props.redPropDimensions.height * rt.red.scaleFactor,
-            flipped: p.redPropFlipped ?? false,
+            image: imgs.right,
+            centerX: rt.right.centerX,
+            centerY: rt.right.centerY,
+            angle: rt.right.angle,
+            width: p.props.rightPropDimensions.width * rt.right.scaleFactor,
+            height: p.props.rightPropDimensions.height * rt.right.scaleFactor,
+            flipped: p.rightPropFlipped ?? false,
           });
         }
         // Wipe the exposure when the sequence changes; hold it across loop wraps.
@@ -1022,6 +1120,14 @@ export class AnimationRenderLoop {
       return;
     }
 
+    // The gate can close between a frame being scheduled and that frame being
+    // dispatched. Bail here rather than paint a surface nobody can see; the
+    // gate subscription re-schedules when it reopens.
+    if (!this.gateAllows()) {
+      this.rafId = null;
+      return;
+    }
+
     if (!this.renderer || !this.getFrameParamsCallback) {
       this.rafId = null;
       return;
@@ -1046,8 +1152,8 @@ export class AnimationRenderLoop {
           : undefined;
       this.TrailCapturer.captureFrame(
         {
-          blueProp: params.props.blueProp,
-          redProp: params.props.redProp,
+          leftProp: params.props.leftProp,
+          rightProp: params.props.rightProp,
           additionalLayers:
             params.props.additionalLayers.length > 0
               ? params.props.additionalLayers
@@ -1131,9 +1237,11 @@ export class AnimationRenderLoop {
     if (shouldContinueLoop) {
       this.render(params, effectiveTime);
       this.needsRender = false;
-      // Only schedule next frame if not disposed AND not externally driven
-      // (the offscreen export engine renders via renderSync only).
-      if (!this.isDisposed && !this.externallyDriven) {
+      // Only schedule next frame if not disposed, not externally driven (the
+      // offscreen export engine renders via renderSync only), and still on
+      // screen — a gate that closed during this frame must not be resurrected
+      // by the loop's own self-reschedule.
+      if (!this.isDisposed && !this.externallyDriven && this.gateAllows()) {
         this.rafId = requestAnimationFrame(this.renderLoop);
       } else {
         this.rafId = null;
@@ -1195,11 +1303,11 @@ export class AnimationRenderLoop {
         : { ...rawTrailSettings, fadeDurationMs: effectiveFadeDurationMs };
 
     // Get turn tuple for glyph rendering
-    const blueMotion = stepData?.motions?.blue;
-    const redMotion = stepData?.motions?.red;
+    const leftMotion = stepData?.motions?.left;
+    const rightMotion = stepData?.motions?.right;
     const turnsTuple =
-      isVisibleMotion(blueMotion) && isVisibleMotion(redMotion)
-        ? `${blueMotion.turns}${redMotion.turns}`
+      isVisibleMotion(leftMotion) && isVisibleMotion(rightMotion)
+        ? `${leftMotion.turns}${rightMotion.turns}`
         : null;
 
     if (this.loopStartTime === 0) {
@@ -1227,22 +1335,28 @@ export class AnimationRenderLoop {
 
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
+    const effectiveGridOpacity =
+      params.gridOpacity === undefined
+        ? undefined
+        : effectiveGridVisible
+          ? Math.max(0, Math.min(1, params.gridOpacity))
+          : 0;
     const effectivePropsVisible = visibility.propsVisible;
     const effectiveTrailsVisible = hasTrailTips(params.tipEffectMap);
 
     // Derive motion visibility from both internal state AND whether prop is actually present
     // (props may be filtered to null by parent component based on its own visibility state)
-    const effectiveBlueMotionVisible =
-      visibility.blueMotionVisible && props.blueProp !== null;
-    const effectiveRedMotionVisible =
-      visibility.redMotionVisible && props.redProp !== null;
+    const effectiveLeftMotionVisible =
+      visibility.leftMotionVisible && props.leftProp !== null;
+    const effectiveRightMotionVisible =
+      visibility.rightMotionVisible && props.rightProp !== null;
 
     this.renderMandalaGuide(
       params,
       dtSeconds,
       currentTime,
-      effectiveBlueMotionVisible,
-      effectiveRedMotionVisible
+      effectiveLeftMotionVisible,
+      effectiveRightMotionVisible
     );
 
     // Build additional layer render data
@@ -1250,22 +1364,25 @@ export class AnimationRenderLoop {
       const layerTrails = trailPoints.additionalLayers[i];
       const colors = trailSettings.additionalLayerColors[i];
       return {
-        blueProp: layer.blueProp,
-        redProp: layer.redProp,
-        blueTrailPoints:
-          effectiveTrailsVisible && effectiveBlueMotionVisible && layerTrails
-            ? layerTrails.blue
+        leftProp: layer.leftProp,
+        rightProp: layer.rightProp,
+        leftTrailPoints:
+          effectiveTrailsVisible && effectiveLeftMotionVisible && layerTrails
+            ? layerTrails.left
             : [],
-        redTrailPoints:
-          effectiveTrailsVisible && effectiveRedMotionVisible && layerTrails
-            ? layerTrails.red
+        rightTrailPoints:
+          effectiveTrailsVisible && effectiveRightMotionVisible && layerTrails
+            ? layerTrails.right
             : [],
-        hasBlue: !!layer.blueProp && effectiveBlueMotionVisible,
-        hasRed: !!layer.redProp && effectiveRedMotionVisible,
-        blueColor: colors?.blue ?? "#8b5cf6",
-        redColor: colors?.red ?? "#f97316",
-        bluePropType: layer.bluePropType,
-        redPropType: layer.redPropType,
+        hasLeft: !!layer.leftProp && effectiveLeftMotionVisible,
+        hasRight: !!layer.rightProp && effectiveRightMotionVisible,
+        opacity: Math.max(0, Math.min(1, layer.opacity ?? 1)),
+        trailCaptureSuppressed: layer.trailCaptureSuppressed,
+        formationTransitionActive: layer.formationTransitionActive,
+        leftColor: colors?.left ?? "#8b5cf6",
+        rightColor: colors?.right ?? "#f97316",
+        leftPropType: layer.leftPropType,
+        rightPropType: layer.rightPropType,
       };
     });
 
@@ -1345,50 +1462,53 @@ export class AnimationRenderLoop {
         // signals: those signals can arrive one render tick later than the new
         // frame parameters. The overlay keeps its painted accumulator, skips new
         // captures throughout the swap, then starts a disconnected source ring.
-        const blueTrailPropType = params.bluePropType?.toLowerCase() ?? null;
-        const redTrailPropType = params.redPropType?.toLowerCase() ?? null;
-        const bluePropIdentityChanged =
-          this.previousBlueTrailPropType !== undefined &&
-          this.previousBlueTrailPropType !== blueTrailPropType;
-        const redPropIdentityChanged =
-          this.previousRedTrailPropType !== undefined &&
-          this.previousRedTrailPropType !== redTrailPropType;
-        this.previousBlueTrailPropType = blueTrailPropType;
-        this.previousRedTrailPropType = redTrailPropType;
+        const leftTrailPropType = params.leftPropType?.toLowerCase() ?? null;
+        const rightTrailPropType = params.rightPropType?.toLowerCase() ?? null;
+        const leftPropIdentityChanged =
+          this.previousLeftTrailPropType !== undefined &&
+          this.previousLeftTrailPropType !== leftTrailPropType;
+        const rightPropIdentityChanged =
+          this.previousRightTrailPropType !== undefined &&
+          this.previousRightTrailPropType !== rightTrailPropType;
+        this.previousLeftTrailPropType = leftTrailPropType;
+        this.previousRightTrailPropType = rightTrailPropType;
 
-        const bluePropSwapSuppressed =
-          bluePropIdentityChanged ||
+        const leftPropSwapSuppressed =
+          leftPropIdentityChanged ||
           !!params.trailsSuppressedUntilTextureLoad ||
-          (this.renderer?.isBluePropCrossfadeInProgress() ?? false);
-        const redPropSwapSuppressed =
-          redPropIdentityChanged ||
+          (this.renderer?.isLeftPropCrossfadeInProgress() ?? false);
+        const rightPropSwapSuppressed =
+          rightPropIdentityChanged ||
           !!params.trailsSuppressedUntilTextureLoad ||
-          (this.renderer?.isRedPropCrossfadeInProgress() ?? false);
+          (this.renderer?.isRightPropCrossfadeInProgress() ?? false);
 
         trailOverlay.renderFrame({
-          blueTrailPoints: effectiveBlueMotionVisible ? trailPoints.blue : [],
-          redTrailPoints: effectiveRedMotionVisible ? trailPoints.red : [],
+          leftTrailPoints: effectiveLeftMotionVisible ? trailPoints.left : [],
+          rightTrailPoints: effectiveRightMotionVisible
+            ? trailPoints.right
+            : [],
           trailSettings,
           deltaTime: dt,
           currentTime: currentTime,
           canvasSize: this.canvasSize,
-          hasBlue: !!params.props.blueProp && effectiveBlueMotionVisible,
-          hasRed: !!params.props.redProp && effectiveRedMotionVisible,
+          hasLeft: !!params.props.leftProp && effectiveLeftMotionVisible,
+          hasRight: !!params.props.rightProp && effectiveRightMotionVisible,
           additionalLayers:
             additionalLayerRenderData.length > 0
               ? additionalLayerRenderData
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum,
+          tunnelPropColors: props.tunnelPropColors,
           tunnelSelectedLayer: props.tunnelSelectedLayer ?? null,
-          blueProp: params.props.blueProp,
-          redProp: params.props.redProp,
-          bluePropType: params.bluePropType,
-          redPropType: params.redPropType,
+          leftProp: params.props.leftProp,
+          rightProp: params.props.rightProp,
+          leftPropType: params.leftPropType,
+          rightPropType: params.rightPropType,
           tipEffectMap: params.tipEffectMap,
           loopDetected: this.loopDetectedThisFrame,
           isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
-          bluePropSwapSuppressed,
-          redPropSwapSuppressed,
+          leftPropSwapSuppressed,
+          rightPropSwapSuppressed,
         });
       }
     } else if (
@@ -1406,23 +1526,24 @@ export class AnimationRenderLoop {
     // NOTE: Props are passed regardless of visibility so the renderer can fade them out.
     // The renderer's fade managers handle visibility transition animations for:
     // - Overall props toggle (propsFadeManager)
-    // - Individual blue/red motion toggles (bluePropFadeManager, redPropFadeManager)
+    // - Individual left/right motion toggles (leftPropFadeManager, rightPropFadeManager)
     this.renderer.renderScene({
-      blueProp: props.blueProp,
-      redProp: props.redProp,
+      leftProp: props.leftProp,
+      rightProp: props.rightProp,
       gridVisible: effectiveGridVisible,
+      gridOpacity: effectiveGridOpacity,
       gridMode: gridMode?.toString() ?? null,
       letter: letter ?? null,
       turnsTuple,
-      bluePropDimensions: props.bluePropDimensions,
-      redPropDimensions: props.redPropDimensions,
-      blueTrailPoints:
-        effectiveTrailsVisible && effectiveBlueMotionVisible
-          ? trailPoints.blue
+      leftPropDimensions: props.leftPropDimensions,
+      rightPropDimensions: props.rightPropDimensions,
+      leftTrailPoints:
+        effectiveTrailsVisible && effectiveLeftMotionVisible
+          ? trailPoints.left
           : [],
-      redTrailPoints:
-        effectiveTrailsVisible && effectiveRedMotionVisible
-          ? trailPoints.red
+      rightTrailPoints:
+        effectiveTrailsVisible && effectiveRightMotionVisible
+          ? trailPoints.right
           : [],
       additionalLayers:
         additionalLayerRenderData.length > 0
@@ -1435,13 +1556,13 @@ export class AnimationRenderLoop {
         gridVisible: effectiveGridVisible,
         propsVisible: effectivePropsVisible,
         trailsVisible: effectiveTrailsVisible,
-        blueMotionVisible: effectiveBlueMotionVisible,
-        redMotionVisible: effectiveRedMotionVisible,
+        leftMotionVisible: effectiveLeftMotionVisible,
+        rightMotionVisible: effectiveRightMotionVisible,
       },
-      bluePropFlipped: params.bluePropFlipped ?? false,
-      redPropFlipped: params.redPropFlipped ?? false,
-      bluePropType: params.bluePropType,
-      redPropType: params.redPropType,
+      leftPropFlipped: params.leftPropFlipped ?? false,
+      rightPropFlipped: params.rightPropFlipped ?? false,
+      leftPropType: params.leftPropType,
+      rightPropType: params.rightPropType,
       qualityHints: this.frameBudgetMonitor?.getQualityHints(),
       tunnelSelectedLayer: props.tunnelSelectedLayer ?? null,
     });
@@ -1496,10 +1617,10 @@ export class AnimationRenderLoop {
 
       const tipTrackerConfig: FireTipTrackerConfig = {
         canvasSize: this.canvasSize,
-        bluePropDimensions: props.bluePropDimensions,
-        redPropDimensions: props.redPropDimensions,
-        bluePropType: params.bluePropType,
-        redPropType: params.redPropType,
+        leftPropDimensions: props.leftPropDimensions,
+        rightPropDimensions: props.rightPropDimensions,
+        leftPropType: params.leftPropType,
+        rightPropType: params.rightPropType,
         renderedTransforms,
         // Overlaid tunnel layers get tips too, so per-tip effects cover every
         // copy in the kaleidoscope (not just the base pair). Absent for normal
@@ -1507,15 +1628,16 @@ export class AnimationRenderLoop {
         additionalLayers:
           props.additionalLayers.length > 0
             ? props.additionalLayers.map((l) => ({
-                blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
-                redProp: effectiveRedMotionVisible ? l.redProp : null,
+                leftProp: effectiveLeftMotionVisible ? l.leftProp : null,
+                rightProp: effectiveRightMotionVisible ? l.rightProp : null,
+                opacity: l.opacity,
               }))
             : undefined,
       };
 
       sharedTipResult = this.fireTipTracker!.update(
-        effectiveBlueMotionVisible ? props.blueProp : null,
-        effectiveRedMotionVisible ? props.redProp : null,
+        effectiveLeftMotionVisible ? props.leftProp : null,
+        effectiveRightMotionVisible ? props.rightProp : null,
         tipTrackerConfig,
         currentTime
       );
@@ -1652,30 +1774,34 @@ export class AnimationRenderLoop {
         // available so the Canvas2D renderer can fade the sprite out, but the
         // LED sampler must not keep emitting points for that hidden prop or any
         // of its tunnel copies.
-        const visibleBlueProp = effectiveBlueMotionVisible
-          ? props.blueProp
+        const visibleLeftProp = effectiveLeftMotionVisible
+          ? props.leftProp
           : null;
-        const visibleRedProp = effectiveRedMotionVisible ? props.redProp : null;
+        const visibleRightProp = effectiveRightMotionVisible
+          ? props.rightProp
+          : null;
         const ledSamplerConfig: LedSamplerConfig = {
           canvasSize: this.canvasSize,
-          bluePropDimensions: props.bluePropDimensions,
-          redPropDimensions: props.redPropDimensions,
-          bluePropType: params.bluePropType,
-          redPropType: params.redPropType,
+          leftPropDimensions: props.leftPropDimensions,
+          rightPropDimensions: props.rightPropDimensions,
+          leftPropType: params.leftPropType,
+          rightPropType: params.rightPropType,
           // LEDs cover overlaid tunnel layers too (parity with fire/charcoal).
           additionalLayers:
             props.additionalLayers.length > 0
               ? props.additionalLayers.map((l) => ({
-                  blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
-                  redProp: effectiveRedMotionVisible ? l.redProp : null,
+                  leftProp: effectiveLeftMotionVisible ? l.leftProp : null,
+                  rightProp: effectiveRightMotionVisible ? l.rightProp : null,
+                  opacity: l.opacity,
                 }))
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum ?? true,
+          tunnelPropColors: props.tunnelPropColors,
         };
 
         const allLeds = this.ledSampler.update(
-          visibleBlueProp,
-          visibleRedProp,
+          visibleLeftProp,
+          visibleRightProp,
           ledSamplerConfig,
           currentTime,
           params.ledConfig
@@ -1790,8 +1916,8 @@ export class AnimationRenderLoop {
             : "idle"
           : "off";
         const trailCount =
-          this.reusableBlueTrailPoints.length +
-          this.reusableRedTrailPoints.length;
+          this.reusableLeftTrailPoints.length +
+          this.reusableRightTrailPoints.length;
         console.warn(
           `[FrameDrop] render=${renderTime.toFixed(1)}ms rafGap=${rafGap.toFixed(1)}ms ` +
             `step=${params.currentStep.toFixed(2)} fire=${fireState} ` +
@@ -1839,8 +1965,8 @@ export class AnimationRenderLoop {
           : "off";
         const trailsOn = hasTrailTips(params.tipEffectMap);
         const trailCount =
-          this.reusableBlueTrailPoints.length +
-          this.reusableRedTrailPoints.length;
+          this.reusableLeftTrailPoints.length +
+          this.reusableRightTrailPoints.length;
         this.fpsWindowStart = currentTime;
         this.fpsWindowFrames = 0;
         this.fpsWindowMinFrameMs = Infinity;
@@ -1872,8 +1998,8 @@ export class AnimationRenderLoop {
     params: RenderFrameParams,
     deltaTime: number,
     currentTime: number,
-    showBlue: boolean,
-    showRed: boolean
+    showLeft: boolean,
+    showRight: boolean
   ): void {
     const overlay = this.mandalaOverlay;
     if (!overlay) return;
@@ -1884,7 +2010,7 @@ export class AnimationRenderLoop {
       params.suppress2DOverlays ||
       !steps ||
       steps.length === 0 ||
-      (!showBlue && !showRed)
+      (!showLeft && !showRight)
     ) {
       overlay.setVisible(false);
       return;
@@ -1907,18 +2033,19 @@ export class AnimationRenderLoop {
       return;
     }
 
-    const show = showBlue && showRed ? "both" : showBlue ? "blue" : "red";
+    const show: MandalaHandVisibility =
+      showLeft && showRight ? "both" : showLeft ? "left" : "right";
     const preparedPaths = this.mandalaPathPreparer.prepare(
       steps,
       this.canvasSize,
       {
         show,
-        bluePropType: params.bluePropType,
-        redPropType: params.redPropType,
+        leftPropType: params.leftPropType,
+        rightPropType: params.rightPropType,
         trackingMode: params.trailSettings.trackingMode,
         pathOptions: params.mandalaPathOptions,
-        blueColor: params.trailSettings.blueColor,
-        redColor: params.trailSettings.redColor,
+        leftColor: params.trailSettings.leftColor,
+        rightColor: params.trailSettings.rightColor,
         sequenceKey: params.sequenceContentHash,
       }
     );
@@ -1967,26 +2094,26 @@ export class AnimationRenderLoop {
     isSeamlesslyLoopable: boolean,
     tipEffectMap?: TipEffectMap
   ): {
-    blue: TrailPoint[];
-    red: TrailPoint[];
-    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>;
+    left: TrailPoint[];
+    right: TrailPoint[];
+    additionalLayers: Array<{ left: TrailPoint[]; right: TrailPoint[] }>;
   } {
     // CRITICAL: Reuse arrays to prevent GC pressure on mobile
     // Clear arrays without deallocating (length = 0 keeps capacity)
-    this.reusableBlueTrailPoints.length = 0;
-    this.reusableRedTrailPoints.length = 0;
+    this.reusableLeftTrailPoints.length = 0;
+    this.reusableRightTrailPoints.length = 0;
 
     // Per-tip trail flags: only gather points for tips assigned "trails".
     // When no map is provided, default to gathering all tips.
     const tipMap = tipEffectMap ?? {};
     const hasAnyTrailEntry = Object.keys(tipMap).length > 0;
-    const blueTip0Trails =
+    const leftTip0Trails =
       !hasAnyTrailEntry || resolveEffect(0, 0, tipMap, {}) === "trails";
-    const blueTip1Trails =
+    const leftTip1Trails =
       !hasAnyTrailEntry || resolveEffect(0, 1, tipMap, {}) === "trails";
-    const redTip0Trails =
+    const rightTip0Trails =
       !hasAnyTrailEntry || resolveEffect(1, 0, tipMap, {}) === "trails";
-    const redTip1Trails =
+    const rightTip1Trails =
       !hasAnyTrailEntry || resolveEffect(1, 1, tipMap, {}) === "trails";
 
     // Detect animation loop (currentStep jumps backward significantly)
@@ -2047,100 +2174,100 @@ export class AnimationRenderLoop {
           const wrapStartStep = Math.max(0, cacheEndStep + desiredStart);
 
           // Blue prop: tail segment + head segment, filtered by per-tip trail flags
-          let blueCount = 0;
-          if (blueTip0Trails) {
-            blueCount += this.pathCache.fillTrailPoints(
+          let leftCount = 0;
+          if (leftTip0Trails) {
+            leftCount += this.pathCache.fillTrailPoints(
               0,
               0,
               wrapStartStep,
               cacheEndStep,
               scaleFactor,
-              this.reusableBlueTrailPoints,
-              blueCount
+              this.reusableLeftTrailPoints,
+              leftCount
             );
           }
-          if (blueTip1Trails) {
-            blueCount += this.pathCache.fillTrailPoints(
+          if (leftTip1Trails) {
+            leftCount += this.pathCache.fillTrailPoints(
               0,
               1,
               wrapStartStep,
               cacheEndStep,
               scaleFactor,
-              this.reusableBlueTrailPoints,
-              blueCount
+              this.reusableLeftTrailPoints,
+              leftCount
             );
           }
-          if (blueTip0Trails) {
-            blueCount += this.pathCache.fillTrailPoints(
+          if (leftTip0Trails) {
+            leftCount += this.pathCache.fillTrailPoints(
               0,
               0,
               0,
               currentStep,
               scaleFactor,
-              this.reusableBlueTrailPoints,
-              blueCount
+              this.reusableLeftTrailPoints,
+              leftCount
             );
           }
-          if (blueTip1Trails) {
-            blueCount += this.pathCache.fillTrailPoints(
+          if (leftTip1Trails) {
+            leftCount += this.pathCache.fillTrailPoints(
               0,
               1,
               0,
               currentStep,
               scaleFactor,
-              this.reusableBlueTrailPoints,
-              blueCount
+              this.reusableLeftTrailPoints,
+              leftCount
             );
           }
-          this.reusableBlueTrailPoints.length = blueCount;
+          this.reusableLeftTrailPoints.length = leftCount;
 
           // Red prop: tail segment + head segment, filtered by per-tip trail flags
-          let redCount = 0;
-          if (redTip0Trails) {
-            redCount += this.pathCache.fillTrailPoints(
+          let rightCount = 0;
+          if (rightTip0Trails) {
+            rightCount += this.pathCache.fillTrailPoints(
               1,
               0,
               wrapStartStep,
               cacheEndStep,
               scaleFactor,
-              this.reusableRedTrailPoints,
-              redCount
+              this.reusableRightTrailPoints,
+              rightCount
             );
           }
-          if (redTip1Trails) {
-            redCount += this.pathCache.fillTrailPoints(
+          if (rightTip1Trails) {
+            rightCount += this.pathCache.fillTrailPoints(
               1,
               1,
               wrapStartStep,
               cacheEndStep,
               scaleFactor,
-              this.reusableRedTrailPoints,
-              redCount
+              this.reusableRightTrailPoints,
+              rightCount
             );
           }
-          if (redTip0Trails) {
-            redCount += this.pathCache.fillTrailPoints(
+          if (rightTip0Trails) {
+            rightCount += this.pathCache.fillTrailPoints(
               1,
               0,
               0,
               currentStep,
               scaleFactor,
-              this.reusableRedTrailPoints,
-              redCount
+              this.reusableRightTrailPoints,
+              rightCount
             );
           }
-          if (redTip1Trails) {
-            redCount += this.pathCache.fillTrailPoints(
+          if (rightTip1Trails) {
+            rightCount += this.pathCache.fillTrailPoints(
               1,
               1,
               0,
               currentStep,
               scaleFactor,
-              this.reusableRedTrailPoints,
-              redCount
+              this.reusableRightTrailPoints,
+              rightCount
             );
           }
-          this.reusableRedTrailPoints.length = redCount;
+          this.reusableRightTrailPoints.length = rightCount;
         } else {
           // NORMAL PATH (non-seamless, or seamless but trail doesn't cross boundary yet)
           let startStep = Math.max(0, desiredStart);
@@ -2151,56 +2278,56 @@ export class AnimationRenderLoop {
           }
 
           // Blue prop trails, filtered by per-tip trail flags
-          let blueCount = 0;
-          if (blueTip0Trails) {
-            blueCount += this.pathCache.fillTrailPoints(
+          let leftCount = 0;
+          if (leftTip0Trails) {
+            leftCount += this.pathCache.fillTrailPoints(
               0,
               0,
               startStep,
               currentStep,
               scaleFactor,
-              this.reusableBlueTrailPoints,
-              blueCount
+              this.reusableLeftTrailPoints,
+              leftCount
             );
           }
-          if (blueTip1Trails) {
-            blueCount += this.pathCache.fillTrailPoints(
+          if (leftTip1Trails) {
+            leftCount += this.pathCache.fillTrailPoints(
               0,
               1,
               startStep,
               currentStep,
               scaleFactor,
-              this.reusableBlueTrailPoints,
-              blueCount
+              this.reusableLeftTrailPoints,
+              leftCount
             );
           }
-          this.reusableBlueTrailPoints.length = blueCount;
+          this.reusableLeftTrailPoints.length = leftCount;
 
           // Red prop trails, filtered by per-tip trail flags
-          let redCount = 0;
-          if (redTip0Trails) {
-            redCount += this.pathCache.fillTrailPoints(
+          let rightCount = 0;
+          if (rightTip0Trails) {
+            rightCount += this.pathCache.fillTrailPoints(
               1,
               0,
               startStep,
               currentStep,
               scaleFactor,
-              this.reusableRedTrailPoints,
-              redCount
+              this.reusableRightTrailPoints,
+              rightCount
             );
           }
-          if (redTip1Trails) {
-            redCount += this.pathCache.fillTrailPoints(
+          if (rightTip1Trails) {
+            rightCount += this.pathCache.fillTrailPoints(
               1,
               1,
               startStep,
               currentStep,
               scaleFactor,
-              this.reusableRedTrailPoints,
-              redCount
+              this.reusableRightTrailPoints,
+              rightCount
             );
           }
-          this.reusableRedTrailPoints.length = redCount;
+          this.reusableRightTrailPoints.length = rightCount;
         }
       }
     } else if (this.TrailCapturer && !this.renderers.has("trails")) {
@@ -2209,19 +2336,19 @@ export class AnimationRenderLoop {
       // gap it's better to draw nothing (existing pixels fade naturally)
       // than to draw broken real-time capture points as artifacts.
       this.TrailCapturer.fillTrailPointArrays(
-        this.reusableBlueTrailPoints,
-        this.reusableRedTrailPoints,
+        this.reusableLeftTrailPoints,
+        this.reusableRightTrailPoints,
         this.reusableAdditionalLayerTrails
       );
 
       // Post-filter captured points by per-tip trail flags (allocation-free compact)
       if (hasAnyTrailEntry) {
         AnimationRenderLoop.compactByTrailFlag(
-          this.reusableBlueTrailPoints,
+          this.reusableLeftTrailPoints,
           tipMap
         );
         AnimationRenderLoop.compactByTrailFlag(
-          this.reusableRedTrailPoints,
+          this.reusableRightTrailPoints,
           tipMap
         );
       }
@@ -2242,8 +2369,8 @@ export class AnimationRenderLoop {
     }
 
     return {
-      blue: this.reusableBlueTrailPoints,
-      red: this.reusableRedTrailPoints,
+      left: this.reusableLeftTrailPoints,
+      right: this.reusableRightTrailPoints,
       additionalLayers: this.reusableAdditionalLayerTrails,
     };
   }

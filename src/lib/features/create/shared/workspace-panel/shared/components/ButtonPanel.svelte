@@ -29,6 +29,7 @@
   import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
   import { logConstructFullPlay } from "$lib/features/create/construct/services/construct-analytics";
   import OptionInteractionBanner from "$lib/features/create/construct/option-picker/components/OptionInteractionBanner.svelte";
+  import { logSequenceActionSurfaceShown } from "$lib/shared/create/analytics/sequence-action-events";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const {
@@ -98,6 +99,14 @@
     constructTutorialState.isActive &&
       constructTutorialState.stage === "play-sequence"
   );
+  let sequenceActionsSurfaceLogged = false;
+
+  $effect(() => {
+    if (showSequenceActions && visible && !sequenceActionsSurfaceLogged) {
+      sequenceActionsSurfaceLogged = true;
+      logSequenceActionSurfaceShown("workspace_button");
+    }
+  });
 
   function handleFullSequencePlay() {
     onViewSequence?.();
@@ -193,9 +202,13 @@
       <div class="right-zone">
         {#each rightButtons as btn (btn.id)}
           {#if btn.id === "sequence-actions" && showSequenceActions}
-            <div transition:presenceTransition>
+            <div
+              class="sequence-actions-workspace-trigger"
+              transition:presenceTransition
+            >
               <SequenceActionsButton
-                onclick={() => panelState.openSequenceActionsPanel()}
+                onclick={() =>
+                  panelState.openSequenceActionsPanel("workspace_button")}
               />
             </div>
           {:else if btn.id === "share" && canShareSequence}

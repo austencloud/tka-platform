@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
-  getSettings: () => ({ bluePropType: "staff", redPropType: "staff" }),
+  getSettings: () => ({ leftPropType: "staff", rightPropType: "staff" }),
 }));
 
 import { getPreviewCacheKey } from "$lib/shared/choreo-card/services/choreo-card-cell-pipeline";
@@ -25,10 +25,10 @@ function makeSequence(): SequenceData {
     id: "seq-1",
     word: "ABCD",
     steps: [
-      { letter: "A", duration: 1, motions: { blue: {}, red: {} } },
-      { letter: "B", duration: 1, motions: { blue: {}, red: {} } },
-      { letter: "C", duration: 1, motions: { blue: {}, red: {} } },
-      { letter: "D", duration: 1, motions: { blue: {}, red: {} } },
+      { letter: "A", duration: 1, motions: { left: {}, right: {} } },
+      { letter: "B", duration: 1, motions: { left: {}, right: {} } },
+      { letter: "C", duration: 1, motions: { left: {}, right: {} } },
+      { letter: "D", duration: 1, motions: { left: {}, right: {} } },
     ],
   } as unknown as SequenceData;
 }
@@ -41,8 +41,8 @@ function makeOptions(): PreviewCellRenderOptions {
     showTKA: true,
     showReversals: true,
     handPathMode: false,
-    showBlueMotion: true,
-    showRedMotion: true,
+    showLeftMotion: true,
+    showRightMotion: true,
     showGrid: true,
   } as unknown as PreviewCellRenderOptions;
 }
@@ -69,7 +69,7 @@ describe("getPreviewCacheKey — includeStartPosition", () => {
   it("separates visible and invisible placeholder motions", () => {
     const visible = makeSequence();
     const hidden = makeSequence();
-    (hidden.steps[0]!.motions.red as { isVisible?: boolean }).isVisible = false;
+    (hidden.steps[0]!.motions.right as { isVisible?: boolean }).isVisible = false;
 
     expect(getPreviewCacheKey(visible, makeOptions(), null, false)).not.toBe(
       getPreviewCacheKey(hidden, makeOptions(), null, false)
@@ -79,11 +79,11 @@ describe("getPreviewCacheKey — includeStartPosition", () => {
   it("separates same-id transforms that only move motion locations", () => {
     const base = makeSequence();
     const transformed = makeSequence();
-    Object.assign(base.steps[0]!.motions.blue!, {
+    Object.assign(base.steps[0]!.motions.left!, {
       startLocation: "s",
       endLocation: "w",
     });
-    Object.assign(transformed.steps[0]!.motions.blue!, {
+    Object.assign(transformed.steps[0]!.motions.left!, {
       startLocation: "e",
       endLocation: "s",
     });
@@ -91,5 +91,31 @@ describe("getPreviewCacheKey — includeStartPosition", () => {
     expect(getPreviewCacheKey(base, makeOptions(), null, false)).not.toBe(
       getPreviewCacheKey(transformed, makeOptions(), null, false)
     );
+  });
+});
+
+describe("getPreviewCacheKey — primary prop colors", () => {
+  const palette = { left: "#00ff88", right: "#ff8800" };
+  const keyFor = (colors?: typeof palette | null) =>
+    getPreviewCacheKey(
+      makeSequence(),
+      { ...makeOptions(), primaryPropColors: colors },
+      null,
+      true
+    );
+
+  it.each(["left", "right"] as const)(
+    "does not reuse a preview after changing the %s color",
+    (hand) => {
+      const cache = new Map([[keyFor(palette), "previous-palette-images"]]);
+      expect(cache.get(keyFor({ ...palette, [hand]: "#aa66ff" }))).toBeUndefined();
+      expect(cache.get(keyFor({ ...palette }))).toBe("previous-palette-images");
+    }
+  );
+
+  it("separates custom colors from defaults and reuses defaults after reset", () => {
+    const cache = new Map([[keyFor(), "default-images"]]);
+    expect(cache.get(keyFor(palette))).toBeUndefined();
+    expect(cache.get(keyFor(null))).toBe("default-images");
   });
 });

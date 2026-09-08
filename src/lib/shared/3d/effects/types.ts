@@ -54,7 +54,7 @@ export enum TrailStyle {
 /**
  * Prop identifier for effects
  */
-export type PropId = "blue" | "red";
+export type PropId = "left" | "right";
 
 // Tip Position Data (used by TipPositionBridge3D)
 

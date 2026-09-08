@@ -15,7 +15,9 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
-    timeout-minutes: 20
+    # The production web bundle can consume the old 20-minute budget before
+    # Xcode packaging begins on a clean hosted runner.
+    timeout-minutes: 45
 
     steps:
       - name: Checkout

@@ -112,7 +112,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     [PropType.HAND]: {
-      label: "Hand",
+      label: "Bare hands",
       image: "/images/props/buttons/hand.svg",
       category: "singles",
     },
@@ -130,12 +130,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.SWORD]: {
       label: "Sword",
       image: "/images/props/buttons/sword.svg",
-      category: "singles",
-    },
-
-    [PropType.SICKLES]: {
-      label: "Sickles",
-      image: "/images/props/buttons/sickles.svg",
       category: "singles",
     },
 
@@ -241,14 +235,8 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
  * Remove from this set to reactivate.
  */
 export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
-  PropType.UKULELE,
-  PropType.CONTACTBALL,
-  PropType.BIGCONTACTBALL,
-  PropType.BIGDOUBLECONTACTBALL,
-  // Poi stays deactivated for the category pickers. BentoPropGrid re-includes it
-  // for dev/admin only, to exercise the poi-legal composer filter.
-  // (Fractalgeng removed 2026-06-30.)
-  PropType.POI,
+  // Empty since 2026-09-06: every prop with artwork is selectable, including
+  // Ukulele, the contact-ball family, and Poi. (Fractalgeng removed 2026-06-30.)
 ]);
 
 /**
@@ -362,8 +350,6 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGDOUBLESTAR,
   // Eightrings family
   PropType.BIGEIGHTRINGS,
-  // Sword family
-  PropType.SICKLES,
   // Contact ball family (DOUBLECONTACTBALL is now standalone)
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
@@ -384,7 +370,10 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.TORCH]: PropType.CLUB,
   [PropType.BIGCLUB]: PropType.CLUB,
   [PropType.BIGTORCH]: PropType.CLUB,
-  // Fan variations
+  // Fan variations. The fan build (DoodleGrip Fire, Lotus, Day, Moon LED,
+  // Pictograph) stays a look setting on top of whichever size is current --
+  // it is not a variant. Big Fan maps here so the grid folds it into the Fan
+  // tile; the size dock, not the family drill-down, is what reaches it.
   [PropType.BIGFAN]: PropType.FAN,
   // Triad variations
   [PropType.TRIGENG]: PropType.TRIAD,
@@ -403,8 +392,6 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGDOUBLESTAR]: PropType.DOUBLESTAR,
   // Eightrings variations
   [PropType.BIGEIGHTRINGS]: PropType.EIGHTRINGS,
-  // Weapon variations
-  [PropType.SICKLES]: PropType.SWORD,
   // Contact ball variations (CONTACTBALL, BIGCONTACTBALL, BIGDOUBLECONTACTBALL deactivated)
   [PropType.BIGCONTACTBALL]: PropType.CONTACTBALL,
   [PropType.BIGDOUBLECONTACTBALL]: PropType.CONTACTBALL,
@@ -438,7 +425,6 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
-  [PropType.SWORD]: [PropType.SICKLES],
   [PropType.CONTACTBALL]: [
     PropType.BIGCONTACTBALL,
     PropType.BIGDOUBLECONTACTBALL,
@@ -604,6 +590,8 @@ const STANDARD_TO_BIG: Partial<Record<PropType, PropType>> = {
   [PropType.TORCH]: PropType.BIGTORCH,
   [PropType.CHICKEN]: PropType.BIGCHICKEN,
   [PropType.DOUBLESTAR]: PropType.BIGDOUBLESTAR,
+  [PropType.CONTACTBALL]: PropType.BIGCONTACTBALL,
+  [PropType.DOUBLECONTACTBALL]: PropType.BIGDOUBLECONTACTBALL,
 };
 
 const BIG_TO_STANDARD: Partial<Record<PropType, PropType>> = Object.fromEntries(
@@ -655,6 +643,8 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.STAFF,
       PropType.CAPSULE_BATON,
       PropType.FIRE_DOUBLE_STAFF,
+      PropType.SIMPLESTAFF,
+      PropType.STAFF2,
       PropType.CLUB,
       PropType.CLASSIC_CLUB,
       PropType.FAN,
@@ -663,10 +653,10 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.BUUGENG,
       PropType.TRIGENG,
       PropType.EIGHTRINGS,
+      PropType.CONTACTBALL,
       PropType.DOUBLECONTACTBALL,
       PropType.TORCH,
       PropType.SWORD,
-      PropType.SICKLES,
     ],
   },
   {
@@ -679,6 +669,8 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.BIGHOOP,
       PropType.BIGBUUGENG,
       PropType.BIGEIGHTRINGS,
+      PropType.BIGCONTACTBALL,
+      PropType.BIGDOUBLECONTACTBALL,
       PropType.BIGTORCH,
       PropType.BIGCHICKEN,
       PropType.BIGDOUBLESTAR,
@@ -689,11 +681,11 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
     props: [
       PropType.CHICKEN,
       PropType.GUITAR,
+      PropType.UKULELE,
       PropType.DOUBLESTAR,
       PropType.QUIAD,
       PropType.TRIQUETRA,
       PropType.TRIQUETRA2,
-      // Dark-gated to dev/admin in BentoPropGrid — see the docstring above.
       PropType.POI,
     ],
   },

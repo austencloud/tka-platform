@@ -1,3 +1,10 @@
+import {
+  finishBootProfile,
+  markBootPhaseEnd,
+  markBootPhaseStart,
+  recordBootFeatureReady,
+  startBootProfile,
+} from "./boot-profiler";
 import type { FrameGateVerdict } from "./frame-gate";
 
 export type BootPhase = "assets" | "compile" | "settle";
@@ -43,6 +50,9 @@ function hasPerformance(): boolean {
 export function resetBootSpans(): void {
   if (typeof window === "undefined") return;
   window.__sceneBoot = emptySummary();
+  // Attribution has to be armed before the first asset moves, so it starts
+  // with the span it explains. Opt-in; a no-op unless the flag is set.
+  startBootProfile();
   if (!hasPerformance() || typeof performance.clearMarks !== "function") return;
   for (const phase of ["assets", "compile", "settle"] as const) {
     performance.clearMarks(`scene-boot:${phase}:start`);
@@ -52,11 +62,13 @@ export function resetBootSpans(): void {
 }
 
 export function beginBootSpan(phase: BootPhase): void {
+  markBootPhaseStart(phase);
   if (!hasPerformance()) return;
   performance.mark(`scene-boot:${phase}:start`);
 }
 
 export function endBootSpan(phase: BootPhase): void {
+  markBootPhaseEnd(phase);
   if (!hasPerformance()) return;
   performance.mark(`scene-boot:${phase}:end`);
   let durationMs: number | null = null;
@@ -85,7 +97,17 @@ export function recordFrameGateVerdict(verdict: FrameGateVerdict): void {
 }
 
 export function recordReveal(): void {
+  finishBootProfile();
   const summary = getSummary();
   if (!summary) return;
   summary.revealedAt = hasPerformance() ? performance.now() : null;
+}
+
+/**
+ * Which scene feature finished when. The long pole across features is the
+ * first thing worth knowing about a slow boot, and only the feature state
+ * knows the moment readiness flips.
+ */
+export function recordFeatureReady(key: string): void {
+  recordBootFeatureReady(key);
 }

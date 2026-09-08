@@ -29,8 +29,8 @@ describe("scan sequence handoff", () => {
 
   it("serializes record-derived props only when the printed URL omitted them", () => {
     const fallback = {
-      bluePropType: PropType.CLUB,
-      redPropType: PropType.MINIHOOP,
+      leftPropType: PropType.CLUB,
+      rightPropType: PropType.MINIHOOP,
     };
     const filled = new URL(
       buildScanSequenceDestination("MIXED", new URLSearchParams(), fallback),

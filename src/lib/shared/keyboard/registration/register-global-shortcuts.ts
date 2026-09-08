@@ -33,6 +33,7 @@ import { toast } from "../../toast/state/toast-state.svelte";
 import { BackgroundType } from "@austencloud/backgrounds";
 import { BACKGROUND_CARD_REGISTRY } from "@austencloud/backgrounds/card";
 import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
+import { openShortcutSettings } from "../open-shortcut-settings";
 import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
 import {
   getAllPropTypes,
@@ -97,9 +98,7 @@ export function registerGlobalShortcuts(
     context: "global",
     scope: "help",
     priority: "critical",
-    action: () => {
-      state.openHelp();
-    },
+    action: () => void openShortcutSettings("keyboard_shortcut"),
   });
 
   // ==================== Module Switching (Ctrl + Numbers) ====================
@@ -219,11 +218,11 @@ export function registerGlobalShortcuts(
       if (preset) {
         settingsService.updateSettings({
           selectedPresetIndex: 0,
-          bluePropType: preset.bluePropType,
-          redPropType: preset.redPropType,
+          leftPropType: preset.leftPropType,
+          rightPropType: preset.rightPropType,
           catDogMode: preset.catDogMode,
         });
-        toast.info(`Preset 1: ${preset.bluePropType}`, 1500);
+        toast.info(`Preset 1: ${preset.leftPropType}`, 1500);
       }
     },
   });
@@ -244,11 +243,11 @@ export function registerGlobalShortcuts(
       if (preset) {
         settingsService.updateSettings({
           selectedPresetIndex: 1,
-          bluePropType: preset.bluePropType,
-          redPropType: preset.redPropType,
+          leftPropType: preset.leftPropType,
+          rightPropType: preset.rightPropType,
           catDogMode: preset.catDogMode,
         });
-        toast.info(`Preset 2: ${preset.bluePropType}`, 1500);
+        toast.info(`Preset 2: ${preset.leftPropType}`, 1500);
       }
     },
   });
@@ -269,11 +268,11 @@ export function registerGlobalShortcuts(
       if (preset) {
         settingsService.updateSettings({
           selectedPresetIndex: 2,
-          bluePropType: preset.bluePropType,
-          redPropType: preset.redPropType,
+          leftPropType: preset.leftPropType,
+          rightPropType: preset.rightPropType,
           catDogMode: preset.catDogMode,
         });
-        toast.info(`Preset 3: ${preset.bluePropType}`, 1500);
+        toast.info(`Preset 3: ${preset.leftPropType}`, 1500);
       }
     },
   });
@@ -313,7 +312,7 @@ export function registerGlobalShortcuts(
       const allProps = filterPremiumCosmeticProps(getAllPropTypes());
       if (allProps.length === 0) return;
 
-      const currentProp = settingsService.settings.bluePropType;
+      const currentProp = settingsService.settings.leftPropType;
       if (!currentProp) return;
       const currentIndex = allProps.indexOf(currentProp);
       const nextIndex = (currentIndex + 1) % allProps.length;
@@ -322,8 +321,8 @@ export function registerGlobalShortcuts(
 
       const displayInfo = PROP_TYPE_DISPLAY_REGISTRY[nextProp];
       settingsService.updateSettings({
-        bluePropType: nextProp,
-        redPropType: nextProp,
+        leftPropType: nextProp,
+        rightPropType: nextProp,
       });
       toast.info(displayInfo.label, 1500);
     },

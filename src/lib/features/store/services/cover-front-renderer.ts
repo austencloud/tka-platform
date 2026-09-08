@@ -126,8 +126,8 @@ export function prewarmCovers(
   // instead of seeding the pool empty.
   prewarmCardPool({
     sequences,
-    bluePropType: propType,
-    redPropType: propType,
+    leftPropType: propType,
+    rightPropType: propType,
     theme: "cosmic",
     iconPaths,
   });
@@ -267,8 +267,8 @@ export function renderCoverFront(
         startPositionLayout: getCatalogLayoutPolicy(stepCount),
         showMandala: true,
         tndElement: frameElement(card),
-        bluePropType: propType,
-        redPropType: propType,
+        leftPropType: propType,
+        rightPropType: propType,
         // TnD cards keep their element footer; everything else carries the
         // brand line (the deck identity lives on the card BACK).
         notes: card.footerCenter ?? "The Kinetic Alphabet",
@@ -319,8 +319,8 @@ export function renderCoverBack(
       const canvas = await getPrintCardRenderer().renderBack(hydrated, {
         includeStartPosition: true,
         theme: SHOP_BACK_THEME,
-        bluePropType: propType,
-        redPropType: propType,
+        leftPropType: propType,
+        rightPropType: propType,
       });
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")

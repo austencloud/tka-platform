@@ -15,9 +15,17 @@
     type PropTransform,
   } from "$lib/shared/pictograph/prop/domain/prop-composition-recipes";
   import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const families = getRecipeFamilies();
   const MAX_HISTORY = 100;
+  const HAND_TRANSFORMS = [
+    { hand: HandSide.LEFT, accent: "#4f46e5", label: "Left" },
+    { hand: HandSide.RIGHT, accent: "#dc2626", label: "Right" },
+  ] as const;
 
   let expandedFamily = $state<PropType | null>(null);
 
@@ -28,80 +36,80 @@
 
   const FAMILY_PRESETS: Partial<Record<PropType, Preset[]>> = {
     [PropType.CLUB]: [
-      { label: "V-Open", recipe: { blue: { x: 35, y: 50, rotation: -20, scale: 0.5 }, red: { x: 65, y: 50, rotation: 20, scale: 0.5 }, pairScale: 1 } },
-      { label: "Crossed", recipe: { blue: { x: 50, y: 50, rotation: -40, scale: 0.5 }, red: { x: 50, y: 50, rotation: 40, scale: 0.5 }, pairScale: 1 } },
-      { label: "Parallel", recipe: { blue: { x: 40, y: 38, rotation: -25, scale: 0.48 }, red: { x: 60, y: 62, rotation: -25, scale: 0.48 }, pairScale: 1 } },
-      { label: "Stacked", recipe: { blue: { x: 50, y: 35, rotation: 0, scale: 0.48 }, red: { x: 50, y: 65, rotation: 180, scale: 0.48 }, pairScale: 1 } },
-      { label: "Wide V", recipe: { blue: { x: 28, y: 50, rotation: -35, scale: 0.48 }, red: { x: 72, y: 50, rotation: 35, scale: 0.48 }, pairScale: 1 } },
-      { label: "Nested", recipe: { blue: { x: 45, y: 45, rotation: -30, scale: 0.55 }, red: { x: 55, y: 55, rotation: -30, scale: 0.4 }, pairScale: 1 } },
+      { label: "V-Open", recipe: { left: { x: 35, y: 50, rotation: -20, scale: 0.5 }, right: { x: 65, y: 50, rotation: 20, scale: 0.5 }, pairScale: 1 } },
+      { label: "Crossed", recipe: { left: { x: 50, y: 50, rotation: -40, scale: 0.5 }, right: { x: 50, y: 50, rotation: 40, scale: 0.5 }, pairScale: 1 } },
+      { label: "Parallel", recipe: { left: { x: 40, y: 38, rotation: -25, scale: 0.48 }, right: { x: 60, y: 62, rotation: -25, scale: 0.48 }, pairScale: 1 } },
+      { label: "Stacked", recipe: { left: { x: 50, y: 35, rotation: 0, scale: 0.48 }, right: { x: 50, y: 65, rotation: 180, scale: 0.48 }, pairScale: 1 } },
+      { label: "Wide V", recipe: { left: { x: 28, y: 50, rotation: -35, scale: 0.48 }, right: { x: 72, y: 50, rotation: 35, scale: 0.48 }, pairScale: 1 } },
+      { label: "Nested", recipe: { left: { x: 45, y: 45, rotation: -30, scale: 0.55 }, right: { x: 55, y: 55, rotation: -30, scale: 0.4 }, pairScale: 1 } },
     ],
     [PropType.STAFF]: [
-      { label: "X-Cross", recipe: { blue: { x: 50, y: 50, rotation: -45, scale: 0.55 }, red: { x: 50, y: 50, rotation: 45, scale: 0.55 }, pairScale: 1 } },
-      { label: "Parallel", recipe: { blue: { x: 38, y: 50, rotation: -30, scale: 0.55 }, red: { x: 62, y: 50, rotation: -30, scale: 0.55 }, pairScale: 1 } },
-      { label: "Wide X", recipe: { blue: { x: 50, y: 50, rotation: -60, scale: 0.55 }, red: { x: 50, y: 50, rotation: 60, scale: 0.55 }, pairScale: 1 } },
-      { label: "Tight X", recipe: { blue: { x: 50, y: 50, rotation: -25, scale: 0.55 }, red: { x: 50, y: 50, rotation: 25, scale: 0.55 }, pairScale: 1 } },
-      { label: "V-Down", recipe: { blue: { x: 35, y: 40, rotation: -50, scale: 0.5 }, red: { x: 65, y: 40, rotation: 50, scale: 0.5 }, pairScale: 1 } },
-      { label: "Horizontal", recipe: { blue: { x: 50, y: 40, rotation: 0, scale: 0.5 }, red: { x: 50, y: 60, rotation: 0, scale: 0.5 }, pairScale: 1 } },
+      { label: "X-Cross", recipe: { left: { x: 50, y: 50, rotation: -45, scale: 0.55 }, right: { x: 50, y: 50, rotation: 45, scale: 0.55 }, pairScale: 1 } },
+      { label: "Parallel", recipe: { left: { x: 38, y: 50, rotation: -30, scale: 0.55 }, right: { x: 62, y: 50, rotation: -30, scale: 0.55 }, pairScale: 1 } },
+      { label: "Wide X", recipe: { left: { x: 50, y: 50, rotation: -60, scale: 0.55 }, right: { x: 50, y: 50, rotation: 60, scale: 0.55 }, pairScale: 1 } },
+      { label: "Tight X", recipe: { left: { x: 50, y: 50, rotation: -25, scale: 0.55 }, right: { x: 50, y: 50, rotation: 25, scale: 0.55 }, pairScale: 1 } },
+      { label: "V-Down", recipe: { left: { x: 35, y: 40, rotation: -50, scale: 0.5 }, right: { x: 65, y: 40, rotation: 50, scale: 0.5 }, pairScale: 1 } },
+      { label: "Horizontal", recipe: { left: { x: 50, y: 40, rotation: 0, scale: 0.5 }, right: { x: 50, y: 60, rotation: 0, scale: 0.5 }, pairScale: 1 } },
     ],
     [PropType.FAN]: [
-      { label: "Facing", recipe: { blue: { x: 35, y: 50, rotation: 0, scale: 0.45 }, red: { x: 65, y: 50, rotation: 180, scale: 0.45 }, pairScale: 1 } },
-      { label: "Butterfly", recipe: { blue: { x: 38, y: 50, rotation: 30, scale: 0.45 }, red: { x: 62, y: 50, rotation: -30, scale: 0.45 }, pairScale: 1 } },
-      { label: "Stacked", recipe: { blue: { x: 50, y: 35, rotation: 0, scale: 0.45 }, red: { x: 50, y: 65, rotation: 0, scale: 0.45 }, pairScale: 1 } },
-      { label: "Fanned", recipe: { blue: { x: 45, y: 45, rotation: -20, scale: 0.45 }, red: { x: 55, y: 55, rotation: 20, scale: 0.45 }, pairScale: 1 } },
+      { label: "Facing", recipe: { left: { x: 35, y: 50, rotation: 0, scale: 0.45 }, right: { x: 65, y: 50, rotation: 180, scale: 0.45 }, pairScale: 1 } },
+      { label: "Butterfly", recipe: { left: { x: 38, y: 50, rotation: 30, scale: 0.45 }, right: { x: 62, y: 50, rotation: -30, scale: 0.45 }, pairScale: 1 } },
+      { label: "Stacked", recipe: { left: { x: 50, y: 35, rotation: 0, scale: 0.45 }, right: { x: 50, y: 65, rotation: 0, scale: 0.45 }, pairScale: 1 } },
+      { label: "Fanned", recipe: { left: { x: 45, y: 45, rotation: -20, scale: 0.45 }, right: { x: 55, y: 55, rotation: 20, scale: 0.45 }, pairScale: 1 } },
     ],
     [PropType.BUUGENG]: [
-      { label: "Facing", recipe: { blue: { x: 35, y: 50, rotation: 0, scale: 0.45 }, red: { x: 65, y: 50, rotation: 180, scale: 0.45 }, pairScale: 1 } },
-      { label: "Interlocked", recipe: { blue: { x: 42, y: 50, rotation: 0, scale: 0.48 }, red: { x: 58, y: 50, rotation: 180, scale: 0.48 }, pairScale: 1 } },
-      { label: "Yin-Yang", recipe: { blue: { x: 42, y: 42, rotation: 45, scale: 0.45 }, red: { x: 58, y: 58, rotation: -135, scale: 0.45 }, pairScale: 1 } },
-      { label: "Parallel", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
+      { label: "Facing", recipe: { left: { x: 35, y: 50, rotation: 0, scale: 0.45 }, right: { x: 65, y: 50, rotation: 180, scale: 0.45 }, pairScale: 1 } },
+      { label: "Interlocked", recipe: { left: { x: 42, y: 50, rotation: 0, scale: 0.48 }, right: { x: 58, y: 50, rotation: 180, scale: 0.48 }, pairScale: 1 } },
+      { label: "Yin-Yang", recipe: { left: { x: 42, y: 42, rotation: 45, scale: 0.45 }, right: { x: 58, y: 58, rotation: -135, scale: 0.45 }, pairScale: 1 } },
+      { label: "Parallel", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
     ],
     [PropType.MINIHOOP]: [
-      { label: "Venn", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.5 }, red: { x: 62, y: 50, rotation: 0, scale: 0.5 }, pairScale: 1 } },
-      { label: "Stacked", recipe: { blue: { x: 50, y: 38, rotation: 0, scale: 0.48 }, red: { x: 50, y: 62, rotation: 0, scale: 0.48 }, pairScale: 1 } },
-      { label: "Nested", recipe: { blue: { x: 50, y: 50, rotation: 0, scale: 0.55 }, red: { x: 50, y: 50, rotation: 0, scale: 0.38 }, pairScale: 1 } },
-      { label: "Olympic", recipe: { blue: { x: 35, y: 45, rotation: 0, scale: 0.42 }, red: { x: 58, y: 55, rotation: 0, scale: 0.42 }, pairScale: 1 } },
+      { label: "Venn", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.5 }, right: { x: 62, y: 50, rotation: 0, scale: 0.5 }, pairScale: 1 } },
+      { label: "Stacked", recipe: { left: { x: 50, y: 38, rotation: 0, scale: 0.48 }, right: { x: 50, y: 62, rotation: 0, scale: 0.48 }, pairScale: 1 } },
+      { label: "Nested", recipe: { left: { x: 50, y: 50, rotation: 0, scale: 0.55 }, right: { x: 50, y: 50, rotation: 0, scale: 0.38 }, pairScale: 1 } },
+      { label: "Olympic", recipe: { left: { x: 35, y: 45, rotation: 0, scale: 0.42 }, right: { x: 58, y: 55, rotation: 0, scale: 0.42 }, pairScale: 1 } },
     ],
     [PropType.TRIAD]: [
-      { label: "Offset", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 60, scale: 0.45 }, pairScale: 1 } },
-      { label: "Mirrored", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
-      { label: "Nested", recipe: { blue: { x: 50, y: 50, rotation: 0, scale: 0.55 }, red: { x: 50, y: 50, rotation: 30, scale: 0.38 }, pairScale: 1 } },
-      { label: "Star", recipe: { blue: { x: 50, y: 50, rotation: 0, scale: 0.5 }, red: { x: 50, y: 50, rotation: 180, scale: 0.5 }, pairScale: 1 } },
+      { label: "Offset", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 60, scale: 0.45 }, pairScale: 1 } },
+      { label: "Mirrored", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
+      { label: "Nested", recipe: { left: { x: 50, y: 50, rotation: 0, scale: 0.55 }, right: { x: 50, y: 50, rotation: 30, scale: 0.38 }, pairScale: 1 } },
+      { label: "Star", recipe: { left: { x: 50, y: 50, rotation: 0, scale: 0.5 }, right: { x: 50, y: 50, rotation: 180, scale: 0.5 }, pairScale: 1 } },
     ],
     [PropType.TORCH]: [
-      { label: "Crossed", recipe: { blue: { x: 50, y: 50, rotation: -30, scale: 0.5 }, red: { x: 50, y: 50, rotation: 30, scale: 0.5 }, pairScale: 1 } },
-      { label: "V-Up", recipe: { blue: { x: 35, y: 55, rotation: -25, scale: 0.48 }, red: { x: 65, y: 55, rotation: 25, scale: 0.48 }, pairScale: 1 } },
-      { label: "Parallel", recipe: { blue: { x: 38, y: 50, rotation: -15, scale: 0.48 }, red: { x: 62, y: 50, rotation: -15, scale: 0.48 }, pairScale: 1 } },
-      { label: "Wide", recipe: { blue: { x: 30, y: 50, rotation: -40, scale: 0.48 }, red: { x: 70, y: 50, rotation: 40, scale: 0.48 }, pairScale: 1 } },
+      { label: "Crossed", recipe: { left: { x: 50, y: 50, rotation: -30, scale: 0.5 }, right: { x: 50, y: 50, rotation: 30, scale: 0.5 }, pairScale: 1 } },
+      { label: "V-Up", recipe: { left: { x: 35, y: 55, rotation: -25, scale: 0.48 }, right: { x: 65, y: 55, rotation: 25, scale: 0.48 }, pairScale: 1 } },
+      { label: "Parallel", recipe: { left: { x: 38, y: 50, rotation: -15, scale: 0.48 }, right: { x: 62, y: 50, rotation: -15, scale: 0.48 }, pairScale: 1 } },
+      { label: "Wide", recipe: { left: { x: 30, y: 50, rotation: -40, scale: 0.48 }, right: { x: 70, y: 50, rotation: 40, scale: 0.48 }, pairScale: 1 } },
     ],
     [PropType.SWORD]: [
-      { label: "Crossed", recipe: { blue: { x: 50, y: 50, rotation: -40, scale: 0.55 }, red: { x: 50, y: 50, rotation: 40, scale: 0.55 }, pairScale: 1 } },
-      { label: "Parallel", recipe: { blue: { x: 38, y: 50, rotation: -20, scale: 0.5 }, red: { x: 62, y: 50, rotation: -20, scale: 0.5 }, pairScale: 1 } },
-      { label: "Tight X", recipe: { blue: { x: 50, y: 50, rotation: -25, scale: 0.55 }, red: { x: 50, y: 50, rotation: 25, scale: 0.55 }, pairScale: 1 } },
-      { label: "V-Down", recipe: { blue: { x: 35, y: 40, rotation: -50, scale: 0.5 }, red: { x: 65, y: 40, rotation: 50, scale: 0.5 }, pairScale: 1 } },
+      { label: "Crossed", recipe: { left: { x: 50, y: 50, rotation: -40, scale: 0.55 }, right: { x: 50, y: 50, rotation: 40, scale: 0.55 }, pairScale: 1 } },
+      { label: "Parallel", recipe: { left: { x: 38, y: 50, rotation: -20, scale: 0.5 }, right: { x: 62, y: 50, rotation: -20, scale: 0.5 }, pairScale: 1 } },
+      { label: "Tight X", recipe: { left: { x: 50, y: 50, rotation: -25, scale: 0.55 }, right: { x: 50, y: 50, rotation: 25, scale: 0.55 }, pairScale: 1 } },
+      { label: "V-Down", recipe: { left: { x: 35, y: 40, rotation: -50, scale: 0.5 }, right: { x: 65, y: 40, rotation: 50, scale: 0.5 }, pairScale: 1 } },
     ],
     [PropType.CHICKEN]: [
-      { label: "Mirrored", recipe: { blue: { x: 35, y: 50, rotation: 10, scale: 0.45 }, red: { x: 65, y: 50, rotation: -10, scale: 0.45 }, pairScale: 1 } },
-      { label: "Facing", recipe: { blue: { x: 35, y: 50, rotation: 0, scale: 0.45 }, red: { x: 65, y: 50, rotation: 180, scale: 0.45 }, pairScale: 1 } },
-      { label: "Stacked", recipe: { blue: { x: 50, y: 35, rotation: 0, scale: 0.45 }, red: { x: 50, y: 65, rotation: 0, scale: 0.45 }, pairScale: 1 } },
-      { label: "Crossed", recipe: { blue: { x: 50, y: 50, rotation: -30, scale: 0.48 }, red: { x: 50, y: 50, rotation: 30, scale: 0.48 }, pairScale: 1 } },
+      { label: "Mirrored", recipe: { left: { x: 35, y: 50, rotation: 10, scale: 0.45 }, right: { x: 65, y: 50, rotation: -10, scale: 0.45 }, pairScale: 1 } },
+      { label: "Facing", recipe: { left: { x: 35, y: 50, rotation: 0, scale: 0.45 }, right: { x: 65, y: 50, rotation: 180, scale: 0.45 }, pairScale: 1 } },
+      { label: "Stacked", recipe: { left: { x: 50, y: 35, rotation: 0, scale: 0.45 }, right: { x: 50, y: 65, rotation: 0, scale: 0.45 }, pairScale: 1 } },
+      { label: "Crossed", recipe: { left: { x: 50, y: 50, rotation: -30, scale: 0.48 }, right: { x: 50, y: 50, rotation: 30, scale: 0.48 }, pairScale: 1 } },
     ],
     [PropType.DOUBLESTAR]: [
-      { label: "Offset", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 30, scale: 0.45 }, pairScale: 1 } },
-      { label: "Mirrored", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
-      { label: "Nested", recipe: { blue: { x: 50, y: 50, rotation: 0, scale: 0.55 }, red: { x: 50, y: 50, rotation: 45, scale: 0.38 }, pairScale: 1 } },
-      { label: "Crossed", recipe: { blue: { x: 50, y: 50, rotation: -20, scale: 0.48 }, red: { x: 50, y: 50, rotation: 20, scale: 0.48 }, pairScale: 1 } },
+      { label: "Offset", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 30, scale: 0.45 }, pairScale: 1 } },
+      { label: "Mirrored", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
+      { label: "Nested", recipe: { left: { x: 50, y: 50, rotation: 0, scale: 0.55 }, right: { x: 50, y: 50, rotation: 45, scale: 0.38 }, pairScale: 1 } },
+      { label: "Crossed", recipe: { left: { x: 50, y: 50, rotation: -20, scale: 0.48 }, right: { x: 50, y: 50, rotation: 20, scale: 0.48 }, pairScale: 1 } },
     ],
     [PropType.TRIQUETRA]: [
-      { label: "Offset", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 60, scale: 0.45 }, pairScale: 1 } },
-      { label: "Mirrored", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
-      { label: "Star", recipe: { blue: { x: 50, y: 50, rotation: 0, scale: 0.5 }, red: { x: 50, y: 50, rotation: 180, scale: 0.5 }, pairScale: 1 } },
-      { label: "Stacked", recipe: { blue: { x: 50, y: 35, rotation: 0, scale: 0.42 }, red: { x: 50, y: 65, rotation: 60, scale: 0.42 }, pairScale: 1 } },
+      { label: "Offset", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 60, scale: 0.45 }, pairScale: 1 } },
+      { label: "Mirrored", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
+      { label: "Star", recipe: { left: { x: 50, y: 50, rotation: 0, scale: 0.5 }, right: { x: 50, y: 50, rotation: 180, scale: 0.5 }, pairScale: 1 } },
+      { label: "Stacked", recipe: { left: { x: 50, y: 35, rotation: 0, scale: 0.42 }, right: { x: 50, y: 65, rotation: 60, scale: 0.42 }, pairScale: 1 } },
     ],
     [PropType.EIGHTRINGS]: [
-      { label: "Side", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
-      { label: "Rotated", recipe: { blue: { x: 38, y: 50, rotation: 0, scale: 0.45 }, red: { x: 62, y: 50, rotation: 45, scale: 0.45 }, pairScale: 1 } },
-      { label: "Stacked", recipe: { blue: { x: 50, y: 38, rotation: 0, scale: 0.42 }, red: { x: 50, y: 62, rotation: 0, scale: 0.42 }, pairScale: 1 } },
-      { label: "Overlap", recipe: { blue: { x: 44, y: 50, rotation: -10, scale: 0.48 }, red: { x: 56, y: 50, rotation: 10, scale: 0.48 }, pairScale: 1 } },
+      { label: "Side", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 0, scale: 0.45 }, pairScale: 1 } },
+      { label: "Rotated", recipe: { left: { x: 38, y: 50, rotation: 0, scale: 0.45 }, right: { x: 62, y: 50, rotation: 45, scale: 0.45 }, pairScale: 1 } },
+      { label: "Stacked", recipe: { left: { x: 50, y: 38, rotation: 0, scale: 0.42 }, right: { x: 50, y: 62, rotation: 0, scale: 0.42 }, pairScale: 1 } },
+      { label: "Overlap", recipe: { left: { x: 44, y: 50, rotation: -10, scale: 0.48 }, right: { x: 56, y: 50, rotation: 10, scale: 0.48 }, pairScale: 1 } },
     ],
   };
 
@@ -179,7 +187,7 @@
 
   function updateTransform(
     propType: PropType,
-    color: "blue" | "red",
+    color: HandSideValue,
     field: keyof PropTransform,
     value: number
   ) {
@@ -203,8 +211,8 @@
     pushUndo();
     ensureOverride(propType);
     const recipe = overrides[propType]!;
-    recipe.blue.rotation = ((recipe.blue.rotation + degrees + 180) % 360) - 180;
-    recipe.red.rotation = ((recipe.red.rotation + degrees + 180) % 360) - 180;
+    recipe.left.rotation = ((recipe.left.rotation + degrees + 180) % 360) - 180;
+    recipe.right.rotation = ((recipe.right.rotation + degrees + 180) % 360) - 180;
     overrides = { ...overrides };
     persistOverrides();
   }
@@ -343,21 +351,21 @@
 
               <!-- Blue / Red columns -->
               <div class="color-columns">
-                {#each [["blue", "#4f46e5"], ["red", "#dc2626"]] as [color, accent]}
-                  {@const t = recipe[color as "blue" | "red"]}
+                {#each HAND_TRANSFORMS as { hand, accent, label } (hand)}
+                  {@const t = recipe[hand]}
                   <div class="color-col">
                     <span class="color-dot" style="background: {accent}"></span>
-                    <span class="color-label">{color === "blue" ? "Blue" : "Red"}</span>
+                    <span class="color-label">{label}</span>
 
                     <div class="field-row">
                       <span class="field-name">X</span>
                       <input
                         type="range" min="0" max="100" step="1" value={t.x}
-                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "x", +e.currentTarget.value)}
+                        oninput={(e) => updateTransform(propType, hand, "x", +e.currentTarget.value)}
                       />
                       <input
                         type="number" min="0" max="100" step="1" value={t.x}
-                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "x", clamp(+e.currentTarget.value, 0, 100))}
+                        onchange={(e) => updateTransform(propType, hand, "x", clamp(+e.currentTarget.value, 0, 100))}
                       />
                     </div>
 
@@ -365,11 +373,11 @@
                       <span class="field-name">Y</span>
                       <input
                         type="range" min="0" max="100" step="1" value={t.y}
-                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "y", +e.currentTarget.value)}
+                        oninput={(e) => updateTransform(propType, hand, "y", +e.currentTarget.value)}
                       />
                       <input
                         type="number" min="0" max="100" step="1" value={t.y}
-                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "y", clamp(+e.currentTarget.value, 0, 100))}
+                        onchange={(e) => updateTransform(propType, hand, "y", clamp(+e.currentTarget.value, 0, 100))}
                       />
                     </div>
 
@@ -377,11 +385,11 @@
                       <span class="field-name">Rot</span>
                       <input
                         type="range" min="-180" max="180" step="5" value={t.rotation}
-                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "rotation", +e.currentTarget.value)}
+                        oninput={(e) => updateTransform(propType, hand, "rotation", +e.currentTarget.value)}
                       />
                       <input
                         type="number" min="-180" max="180" step="1" value={t.rotation}
-                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "rotation", clamp(+e.currentTarget.value, -180, 180))}
+                        onchange={(e) => updateTransform(propType, hand, "rotation", clamp(+e.currentTarget.value, -180, 180))}
                       />
                     </div>
 
@@ -389,11 +397,11 @@
                       <span class="field-name">Scale</span>
                       <input
                         type="range" min="0.1" max="1" step="0.05" value={t.scale}
-                        oninput={(e) => updateTransform(propType, color as "blue" | "red", "scale", +e.currentTarget.value)}
+                        oninput={(e) => updateTransform(propType, hand, "scale", +e.currentTarget.value)}
                       />
                       <input
                         type="number" min="0.1" max="1" step="0.01" value={t.scale}
-                        onchange={(e) => updateTransform(propType, color as "blue" | "red", "scale", clamp(+e.currentTarget.value, 0.1, 1))}
+                        onchange={(e) => updateTransform(propType, hand, "scale", clamp(+e.currentTarget.value, 0.1, 1))}
                       />
                     </div>
                   </div>

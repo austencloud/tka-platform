@@ -5,7 +5,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   HandPath,
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -40,10 +40,10 @@ describe("builder motion type conversion", () => {
     const hash = step(GridLocation.CENTER, GridLocation.EAST);
     expect(resolveMotionType(hash, GridMode.DIAMOND)).toBe(MotionType.DASH);
     expect(
-      stepToMotion(hash, MotionColor.BLUE, GridMode.DIAMOND).rotationDirection
+      stepToMotion(hash, HandSide.LEFT, GridMode.DIAMOND).rotationDirection
     ).toBe(RotationDirection.NO_ROTATION);
     expect(
-      stepToMotion(hash, MotionColor.BLUE, GridMode.DIAMOND).handPath
+      stepToMotion(hash, HandSide.LEFT, GridMode.DIAMOND).handPath
     ).toBe(HandPath.HASH_OUT);
   });
 
@@ -58,7 +58,7 @@ describe("builder motion type conversion", () => {
     expect(resolveMotionType(clockwise, GridMode.SKEWED)).toBe(MotionType.PRO);
     expect(resolveMotionType(counter, GridMode.SKEWED)).toBe(MotionType.ANTI);
     expect(
-      stepToMotion(clockwise, MotionColor.BLUE, GridMode.SKEWED).handPath
+      stepToMotion(clockwise, HandSide.LEFT, GridMode.SKEWED).handPath
     ).toBe(HandPath.CLOCKWISE);
   });
 
@@ -71,19 +71,19 @@ describe("builder motion type conversion", () => {
     );
     expect(resolveMotionType(float, GridMode.DIAMOND)).toBe(MotionType.FLOAT);
 
-    const motion = stepToMotion(float, MotionColor.BLUE, GridMode.DIAMOND);
+    const motion = stepToMotion(float, HandSide.LEFT, GridMode.DIAMOND);
     expect(motion.turns).toBe("fl");
     expect(motion.rotationDirection).toBe(RotationDirection.NO_ROTATION);
     expect(motion.arrowLocation).toBe(GridLocation.NORTHEAST);
   });
 
   it("recalculates letter-specific dash locations from the complete pictograph", () => {
-    const blue = step(GridLocation.NORTH, GridLocation.SOUTH);
-    const red = step(GridLocation.EAST, GridLocation.WEST);
+    const left = step(GridLocation.NORTH, GridLocation.SOUTH);
+    const right = step(GridLocation.EAST, GridLocation.WEST);
 
     const [basePictograph] = convertToPictographs(
-      [blue],
-      [red],
+      [left],
+      [right],
       GridMode.DIAMOND
     );
     const pictograph = withCalculatedArrowLocations({
@@ -91,7 +91,7 @@ describe("builder motion type conversion", () => {
       letter: Letter.PHI_DASH,
     });
 
-    expect(pictograph?.motions.blue?.arrowLocation).toBe(GridLocation.WEST);
-    expect(pictograph?.motions.red?.arrowLocation).toBe(GridLocation.NORTH);
+    expect(pictograph?.motions.left?.arrowLocation).toBe(GridLocation.WEST);
+    expect(pictograph?.motions.right?.arrowLocation).toBe(GridLocation.NORTH);
   });
 });

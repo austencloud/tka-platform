@@ -67,13 +67,13 @@ export class PetalPoolRenderer3D {
   private readonly maxOpacity = new Float32Array(CAPACITY);
   private readonly tumble = new Uint8Array(CAPACITY);
   private readonly baseRotationX = new Float32Array(CAPACITY);
-  private readonly red = new Float32Array(CAPACITY);
+  private readonly right = new Float32Array(CAPACITY);
   private readonly green = new Float32Array(CAPACITY);
-  private readonly blue = new Float32Array(CAPACITY);
+  private readonly left = new Float32Array(CAPACITY);
   private readonly ember = new Uint8Array(CAPACITY);
-  private readonly emberRed = new Float32Array(CAPACITY);
+  private readonly emberRight = new Float32Array(CAPACITY);
   private readonly emberGreen = new Float32Array(CAPACITY);
-  private readonly emberBlue = new Float32Array(CAPACITY);
+  private readonly emberLeft = new Float32Array(CAPACITY);
   private readonly uvX = new Float32Array(CAPACITY);
   private readonly uvY = new Float32Array(CAPACITY);
   private readonly uvWidth = new Float32Array(CAPACITY);
@@ -82,7 +82,7 @@ export class PetalPoolRenderer3D {
   private readonly wakeSources: PetalWakeSource3D[] = [];
   private readonly euler = new Euler();
   private readonly quaternion = new Quaternion();
-  private readonly color: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly color: MutableRgb = { right: 1, green: 1, left: 1 };
   private readonly airflow: PetalAirflow3D = { x: 0, y: 0, z: 0, turn: 0 };
   private readonly writeState: ParticleInstanceWrite = {
     x: 0,
@@ -91,9 +91,9 @@ export class PetalPoolRenderer3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
   };
   private cursor = 0;
@@ -268,9 +268,9 @@ export class PetalPoolRenderer3D {
       write.quaternionY = this.quaternion.y;
       write.quaternionZ = this.quaternion.z;
       write.quaternionW = this.quaternion.w;
-      write.red = this.red[index]!;
+      write.right = this.right[index]!;
       write.green = this.green[index]!;
-      write.blue = this.blue[index]!;
+      write.left = this.left[index]!;
       write.alpha = Math.min(
         1,
         Math.max(
@@ -290,9 +290,9 @@ export class PetalPoolRenderer3D {
       if (this.ember[index] === 1 && this.age[index]! < EMBER_MAX_AGE) {
         write.scaleX = resolveEmberWorldSpan(this.size[index]!);
         write.scaleY = resolveEmberWorldSpan(this.size[index]!);
-        write.red = this.emberRed[index]!;
+        write.right = this.emberRight[index]!;
         write.green = this.emberGreen[index]!;
-        write.blue = this.emberBlue[index]!;
+        write.left = this.emberLeft[index]!;
         write.alpha = Math.min(
           1.05,
           (1 - this.age[index]! / EMBER_MAX_AGE) *
@@ -446,14 +446,14 @@ export class PetalPoolRenderer3D {
     this.maxOpacity[slot] = resolvePetalOpacity(shape, ambient);
     this.tumble[slot] = tumble ? 1 : 0;
     setLinearRgbFromHex(this.color, pickPetalTint(palette));
-    this.red[slot] = this.color.red;
+    this.right[slot] = this.color.right;
     this.green[slot] = this.color.green;
-    this.blue[slot] = this.color.blue;
+    this.left[slot] = this.color.left;
     this.ember[slot] = rollEmberFlag(palette) ? 1 : 0;
     setLinearRgbFromHex(this.color, palette.emberEdge?.color ?? "#ff6020");
-    this.emberRed[slot] = this.color.red;
+    this.emberRight[slot] = this.color.right;
     this.emberGreen[slot] = this.color.green;
-    this.emberBlue[slot] = this.color.blue;
+    this.emberLeft[slot] = this.color.left;
     this.uvX[slot] = frame.x;
     this.uvY[slot] = frame.y;
     this.uvWidth[slot] = frame.width;

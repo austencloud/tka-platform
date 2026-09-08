@@ -9,6 +9,11 @@ interface PendingLoad {
 
 const mocks = vi.hoisted(() => ({
   pending: [] as PendingLoad[],
+  getAllSequences: vi.fn<() => Promise<SequenceData[]>>(),
+}));
+
+vi.mock("$lib/shared/persistence/services/dexie-persistence-service", () => ({
+  getAllSequences: mocks.getAllSequences,
 }));
 
 vi.mock("$lib/shared/auth/state/auth-state.svelte", async () => {
@@ -67,6 +72,7 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
 
 import { browseEngineAuthTestState } from "./browse-engine-auth-test-state.svelte";
 import { createBrowseEngineForTest } from "./browse-engine-test-helpers.svelte";
+import { recordSavedSequenceId } from "$lib/shared/library/services/saved-sequence-ledger";
 
 function sequence(id: string): SequenceData {
   return {
@@ -85,7 +91,11 @@ function sequence(id: string): SequenceData {
 describe("BrowseEngine effective identity switching", () => {
   beforeEach(() => {
     mocks.pending = [];
+    mocks.getAllSequences.mockReset().mockResolvedValue([]);
+    localStorage.clear();
     browseEngineAuthTestState.effectiveUserId = "owner";
+    browseEngineAuthTestState.isAuthenticated = true;
+    browseEngineAuthTestState.isFullAccount = true;
   });
 
   it("reloads for preview and exit without accepting stale account rows", async () => {
@@ -122,6 +132,75 @@ describe("BrowseEngine effective identity switching", () => {
       "restored-owner-row",
     ]);
 
+    engine.destroy();
+    dispose();
+  });
+
+  it("shows none of the device cache after sign-out, even when an account request finishes late", async () => {
+    const { engine, dispose } = createBrowseEngineForTest({
+      persistKey: null,
+      initialSource: "my-library",
+    });
+    const initialLoad = engine.initialize();
+    browseEngineAuthTestState.effectiveUserId = null;
+    browseEngineAuthTestState.isAuthenticated = false;
+    browseEngineAuthTestState.isFullAccount = false;
+    await tick();
+
+    mocks.pending[0]!.resolve([sequence("DJI")]);
+    await initialLoad;
+    await tick();
+    expect(engine.allSequences).toEqual([]);
+    expect(engine.isLoading).toBe(false);
+    expect(mocks.getAllSequences).not.toHaveBeenCalled();
+
+    // Firebase may establish a new anonymous identity after sign-out.
+    browseEngineAuthTestState.effectiveUserId = "new-guest";
+    browseEngineAuthTestState.isAuthenticated = true;
+    await tick();
+    expect(engine.allSequences).toEqual([]);
+    expect(mocks.getAllSequences).not.toHaveBeenCalled();
+    engine.destroy();
+    dispose();
+  });
+
+  it("loads only saves recorded for the current guest", async () => {
+    browseEngineAuthTestState.effectiveUserId = "guest";
+    browseEngineAuthTestState.isFullAccount = false;
+    recordSavedSequenceId("guest", "my-draft");
+    recordSavedSequenceId("previous-owner", "DJI");
+    mocks.getAllSequences.mockResolvedValue([
+      sequence("DJI"),
+      sequence("SEQUENCEPM"),
+      sequence("my-draft"),
+    ]);
+    const { engine, dispose } = createBrowseEngineForTest({
+      persistKey: null,
+      initialSource: "my-library",
+    });
+    await engine.initialize();
+    expect(engine.allSequences.map((item) => item.id)).toEqual(["my-draft"]);
+    expect(mocks.pending).toHaveLength(0);
+    engine.destroy();
+    dispose();
+  });
+
+  it("reloads from the account when a guest upgrades without changing uid", async () => {
+    browseEngineAuthTestState.effectiveUserId = "guest";
+    browseEngineAuthTestState.isFullAccount = false;
+    const { engine, dispose } = createBrowseEngineForTest({
+      persistKey: null,
+      initialSource: "my-library",
+    });
+    await engine.initialize();
+    browseEngineAuthTestState.isFullAccount = true;
+    await tick();
+    expect(mocks.pending.map((request) => request.userId)).toEqual(["guest"]);
+    mocks.pending[0]!.resolve([sequence("account-save")]);
+    await tick();
+    expect(engine.allSequences.map((item) => item.id)).toEqual([
+      "account-save",
+    ]);
     engine.destroy();
     dispose();
   });

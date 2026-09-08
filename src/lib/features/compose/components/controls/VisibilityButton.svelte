@@ -2,26 +2,26 @@
   VisibilityButton.svelte
 
   Single motion visibility toggle button (eye icon).
-  Can be styled for blue or red motion.
+  Uses the canonical palette while addressing motion by performer hand.
 -->
 <script lang="ts">
-  type MotionColor = "blue" | "red";
+  type HandSide = "left" | "right";
 
   let {
-    color = "blue",
+    hand = "left",
     isVisible = true,
     onToggle = () => {},
   }: {
-    color?: MotionColor;
+    hand?: HandSide;
     isVisible?: boolean;
     onToggle?: () => void;
   } = $props();
 
   const colorClass = $derived(
-    color === "blue" ? "blue-vis-btn" : "red-vis-btn"
+    hand === "left" ? "blue-vis-btn" : "red-vis-btn"
   );
   const ariaLabel = $derived(
-    isVisible ? `Hide ${color} motion` : `Show ${color} motion`
+    isVisible ? `Hide ${hand} motion` : `Show ${hand} motion`
   );
 </script>
 

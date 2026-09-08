@@ -21,19 +21,19 @@ import BuildStartPosition from "./BuildStartPosition.svelte";
 
 describe("BuildStartPosition", () => {
   it("applies merged and center poses through the Assemble placement contract", async () => {
-    const onBlueOrientationChange = vi.fn();
-    const onRedOrientationChange = vi.fn();
+    const onLeftOrientationChange = vi.fn();
+    const onRightOrientationChange = vi.fn();
     const onApplyPlacement = vi.fn();
 
     render(BuildStartPosition, {
       gridMode: GridMode.SKEWED,
       showCenter: true,
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
-      blueOrientation: Orientation.IN,
-      redOrientation: Orientation.OUT,
-      onBlueOrientationChange,
-      onRedOrientationChange,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
+      leftOrientation: Orientation.IN,
+      rightOrientation: Orientation.OUT,
+      onLeftOrientationChange,
+      onRightOrientationChange,
       onApplyPlacement,
     });
 
@@ -63,15 +63,15 @@ describe("BuildStartPosition", () => {
     expect(applyButton.disabled).toBe(false);
     applyButton.click();
 
-    expect(onBlueOrientationChange).toHaveBeenCalledWith(Orientation.CENTER_N);
+    expect(onLeftOrientationChange).toHaveBeenCalledWith(Orientation.CENTER_N);
     await vi.waitFor(() =>
       expect(onApplyPlacement).toHaveBeenCalledWith(
         expect.objectContaining({
-          blueLocation: GridLocation.CENTER,
-          redLocation: GridLocation.NORTH,
+          leftLocation: GridLocation.CENTER,
+          rightLocation: GridLocation.NORTH,
           gridMode: GridMode.SKEWED,
-          blueOrientation: Orientation.CENTER_N,
-          redOrientation: Orientation.OUT,
+          leftOrientation: Orientation.CENTER_N,
+          rightOrientation: Orientation.OUT,
         })
       )
     );

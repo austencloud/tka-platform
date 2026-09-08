@@ -4,8 +4,8 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 
-const blue: PropState = { x: 1, y: 2, angle: 10 } as unknown as PropState;
-const red: PropState = { x: 3, y: 4, angle: 20 } as unknown as PropState;
+const left: PropState = { x: 1, y: 2, angle: 10 } as unknown as PropState;
+const right: PropState = { x: 3, y: 4, angle: 20 } as unknown as PropState;
 const trail = { lineWidth: 8, fadeDurationMs: 500 } as unknown as TrailSettings;
 
 function frame(overrides: Partial<ExportFrameContext> = {}): ExportFrameContext {
@@ -15,8 +15,8 @@ function frame(overrides: Partial<ExportFrameContext> = {}): ExportFrameContext 
     backgroundAlpha: 1,
     showNonRadialPoints: true,
     trailSettings: trail,
-    bluePropType: "staff",
-    redPropType: "staff",
+    leftPropType: "staff",
+    rightPropType: "staff",
     previewDarkMode: true,
     ...overrides,
   };
@@ -24,8 +24,8 @@ function frame(overrides: Partial<ExportFrameContext> = {}): ExportFrameContext 
 
 function fakePanel(overrides: Record<string, unknown> = {}) {
   return {
-    bluePropState: blue,
-    redPropState: red,
+    leftPropState: left,
+    rightPropState: right,
     currentStep: 5,
     sequenceData: { gridMode: GridMode.DIAMOND, steps: [] } as any,
     sequenceWord: "TEST",
@@ -42,8 +42,8 @@ describe("assembleExportEngineProps", () => {
       backgroundAlpha: 1,
       showNonRadialPoints: false,
     }));
-    expect(props.blueProp).toBe(blue);
-    expect(props.redProp).toBe(red);
+    expect(props.leftProp).toBe(left);
+    expect(props.rightProp).toBe(right);
     expect(props.currentStep).toBe(5);
     expect(props.virtualTime).toBe(999);
     expect(props.isSeamlesslyLoopable).toBe(true);
@@ -59,9 +59,9 @@ describe("assembleExportEngineProps", () => {
   });
 
   it("passes through prop types (regression: dropped types blanked props in export)", () => {
-    const props = assembleExportEngineProps(fakePanel(), frame({ bluePropType: "fan", redPropType: "club" }));
-    expect(props.bluePropType).toBe("fan");
-    expect(props.redPropType).toBe("club");
+    const props = assembleExportEngineProps(fakePanel(), frame({ leftPropType: "fan", rightPropType: "club" }));
+    expect(props.leftPropType).toBe("fan");
+    expect(props.rightPropType).toBe("club");
     expect(props.previewDarkMode).toBe(true);
   });
 

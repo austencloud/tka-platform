@@ -23,11 +23,16 @@ function mountRow(keys: string[], cellWidth = 100): HTMLElement {
   return container;
 }
 
-function flipFor(container: HTMLElement, duration = 280) {
+function flipFor(
+  container: HTMLElement,
+  duration = 280,
+  suspendDescendantTransitions = false
+) {
   return createLayoutMotion({
     getRoot: () => container,
     groups: [{ selector: "[data-cell-key]", datasetKey: "cellKey" }],
     getDuration: () => duration,
+    suspendDescendantTransitions,
   });
 }
 
@@ -141,6 +146,39 @@ describe("createLayoutMotion", () => {
     expect(flip.play()).toHaveLength(0);
   });
 
+  it("suspends descendant transitions for the lifetime of a layout move", async () => {
+    const container = mountRow(["a", "b", "c"]);
+    const flip = flipFor(container, 280, true);
+
+    flip.capture();
+    expect(
+      container.hasAttribute("data-layout-motion-suspend-descendants")
+    ).toBe(true);
+    cell(container, "b").remove();
+    const animations = flip.play();
+    expect(
+      container.hasAttribute("data-layout-motion-suspend-descendants")
+    ).toBe(true);
+
+    animations.forEach((animation) => animation.finish());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(
+      container.hasAttribute("data-layout-motion-suspend-descendants")
+    ).toBe(false);
+  });
+
+  it("releases descendant transitions when a capture is discarded", () => {
+    const container = mountRow(["a", "b"]);
+    const flip = flipFor(container, 280, true);
+
+    flip.capture();
+    flip.discard();
+
+    expect(
+      container.hasAttribute("data-layout-motion-suspend-descendants")
+    ).toBe(false);
+  });
+
   it("chains an interrupted transition from where it had actually reached", () => {
     const container = mountRow(["a", "b", "c"]);
     const flip = flipFor(container);
@@ -166,6 +204,29 @@ describe("createLayoutMotion", () => {
     );
     expect(remaining).toBeGreaterThan(0);
     expect(remaining).toBeLessThan(100);
+  });
+
+  it("keeps descendants suspended across an interrupted layout move", async () => {
+    const container = mountRow(["a", "b", "c"]);
+    const flip = flipFor(container, 280, true);
+
+    flip.capture();
+    cell(container, "b").remove();
+    const [first] = flip.play();
+    first!.currentTime = 140;
+    first!.pause();
+
+    flip.capture();
+    expect(
+      container.hasAttribute("data-layout-motion-suspend-descendants")
+    ).toBe(true);
+    const second = flip.play();
+    second.forEach((animation) => animation.finish());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(
+      container.hasAttribute("data-layout-motion-suspend-descendants")
+    ).toBe(false);
   });
 
   it("moves the keyed element, never an inner wrapper", () => {

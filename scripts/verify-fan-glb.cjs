@@ -204,6 +204,7 @@ const requiredNodes = [
   "Fan_Fire",
   "Fan_Lotus",
   "Fan_Day",
+  "Fan_Moon",
   "Fan_Cover",
   "Fan_Fire_GripRing",
   "Fan_Fire_GripShell",
@@ -219,6 +220,11 @@ const requiredNodes = [
   "Fan_Lotus_CenterPetal_Left",
   "Fan_Lotus_CenterPetal_Right",
   "Fan_Day_DoodleGripPlate",
+  "Fan_Moon_DiffusionSkin",
+  "Fan_Moon_GripRing",
+  "Fan_Moon_GripGuard",
+  "Fan_Moon_LED_Segment_A",
+  "Fan_Moon_LED_Segment_B",
   "Fan_Cover_SolidFace",
   "Fan_Cover_StripedFace",
 ];
@@ -239,6 +245,16 @@ for (const obsoleteName of [
 const dayPlate = nodes[nodeIndexByName.get("Fan_Day_DoodleGripPlate")];
 const fireGroup = nodes[nodeIndexByName.get("Fan_Fire")];
 const lotusGroup = nodes[nodeIndexByName.get("Fan_Lotus")];
+const moonGroup = nodes[nodeIndexByName.get("Fan_Moon")];
+invariant(
+  moonGroup.extras?.tka_led_count === 78 &&
+    moonGroup.extras?.tka_led_segments === 2,
+  "Moon fan no longer carries its documented 2 x 39 LED layout"
+);
+invariant(
+  Math.abs(moonGroup.extras?.tka_ring_hole_diameter_m - 0.081) < 1e-6,
+  "Moon fan grip no longer preserves the published 81mm opening"
+);
 invariant(
   fireGroup.extras?.tka_build ===
     "Forged Creations five-wick DoodleGrip fire fan",
@@ -565,6 +581,10 @@ const requiredMaterials = [
   "TKA_Fan_Wick",
   "TKA_Fan_Wick_Wrap",
   "TKA_Fan_Day_Frame",
+  "TKA_Fan_Moon_Fabric",
+  "TKA_Fan_Moon_Frame",
+  "TKA_Fan_Moon_LED_A",
+  "TKA_Fan_Moon_LED_B",
   "TKA_Fan_Cover_Solid_Recolor",
   "TKA_Fan_Cover_Stripe_Dark",
   "TKA_Fan_Cover_Stripe_Light",
@@ -581,6 +601,12 @@ invariant(
 invariant(
   dayMaterial.pbrMetallicRoughness?.roughnessFactor >= 0.68,
   "Day fan HDPE is too glossy"
+);
+const moonFabric = materialByName.get("TKA_Fan_Moon_Fabric");
+invariant(
+  moonFabric.pbrMetallicRoughness?.metallicFactor === 0 &&
+    moonFabric.pbrMetallicRoughness?.roughnessFactor >= 0.82,
+  "Moon fan skin no longer reads as matte diffusion fabric"
 );
 const fireMaterial = materialByName.get("TKA_Fan_Fire_Steel");
 invariant(
@@ -625,7 +651,13 @@ invariant(
 );
 console.log("FAN_LOTUS_WICK_TEXTURES=verified-color-normal-embedded");
 
-for (const groupName of ["Fan_Fire", "Fan_Lotus", "Fan_Day", "Fan_Cover"]) {
+for (const groupName of [
+  "Fan_Fire",
+  "Fan_Lotus",
+  "Fan_Day",
+  "Fan_Moon",
+  "Fan_Cover",
+]) {
   const groupIndex = nodeIndexByName.get(groupName);
   const meshCount = stats.meshNodes.filter((nodeIndex) =>
     isDescendant(nodeIndex, groupIndex, stats.nodeParent)
@@ -648,6 +680,10 @@ const lotusDimensions = descendantDimensions(
   nodeIndexByName.get("Fan_Lotus"),
   stats
 );
+const moonDimensions = descendantDimensions(
+  nodeIndexByName.get("Fan_Moon"),
+  stats
+);
 invariant(
   Math.abs(dayDimensions.x - 0.51) <= 0.0002,
   `Traced Day fan width drifted: ${dayDimensions.x.toFixed(4)}m`
@@ -659,6 +695,14 @@ invariant(
 invariant(
   Math.abs(dayDimensions.z - 0.0095) <= 0.0002,
   `Traced Day fan stock thickness drifted: ${dayDimensions.z.toFixed(4)}m`
+);
+invariant(
+  Math.abs(moonDimensions.x - 0.6) <= 0.01,
+  `Moon fan width drifted: ${moonDimensions.x.toFixed(4)}m`
+);
+invariant(
+  Math.abs(moonDimensions.y - 0.38) <= 0.01,
+  `Moon fan height drifted: ${moonDimensions.y.toFixed(4)}m`
 );
 invariant(
   Math.abs(fireDimensions.x - 0.4826) <= 0.00001,
@@ -762,8 +806,8 @@ console.log(
   `FAN_DIMENSIONS_M=${stats.dimensions.x.toFixed(4)},${stats.dimensions.y.toFixed(4)},${stats.dimensions.z.toFixed(4)}`
 );
 invariant(
-  stats.dimensions.x >= 0.5 && stats.dimensions.x <= 0.54,
-  `Fan width is outside the 20-inch class: ${stats.dimensions.x.toFixed(4)}m`
+  stats.dimensions.x >= 0.5 && stats.dimensions.x <= 0.62,
+  `Fan width is outside the supported physical builds: ${stats.dimensions.x.toFixed(4)}m`
 );
 invariant(
   stats.dimensions.y >= 0.34 && stats.dimensions.y <= 0.41,
@@ -788,8 +832,11 @@ console.log(
   `FAN_FIRE_DIMENSIONS_M=${fireDimensions.x.toFixed(6)},${fireDimensions.y.toFixed(6)},${fireDimensions.z.toFixed(6)}`
 );
 console.log(
+  `FAN_MOON_DIMENSIONS_M=${moonDimensions.x.toFixed(4)},${moonDimensions.y.toFixed(4)},${moonDimensions.z.toFixed(4)}`
+);
+console.log(
   `FAN_LOTUS_DIMENSIONS_M=${lotusDimensions.x.toFixed(6)},${lotusDimensions.y.toFixed(6)},${lotusDimensions.z.toFixed(6)}`
 );
 console.log(
-  "FAN_VARIANTS=fire,lotus,day-black,day-white,bare,covered-solid,covered-striped"
+  "FAN_VARIANTS=fire,lotus,day-black,day-white,moon,bare,covered-solid,covered-striped"
 );

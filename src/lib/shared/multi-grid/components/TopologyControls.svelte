@@ -5,7 +5,7 @@
   1. Preset grid - buttons for each topology arrangement
   2. Topology info - grid/junction/point counts
   3. Playback controls - play/pause, step, speed, position counter
-  4. Placement mode toggle - click-to-place blue or red
+  4. Placement mode toggle - click-to-place left or right
   5. Grid details - chips showing each grid's metadata
   6. Dark mode toggle
 -->
@@ -30,9 +30,9 @@
     onSpeedChange: (speed: number) => void;
     onPairIndexChange: (index: number) => void;
     // Placement mode
-    placementMode: "blue" | "red";
+    placementMode: "left" | "right";
     clickToPlaceEnabled: boolean;
-    onPlacementModeChange: (mode: "blue" | "red") => void;
+    onPlacementModeChange: (mode: "left" | "right") => void;
     onClickToPlaceToggle: () => void;
   }
 
@@ -169,17 +169,17 @@
       <div class="placement-mode-row">
         <button
           class="mode-button blue-mode"
-          class:active={placementMode === "blue"}
-          onclick={() => onPlacementModeChange("blue")}
+          class:active={placementMode === "left"}
+          onclick={() => onPlacementModeChange("left")}
         >
-          Blue
+          Left
         </button>
         <button
           class="mode-button red-mode"
-          class:active={placementMode === "red"}
-          onclick={() => onPlacementModeChange("red")}
+          class:active={placementMode === "right"}
+          onclick={() => onPlacementModeChange("right")}
         >
-          Red
+          Right
         </button>
       </div>
     {/if}

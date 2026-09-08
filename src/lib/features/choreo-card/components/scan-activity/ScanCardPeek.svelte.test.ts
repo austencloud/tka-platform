@@ -2,7 +2,7 @@ import { render } from "vitest-browser-svelte";
 import { page } from "vitest/browser";
 import { describe, expect, it, vi } from "vitest";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
   CodeEntry,
   ScanEventRow,
@@ -14,12 +14,19 @@ vi.mock("$lib/shared/browse/components/PropAwareThumbnail.svelte", async () => {
   return { default: stub.default };
 });
 
-const sequence = {
+vi.mock("$lib/shared/render/get-glyph-cache", () => ({
+  getGlyphCache: () => ({
+    getGlyphDataUrl: () => null,
+    loadGlyphsByLetter: () => Promise.resolve(),
+  }),
+}));
+
+const sequence = createSequenceData({
   id: "sequence-9XAK",
   name: "Assemble Sequence",
   word: "AAAA",
   steps: [],
-} as unknown as SequenceData;
+});
 
 const event: ScanEventRow = {
   id: "shortcodes/9XAK/scanEvents/live",
@@ -31,8 +38,8 @@ const event: ScanEventRow = {
   lng: -87.65,
   deviceId: "device-1",
   userId: null,
-  bluePropType: PropType.POI,
-  redPropType: PropType.FAN,
+  leftPropType: PropType.POI,
+  rightPropType: PropType.FAN,
   catDogMode: true,
 };
 
@@ -47,8 +54,8 @@ function entry(overrides: Partial<CodeEntry> = {}): CodeEntry {
     lastScannedAt: event.timestamp,
     lastCity: event.city,
     lastCountry: event.country,
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
     catDogMode: false,
     metadataAvailable: true,
     embeddedFallback: null,
@@ -78,10 +85,10 @@ describe("ScanCardPeek", () => {
     const preview = page.getByTestId("prop-aware-preview");
     await expect
       .element(preview)
-      .toHaveAttribute("data-blue-prop", PropType.POI);
+      .toHaveAttribute("data-left-prop", PropType.POI);
     await expect
       .element(preview)
-      .toHaveAttribute("data-red-prop", PropType.FAN);
+      .toHaveAttribute("data-right-prop", PropType.FAN);
     await expect.element(preview).toHaveAttribute("data-cat-dog", "true");
     await expect
       .element(page.getByText("Card preview unavailable"))
@@ -114,5 +121,16 @@ describe("ScanCardPeek", () => {
     await expect
       .element(page.getByText("Loading card preview"))
       .not.toBeInTheDocument();
+  });
+
+  it("renders a repeated TKA word once in the alphabet", async () => {
+    renderPeek(entry({ word: "ABAB" }));
+
+    const title = page.getByRole("heading", { name: "AB" });
+    await expect.element(title).toBeInTheDocument();
+    await expect.element(page.getByText("ABAB")).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".peek-title .tka-label.glyphs")
+    ).not.toBeNull();
   });
 });

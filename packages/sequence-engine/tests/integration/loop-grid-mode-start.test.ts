@@ -59,8 +59,8 @@ function loadCsv(name: string): PictographData[] {
       endPosition: value(c, "endPosition"),
       timing: "together",
       direction: "together",
-      blueMotion: {
-        color: "blue",
+      leftMotion: {
+        hand: "left",
         motionType: value(c, "blueMotionType"),
         rotationDirection: value(c, "blueRotationDirection"),
         startLocation: value(c, "blueStartLocation"),
@@ -69,8 +69,8 @@ function loadCsv(name: string): PictographData[] {
         endOrientation: "in",
         turns: 0,
       },
-      redMotion: {
-        color: "red",
+      rightMotion: {
+        hand: "right",
         motionType: value(c, "redMotionType"),
         rotationDirection: value(c, "redRotationDirection"),
         startLocation: value(c, "redStartLocation"),
@@ -204,11 +204,11 @@ describe("LOOP seed start respects grid mode", () => {
           const last = result.sequence[result.sequence.length - 1]!;
           expect(parityOf(first.startPosition)).toBe("even");
           expect(last.endPosition).toBe(first.startPosition);
-          expect(last.motions.blue.endOrientation).toBe(
-            first.motions.blue.startOrientation
+          expect(last.motions.left.endOrientation).toBe(
+            first.motions.left.startOrientation
           );
-          expect(last.motions.red.endOrientation).toBe(
-            first.motions.red.startOrientation
+          expect(last.motions.right.endOrientation).toBe(
+            first.motions.right.startOrientation
           );
         }
       }
@@ -240,11 +240,11 @@ describe("real builder supports every reflection axis in every grid mode", () =>
           const detected = loopDetectorClass.detectLOOPType(result.sequence);
 
           expect(last.endPosition).toBe(first.startPosition);
-          expect(last.motions.blue.endOrientation).toBe(
-            first.motions.blue.startOrientation
+          expect(last.motions.left.endOrientation).toBe(
+            first.motions.left.startOrientation
           );
-          expect(last.motions.red.endOrientation).toBe(
-            first.motions.red.startOrientation
+          expect(last.motions.right.endOrientation).toBe(
+            first.motions.right.startOrientation
           );
           expect(detected.isCircular).toBe(true);
           expect(detected.reflectionAxis).toBe(reflectionAxis);

@@ -42,7 +42,7 @@
   // Bump when rendered pixels change for reasons NOT captured by the keyed
   // options below — e.g. the canonical profile changes. Rotates all keys so
   // stale persisted renders self-invalidate.
-  const CARD_RENDER_SCHEMA = "v7";
+  const CARD_RENDER_SCHEMA = "v11";
 
   interface Props {
     sequences: SequenceData[];
@@ -61,6 +61,10 @@
     /** Per-card short URLs, index-aligned with sequences. When supplied, card
      *  rendering stays read-only and skips Firestore short-code resolution. */
     qrUrls?: (string | undefined)[];
+    /** Hands-only cards use literal titles and QR links, without prop difficulty or TKA. */
+    cardProfile?: "sequence" | "hand-path";
+    /** Plain card titles, index-aligned with sequences. */
+    cardTitles?: string[];
     /** Use deck layout policy instead of user composition settings */
     deckMode?: boolean;
     /** Bump to force a full re-render of all cards */
@@ -115,8 +119,8 @@
      * viewing a released deck so cached card renders stay valid across setting
      * changes. Omit to follow the user's current settings.
      */
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     /**
      * Scope the sheet preview to one printed side. 'fronts' renders only the
      * fronts phase, 'backs' only the backs phase, null (default) renders both.
@@ -136,6 +140,8 @@
     tndElements,
     footers,
     qrUrls,
+    cardProfile = "sequence",
+    cardTitles,
     deckMode = false,
     rerenderKey = 0,
     copies = 1,
@@ -151,19 +157,19 @@
     deckNumber,
     includeInsertCard = true,
     deckSummary,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     sideFilter = null,
   }: Props = $props();
 
   // Resolve render-visual inputs: explicit overrides pin a released deck's
   // render; otherwise follow live settings. The cache key and render options
   // both read these so a pinned deck's content hash matches what was cached.
-  const resolvedBlueProp = $derived(
-    bluePropType ?? settingsService.settings.bluePropType ?? PropType.STAFF
+  const resolvedLeftProp = $derived(
+    leftPropType ?? settingsService.settings.leftPropType ?? PropType.STAFF
   );
-  const resolvedRedProp = $derived(
-    redPropType ?? settingsService.settings.redPropType ?? PropType.STAFF
+  const resolvedRightProp = $derived(
+    rightPropType ?? settingsService.settings.rightPropType ?? PropType.STAFF
   );
   const resolvedBackground = $derived(
     theme ?? settingsService.settings.backgroundType ?? ""
@@ -395,8 +401,9 @@
     // where the tall slot isn't filled, and crop marks that don't meet the card.
     const size = CARD_SIZES[cardSize];
     const bleedPx = 36;
+    const isHandPath = cardProfile === "hand-path";
     const physicalLayout =
-      deckMode && sequence
+      deckMode && sequence && !isHandPath
         ? calculatePhysicalCardLayout({
             sequence,
             canvasWidth: size.canvasWidth,
@@ -418,19 +425,23 @@
       canvasWidth: size.canvasWidth,
       canvasHeight: size.canvasHeight,
       includeStartPosition,
-      startPositionLayout: physicalLayout
-        ? physicalLayout.startPositionLayout
-        : stepCount != null
-          ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
-          : imageComposition.startPositionLayout,
-      ...(physicalLayout?.totalGridColumns !== undefined && {
-        totalGridColumns: physicalLayout.totalGridColumns,
-      }),
-      showMandala: true,
+      startPositionLayout: isHandPath
+        ? "row"
+        : physicalLayout
+          ? physicalLayout.startPositionLayout
+          : stepCount != null
+            ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
+            : imageComposition.startPositionLayout,
+      ...(isHandPath
+        ? { totalGridColumns: 2 }
+        : physicalLayout?.totalGridColumns !== undefined
+          ? { totalGridColumns: physicalLayout.totalGridColumns }
+          : {}),
+      showMandala: !isHandPath,
       theme,
       tndElement: element,
-      bluePropType: resolvedBlueProp,
-      redPropType: resolvedRedProp,
+      leftPropType: resolvedLeftProp,
+      rightPropType: resolvedRightProp,
       leftLabel: footer?.left,
       rightLabel: footer?.right,
       notes: footer?.center,
@@ -439,6 +450,9 @@
       deckId,
       deckName,
       qrUrl: cardIndex != null ? qrUrls?.[cardIndex] : undefined,
+      showQRCode: isHandPath ? true : undefined,
+      cardProfile,
+      customName: cardIndex != null ? cardTitles?.[cardIndex] : undefined,
     };
   }
 
@@ -456,14 +470,16 @@
       cardSize,
       theme,
       tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none",
-      resolvedBlueProp,
-      resolvedRedProp,
+      resolvedLeftProp,
+      resolvedRightProp,
       resolvedBackground,
       stepCount,
       footer?.left ?? "",
       footer?.center ?? "",
       footer?.right ?? "",
       qrUrls?.[index] ?? "managed-qr",
+      cardProfile,
+      cardTitles?.[index] ?? "",
       layout,
       rerenderKey,
       // Content fingerprint: self-invalidates whenever the sequence's rendered
@@ -516,9 +532,11 @@
     const _includeStartPosition = includeStartPosition;
     const _rerenderKey = rerenderKey;
     const _bgType = resolvedBackground;
-    const _blueProp = resolvedBlueProp;
-    const _redProp = resolvedRedProp;
+    const _leftProp = resolvedLeftProp;
+    const _rightProp = resolvedRightProp;
     const _qrUrls = qrUrls;
+    const _cardProfile = cardProfile;
+    const _cardTitles = cardTitles;
 
     // Void unused captures to satisfy linter
     void _cardSize;
@@ -526,9 +544,11 @@
     void _includeStartPosition;
     void _rerenderKey;
     void _bgType;
-    void _blueProp;
-    void _redProp;
+    void _leftProp;
+    void _rightProp;
     void _qrUrls;
+    void _cardProfile;
+    void _cardTitles;
 
     const generation = ++renderGeneration;
     blobCacheWarned = false;
@@ -612,9 +632,10 @@
     renderedCards = [];
     prewarmCardPool({
       sequences: seqs,
-      bluePropType: resolvedBlueProp,
-      redPropType: resolvedRedProp,
+      leftPropType: resolvedLeftProp,
+      rightPropType: resolvedRightProp,
       theme: resolvedBackground,
+      handPathMode: cardProfile === "hand-path",
       iconPaths: (footers ?? [])
         .map((footer) => footer.iconPath)
         .filter((path): path is string => !!path),
@@ -647,13 +668,16 @@
     // also pegs the main thread and freezes the Print Deck modal. Best-effort:
     // any miss falls through to per-card resolution at render time. Reports
     // chunk progress so the bar moves during the otherwise-silent cold start.
-    const sequencesNeedingCodes = seqs.filter((_, index) => !qrUrls?.[index]);
+    const sequencesNeedingCodes =
+      cardProfile === "hand-path"
+        ? []
+        : seqs.filter((_, index) => !qrUrls?.[index]);
     if (sequencesNeedingCodes.length > 0) {
       await getShortCodeManager().resolveCodesForDeck(
         sequencesNeedingCodes,
         {
-          bluePropType: resolvedBlueProp,
-          redPropType: resolvedRedProp,
+          leftPropType: resolvedLeftProp,
+          rightPropType: resolvedRightProp,
           deckId,
           deckName,
         },
@@ -707,7 +731,8 @@
             renderer.renderBack(seq, options),
           ]);
 
-          const label = seq.word || seq.name || `Card ${i + 1}`;
+          const label =
+            cardTitles?.[i] || seq.word || seq.name || `Card ${i + 1}`;
           const [frontBlob, backBlob] = await Promise.all([
             canvasToBlob(frontCanvas),
             canvasToBlob(backCanvas),
@@ -891,7 +916,8 @@
     const frontCanvas = await renderer.renderFront(seq, options);
     const backCanvas = await renderer.renderBack(seq, options);
 
-    const label = seq.word || seq.name || `Card ${index + 1}`;
+    const label =
+      cardTitles?.[index] || seq.word || seq.name || `Card ${index + 1}`;
     const [frontBlob, backBlob] = await Promise.all([
       canvasToBlob(frontCanvas),
       canvasToBlob(backCanvas),

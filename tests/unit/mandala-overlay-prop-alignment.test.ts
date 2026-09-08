@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
 import { setTrailPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/trail-point-types";
-import { setTipPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import {
+  CLUB_TIP_REACH,
+  setTipPointOverrideProvider,
+} from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import { resolveTrailPointConfig } from "$lib/shared/animation-engine/domain/types/trail-point-types";
 import { ENGINE_GRID_RADIUS } from "$lib/shared/mandala/domain/mandala-constants";
 import {
@@ -19,7 +22,6 @@ import type {
 
 // Both derive from the prop's own pictograph viewBox half-width — the animation
 // canvas draws that artwork, so the traced tip sits on its visible end.
-const CLUB_TIP_REACH = 258.67 / 2;
 const STAFF_TIP_REACH = 252.8 / 2;
 const sequenceMandalaSource = readFileSync(
   resolve(
@@ -46,8 +48,8 @@ function staticEastStep(): StepLike {
   };
   return {
     motions: {
-      blue: { ...motion },
-      red: { ...motion },
+      left: { ...motion },
+      right: { ...motion },
     },
   };
 }
@@ -55,7 +57,7 @@ function staticEastStep(): StepLike {
 function zeroTurnAntiStep(): StepLike {
   return {
     motions: {
-      blue: {
+      left: {
         motionType: "anti",
         rotationDirection: "ccw",
         startLocation: "w",
@@ -113,12 +115,11 @@ describe("animation mandala trail-point alignment", () => {
   });
 
   it("follows an override that reorders a prop's arms instead of tracing a different arm", () => {
-    // Triad's saved points list the rear-upper arm first and the forward arm
-    // second; the code table lists them the other way round. The trail picks
-    // the index off the saved list, so the mandala has to resolve it there too.
+    // Deliberately reorder the saved arms. The trail picks the index off the
+    // saved list, so the mandala has to resolve it there too.
     const saved = [
-      { dx: -62.2, dy: -107.8 },
       { dx: 124.4, dy: 0 },
+      { dx: -62.2, dy: -107.8 },
       { dx: -62.2, dy: 107.8 },
     ];
     setTipPointOverrideProvider((propType) =>
@@ -150,8 +151,8 @@ describe("animation mandala trail-point alignment", () => {
       undefined,
       undefined,
       {
-        blue: [resolvedClubTip!],
-        red: [],
+        left: [resolvedClubTip!],
+        right: [],
       }
     );
     const oldFullRadiusPaths = calculate(
@@ -160,13 +161,13 @@ describe("animation mandala trail-point alignment", () => {
       undefined,
       undefined,
       {
-        blue: [{ dx: ENGINE_GRID_RADIUS, dy: 0 }],
-        red: [],
+        left: [{ dx: ENGINE_GRID_RADIUS, dy: 0 }],
+        right: [],
       }
     );
     const scale = computeEngineAlignedMandalaScale(950);
-    const resizedStart = firstPoint(resizedPaths.blue[0]!.d);
-    const oldStart = firstPoint(oldFullRadiusPaths.blue[0]!.d);
+    const resizedStart = firstPoint(resizedPaths.left[0]!.d);
+    const oldStart = firstPoint(oldFullRadiusPaths.left[0]!.d);
 
     expect(Math.hypot(resizedStart.x, resizedStart.y) * scale).toBeCloseTo(
       ENGINE_GRID_RADIUS - CLUB_TIP_REACH,
@@ -222,21 +223,18 @@ describe("animation mandala trail-point alignment", () => {
       TrackingMode.BOTH_ENDS,
       "baseline"
     );
-    const paths = calculate(
-      [staticEastStep()],
-      "fan",
-      "fan",
-      undefined,
-      { blue: fanTips, red: fanTips }
-    );
+    const paths = calculate([staticEastStep()], "fan", "fan", undefined, {
+      left: fanTips,
+      right: fanTips,
+    });
 
     expect(fanTips).toEqual([{ dx: 130, dy: 0 }]);
     expect(staffTips).toEqual([
       { dx: -STAFF_TIP_REACH, dy: 0 },
       { dx: STAFF_TIP_REACH, dy: 0 },
     ]);
-    expect(paths.blue).toHaveLength(1);
-    expect(paths.red).toHaveLength(1);
+    expect(paths.left).toHaveLength(1);
+    expect(paths.right).toHaveLength(1);
     expect(sequenceMandalaSource).toContain("resolveMandalaTipOffsets");
     expect(sequenceMandalaSource).toMatch(
       /TrackingMode\.BOTH_ENDS,\s*"baseline"/
@@ -260,8 +258,8 @@ describe("animation mandala trail-point alignment", () => {
 
   it("maps each hand's independent prop length onto the live engine pixels", () => {
     const overrides: MandalaTipOverrides = {
-      blue: [{ dx: CLUB_TIP_REACH, dy: 0 }],
-      red: [{ dx: 300, dy: 0 }],
+      left: [{ dx: CLUB_TIP_REACH, dy: 0 }],
+      right: [{ dx: 300, dy: 0 }],
     };
     const paths = calculate(
       [staticEastStep()],
@@ -271,14 +269,14 @@ describe("animation mandala trail-point alignment", () => {
       overrides
     );
     const scale = computeEngineAlignedMandalaScale(950);
-    const blue = firstPoint(paths.blue[0]!.d);
-    const red = firstPoint(paths.red[0]!.d);
+    const left = firstPoint(paths.left[0]!.d);
+    const right = firstPoint(paths.right[0]!.d);
 
     expect(scale).toBeCloseTo(150 / 80, 12);
-    expect(Math.hypot(blue.x, blue.y) * scale).toBeCloseTo(
+    expect(Math.hypot(left.x, left.y) * scale).toBeCloseTo(
       ENGINE_GRID_RADIUS + CLUB_TIP_REACH,
       1
     );
-    expect(Math.hypot(red.x, red.y) * scale).toBeCloseTo(150 + 300, 1);
+    expect(Math.hypot(right.x, right.y) * scale).toBeCloseTo(150 + 300, 1);
   });
 });

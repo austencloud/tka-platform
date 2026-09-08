@@ -30,8 +30,8 @@
   interface Props {
     direction: "disassemble" | "reassemble" | "idle";
     assembledRect: DOMRect | null;
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
@@ -49,8 +49,8 @@
   let {
     direction,
     assembledRect,
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     gridVisible = true,
     gridMode = null,
     backgroundAlpha = 0,
@@ -322,8 +322,8 @@
   <div class="disassemble-unit">
     <div class="hero-slot" bind:this={heroSlotEl}>
       <CanvasSurface
-        {blueProp}
-        {redProp}
+        {leftProp}
+        {rightProp}
         {...shared}
       />
     </div>
@@ -331,8 +331,8 @@
     <div class="small-slots">
       <div class="small-slot" bind:this={smallLeftSlotEl}>
         <CanvasSurface
-          {blueProp}
-          redProp={null}
+          {leftProp}
+          rightProp={null}
           {...shared}
           hideTkaGlyph={true}
           hideStepNumbers={true}
@@ -341,8 +341,8 @@
 
       <div class="small-slot" bind:this={smallRightSlotEl}>
         <CanvasSurface
-          blueProp={null}
-          {redProp}
+          leftProp={null}
+          {rightProp}
           {...shared}
           hideTkaGlyph={true}
           hideStepNumbers={true}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ScanCellWarmState } from "$lib/features/choreo-card/state/scan-cell-warm-state.svelte";
   import AdminActionButton from "$lib/shared/admin/components/AdminActionButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
 
   interface Props {
@@ -42,6 +43,17 @@
     if (progress.failed) return `Finished ${count} cards${failures}`;
     return `${progress.done.toLocaleString()} cards ready`;
   });
+
+  const actionPhase = $derived(
+    state.running ? "running" : selectedCode ? "selected" : "idle"
+  );
+  const statusPhase = $derived(
+    state.error
+      ? "error"
+      : state.progress || state.running
+        ? "progress"
+        : "idle"
+  );
 </script>
 
 <section class="cache-maintenance" aria-labelledby="scan-cache-title">
@@ -50,88 +62,93 @@
       <i class="fas fa-cloud-arrow-up"></i>
     </span>
     <div>
-      <h3 id="scan-cache-title">Scan preview cache</h3>
-      <p>Pre-render legacy QR cards so scanners only download pictographs.</p>
+      <h3 id="scan-cache-title">Legacy preview cache</h3>
+      <p>Pre-render legacy QR cards so scanners download pictographs only.</p>
     </div>
   </div>
 
-  <div class="cache-actions">
-    {#if state.running}
-      <AdminActionButton
-        variant="warning"
-        icon="fa-stop"
-        disabled={state.cancellationRequested}
-        onclick={state.cancel}
-      >
-        {state.cancellationRequested ? "Stopping…" : "Stop"}
-      </AdminActionButton>
-    {:else}
-      {#if selectedCode}
-        <AdminActionButton
-          variant="secondary"
-          icon="fa-cloud-arrow-up"
-          onclick={() => state.startCode(selectedCode)}
-        >
-          Warm {selectedCode}
-        </AdminActionButton>
-      {/if}
-      <AdminActionButton
-        variant="info"
-        icon="fa-layer-group"
-        onclick={state.startAll}
-      >
-        Warm all legacy cards
-      </AdminActionButton>
-    {/if}
-  </div>
-
-  {#if state.error}
-    <p class="cache-error" role="alert">{state.error}</p>
-  {/if}
-
-  {#if state.progress || state.running}
-    <div class="cache-progress" aria-live="polite">
-      <div class="progress-copy">
-        <strong>{scopeLabel}</strong>
-        <span>{progressLabel}</span>
-      </div>
-      <ProgressBar
-        percent={progressPercent}
-        label={state.progress?.current
-          ? `Current: ${state.progress.current}`
-          : undefined}
-        showPercent={Boolean(state.progress?.total)}
-      />
-      {#if !state.running && (state.progress?.failedCodes.length ?? 0) > 0}
-        <div class="retry-row">
-          <span>
-            Retry only the {state.progress?.failedCodes.length.toLocaleString()} failed
-            card{state.progress?.failedCodes.length === 1 ? "" : "s"}.
-          </span>
+  <div class="action-stage">
+    <Crossfade key={actionPhase} animateHeight>
+      <div class="cache-actions">
+        {#if state.running}
           <AdminActionButton
-            variant="secondary"
-            icon="fa-rotate-right"
-            onclick={state.retryFailed}
+            variant="warning"
+            icon="fa-stop"
+            disabled={state.cancellationRequested}
+            onclick={state.cancel}
           >
-            Retry failed
+            {state.cancellationRequested ? "Stopping…" : "Stop"}
           </AdminActionButton>
+        {:else}
+          {#if selectedCode}
+            <AdminActionButton
+              variant="secondary"
+              icon="fa-cloud-arrow-up"
+              onclick={() => state.startCode(selectedCode)}
+            >
+              Warm {selectedCode}
+            </AdminActionButton>
+          {/if}
+          <AdminActionButton
+            variant="info"
+            icon="fa-layer-group"
+            onclick={state.startAll}
+          >
+            Warm all legacy cards
+          </AdminActionButton>
+        {/if}
+      </div>
+    </Crossfade>
+  </div>
+
+  <div class="status-stage">
+    <Crossfade key={statusPhase} animateHeight>
+      {#if state.error}
+        <p class="cache-error" role="alert">{state.error}</p>
+      {:else if state.progress || state.running}
+        <div class="cache-progress" aria-live="polite">
+          <div class="progress-copy">
+            <strong>{scopeLabel}</strong>
+            <span>{progressLabel}</span>
+          </div>
+          <ProgressBar
+            percent={progressPercent}
+            label={state.progress?.current
+              ? `Current: ${state.progress.current}`
+              : undefined}
+            showPercent={Boolean(state.progress?.total)}
+          />
+          {#if !state.running && (state.progress?.failedCodes.length ?? 0) > 0}
+            <div class="retry-row">
+              <span>
+                Retry the {state.progress?.failedCodes.length.toLocaleString()} failed
+                card{state.progress?.failedCodes.length === 1 ? "" : "s"}.
+              </span>
+              <AdminActionButton
+                variant="secondary"
+                icon="fa-rotate-right"
+                onclick={state.retryFailed}
+              >
+                Retry failed
+              </AdminActionButton>
+            </div>
+          {/if}
         </div>
+      {:else}
+        <p class="cache-idle">No cache job is running.</p>
       {/if}
-    </div>
-  {/if}
+    </Crossfade>
+  </div>
 </section>
 
 <style>
   .cache-maintenance {
+    container-type: inline-size;
     display: grid;
-    grid-template-columns: minmax(260px, 1fr) auto;
+    grid-template-columns: minmax(250px, 1fr) auto;
     align-items: center;
     gap: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-    margin: 0 var(--spacing-md, 16px) 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    padding: 10px var(--spacing-md, 16px) 12px;
   }
 
   .cache-copy,
@@ -155,7 +172,7 @@
     place-items: center;
     border-radius: 50%;
     background: color-mix(in srgb, var(--theme-accent) 13%, transparent);
-    color: var(--theme-accent);
+    color: var(--theme-accent, #34d399);
   }
 
   h3,
@@ -166,12 +183,13 @@
   h3 {
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm, 14px);
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .cache-copy p,
   .progress-copy span,
-  .retry-row span {
+  .retry-row span,
+  .cache-idle {
     color: var(--theme-text-dim, #8b93a7);
     font-size: var(--font-size-compact, 12px);
   }
@@ -180,21 +198,24 @@
     margin-top: 2px;
   }
 
+  .action-stage {
+    min-width: 0;
+  }
+
   .cache-actions {
     justify-content: flex-end;
     gap: var(--spacing-sm, 8px);
   }
 
-  .cache-progress,
-  .cache-error {
+  .status-stage {
     grid-column: 1 / -1;
+    min-width: 0;
   }
 
   .cache-progress {
     display: grid;
     gap: 6px;
     min-width: 0;
-    padding-top: 2px;
   }
 
   .progress-copy,
@@ -222,7 +243,7 @@
 
   .cache-error {
     color: var(--semantic-error, #ef4444);
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-sm, 14px);
   }
 
   @container (max-width: 720px) {
@@ -237,6 +258,10 @@
 
     .cache-actions :global(.admin-action-btn) {
       flex: 1 1 180px;
+    }
+
+    .status-stage {
+      grid-column: auto;
     }
 
     .progress-copy,

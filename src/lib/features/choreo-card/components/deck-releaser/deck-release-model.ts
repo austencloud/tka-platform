@@ -12,8 +12,16 @@ export function isLoopRelease(release: DeckRelease): boolean {
   return release.recipe?.deckMode === "loop";
 }
 
+export function isHandPathRelease(release: DeckRelease): boolean {
+  return Boolean(release.handPathCards);
+}
+
 export function isTnDRelease(release: DeckRelease): boolean {
-  return !isGalleryRelease(release) && !isLoopRelease(release);
+  return (
+    !isGalleryRelease(release) &&
+    !isLoopRelease(release) &&
+    !isHandPathRelease(release)
+  );
 }
 
 export function extractReleasedSequenceIds(

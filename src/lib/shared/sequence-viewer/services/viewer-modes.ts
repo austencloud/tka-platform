@@ -126,3 +126,26 @@ export function viewerModeForRenderMode(
 	if (renderMode === '2d') return 'animation';
 	return undefined;
 }
+
+/**
+ * The route page's initial viewer mode, resolved from its URL params.
+ *
+ * A scan boot always lands on the card (the physical artifact the visitor just
+ * scanned). Otherwise a `pane` param is the canonical mode owner (the vw URL
+ * slice wrote it), so the page passes no initial mode and lets the seeded
+ * viewer state stand — a full-state link that was captured on the tunnel pane
+ * with the 3D renderer warm carries BOTH `pane=tunnel` and `render=3d`, and
+ * forcing the render-derived mode here would override the surface the sender
+ * was actually looking at. The render-derived mode still applies to pane-less
+ * `?render=` permalinks (minted before `pane` existed), where it outranks the
+ * device-local remembered surface — see `viewerModeForRenderMode`.
+ */
+export function initialViewerModeForUrl(
+	scanOrigin: boolean,
+	pane: string | null,
+	renderMode: '2d' | '3d' | null
+): ViewerMode | undefined {
+	if (scanOrigin) return 'card';
+	if (pane) return undefined;
+	return viewerModeForRenderMode(renderMode);
+}

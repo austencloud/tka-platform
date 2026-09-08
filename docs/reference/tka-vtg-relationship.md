@@ -72,29 +72,55 @@ translation point between them.
 
 ---
 
-## 5. Turn ratio (props:hands) and the TKA↔VTG turn map
+## 5. Turn ratio (hands:props) and the TKA↔VTG turn map
 
-- **Ratio convention is `props:hands` (N:1)** = N prop rotations per one hand
-  revolution. Confirmed canonical across VTG1, VTG2 Index, VTG2 Ch.1–2; *"every
-  one rotation of the hand corresponds to one rotation of the prop"* = 1:1.
-  [VTG1 p4]
-- Our app uses `props:hands` everywhere; the old VTG app's `1:3` is just the
-  inverse (hands:props) display order. We're aligned with Yee. [code:
-  vtg-pattern-data.ts; you]
-- **TKA turns → VTG ratio** [code: `TND_TURNS_RATIO_MAP`]:
+- **Ratio convention is `hands:props` (H:P)** = H hand cycles to P prop
+  rotations. This is Noel Yee's own order: the VTG site lists the pattern sets
+  as 1:1, 1:3, 1:5 while describing them as prop rotations per arm rotation,
+  and the VTG2 index is titled *"Index 1/3 · Four Petal Antispin Flower"*, a
+  pattern whose prop turns three times per hand circle. Lorq's Book of
+  P.H.A.T. and SpiroAnim use the same order. [VTG site; VTG2 index p1]
+- VTG1 itself never writes a numeric ratio. Its only ratio statement is in
+  words, *"every one rotation of the hand corresponds to one rotation of the
+  prop"*, which is symmetric and settles nothing about order. [VTG1 p4]
+- Every user-facing label in this app is hands:props (`theoryRatioLabel`,
+  `ratioLabel`). Only the internal `SpinRatio` struct, `spinRatioKey`, and the
+  Shape Engine URL parameters are prop-first, kept for storage stability.
+  Correction 2026-09-05: an earlier version of this section claimed props:hands
+  was canonical VTG and "aligned with Yee"; that was wrong. [code: spin-ratio.ts,
+  theory-ratio.ts]
+- **TKA turns → VTG ratio (hands:props):**
 
   | TKA turns | VTG ratio |
   |-----------|-----------|
+  | Float | 1:0 |
+  | -0.25 | 2:1 |
   | 0   | 1:1 |
-  | 0.5 | 2:1 |
-  | 1   | 3:1 |
-  | 1.5 | 4:1 |
-  | 2   | 5:1 |
-  | 2.5 | 6:1 |
-  | 3   | 7:1 |
+  | 0.25 | 2:3 |
+  | 0.5 | 1:2 |
+  | 0.75 | 2:5 |
+  | 1   | 1:3 |
+  | 1.25 | 2:7 |
+  | 1.5 | 1:4 |
+  | 1.75 | 2:9 |
+  | 2   | 1:5 |
+  | 2.25 | 2:11 |
+  | 2.5 | 1:6 |
+  | 2.75 | 2:13 |
+  | 3   | 1:7 |
 
-  Formula: **ratio N = 2·turns + 1** (since 1 turn = 180° = half a prop revolution
-  added). [infer from the map + 180° rule]
+  For a reduced ratio **H:P** with a moving hand, the two directions of the conversion are:
+
+  - **P/H = 2·turns + 1**
+  - **turns = (P/H - 1) / 2**
+
+  Float is the zero-prop exception: **1:0 maps to the binary Float state, not
+  numeric -0.5 turns**. At Level 4, turns move in 0.25 increments, so every
+  reduced positive ratio has denominator 1 or 2. Between Float and 0, that
+  leaves exactly one directly representable numeric ratio: **2:1 = -0.25**.
+  Ratios such as 1:3 and 2:3 convert to -1/3 and -1/6, but those angles do not
+  land on TKA's current eight-orientation wheel. [infer from the 180° rule and
+  current Level 4 orientation algebra]
 
 ---
 
@@ -173,12 +199,12 @@ different measurements against two different references.** [you]
   doubles for staff.
 - **Timing / modality** is the separate downbeat read we already compute — it
   belongs to the *two-hand* combination, not the single-hand core shape.
-- So a per-hand **core** = `spin × ratio (props:hands) × radial-reference (in/out)`
+- So a per-hand **core** = `spin × ratio (hands:props) × radial-reference (in/out)`
   → a VTG name + petal count. The two-hand cell adds timing/direction on top.
 
 ---
 
-## 11. Confirm these (most likely to be wrong)
+## 11. Remaining fact checks
 
 1. **out = antispin reference, in = inspin reference** — for *petals only*. (You
    said "true enough.") Correct framing?
@@ -186,5 +212,4 @@ different measurements against two different references.** [you]
    staff doubles both. Right? (Is our `TURN_RATIO_MAPPINGS` petal column already
    single-ended, or does it assume staff?)
 3. **VTG = 4 modes (T/S,T/O,S/S,S/O); Quarter is a TKA-only addition.** Correct?
-4. **Ratio N = 2·turns + 1.** Holds for all your cases?
-5. Anything in §2 (center vs gravity frame) stated too strongly?
+4. Anything in §2 (center vs gravity frame) stated too strongly?

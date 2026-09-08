@@ -9,6 +9,8 @@
   import type { Snippet } from "svelte";
   import type { HTMLButtonAttributes } from "svelte/elements";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
+  import PrimaryPropColorSettings from "$lib/shared/settings/components/tabs/prop-type/PrimaryPropColorSettings.svelte";
+  import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
   import {
     shareTarget,
     saveActionLabel,
@@ -47,10 +49,10 @@
     onGuideAction?: () => void;
     guideActionLabel?: string;
     motionVisibility?: {
-      showBlue: boolean;
-      showRed: boolean;
-      onToggleBlue: () => void;
-      onToggleRed: () => void;
+      showLeft: boolean;
+      showRight: boolean;
+      onToggleLeft: () => void;
+      onToggleRight: () => void;
     };
     onOpenChange?: (open: boolean, reason: OverflowOpenReason) => void;
   }
@@ -288,10 +290,16 @@
               <div class="motion-vis-section">
                 <span class="motion-vis-label">Motion</span>
                 <MotionColorChips
-                  showBlue={motionVisibility.showBlue}
-                  showRed={motionVisibility.showRed}
-                  onToggleBlue={motionVisibility.onToggleBlue}
-                  onToggleRed={motionVisibility.onToggleRed}
+                  showLeft={motionVisibility.showLeft}
+                  showRight={motionVisibility.showRight}
+                  onToggleLeft={motionVisibility.onToggleLeft}
+                  onToggleRight={motionVisibility.onToggleRight}
+                  showVisibilityIcons
+                />
+                <PrimaryPropColorSettings
+                  colors={getSettings().primaryPropColors}
+                  darkMode={getSettings().darkMode}
+                  onchange={(colors) => updateSetting("primaryPropColors", colors)}
                 />
               </div>
               {#if hasItems}
@@ -526,9 +534,11 @@
   }
 
   .motion-vis-section {
+    box-sizing: border-box;
+    width: min(320px, calc(100vw - 48px));
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 12px;
     padding: 6px 8px 2px;
   }
 

@@ -39,10 +39,8 @@ const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../.."
 );
-const SCENES_DIR = path.join(
-  repoRoot,
-  "src/lib/shared/3d/environments/scenes"
-);
+const SCENES_DIR = path.join(repoRoot, "src/lib/shared/3d/environments/scenes");
+const WORLDS_DIR = path.join(repoRoot, "src/lib/shared/3d/environments/worlds");
 
 /**
  * Which environment owns each scene folder, and each root-level `*Scene.svelte`
@@ -71,7 +69,12 @@ function isExcluded(relativePath: string): boolean {
   const normalized = relativePath.split(path.sep).join("/");
   return (
     normalized.endsWith("-composer-plugin.ts") ||
-    normalized.startsWith("winter/graybox/")
+    normalized.startsWith("winter/graybox/") ||
+    [
+      "celestial/cloudbreak-assets.ts",
+      "celestial/CelestialSanctuaries.svelte",
+      "celestial/OliveCloudbreakSlice.svelte",
+    ].includes(normalized)
   );
 }
 
@@ -100,18 +103,23 @@ function ownerOf(relativePath: string): BackgroundType | null {
 /** Every model URL a viewer-mounted scene source names, grouped by environment. */
 function collectFromSources(): Map<BackgroundType, Map<string, string>> {
   const byOwner = new Map<BackgroundType, Map<string, string>>();
-  for (const relative of sourceFiles(SCENES_DIR)) {
-    const text = readFileSync(path.join(SCENES_DIR, relative), "utf8");
-    const urls = text.match(MODEL_URL);
-    if (!urls) continue;
-    const owner = ownerOf(relative);
-    expect(
-      owner,
-      `${relative} names a model but no environment owns it — add its folder to SCENE_OWNERS`
-    ).not.toBeNull();
-    const bucket = byOwner.get(owner!) ?? new Map<string, string>();
-    for (const url of urls) bucket.set(url, relative);
-    byOwner.set(owner!, bucket);
+  for (const [label, sourceRoot] of [
+    ["scenes", SCENES_DIR],
+    ["worlds", WORLDS_DIR],
+  ] as const) {
+    for (const relative of sourceFiles(sourceRoot)) {
+      const text = readFileSync(path.join(sourceRoot, relative), "utf8");
+      const urls = text.match(MODEL_URL);
+      if (!urls) continue;
+      const owner = ownerOf(relative);
+      expect(
+        owner,
+        `${label}/${relative} names a model but no environment owns it — add its folder to SCENE_OWNERS`
+      ).not.toBeNull();
+      const bucket = byOwner.get(owner!) ?? new Map<string, string>();
+      for (const url of urls) bucket.set(url, `${label}/${relative}`);
+      byOwner.set(owner!, bucket);
+    }
   }
   return byOwner;
 }
@@ -156,6 +164,16 @@ describe("scene asset manifest", () => {
     expect(urls).toContain("/models/ocean/ocean-environment.glb");
   });
 
+  it("warms every Autumn texture needed at reveal", () => {
+    expect(sceneAssetUrls(BackgroundType.AUTUMN)).toEqual([
+      "/models/autumn/autumn-environment.glb",
+      "/textures/autumn-floor/ground-detail-modulation.ktx2",
+      "/textures/water/Water_1_M_Normal.jpg",
+      "/textures/water/Water_2_M_Normal.jpg",
+      "/textures/autumn/moon-512.png",
+    ]);
+  });
+
   it("keeps the flora scene off the dev-only comparison build", () => {
     const urls = sceneAssetUrls(BackgroundType.OCEAN);
     expect(urls.some((url) => url.includes(OCEAN_FLORA_FILES.composed))).toBe(
@@ -178,13 +196,16 @@ describe("scene asset manifest", () => {
       const found: string[] = [];
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) found.push(...walk(path.join(dir, entry.name), relative));
+        if (entry.isDirectory())
+          found.push(...walk(path.join(dir, entry.name), relative));
         else found.push(relative);
       }
       return found;
     })(SCENES_DIR);
 
-    expect(all.filter((f) => f.endsWith("-composer-plugin.ts")).length).toBeGreaterThan(0);
+    expect(
+      all.filter((f) => f.endsWith("-composer-plugin.ts")).length
+    ).toBeGreaterThan(0);
     expect(all.some((f) => f.startsWith("winter/graybox/"))).toBe(true);
   });
 });

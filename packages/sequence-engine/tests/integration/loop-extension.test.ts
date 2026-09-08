@@ -19,7 +19,7 @@ import { LOOPType, Period } from "../../src/loop/loop-types.js";
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
-    color: "blue",
+    hand: "left",
     startLocation: "n",
     endLocation: "s",
     motionType: "pro",
@@ -36,8 +36,8 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
     endPosition: "alpha1",
     timing: "together",
     direction: "together",
-    blueMotion: makeMotion({ color: "blue" }),
-    redMotion: makeMotion({ color: "red" }),
+    leftMotion: makeMotion({ hand: "left" }),
+    rightMotion: makeMotion({ hand: "right" }),
     ...overrides,
   };
 }
@@ -56,43 +56,43 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "α",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
   }),
   makePictograph({
     letter: "α",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation" }),
   }),
   makePictograph({
     letter: "A",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ startLocation: "n", endLocation: "e" }),
-    redMotion: makeMotion({ startLocation: "s", endLocation: "w" }),
+    leftMotion: makeMotion({ startLocation: "n", endLocation: "e" }),
+    rightMotion: makeMotion({ startLocation: "s", endLocation: "w" }),
   }),
   makePictograph({
     letter: "B",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ startLocation: "e", endLocation: "n" }),
-    redMotion: makeMotion({ startLocation: "w", endLocation: "s" }),
+    leftMotion: makeMotion({ startLocation: "e", endLocation: "n" }),
+    rightMotion: makeMotion({ startLocation: "w", endLocation: "s" }),
   }),
   makePictograph({
     letter: "C",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ startLocation: "n", endLocation: "n" }),
-    redMotion: makeMotion({ startLocation: "s", endLocation: "s" }),
+    leftMotion: makeMotion({ startLocation: "n", endLocation: "n" }),
+    rightMotion: makeMotion({ startLocation: "s", endLocation: "s" }),
   }),
   makePictograph({
     letter: "D",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ startLocation: "e", endLocation: "e" }),
-    redMotion: makeMotion({ startLocation: "w", endLocation: "w" }),
+    leftMotion: makeMotion({ startLocation: "e", endLocation: "e" }),
+    rightMotion: makeMotion({ startLocation: "w", endLocation: "w" }),
   }),
 ];
 
@@ -283,8 +283,8 @@ describe("SequenceBuilder LOOP extension", () => {
 
   it("Rewound derives each appended step's letter from its reversed motions (not copied from source)", () => {
     // In this mock A and B are temporal inverses of each other:
-    //   A: blue n→e, red s→w   (alpha1→beta3)
-    //   B: blue e→n, red w→s   (beta3→alpha1)
+    //   A: left n→e, right s→w   (alpha1→beta3)
+    //   B: left e→n, right w→s   (beta3→alpha1)
     // Rewinding B (swap locations, flip rotation) yields A's motion signature,
     // and rewinding A yields B's. So the correct derived word is "AB" — the
     // letter of each appended step re-derived from its OWN reversed motions.

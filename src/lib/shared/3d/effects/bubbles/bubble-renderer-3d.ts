@@ -77,9 +77,9 @@ export class BubbleRenderer3D {
   private readonly popping = new Uint8Array(MAX_CAPACITY);
   private readonly popAge = new Float32Array(MAX_CAPACITY);
   private readonly popRadius = new Float32Array(MAX_CAPACITY);
-  private readonly red = new Float32Array(MAX_CAPACITY);
+  private readonly right = new Float32Array(MAX_CAPACITY);
   private readonly green = new Float32Array(MAX_CAPACITY);
-  private readonly blue = new Float32Array(MAX_CAPACITY);
+  private readonly left = new Float32Array(MAX_CAPACITY);
 
   private readonly fragmentActive = new Uint8Array(MAX_CAPACITY);
   private readonly fragmentX = new Float32Array(MAX_CAPACITY);
@@ -93,12 +93,12 @@ export class BubbleRenderer3D {
   private readonly fragmentSize = new Float32Array(MAX_CAPACITY);
   private readonly fragmentPhase = new Float32Array(MAX_CAPACITY);
   private readonly fragmentFilmStrength = new Float32Array(MAX_CAPACITY);
-  private readonly fragmentRed = new Float32Array(MAX_CAPACITY);
+  private readonly fragmentRight = new Float32Array(MAX_CAPACITY);
   private readonly fragmentGreen = new Float32Array(MAX_CAPACITY);
-  private readonly fragmentBlue = new Float32Array(MAX_CAPACITY);
+  private readonly fragmentLeft = new Float32Array(MAX_CAPACITY);
 
   private readonly accumulators = new Map<number, number>();
-  private readonly color: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly color: MutableRgb = { right: 1, green: 1, left: 1 };
   private readonly airflow = new SampledCurlGrid2D(48, 10, 1 / 3);
   private readonly airflowSample = { vx: 0, vy: 0 };
   private readonly writeState: BubbleFilmInstance3D = {
@@ -108,9 +108,9 @@ export class BubbleRenderer3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
     filmSeed: 0,
     filmStrength: 0.5,
@@ -313,9 +313,9 @@ export class BubbleRenderer3D {
       write.scaleX = frame.scaleX;
       write.scaleY = frame.scaleY;
       write.scaleZ = frame.scaleZ;
-      write.red = this.red[index]!;
+      write.right = this.right[index]!;
       write.green = this.green[index]!;
-      write.blue = this.blue[index]!;
+      write.left = this.left[index]!;
       write.alpha = frame.alpha;
       write.filmSeed = this.filmPhase[index]!;
       write.filmStrength = this.filmStrength[index]!;
@@ -363,9 +363,9 @@ export class BubbleRenderer3D {
       write.scaleX = size;
       write.scaleY = size * (0.22 + 0.12 * Math.sin(this.clock * 15 + phase));
       write.scaleZ = size * 0.58;
-      write.red = this.fragmentRed[index]!;
+      write.right = this.fragmentRight[index]!;
       write.green = this.fragmentGreen[index]!;
-      write.blue = this.fragmentBlue[index]!;
+      write.left = this.fragmentLeft[index]!;
       write.alpha = alpha;
       write.filmSeed = phase;
       write.filmStrength = this.fragmentFilmStrength[index]!;
@@ -479,9 +479,9 @@ export class BubbleRenderer3D {
       this.popping[slot] = 0;
       this.popAge[slot] = 0;
       this.popRadius[slot] = radius * (1 + BUBBLE_LIFETIME_SWELL);
-      this.red[slot] = this.color.red;
+      this.right[slot] = this.color.right;
       this.green[slot] = this.color.green;
-      this.blue[slot] = this.color.blue;
+      this.left[slot] = this.color.left;
       accumulator -= 1;
       spawnOrdinal++;
     }
@@ -518,9 +518,9 @@ export class BubbleRenderer3D {
       this.fragmentPhase[slot] =
         (this.filmPhase[shellIndex]! + ordinal / count) % 1;
       this.fragmentFilmStrength[slot] = this.filmStrength[shellIndex]!;
-      this.fragmentRed[slot] = this.red[shellIndex]!;
+      this.fragmentRight[slot] = this.right[shellIndex]!;
       this.fragmentGreen[slot] = this.green[shellIndex]!;
-      this.fragmentBlue[slot] = this.blue[shellIndex]!;
+      this.fragmentLeft[slot] = this.left[shellIndex]!;
     }
   }
 

@@ -9,8 +9,8 @@ import { buildChoreoCardRenderKeys } from "./choreo-card-render-keys";
 // makes that drift impossible; these tests lock its format.
 const base = {
   sequence: { id: "s", steps: [{ letter: "A" }, { letter: "B" }] },
-  bluePropType: "staff",
-  redPropType: "staff",
+  leftPropType: "staff",
+  rightPropType: "staff",
   catDogModeEnabled: false,
   showStepNumbers: false,
   showNonRadial: true,
@@ -21,8 +21,8 @@ const base = {
   showElemental: false,
   showPositions: false,
   showGrid: true,
-  showBlueMotion: true,
-  showRedMotion: true,
+  showLeftMotion: true,
+  showRightMotion: true,
   includeStartPosition: true,
   startPositionLayout: "row",
   effectiveColumns: 4,

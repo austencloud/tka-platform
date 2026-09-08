@@ -25,7 +25,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
   GridLocation,
@@ -169,15 +169,15 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
       endPosition: mirroredEndPosition, // MIRRORED: Flip position
       motions: {
         // SWAP: Blue does what Red did, with mirrored+inverted transformation
-        [MotionColor.BLUE]: this._createMirroredSwappedInvertedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createMirroredSwappedInvertedMotion(
+          HandSide.LEFT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
         ),
         // SWAP: Red does what Blue did, with mirrored+inverted transformation
-        [MotionColor.RED]: this._createMirroredSwappedInvertedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createMirroredSwappedInvertedMotion(
+          HandSide.RIGHT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
@@ -262,14 +262,14 @@ export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
    * **IMPORTANT**: Rotation direction is flipped (3 transformations = odd number of flips)
    */
   private _createMirroredSwappedInvertedMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     previousMatchingStep: StepData,
     isSwapped: boolean
   ): MotionData {
     // SWAP: Get the opposite color's motion data for the PATTERN
     const oppositeColor =
-      color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
+      color === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
 
     // For CONTINUITY: Always use same color from previous step
     // (Blue continues from where Blue ended, Red continues from where Red ended)

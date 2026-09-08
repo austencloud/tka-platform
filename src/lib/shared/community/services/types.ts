@@ -74,8 +74,8 @@ export interface ConnectionInfo {
 
 
 export interface CatdogCombo {
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
 }
 
 export interface PropPreferences {

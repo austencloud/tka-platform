@@ -1,0 +1,82 @@
+{
+  "sourceDigest": "a0e76c90eab4dec850bad5b806d76dd1d8a5671d5f5cadc82d9aa68df2197efb",
+  "blenderVersion": "5.0.1",
+  "computeDevice": "OPTIX",
+  "fast": false,
+  "removedGrayboxObjects": {
+    "locators": 5,
+    "qaLights": 12
+  },
+  "rockFaces": {
+    "route": 16284,
+    "pit": 17996
+  },
+  "rockTriangles": {
+    "pit": 35992,
+    "route": 32568
+  },
+  "trimTriangles": {
+    "brass": 2720,
+    "stone": 14972,
+    "root": 2880,
+    "moss": 4608
+  },
+  "lightmaps": {
+    "rock-pit": 4096,
+    "rock-route": 4096,
+    "trim-brass": 1024,
+    "trim-stone": 1024,
+    "trim-root": 1024,
+    "trim-moss": 1024
+  },
+  "bakeSamples": 256,
+  "textureSets": {
+    "cliff": "rock_face",
+    "moss": "mossy_rock",
+    "trail": "rocky_trail",
+    "loam": "forest_ground_04"
+  },
+  "wallBlend": [
+    -1.5,
+    0.5
+  ],
+  "floorBlend": [
+    -2.0,
+    -1.0
+  ],
+  "uvMetresPerUnit": {
+    "rock-pit": 45.82183406414739,
+    "rock-route": 59.00590000345286,
+    "trim-brass": 34.26328225981638,
+    "trim-stone": 4.030305790375393,
+    "trim-root": 10.372492995479424,
+    "trim-moss": 3.3899973665090326
+  },
+  "emissiveMaterials": [
+    "ET Lamp",
+    "ET Sky"
+  ],
+  "exportObjectCount": 14,
+  "exportMaterials": [
+    "ET Brass",
+    "ET Lamp",
+    "ET Moss",
+    "ET Rock Pit",
+    "ET Rock Route",
+    "ET Root",
+    "ET Sky",
+    "ET Stone"
+  ],
+  "rawGlbBytes": 55639268,
+  "finalGlbBytes": 5717544,
+  "finalGlbPath": "static/models/museum/cave/earth-root-terrace.glb",
+  "renders": {
+    "threshold": "blender/qa/earth-root-terrace-production/earth-root-terrace-threshold.png",
+    "ramp-climb": "blender/qa/earth-root-terrace-production/earth-root-terrace-ramp-climb.png",
+    "terrace-overlook": "blender/qa/earth-root-terrace-production/earth-root-terrace-terrace-overlook.png",
+    "ensemble": "blender/qa/earth-root-terrace-production/earth-root-terrace-ensemble.png",
+    "exit": "blender/qa/earth-root-terrace-production/earth-root-terrace-exit.png",
+    "overview": "blender/qa/earth-root-terrace-production/earth-root-terrace-overview.png",
+    "plan": "blender/qa/earth-root-terrace-production/earth-root-terrace-plan.png"
+  }
+}

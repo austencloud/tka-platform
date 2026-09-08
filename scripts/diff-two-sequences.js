@@ -11,7 +11,12 @@ const ID_B = "73bd83f2-11db-40ba-97c6-5a1ca30bba8f"; // newer (Mar 14)
 function deepDiff(a, b, path = "") {
   const diffs = [];
   if (a === b) return diffs;
-  if (a === null || b === null || typeof a !== "object" || typeof b !== "object") {
+  if (
+    a === null ||
+    b === null ||
+    typeof a !== "object" ||
+    typeof b !== "object"
+  ) {
     diffs.push({ path, a, b });
     return diffs;
   }
@@ -41,19 +46,49 @@ async function run() {
 
   // Skip metadata fields we don't care about
   const skip = new Set([
-    "id", "createdAt", "updatedAt", "birthday", "dateAdded",
-    "_version", "thumbnails", "contentHash", "source", "visibility",
-    "visibilityChangedAt", "lastAccessedAt", "ownerDisplayName",
-    "ownerAvatarUrl", "ownerId", "isFavorite", "sequenceTags", "tagIds",
-    "notes", "collectionIds", "bluePathHash", "redPathHash",
-    "blueSoloHash", "redSoloHash", "blueSoloProp", "redSoloProp",
-    "stepPairings", "orientationCycleCount",
+    "id",
+    "createdAt",
+    "updatedAt",
+    "birthday",
+    "dateAdded",
+    "_version",
+    "thumbnails",
+    "contentHash",
+    "source",
+    "visibility",
+    "visibilityChangedAt",
+    "lastAccessedAt",
+    "ownerDisplayName",
+    "ownerAvatarUrl",
+    "ownerId",
+    "isFavorite",
+    "sequenceTags",
+    "tagIds",
+    "notes",
+    "collectionIds",
+    "leftPathHash",
+    "rightPathHash",
+    "leftSoloHash",
+    "rightSoloHash",
+    "leftSoloProp",
+    "rightSoloProp",
+    // Legacy persisted aliases remain ignorable when comparing old records.
+    "bluePathHash",
+    "redPathHash",
+    "blueSoloHash",
+    "redSoloHash",
+    "blueSoloProp",
+    "redSoloProp",
+    "stepPairings",
+    "orientationCycleCount",
   ]);
 
   const diffs = deepDiff(a, b).filter((d) => !skip.has(d.path.split(".")[0]));
 
   if (diffs.length === 0) {
-    console.log("No motion-relevant differences found. These are exact duplicates.");
+    console.log(
+      "No motion-relevant differences found. These are exact duplicates."
+    );
   } else {
     console.log(`Found ${diffs.length} difference(s):\n`);
     for (const d of diffs) {
@@ -67,4 +102,9 @@ async function run() {
   }
 }
 
-run().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); });
+run()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

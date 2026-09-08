@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    applyEditorTorchPalette,
-    EDITOR_TORCH_PALETTE,
-  } from "$lib/shared/pictograph/prop/domain/prop-render-context";
+    applyTorchContrastPalette,
+    TORCH_CONTRAST_PALETTE,
+  } from "$lib/shared/pictograph/prop/domain/torch-contrast";
   import {
     applyMotionColorToSvg,
     SELECTIVE_COLOR_PROP_TYPES,
@@ -19,8 +19,8 @@
   };
 
   type HandPreviews = {
-    blue: string;
-    red: string;
+    left: string;
+    right: string;
   };
 
   type RenderedPreview = {
@@ -47,24 +47,24 @@
     {
       id: "dark" as const,
       label: "Dark editor surface",
-      background: EDITOR_TORCH_PALETTE.dark.background,
-      shaft: EDITOR_TORCH_PALETTE.dark.shaft,
-      metal: EDITOR_TORCH_PALETTE.dark.metal,
-      flame: EDITOR_TORCH_PALETTE.dark.flame,
+      background: TORCH_CONTRAST_PALETTE.dark.background,
+      shaft: TORCH_CONTRAST_PALETTE.dark.shaft,
+      metal: TORCH_CONTRAST_PALETTE.dark.metal,
+      flame: TORCH_CONTRAST_PALETTE.dark.flame,
     },
     {
       id: "light" as const,
       label: "Light editor surface",
-      background: EDITOR_TORCH_PALETTE.light.background,
-      shaft: EDITOR_TORCH_PALETTE.light.shaft,
-      metal: EDITOR_TORCH_PALETTE.light.metal,
-      flame: EDITOR_TORCH_PALETTE.light.flame,
+      background: TORCH_CONTRAST_PALETTE.light.background,
+      shaft: TORCH_CONTRAST_PALETTE.light.shaft,
+      metal: TORCH_CONTRAST_PALETTE.light.metal,
+      flame: TORCH_CONTRAST_PALETTE.light.flame,
     },
   ];
 
   const handColors = [
-    { id: "blue" as const, label: "Blue prop", color: MotionColor.BLUE },
-    { id: "red" as const, label: "Red prop", color: MotionColor.RED },
+    { id: "blue" as const, label: "Left prop (blue)", color: HandSide.LEFT },
+    { id: "red" as const, label: "Right prop (red)", color: HandSide.RIGHT },
   ];
 
   let rendered = $state<Record<string, RenderedPreview>>({});
@@ -73,7 +73,7 @@
   function renderEditorProp(
     rawSvg: string,
     definition: PreviewDefinition,
-    color: MotionColor,
+    color: HandSide,
     darkMode: boolean
   ): string {
     const selective = (
@@ -85,14 +85,13 @@
       selectiveColorMode: selective,
     });
 
-    const editorArtwork = applyEditorTorchPalette(
+    const contrastArtwork = applyTorchContrastPalette(
       coloredSvg,
-      "editor",
       definition.propType,
-      darkMode
+      darkMode ? "dark" : "light"
     );
 
-    return addOverlapPoint(editorArtwork, definition, darkMode);
+    return addOverlapPoint(contrastArtwork, definition, darkMode);
   }
 
   function getOuterGridPoint(
@@ -138,22 +137,17 @@
           const rawSvg = await response.text();
           const preview: RenderedPreview = {
             dark: {
-              blue: renderEditorProp(
-                rawSvg,
-                definition,
-                MotionColor.BLUE,
-                true
-              ),
-              red: renderEditorProp(rawSvg, definition, MotionColor.RED, true),
+              left: renderEditorProp(rawSvg, definition, HandSide.LEFT, true),
+              right: renderEditorProp(rawSvg, definition, HandSide.RIGHT, true),
             },
             light: {
-              blue: renderEditorProp(
+              left: renderEditorProp(rawSvg, definition, HandSide.LEFT, false),
+              right: renderEditorProp(
                 rawSvg,
                 definition,
-                MotionColor.BLUE,
+                HandSide.RIGHT,
                 false
               ),
-              red: renderEditorProp(rawSvg, definition, MotionColor.RED, false),
             },
           };
 
@@ -230,10 +224,10 @@
                 <div class="tile-size-row" aria-label="Small editor tile check">
                   <span>Small tile</span>
                   <div class="tile-artwork">
-                    {@html surfacePreview.blue}
+                    {@html surfacePreview.left}
                   </div>
                   <div class="tile-artwork">
-                    {@html surfacePreview.red}
+                    {@html surfacePreview.right}
                   </div>
                 </div>
               </figure>

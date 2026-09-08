@@ -11,23 +11,23 @@ description: Use when writing, reviewing, or deciding whether to write tests in 
 
 ## The "Silent Bug" Test
 
-Ask: *"If this breaks, will I notice immediately, or will it silently produce wrong output?"*
+Ask: _"If this breaks, will I notice immediately, or will it silently produce wrong output?"_
 
 Test the silent ones. Skip the obvious ones.
 
 ## When to Write Tests
 
-| Scenario | Test? | Why |
-|----------|-------|-----|
-| Pure algorithm/calculation | Yes | Math is stable, bugs are subtle |
-| Silent data corruption risk | Yes | You won't notice until it's too late |
-| Data transformation pipelines | Yes | Wrong output looks plausible |
-| Bug that regressed before | Yes | Proven problem worth preventing |
-| Complex state transitions | Yes | Edge cases are invisible |
-| Serialization/deserialization | Yes | Round-trip bugs are silent |
-| UI component rendering | No | You'll see if it's broken |
-| Glue code / wiring | No | Obvious when broken |
-| Something you'd notice immediately | No | Your eyes are the test |
+| Scenario                           | Test? | Why                                  |
+| ---------------------------------- | ----- | ------------------------------------ |
+| Pure algorithm/calculation         | Yes   | Math is stable, bugs are subtle      |
+| Silent data corruption risk        | Yes   | You won't notice until it's too late |
+| Data transformation pipelines      | Yes   | Wrong output looks plausible         |
+| Bug that regressed before          | Yes   | Proven problem worth preventing      |
+| Complex state transitions          | Yes   | Edge cases are invisible             |
+| Serialization/deserialization      | Yes   | Round-trip bugs are silent           |
+| UI component rendering             | No    | You'll see if it's broken            |
+| Glue code / wiring                 | No    | Obvious when broken                  |
+| Something you'd notice immediately | No    | Your eyes are the test               |
 
 ## What Makes a Test Valuable
 
@@ -55,11 +55,9 @@ about. jsdom is the more limited of the two: its `Blob` predates
 `tests/setup/vitest-setup.ts`, and node globals present under `node` may be
 absent under jsdom.
 
-This is not hypothetical. On 2026-08-04 a `blob.arrayBuffer is not a function`
-failure landed on `main` because the test passed under the bare command. CI went
-red, `Deploy Pages (gated)` skipped, and `tkaflowarts.com` served a five-day-old
-build until someone noticed by eye. See
-`docs/reference/gated-pages-deploy.md`.
-
 If a test passes for you and fails in CI, check which config you ran before
 you debug the test.
+
+Stop after the focused tests covering the changed silent behavior pass. Broaden
+only when the change crosses project-wide boundaries or a failure supplies a
+concrete new risk.

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { findPreviousRotationDirection, updateStepTurns } from "./turns-handler";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -33,29 +33,29 @@ vi.mock("./OrientationHandler", () => ({
 function makeStep(
   overrides: {
     stepNumber?: number;
-    blue?: { motionType?: MotionType; rotationDirection?: RotationDirection; turns?: number | "fl" };
-    red?: { motionType?: MotionType; rotationDirection?: RotationDirection; turns?: number | "fl" };
+    left?: { motionType?: MotionType; rotationDirection?: RotationDirection; turns?: number | "fl" };
+    right?: { motionType?: MotionType; rotationDirection?: RotationDirection; turns?: number | "fl" };
   } = {}
 ): StepData {
   return {
     id: "test",
     stepNumber: overrides.stepNumber ?? 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
-        motionType: overrides.blue?.motionType ?? MotionType.DASH,
+      [HandSide.LEFT]: createMotionData({
+        motionType: overrides.left?.motionType ?? MotionType.DASH,
         rotationDirection:
-          overrides.blue?.rotationDirection ?? RotationDirection.NO_ROTATION,
-        turns: overrides.blue?.turns ?? 0,
+          overrides.left?.rotationDirection ?? RotationDirection.NO_ROTATION,
+        turns: overrides.left?.turns ?? 0,
       }),
-      [MotionColor.RED]: createMotionData({
-        motionType: overrides.red?.motionType ?? MotionType.DASH,
+      [HandSide.RIGHT]: createMotionData({
+        motionType: overrides.right?.motionType ?? MotionType.DASH,
         rotationDirection:
-          overrides.red?.rotationDirection ?? RotationDirection.NO_ROTATION,
-        turns: overrides.red?.turns ?? 0,
+          overrides.right?.rotationDirection ?? RotationDirection.NO_ROTATION,
+        turns: overrides.right?.turns ?? 0,
       }),
     },
   } as StepData;
@@ -65,7 +65,7 @@ describe("findPreviousRotationDirection", () => {
   it("returns CCW when previous step blue has CCW rotation", () => {
     const steps = [
       makeStep({
-        blue: {
+        left: {
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         },
@@ -76,7 +76,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       2,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     expect(result).toBe(RotationDirection.COUNTER_CLOCKWISE);
   });
@@ -84,7 +84,7 @@ describe("findPreviousRotationDirection", () => {
   it("returns CW when previous step blue has CW rotation", () => {
     const steps = [
       makeStep({
-        blue: {
+        left: {
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.CLOCKWISE,
         },
@@ -95,7 +95,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       2,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     expect(result).toBe(RotationDirection.CLOCKWISE);
   });
@@ -103,7 +103,7 @@ describe("findPreviousRotationDirection", () => {
   it("searches backward past steps with NO_ROTATION", () => {
     const steps = [
       makeStep({
-        blue: {
+        left: {
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         },
@@ -115,7 +115,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       3,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     expect(result).toBe(RotationDirection.COUNTER_CLOCKWISE);
   });
@@ -123,8 +123,8 @@ describe("findPreviousRotationDirection", () => {
   it("uses correct color — red step context doesn't bleed into blue", () => {
     const steps = [
       makeStep({
-        blue: { rotationDirection: RotationDirection.NO_ROTATION },
-        red: { rotationDirection: RotationDirection.COUNTER_CLOCKWISE },
+        left: { rotationDirection: RotationDirection.NO_ROTATION },
+        right: { rotationDirection: RotationDirection.COUNTER_CLOCKWISE },
       }),
       makeStep(),
     ];
@@ -132,7 +132,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       2,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     // Blue has no rotation context, should fall back to CLOCKWISE
     expect(result).toBe(RotationDirection.CLOCKWISE);
@@ -141,8 +141,8 @@ describe("findPreviousRotationDirection", () => {
   it("returns red rotation when querying red color", () => {
     const steps = [
       makeStep({
-        blue: { rotationDirection: RotationDirection.CLOCKWISE },
-        red: { rotationDirection: RotationDirection.COUNTER_CLOCKWISE },
+        left: { rotationDirection: RotationDirection.CLOCKWISE },
+        right: { rotationDirection: RotationDirection.COUNTER_CLOCKWISE },
       }),
       makeStep(),
     ];
@@ -150,7 +150,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       2,
-      MotionColor.RED
+      HandSide.RIGHT
     );
     expect(result).toBe(RotationDirection.COUNTER_CLOCKWISE);
   });
@@ -161,7 +161,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       2,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     expect(result).toBe(RotationDirection.CLOCKWISE);
   });
@@ -172,7 +172,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       1,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     expect(result).toBe(RotationDirection.CLOCKWISE);
   });
@@ -180,10 +180,10 @@ describe("findPreviousRotationDirection", () => {
   it("picks nearest rotation when multiple prior steps have rotation", () => {
     const steps = [
       makeStep({
-        blue: { rotationDirection: RotationDirection.CLOCKWISE },
+        left: { rotationDirection: RotationDirection.CLOCKWISE },
       }),
       makeStep({
-        blue: { rotationDirection: RotationDirection.COUNTER_CLOCKWISE },
+        left: { rotationDirection: RotationDirection.COUNTER_CLOCKWISE },
       }),
       makeStep(),
     ];
@@ -191,7 +191,7 @@ describe("findPreviousRotationDirection", () => {
     const result = findPreviousRotationDirection(
       steps,
       3,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     // Step 2 (index 1) is closer — should pick CCW
     expect(result).toBe(RotationDirection.COUNTER_CLOCKWISE);
@@ -203,27 +203,27 @@ describe("findPreviousRotationDirection", () => {
   it("feedback scenario: step 1 dash ccw → step 2 static defaults to ccw", () => {
     const steps = [
       makeStep({
-        blue: {
+        left: {
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         },
-        red: {
+        right: {
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         },
       }),
       makeStep({
-        blue: { motionType: MotionType.STATIC },
-        red: { motionType: MotionType.STATIC },
+        left: { motionType: MotionType.STATIC },
+        right: { motionType: MotionType.STATIC },
       }),
     ];
 
     expect(
-      findPreviousRotationDirection(steps, 2, MotionColor.BLUE)
+      findPreviousRotationDirection(steps, 2, HandSide.LEFT)
     ).toBe(RotationDirection.COUNTER_CLOCKWISE);
 
     expect(
-      findPreviousRotationDirection(steps, 2, MotionColor.RED)
+      findPreviousRotationDirection(steps, 2, HandSide.RIGHT)
     ).toBe(RotationDirection.COUNTER_CLOCKWISE);
   });
 });
@@ -257,7 +257,7 @@ function makeMockState(steps: StepData[]): ICreateModuleState {
 function getCapturedStep(
   state: ICreateModuleState,
   stepIndex: number,
-  color: MotionColor
+  color: HandSide
 ) {
   const captured = (
     state.sequenceState as unknown as { _captured: { steps: StepData[] } }
@@ -270,22 +270,22 @@ describe("updateStepTurns integration", () => {
     const steps = [
       makeStep({
         stepNumber: 1,
-        blue: {
+        left: {
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         },
-        red: {
+        right: {
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         },
       }),
       makeStep({
         stepNumber: 2,
-        blue: {
+        left: {
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
         },
-        red: {
+        right: {
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
         },
@@ -293,9 +293,9 @@ describe("updateStepTurns integration", () => {
     ];
 
     const state = makeMockState(steps);
-    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+    updateStepTurns(2, HandSide.LEFT, 0.5, state);
 
-    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+    expect(getCapturedStep(state, 1, HandSide.LEFT).rotationDirection).toBe(
       RotationDirection.COUNTER_CLOCKWISE
     );
   });
@@ -304,14 +304,14 @@ describe("updateStepTurns integration", () => {
     const steps = [
       makeStep({
         stepNumber: 1,
-        blue: {
+        left: {
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.CLOCKWISE,
         },
       }),
       makeStep({
         stepNumber: 2,
-        blue: {
+        left: {
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
         },
@@ -319,9 +319,9 @@ describe("updateStepTurns integration", () => {
     ];
 
     const state = makeMockState(steps);
-    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+    updateStepTurns(2, HandSide.LEFT, 0.5, state);
 
-    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+    expect(getCapturedStep(state, 1, HandSide.LEFT).rotationDirection).toBe(
       RotationDirection.CLOCKWISE
     );
   });
@@ -330,14 +330,14 @@ describe("updateStepTurns integration", () => {
     const steps = [
       makeStep({
         stepNumber: 1,
-        blue: {
+        left: {
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
         },
       }),
       makeStep({
         stepNumber: 2,
-        blue: {
+        left: {
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
         },
@@ -345,9 +345,9 @@ describe("updateStepTurns integration", () => {
     ];
 
     const state = makeMockState(steps);
-    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+    updateStepTurns(2, HandSide.LEFT, 0.5, state);
 
-    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+    expect(getCapturedStep(state, 1, HandSide.LEFT).rotationDirection).toBe(
       RotationDirection.CLOCKWISE
     );
   });
@@ -356,7 +356,7 @@ describe("updateStepTurns integration", () => {
     const steps = [
       makeStep({
         stepNumber: 1,
-        blue: {
+        left: {
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
           turns: 1,
@@ -365,9 +365,9 @@ describe("updateStepTurns integration", () => {
     ];
 
     const state = makeMockState(steps);
-    updateStepTurns(1, MotionColor.BLUE, 0, state);
+    updateStepTurns(1, HandSide.LEFT, 0, state);
 
-    expect(getCapturedStep(state, 0, MotionColor.BLUE).rotationDirection).toBe(
+    expect(getCapturedStep(state, 0, HandSide.LEFT).rotationDirection).toBe(
       RotationDirection.NO_ROTATION
     );
   });
@@ -376,14 +376,14 @@ describe("updateStepTurns integration", () => {
     const steps = [
       makeStep({
         stepNumber: 1,
-        blue: {
+        left: {
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         },
       }),
       makeStep({
         stepNumber: 2,
-        blue: {
+        left: {
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.NO_ROTATION,
         },
@@ -391,9 +391,9 @@ describe("updateStepTurns integration", () => {
     ];
 
     const state = makeMockState(steps);
-    updateStepTurns(2, MotionColor.BLUE, 0.5, state);
+    updateStepTurns(2, HandSide.LEFT, 0.5, state);
 
-    expect(getCapturedStep(state, 1, MotionColor.BLUE).rotationDirection).toBe(
+    expect(getCapturedStep(state, 1, HandSide.LEFT).rotationDirection).toBe(
       RotationDirection.NO_ROTATION
     );
   });

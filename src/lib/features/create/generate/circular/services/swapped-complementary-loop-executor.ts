@@ -20,7 +20,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -145,15 +145,15 @@ export class SwappedInvertedLOOPExecutor {
       endPosition: previousMatchingStep.endPosition ?? null, // Same as matching step (returns to start), handle undefined
       motions: {
         // SWAP: Blue does what Red did, with inverted transformation
-        [MotionColor.BLUE]: this._createSwappedInvertedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createSwappedInvertedMotion(
+          HandSide.LEFT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
         ),
         // SWAP: Red does what Blue did, with inverted transformation
-        [MotionColor.RED]: this._createSwappedInvertedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createSwappedInvertedMotion(
+          HandSide.RIGHT,
           previousStep,
           previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
@@ -235,14 +235,14 @@ export class SwappedInvertedLOOPExecutor {
    * Combines color swapping with inverted transformations
    */
   private _createSwappedInvertedMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     previousMatchingStep: StepData,
     isSwapped: boolean
   ): MotionData {
     // SWAP: Get the opposite color's motion data for the PATTERN
     const oppositeColor =
-      color === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE;
+      color === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
 
     // For CONTINUITY: Always use same color from previous step
     // (Blue continues from where Blue ended, Red continues from where Red ended)

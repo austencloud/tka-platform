@@ -11,15 +11,21 @@ function item(
   label: string,
   context: ShortcutContext | ShortcutContext[],
   key: string,
-  options: { description?: string; customized?: boolean } = {}
+  options: {
+    description?: string;
+    customized?: boolean;
+    modifiers?: ShortcutWithBinding["effectiveBinding"]["modifiers"];
+  } = {}
 ): ShortcutWithBinding {
+  const modifiers = options.modifiers ?? [];
+
   return {
     shortcut: {
       id,
       label,
       description: options.description,
       key,
-      modifiers: [],
+      modifiers,
       context,
       scope: "action",
       priority: "medium",
@@ -28,8 +34,8 @@ function item(
       action: () => {},
       enabled: true,
     },
-    defaultBinding: { key, modifiers: [] },
-    effectiveBinding: { key, modifiers: [] },
+    defaultBinding: { key, modifiers },
+    effectiveBinding: { key, modifiers },
     customBinding: options.customized ? { keyCombo: key } : null,
     isCustomized: options.customized ?? false,
     isDisabled: false,
@@ -76,6 +82,27 @@ describe("shortcut center catalog", () => {
     expect(
       buildShortcutCatalog(items, "all", "create", "arrow right")
     ).toHaveLength(1);
+  });
+
+  it("can filter the current area to modifier-specific commands", () => {
+    const modifierItems = [
+      item("create.mirror", "Mirror", "create", "m", {
+        modifiers: ["alt"],
+      }),
+      item("create.save", "Save", "create", "s", {
+        modifiers: ["ctrl"],
+      }),
+    ];
+
+    const catalog = buildShortcutCatalog(
+      modifierItems,
+      "current",
+      "create",
+      "Alt+"
+    );
+
+    expect(catalog.flatMap(({ items }) => items)).toHaveLength(1);
+    expect(catalog[0]?.items[0]?.shortcut.id).toBe("create.mirror");
   });
 
   it("labels newly registered contexts without requiring an allowlist entry", () => {

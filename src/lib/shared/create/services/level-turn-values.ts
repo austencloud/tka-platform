@@ -77,8 +77,8 @@ export function levelForTurnValue(value: TurnValue): TurnLevel {
 }
 
 /** The lowest level that permits BOTH hands' current turns. */
-export function levelForTurns(blue: TurnValue, red: TurnValue): TurnLevel {
-  return Math.max(levelForTurnValue(blue), levelForTurnValue(red)) as TurnLevel;
+export function levelForTurns(left: TurnValue, right: TurnValue): TurnLevel {
+  return Math.max(levelForTurnValue(left), levelForTurnValue(right)) as TurnLevel;
 }
 
 /**

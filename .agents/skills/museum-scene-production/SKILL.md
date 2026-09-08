@@ -12,18 +12,20 @@ artifact replace its owner.
 
 ## Start
 
-1. Read `references/process-review-ledger.md` first. A named pending reviewer
-   MUST stop scene work and complete that review before using this workflow.
-2. Load and follow the `museum` skill. Read the tracker before museum docs and
+1. Load and follow the `museum` skill. Read the tracker before museum docs and
    record explicit user decisions there.
-3. Read `references/gate-contracts.md` in full.
-4. Read `references/visual-bridge.md` when prose or loose concept art does not
+2. Read `references/gate-contracts.md` in full.
+3. Read `references/visual-bridge.md` when prose or loose concept art does not
    give the user a clear picture of the room.
-5. Search existing scene plans, validators, review routes, Blender contracts,
+4. Search existing scene plans, validators, review routes, Blender contracts,
    and build scripts. State whether this work reuses, extends, or composes each
    owner before creating shared behavior.
-6. After implementation approval, copy both templates from `assets/` into the
+5. After implementation approval, copy both templates from `assets/` into the
    scene's spec directory. For read-only requests, stop after the gate plan.
+
+`references/process-review-ledger.md` and its linked reviews are historical
+audit records. Do not load them during normal production or treat their model
+names and pending-review language as an active gate.
 
 ## Run the Gates
 

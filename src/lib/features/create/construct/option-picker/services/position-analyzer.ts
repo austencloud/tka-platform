@@ -34,14 +34,14 @@ export class PositionAnalyzer {
    * Calculate end position from motion data
    */
   getEndPosition(pictographData: PictographData): string | null {
-    if (!pictographData.motions.blue || !pictographData.motions.red) {
+    if (!pictographData.motions.left || !pictographData.motions.right) {
       return null;
     }
 
     try {
       const endPosition = getGridPositionFromLocations(
-        pictographData.motions.blue.endLocation,
-        pictographData.motions.red.endLocation
+        pictographData.motions.left.endLocation,
+        pictographData.motions.right.endLocation
       );
 
       return endPosition.toString();

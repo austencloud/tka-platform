@@ -14,16 +14,18 @@ import {
   createPlaceholderMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { normalizeLegacyStep } from "@tka/tka-types";
 
 export type CreateStepDataInput = Omit<Partial<StepData>, "motions"> & {
-  readonly motions?: Partial<Record<MotionColor, MotionData | undefined>>;
+  readonly motions?: Partial<Record<HandSide, MotionData | undefined>>;
 };
 
 export function createStepData(data: CreateStepDataInput = {}): StepData {
+  data = normalizeLegacyStep(data);
   const motions: StepMotions = {
-    blue: data.motions?.blue ?? createPlaceholderMotion(MotionColor.BLUE),
-    red: data.motions?.red ?? createPlaceholderMotion(MotionColor.RED),
+    left: data.motions?.left ?? createPlaceholderMotion(HandSide.LEFT),
+    right: data.motions?.right ?? createPlaceholderMotion(HandSide.RIGHT),
   };
   return {
     // Canonical Step properties
@@ -36,8 +38,8 @@ export function createStepData(data: CreateStepDataInput = {}): StepData {
     // Beat context properties
     stepNumber: data.stepNumber ?? 1, // Should always be >= 1
     duration: data.duration ?? 1.0,
-    blueReversal: data.blueReversal ?? false,
-    redReversal: data.redReversal ?? false,
+    leftReversal: data.leftReversal ?? false,
+    rightReversal: data.rightReversal ?? false,
     isBlank: data.isBlank ?? false,
     ...(data.gridMode !== undefined && { gridMode: data.gridMode }),
     ...(data.variation !== undefined && { variation: data.variation }),

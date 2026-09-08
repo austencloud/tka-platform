@@ -27,7 +27,7 @@ describe("createFrameGate", () => {
     gate.observe(16, 32);
     expect(gate.streakFraction).toBeCloseTo(2 / 5);
 
-    expect(gate.observe(40, 72)).toBe(false);
+    expect(gate.observe(60, 92)).toBe(false);
     expect(gate.streakFraction).toBe(0);
 
     for (let i = 0; i < 4; i += 1) expect(gate.observe(16, 100 + i * 16)).toBe(false);
@@ -55,6 +55,31 @@ describe("createFrameGate", () => {
     expect(gate.observe(16, 16)).toBe(true);
     expect(gate.observe(500, 5000)).toBe(true);
     expect(gate.verdict).toBe("passed");
+  });
+
+  it("passes on a steady 30fps scene, which the old 20ms budget made unreachable", () => {
+    // The measured ocean-scene settle ran at p50 33.3ms / p90 33.4ms. Under the
+    // old budget no five consecutive frames ever landed inside it, so the gate
+    // capped on every boot and became a flat delay instead of a smoothness test.
+    const gate = createFrameGate();
+    let elapsed = 0;
+    let opened = false;
+    for (let i = 0; i < DEFAULT_FRAME_GATE.requiredConsecutive; i += 1) {
+      elapsed += 33.4;
+      opened = gate.observe(33.4, elapsed);
+    }
+    expect(opened).toBe(true);
+    expect(gate.verdict).toBe("passed");
+    expect(elapsed).toBeLessThan(DEFAULT_FRAME_GATE.capMs);
+  });
+
+  it("still resets on the hitch it exists to hide", () => {
+    const gate = createFrameGate();
+    gate.observe(33.3, 33);
+    gate.observe(33.3, 67);
+    expect(gate.streakFraction).toBeCloseTo(2 / 5);
+    expect(gate.observe(133.3, 200)).toBe(false);
+    expect(gate.streakFraction).toBe(0);
   });
 
   it("honours a custom budget and streak length", () => {

@@ -60,8 +60,8 @@
     {isPlaying}
     {bpm}
     word={sequence.word ?? null}
-    bluePropType="staff"
-    redPropType="staff"
+    leftPropType="staff"
+    rightPropType="staff"
     onClose={() => history.back()}
     onPlaybackToggle={() => (isPlaying = !isPlaying)}
     onBpmChange={(b) => (bpm = b)}

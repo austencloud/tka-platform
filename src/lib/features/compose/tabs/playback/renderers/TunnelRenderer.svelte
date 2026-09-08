@@ -27,12 +27,12 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   // Local type definition for tunnel colors
   type TunnelColors = {
     primary: {
-      blue: string;
-      red: string;
+      left: string;
+      right: string;
     };
     secondary: {
-      blue: string;
-      red: string;
+      left: string;
+      right: string;
     };
   };
 
@@ -47,11 +47,11 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     stepPlaybackPauseMs = 300,
     stepPlaybackStepSize = 1,
     primaryVisible = true,
-    primaryBlueVisible = true,
-    primaryRedVisible = true,
+    primaryLeftVisible = true,
+    primaryRightVisible = true,
     secondaryVisible = true,
-    secondaryBlueVisible = true,
-    secondaryRedVisible = true,
+    secondaryLeftVisible = true,
+    secondaryRightVisible = true,
     onOpenSettings,
   }: {
     primarySequence: SequenceData | null;
@@ -64,11 +64,11 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     stepPlaybackPauseMs?: number;
     stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
     primaryVisible?: boolean;
-    primaryBlueVisible?: boolean;
-    primaryRedVisible?: boolean;
+    primaryLeftVisible?: boolean;
+    primaryRightVisible?: boolean;
     secondaryVisible?: boolean;
-    secondaryBlueVisible?: boolean;
-    secondaryRedVisible?: boolean;
+    secondaryLeftVisible?: boolean;
+    secondaryRightVisible?: boolean;
     onOpenSettings: (canvasId: string) => void;
   } = $props();
 
@@ -134,15 +134,15 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   // Build additionalLayers prop for AnimatorCanvas
   // Secondary layer textures are loaded automatically by AnimationEngine
   const additionalLayerProps = $derived.by((): AdditionalLayerProps[] => {
-    if (!secondaryAnimationState.bluePropState && !secondaryAnimationState.redPropState) {
+    if (!secondaryAnimationState.leftPropState && !secondaryAnimationState.rightPropState) {
       return [];
     }
     return [{
-      blueProp: secondaryBlueVisible && secondaryVisible
-        ? secondaryAnimationState.bluePropState
+      leftProp: secondaryLeftVisible && secondaryVisible
+        ? secondaryAnimationState.leftPropState
         : null,
-      redProp: secondaryRedVisible && secondaryVisible
-        ? secondaryAnimationState.redPropState
+      rightProp: secondaryRightVisible && secondaryVisible
+        ? secondaryAnimationState.rightPropState
         : null,
     }];
   });
@@ -396,11 +396,11 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   {:else if primarySequence && secondarySequence}
     <CanvasControls canvasId="tunnel" {onOpenSettings} />
     <AnimatorCanvas
-      blueProp={primaryBlueVisible && primaryVisible
-        ? primaryAnimationState.bluePropState
+      leftProp={primaryLeftVisible && primaryVisible
+        ? primaryAnimationState.leftPropState
         : null}
-      redProp={primaryRedVisible && primaryVisible
-        ? primaryAnimationState.redPropState
+      rightProp={primaryRightVisible && primaryVisible
+        ? primaryAnimationState.rightPropState
         : null}
       additionalLayers={additionalLayerProps}
       gridVisible={true}

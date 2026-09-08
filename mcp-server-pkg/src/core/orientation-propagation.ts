@@ -19,16 +19,16 @@ const calculator = new OrientationCalculator();
 const propagator = new OrientationPropagator(calculator);
 
 /**
- * Propagate orientations for a single color through all steps.
- * Each beat's start orientation = previous beat's end orientation.
+ * Propagate orientations for a single hand through all steps.
+ * Each step's start orientation = previous step's end orientation.
  * @param steps - The sequence steps (including start position at index 0)
- * @param color - Which motion color to propagate ("blue" or "red")
+ * @param hand - Which hand to propagate ("left" or "right")
  * @param initialOrientation - The starting orientation (from step 0's end orientation)
  * @returns Updated steps with correct orientations
  */
-export function propagateOrientationsForColor(
+export function propagateOrientationsForHand(
   steps: SequenceStep[],
-  color: "blue" | "red",
+  hand: "left" | "right",
   initialOrientation: McpOrientation
 ): SequenceStep[] {
   const updatedSteps = [...steps];
@@ -39,7 +39,7 @@ export function propagateOrientationsForColor(
     const step = updatedSteps[i];
     if (!step) continue;
 
-    const motion = color === "blue" ? step.blueMotion : step.redMotion;
+    const motion = hand === "left" ? step.leftMotion : step.rightMotion;
     if (!motion) continue;
 
     // Calculate new end orientation based on this beat's motion
@@ -63,8 +63,8 @@ export function propagateOrientationsForColor(
 
     updatedSteps[i] = {
       ...step,
-      blueMotion: color === "blue" ? updatedMotion : step.blueMotion,
-      redMotion: color === "red" ? updatedMotion : step.redMotion,
+      leftMotion: hand === "left" ? updatedMotion : step.leftMotion,
+      rightMotion: hand === "right" ? updatedMotion : step.rightMotion,
     };
 
     previousEndOrientation = newEndOrientation;
@@ -79,7 +79,9 @@ export function propagateOrientationsForColor(
  * @param result - The sequence result to fix orientations on
  * @returns Updated sequence result with corrected orientations
  */
-export function recalculateAllOrientations(result: SequenceResult): SequenceResult {
+export function recalculateAllOrientations(
+  result: SequenceResult
+): SequenceResult {
   if (!result.isValid || result.steps.length === 0) {
     return result;
   }
@@ -92,14 +94,24 @@ export function recalculateAllOrientations(result: SequenceResult): SequenceResu
 
   let updatedSteps = [...result.steps];
 
-  // Recalculate orientations for blue prop
+  // Recalculate orientations for the left prop.
   // Start with the end orientation of the start position
-  const blueStartOrientation = (startPosition.blueMotion.endOrientation || "in") as McpOrientation;
-  updatedSteps = propagateOrientationsForColor(updatedSteps, "blue", blueStartOrientation);
+  const leftStartOrientation = (startPosition.leftMotion.endOrientation ||
+    "in") as McpOrientation;
+  updatedSteps = propagateOrientationsForHand(
+    updatedSteps,
+    "left",
+    leftStartOrientation
+  );
 
-  // Recalculate orientations for red prop
-  const redStartOrientation = (startPosition.redMotion.endOrientation || "in") as McpOrientation;
-  updatedSteps = propagateOrientationsForColor(updatedSteps, "red", redStartOrientation);
+  // Recalculate orientations for the right prop.
+  const rightStartOrientation = (startPosition.rightMotion.endOrientation ||
+    "in") as McpOrientation;
+  updatedSteps = propagateOrientationsForHand(
+    updatedSteps,
+    "right",
+    rightStartOrientation
+  );
 
   return {
     ...result,
@@ -112,8 +124,8 @@ export function recalculateAllOrientations(result: SequenceResult): SequenceResu
  */
 export function recalculateOrientationsWithOverrides(
   steps: SequenceStep[],
-  blueStartOrientation?: string,
-  redStartOrientation?: string,
+  leftStartOrientation?: string,
+  rightStartOrientation?: string
 ): SequenceStep[] {
   if (steps.length === 0) return steps;
 
@@ -122,28 +134,46 @@ export function recalculateOrientationsWithOverrides(
   if (!sp) return updatedSteps;
 
   // Override step 0 (start position) orientations
-  if (blueStartOrientation) {
-    const blueOri = blueStartOrientation as McpOrientation;
+  if (leftStartOrientation) {
+    const leftOrientation = leftStartOrientation as McpOrientation;
     updatedSteps[0] = {
       ...sp,
-      blueMotion: { ...sp.blueMotion, startOrientation: blueOri, endOrientation: blueOri },
+      leftMotion: {
+        ...sp.leftMotion,
+        startOrientation: leftOrientation,
+        endOrientation: leftOrientation,
+      },
     };
   }
-  if (redStartOrientation) {
+  if (rightStartOrientation) {
     const updatedSp = updatedSteps[0]!;
     updatedSteps[0] = {
       ...updatedSp,
-      redMotion: { ...updatedSp.redMotion, startOrientation: redStartOrientation as McpOrientation, endOrientation: redStartOrientation as McpOrientation },
+      rightMotion: {
+        ...updatedSp.rightMotion,
+        startOrientation: rightStartOrientation as McpOrientation,
+        endOrientation: rightStartOrientation as McpOrientation,
+      },
     };
   }
 
   // Re-propagate from the (possibly overridden) step 0
   const finalSp = updatedSteps[0]!;
-  const blueOri = (finalSp.blueMotion.endOrientation || "in") as McpOrientation;
-  updatedSteps = propagateOrientationsForColor(updatedSteps, "blue", blueOri);
+  const leftOrientation = (finalSp.leftMotion.endOrientation ||
+    "in") as McpOrientation;
+  updatedSteps = propagateOrientationsForHand(
+    updatedSteps,
+    "left",
+    leftOrientation
+  );
 
-  const redOri = (finalSp.redMotion.endOrientation || "in") as McpOrientation;
-  updatedSteps = propagateOrientationsForColor(updatedSteps, "red", redOri);
+  const rightOrientation = (finalSp.rightMotion.endOrientation ||
+    "in") as McpOrientation;
+  updatedSteps = propagateOrientationsForHand(
+    updatedSteps,
+    "right",
+    rightOrientation
+  );
 
   return updatedSteps;
 }

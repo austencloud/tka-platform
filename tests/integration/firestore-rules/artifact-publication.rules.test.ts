@@ -535,8 +535,8 @@ describe("mandala publication (Phase 5A)", () => {
   const MANDALA_PAYLOAD = {
     steps: [],
     variant: "both",
-    bluePropType: "staff",
-    redPropType: "staff",
+    leftPropType: "staff",
+    rightPropType: "staff",
   };
 
   function mandalaPublishBatch(
@@ -655,8 +655,8 @@ describe("private mandala revisions (Phase 5A)", () => {
       payload: {
         steps: [],
         variant: "both",
-        bluePropType: "staff",
-        redPropType: "staff",
+        leftPropType: "staff",
+        rightPropType: "staff",
       },
       createdAt: 123,
       ...overrides,

@@ -146,8 +146,8 @@ export class ThumbnailRenderer {
             QR_BITMAP_SIZE,
             {
               darkMode: !input.lightMode,
-              bluePropType: input.bluePropType,
-              redPropType: input.redPropType,
+              leftPropType: input.leftPropType,
+              rightPropType: input.rightPropType,
               signal,
               onActivity,
             }
@@ -236,8 +236,8 @@ export class ThumbnailRenderer {
     // (Wave 0 straggler fix: presence check → visibility check).
     const existingStartPos = sequence.startPosition;
     const hasValidStartPosition =
-      isVisibleMotion(existingStartPos?.motions?.blue) &&
-      isVisibleMotion(existingStartPos?.motions?.red);
+      isVisibleMotion(existingStartPos?.motions?.left) &&
+      isVisibleMotion(existingStartPos?.motions?.right);
 
     if (hasValidStartPosition) {
       return sequence;
@@ -246,10 +246,10 @@ export class ThumbnailRenderer {
     // Try to derive from first beat — placeholder hands can't donate.
     const firstStep = sequence.steps?.[0];
     const firstStepHasValidMotions =
-      isVisibleMotion(firstStep?.motions?.blue) &&
-      isVisibleMotion(firstStep?.motions?.red) &&
-      firstStep?.motions?.blue?.startLocation &&
-      firstStep?.motions?.red?.startLocation;
+      isVisibleMotion(firstStep?.motions?.left) &&
+      isVisibleMotion(firstStep?.motions?.right) &&
+      firstStep?.motions?.left?.startLocation &&
+      firstStep?.motions?.right?.startLocation;
 
     if (!firstStep || !firstStepHasValidMotions) {
       return sequence;
@@ -284,9 +284,9 @@ export class ThumbnailRenderer {
     // Determine prop mode
     const isCatDog =
       input.catDogModeEnabled &&
-      input.bluePropType &&
-      input.redPropType &&
-      input.bluePropType !== input.redPropType;
+      input.leftPropType &&
+      input.rightPropType &&
+      input.leftPropType !== input.rightPropType;
 
     return {
       stepSize: options?.stepSize ?? DEFAULT_BEAT_SIZE,
@@ -322,23 +322,23 @@ export class ThumbnailRenderer {
       // ThumbnailKeyDeriver's identical fallback). This mismatch causes wrong-prop
       // images to be cached and served.
       // Motion visibility - controls which hand's motion (prop + arrow) is rendered
-      blueVisible: input.visibility?.showBlueMotion ?? true,
-      redVisible: input.visibility?.showRedMotion ?? true,
+      leftVisible: input.visibility?.showLeftMotion ?? true,
+      rightVisible: input.visibility?.showRightMotion ?? true,
 
       propTypeOverride: isHandPath
         ? undefined
         : isCatDog
           ? undefined
-          : input.bluePropType || input.redPropType || PropType.STAFF,
-      bluePropTypeOverride: isHandPath
+          : input.leftPropType || input.rightPropType || PropType.STAFF,
+      leftPropTypeOverride: isHandPath
         ? undefined
         : isCatDog
-          ? input.bluePropType || PropType.STAFF
+          ? input.leftPropType || PropType.STAFF
           : undefined,
-      redPropTypeOverride: isHandPath
+      rightPropTypeOverride: isHandPath
         ? undefined
         : isCatDog
-          ? input.redPropType || PropType.STAFF
+          ? input.rightPropType || PropType.STAFF
           : undefined,
 
       // Visibility settings - respect user preferences from input

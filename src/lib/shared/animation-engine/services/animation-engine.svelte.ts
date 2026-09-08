@@ -21,6 +21,8 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { type TrailSettings } from "../domain/types/trail-types";
 import type { AdditionalLayerProps } from "../domain/types/trail-capture-types";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import {
   getAnimationVisibilityManager,
   type AnimationVisibilityStateManager,
@@ -41,6 +43,7 @@ import type { EffectsConfigState } from "$lib/shared/effects/state/effects-confi
 
 import { LiveRenderContext } from "./render-context";
 import type { RenderContext } from "./render-context-registry";
+import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
 
 // Extracted modules
 import {
@@ -75,10 +78,18 @@ function hasEffectInMap(
  * Props passed to engine.update()
  */
 export interface AnimationEngineProps {
-  blueProp: PropState | null;
-  redProp: PropState | null;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
   additionalLayers?: AdditionalLayerProps[];
+  /** Layers whose prop sprites should be ready before they enter a frame. */
+  preloadAdditionalLayers?: AdditionalLayerProps[];
+  onAdditionalLayerTextureStatusChange?: (
+    status: AdditionalLayerTextureStatus
+  ) => void;
   gridVisible?: boolean;
+  /** Direct grid alpha for a host-owned transition. Undefined keeps the
+   * renderer's ordinary visibility-toggle fade. */
+  gridOpacity?: number;
   gridMode?: GridMode | null;
   backgroundAlpha?: number;
   letter?: Letter | null;
@@ -88,11 +99,13 @@ export interface AnimationEngineProps {
   isPlaying?: boolean;
   externalTrailSettings?: TrailSettings;
   // Prop type overrides - bypass settings when provided (useful for demos/previews)
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
+  /** Visual fan build. The notation prop remains fan/bigfan. */
+  fanAppearance?: FanAppearance;
   /** Per-document chirality overrides for isolated editors/previews. */
-  blueBuugengFlipped?: boolean;
-  redBuugengFlipped?: boolean;
+  leftBuugengFlipped?: boolean;
+  rightBuugengFlipped?: boolean;
   // Preview-only dark mode override - when provided, bypasses global setting
   // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
   previewDarkMode?: boolean | null;
@@ -102,21 +115,33 @@ export interface AnimationEngineProps {
   virtualTime?: number;
   /** When false, hides nonradial (layer2/intercardinal) grid points. Default true. */
   showNonRadialPoints?: boolean;
+  /** Per-canvas override for the engine-aligned mandala guide. Split views use
+   *  this to keep their isolated guide visible without changing user settings. */
+  mandalaVisibleOverride?: boolean;
   /** Tunnel per-prop rainbow spectrum. When true (default) each overlaid layer
    *  takes its own spectrum color; when false layers inherit the base/preset
    *  colors. Only meaningful when additionalLayers is non-empty. */
   tunnelSpectrum?: boolean;
+  /** Exact Left/Right colors for Custom Tunnel mode. */
+  tunnelPropColors?: TunnelPropColorPair | null;
+  primaryPropColors?: TunnelPropColorPair | null;
   /** Tunnel performer spotlight: the selected performer (0 = base, k = copy arm
    *  k), or null. When set, every other copy dims in the render. Default null. */
   tunnelSelectedLayer?: number | readonly number[] | null;
+}
+
+export interface AdditionalLayerTextureStatus {
+  requested: number;
+  loaded: number;
+  loading: number;
 }
 
 /**
  * Default props for initial render (when no props have been passed yet)
  */
 const DEFAULT_ENGINE_PROPS: AnimationEngineProps = {
-  blueProp: null,
-  redProp: null,
+  leftProp: null,
+  rightProp: null,
 };
 
 /**
@@ -186,6 +211,13 @@ export class AnimationEngine {
   private fireDefaultsLoader: FireDefaultsLoader | null = null;
 
   private containerElement: HTMLDivElement | null = null;
+  /**
+   * Canonical off-screen / hidden-tab gate for this engine's render loop.
+   * Set by the on-screen host (CanvasSurface) before or after initialize();
+   * the offscreen export engine never sets one, so its deterministic driver is
+   * never paused for being parked at left:-9999px.
+   */
+  private activityGate: RenderActivityGate | null = null;
   private callbacks: AnimationEngineCallbacks = {};
   private instanceId = Math.random().toString(36).substring(2, 8);
   /** Per-instance visibility manager override. When set, this engine uses its own
@@ -229,6 +261,10 @@ export class AnimationEngine {
     if (size > 0) this._canvasSize = size;
   }
 
+  get canvasResizeCount(): number {
+    return this.lifecycleManager.resizer?.state.resizeCount ?? 0;
+  }
+
   /**
    * Wire the shared EffectsConfigState so the engine reads live per-effect
    * intents (zap, etc.) from the same source the Customize panels write to.
@@ -251,14 +287,14 @@ export class AnimationEngine {
    * next render frame reflects it. Also triggers an immediate re-render
    * so the change takes effect without waiting for the next animation tick.
    */
-  setMotionVisibility(blue: boolean, red: boolean): void {
+  setMotionVisibility(left: boolean, right: boolean): void {
     if (
-      this.state.blueMotionVisible === blue &&
-      this.state.redMotionVisible === red
+      this.state.leftMotionVisible === left &&
+      this.state.rightMotionVisible === right
     ) {
       return;
     }
-    this.state.setMotionVisibility(blue, red);
+    this.state.setMotionVisibility(left, right);
     if (this.state.isInitialized) {
       this.lifecycleManager.renderLoop?.triggerRender(() =>
         this.frameSystem.buildFrameParams(
@@ -379,6 +415,10 @@ export class AnimationEngine {
 
     await this.lifecycleManager.initialize(ctx);
 
+    // The render loop only exists after the lifecycle manager builds it, so a
+    // gate handed to the engine before initialize() is applied here.
+    this.lifecycleManager.renderLoop?.setActivityGate(this.activityGate);
+
     // Sync previousGridMode with the grid texture loaded during initialization.
     const initGridMode =
       this.playbackSync.lastPropsRef?.gridMode?.toString() ?? "diamond";
@@ -429,10 +469,10 @@ export class AnimationEngine {
    * export engine is driven only through renderFrame(), which never touches
    * PlaybackSync, so that sync never happens. Without this the engine state
    * stays at the boot default ("staff", staff dimensions) and:
-   *   - frame-parameter-builder reads the prop TYPE from state.currentBluePropType
-   *     /currentRedPropType (frame-parameter-builder.ts:227-228,244-245), so a
+   *   - frame-parameter-builder reads the prop TYPE from state.currentLeftPropType
+   *     /currentRightPropType (frame-parameter-builder.ts:227-228,244-245), so a
    *     non-staff export drew the staff body.
-   *   - it reads prop DIMENSIONS from state.bluePropDimensions/redPropDimensions
+   *   - it reads prop DIMENSIONS from state.leftPropDimensions/rightPropDimensions
    *     (frame-parameter-builder.ts:209-210), so a non-staff prop drew at staff
    *     size.
    * A bare renderer.loadPerColorPropTextures() (the prior partial fix) loaded
@@ -443,8 +483,8 @@ export class AnimationEngine {
    * exact types), writes the types into AnimatorState, then runs the manager's
    * loadPropTextures — which loads the per-color textures via the prop texture
    * service AND syncs the resolved dimensions back into state (prop-type-manager.ts
-   * :305-308). End state after this resolves: state.currentBluePropType/RedPropType
-   * === the resolved types, state.bluePropDimensions/redPropDimensions === the
+   * :305-308). End state after this resolves: state.currentLeftPropType/currentRightPropType
+   * === the resolved types, state.leftPropDimensions/rightPropDimensions === the
    * loaded prop's real dimensions, and the image is present in the image loader.
    *
    * `darkMode` selects the prop color set (matches the renderer.setDarkMode that
@@ -452,20 +492,25 @@ export class AnimationEngine {
    * builder lowercases them when comparing, so the PropType value is fine.
    */
   async prepareExportPropTypes(
-    blue: string,
-    red: string,
-    darkMode: boolean
+    left: string,
+    right: string,
+    darkMode: boolean,
+    colors: TunnelPropColorPair | null = null
   ): Promise<void> {
     const ptm = this.propSystem.propTypeManager;
     // Register overrides so loadPropTextures uses these exact types (not settings).
-    ptm.propTypeOverrideBlue = blue;
-    ptm.propTypeOverrideRed = red;
+    ptm.propTypeOverrideLeft = left;
+    ptm.propTypeOverrideRight = right;
     // Carry the type into engine state so frame-parameter-builder reads it.
-    this.state.setBluePropType(blue);
-    this.state.setRedPropType(red);
-    this.state.setLegacyPropType(blue);
+    this.state.setLeftPropType(left);
+    this.state.setRightPropType(right);
+    this.state.setLegacyPropType(left);
     // Load textures + sync dimensions into state via the canonical manager path.
-    await this.propSystem.propPipeline.loadTextures(this.state, darkMode);
+    await this.propSystem.propPipeline.loadTextures(
+      this.state,
+      darkMode,
+      colors
+    );
   }
 
   /**
@@ -478,12 +523,15 @@ export class AnimationEngine {
    */
   async prepareExportAdditionalLayers(
     layerCount: number,
-    spectrum: boolean
+    spectrum: boolean,
+    colors: TunnelPropColorPair | null = null
   ): Promise<void> {
     await this.propSystem.propTypeManager.preloadAdditionalLayerTextures(
       layerCount,
       spectrum,
-      this.state.currentBluePropType
+      this.state.currentLeftPropType,
+      undefined,
+      colors
     );
   }
 
@@ -551,6 +599,16 @@ export class AnimationEngine {
    */
   setTargetFps(fps: number | null): void {
     this.lifecycleManager.renderLoop?.setTargetFps(fps);
+  }
+
+  /**
+   * Route this engine's render loop through the canonical off-screen /
+   * hidden-tab gate. Safe before initialize(): the gate is re-applied once the
+   * loop exists. See `shared/render-gating/render-activity-gate.ts`.
+   */
+  setActivityGate(gate: RenderActivityGate | null): void {
+    this.activityGate = gate;
+    this.lifecycleManager.renderLoop?.setActivityGate(gate);
   }
 
   /**
@@ -634,8 +692,8 @@ export class AnimationEngine {
           }
         : null,
       propTypes: {
-        blue: this.state.currentBluePropType,
-        red: this.state.currentRedPropType,
+        left: this.state.currentLeftPropType,
+        right: this.state.currentRightPropType,
       },
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
     };
@@ -679,6 +737,7 @@ export class AnimationEngine {
     });
 
     this.containerElement = null;
+    this.activityGate = null;
     this.playbackSync.reset();
     this.frameSystem.resetHandPresenceCache();
   }

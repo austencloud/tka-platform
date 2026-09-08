@@ -6,15 +6,20 @@ import {
   LEARNING_LETTERS_TOTAL_STEPS,
   normalizeLearningLettersProgress,
 } from "$lib/features/learn/components/interactive/words/learning-letters-progress";
+import {
+  LEARNING_LETTERS_DECK_WORDS,
+  LEARNING_LETTER_TEACHING_CONTENT,
+} from "$lib/features/learn/components/interactive/words/learning-letter-teaching-content";
 
-const { canonicalPool, loadCanonicalTnDSequences } = vi.hoisted(() => ({
+const { canonicalPool, loadCanonicalTnDBaseSequences } = vi.hoisted(() => ({
   canonicalPool: [] as SequenceData[],
-  loadCanonicalTnDSequences: vi.fn(),
+  loadCanonicalTnDBaseSequences: vi.fn(),
 }));
 
 vi.mock("$lib/features/browse/gallery-home/canonical-tnd-pool", () => ({
   CANONICAL_TND_AUTHOR: "T&D Alphabet",
-  loadCanonicalTnDSequences,
+  loadCanonicalTnDBaseSequences,
+  loadCanonicalTnDSequences: vi.fn(async () => []),
   loadCanonicalBookVariations: vi.fn(async () => []),
 }));
 
@@ -54,7 +59,7 @@ describe("Learning Letters founding deck loader", () => {
         words.map((word) => sequence(word, familyId))
       )
     );
-    loadCanonicalTnDSequences.mockResolvedValue(canonicalPool);
+    loadCanonicalTnDBaseSequences.mockResolvedValue(canonicalPool);
   });
 
   it("resolves TKA 1 through the founding collection rule", async () => {
@@ -82,7 +87,7 @@ describe("Learning Letters founding deck loader", () => {
       "OROR",
     ]);
     expect(new Set(cards.map((card) => card.id)).size).toBe(19);
-    expect(loadCanonicalTnDSequences).toHaveBeenCalledOnce();
+    expect(loadCanonicalTnDBaseSequences).toHaveBeenCalledOnce();
   });
 
   it("rejects deck drift instead of presenting a partial lesson", async () => {
@@ -94,7 +99,7 @@ describe("Learning Letters founding deck loader", () => {
 });
 
 describe("Learning Letters lesson steps", () => {
-  it("walks the guide's six words between the intro and the deck capstone", () => {
+  it("walks the guide's six words between the intro and six-word recap", () => {
     expect(LEARNING_LETTERS_CORE_WORDS).toEqual([
       "AAAA",
       "BBBB",
@@ -105,92 +110,86 @@ describe("Learning Letters lesson steps", () => {
     ]);
     expect(LEARNING_LETTERS_TOTAL_STEPS).toBe(8);
   });
+
+  it("reserves video and approved-explanation slots for all 19 deck words", () => {
+    expect(LEARNING_LETTERS_DECK_WORDS).toEqual(
+      Object.values(WORDS_BY_FAMILY).flat()
+    );
+    expect(LEARNING_LETTER_TEACHING_CONTENT).toHaveLength(19);
+    expect(
+      LEARNING_LETTER_TEACHING_CONTENT.every(
+        (content) => content.video === null && content.explanation === null
+      )
+    ).toBe(true);
+  });
 });
 
 describe("Learning Letters progress migration", () => {
-  const ids = ["a", "b", "c"];
-
   it("resets the rejected quiz-phase shape to the intro step", () => {
-    const normalized = normalizeLearningLettersProgress(
-      { step: 3, phaseData: { questionIndex: 2 } },
-      ids
-    );
+    const normalized = normalizeLearningLettersProgress({
+      step: 3,
+      phaseData: { questionIndex: 2 },
+    });
 
     expect(normalized.migrated).toBe(true);
     expect(normalized.progress).toEqual({
       schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
       stepIndex: 0,
-      selectedSequenceId: "a",
-      visitedSequenceIds: [],
     });
   });
 
   it("resets the superseded v2 deck-browser shape to the intro step", () => {
-    const normalized = normalizeLearningLettersProgress(
-      {
-        step: 1,
-        phaseData: {
-          schemaVersion: 2,
-          selectedSequenceId: "b",
-          visitedSequenceIds: ["a", "b"],
-        },
+    const normalized = normalizeLearningLettersProgress({
+      step: 1,
+      phaseData: {
+        schemaVersion: 2,
+        selectedSequenceId: "b",
+        visitedSequenceIds: ["a", "b"],
       },
-      ids
-    );
+    });
 
     expect(normalized.migrated).toBe(true);
     expect(normalized.progress.stepIndex).toBe(0);
-    expect(normalized.progress.visitedSequenceIds).toEqual([]);
   });
 
-  it("keeps current progress while removing stale ids", () => {
-    const normalized = normalizeLearningLettersProgress(
-      {
-        step: 4,
-        phaseData: {
-          schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
-          selectedSequenceId: "b",
-          visitedSequenceIds: ["a", "stale", "b", "a"],
-        },
+  it("preserves the current step while removing v3 deck-selection state", () => {
+    const normalized = normalizeLearningLettersProgress({
+      step: 4,
+      phaseData: {
+        schemaVersion: 3,
+        selectedSequenceId: "b",
+        visitedSequenceIds: ["a", "stale", "b", "a"],
       },
-      ids
-    );
+    });
 
-    expect(normalized.progress.stepIndex).toBe(3);
-    expect(normalized.progress.selectedSequenceId).toBe("b");
-    expect(normalized.progress.visitedSequenceIds).toEqual(["a", "b"]);
+    expect(normalized.progress).toEqual({
+      schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
+      stepIndex: 3,
+    });
     expect(normalized.migrated).toBe(true);
   });
 
-  it("keeps a clean v3 shape without flagging a migration", () => {
-    const normalized = normalizeLearningLettersProgress(
-      {
-        step: 2,
-        phaseData: {
-          schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
-          selectedSequenceId: "a",
-          visitedSequenceIds: ["a", "b"],
-        },
+  it("keeps a clean v4 shape without flagging a migration", () => {
+    const normalized = normalizeLearningLettersProgress({
+      step: 2,
+      phaseData: {
+        schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
       },
-      ids
-    );
+    });
 
     expect(normalized.migrated).toBe(false);
     expect(normalized.progress.stepIndex).toBe(1);
   });
 
-  it("clamps an out-of-range step to the capstone", () => {
-    const normalized = normalizeLearningLettersProgress(
-      {
-        step: 99,
-        phaseData: {
-          schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
-          selectedSequenceId: "a",
-          visitedSequenceIds: ["a"],
-        },
+  it("clamps an out-of-range step to the recap", () => {
+    const normalized = normalizeLearningLettersProgress({
+      step: 99,
+      phaseData: {
+        schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
+        selectedSequenceId: "a",
+        visitedSequenceIds: ["a"],
       },
-      ids
-    );
+    });
 
     expect(normalized.progress.stepIndex).toBe(
       LEARNING_LETTERS_TOTAL_STEPS - 1
@@ -198,22 +197,16 @@ describe("Learning Letters progress migration", () => {
     expect(normalized.migrated).toBe(true);
   });
 
-  it("flags rejected-build residue stored alongside a valid v3 shape", () => {
-    const normalized = normalizeLearningLettersProgress(
-      {
-        step: 1,
-        phaseData: {
-          schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
-          selectedSequenceId: "b",
-          visitedSequenceIds: ["a", "b"],
-          questionIndex: 2,
-        },
+  it("flags rejected-build residue stored alongside a valid v4 shape", () => {
+    const normalized = normalizeLearningLettersProgress({
+      step: 1,
+      phaseData: {
+        schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
+        questionIndex: 2,
       },
-      ids
-    );
+    });
 
     expect(normalized.migrated).toBe(true);
-    expect(normalized.progress.selectedSequenceId).toBe("b");
-    expect(normalized.progress.visitedSequenceIds).toEqual(["a", "b"]);
+    expect(normalized.progress.stepIndex).toBe(0);
   });
 });

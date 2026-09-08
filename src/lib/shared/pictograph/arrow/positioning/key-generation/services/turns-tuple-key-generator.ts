@@ -12,9 +12,9 @@ function getTurns(value: unknown): number {
 
 export function generateTurnsTuple(pictographData: PictographData): number[] {
   try {
-    const blueTurns = getTurns(pictographData.motions.blue?.turns);
-    const redTurns = getTurns(pictographData.motions.red?.turns);
-    return [blueTurns, redTurns];
+    const leftTurns = getTurns(pictographData.motions.left?.turns);
+    const rightTurns = getTurns(pictographData.motions.right?.turns);
+    return [leftTurns, rightTurns];
   } catch {
     return [0, 0];
   }

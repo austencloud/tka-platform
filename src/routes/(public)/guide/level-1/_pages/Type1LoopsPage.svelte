@@ -40,7 +40,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -70,7 +70,7 @@
   const flip = (o: Orientation) => (o === IN ? OUT : IN);
   type HandStep = { anti: boolean; from: GridLocation; to: GridLocation; so: Orientation };
   const h = (anti: boolean, from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ anti, from, to, so });
-  const handMotion = (color: MotionColor, x: HandStep) => {
+  const handMotion = (color: HandSide, x: HandStep) => {
     const dir = HP_CW.has(`${x.from}-${x.to}`) ? CW : CCW;
     return createMotionData({
       motionType: x.anti ? MotionType.ANTI : MotionType.PRO,
@@ -85,7 +85,7 @@
       gridMode: GridMode.DIAMOND,
     });
   };
-  const stat = (color: MotionColor, loc: GridLocation) =>
+  const stat = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -97,16 +97,16 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  type Step = { letter: Letter; blue: HandStep; red: HandStep };
-  const st = (letter: Letter, blue: HandStep, red: HandStep): Step => ({ letter, blue, red });
+  type Step = { letter: Letter; left: HandStep; right: HandStep };
+  const st = (letter: Letter, left, right): Step => ({ letter, left, right });
 
   type LoopDef = {
     key: string;
     word: string;
     tag?: string;
     startLetter: Letter;
-    startBlue: GridLocation;
-    startRed: GridLocation;
+    startLeft: GridLocation;
+    startRight: GridLocation;
     rowYs: [number, number];
     steps: Step[];
   };
@@ -116,8 +116,8 @@
       key: "t1l-djii",
       word: "DJII Mirrored",
       startLetter: Letter.BETA,
-      startBlue: SO_,
-      startRed: SO_,
+      startLeft: SO_,
+      startRight: SO_,
       rowYs: [125.9, 215.8],
       steps: [
         st(Letter.D, h(false, SO_, W), h(false, SO_, E)),
@@ -136,8 +136,8 @@
       word: "BBLF Swapped & Rotated",
       tag: "Swapped & Rotated LOOP",
       startLetter: Letter.ALPHA,
-      startBlue: SO_,
-      startRed: N,
+      startLeft: SO_,
+      startRight: N,
       rowYs: [327.4, 417.3],
       steps: [
         st(Letter.B, h(true, SO_, W), h(true, N, E)),
@@ -156,8 +156,8 @@
       key: "t1l-kiec",
       word: "KIEC Swapped & Mirrored",
       startLetter: Letter.ALPHA,
-      startBlue: W,
-      startRed: E,
+      startLeft: W,
+      startRight: E,
       rowYs: [532.4, 622.3],
       steps: [
         st(Letter.K, h(true, W, N), h(true, E, N)),
@@ -178,12 +178,12 @@
       id: `${l.key}-${i + 1}`,
       letter: s.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-      endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+      startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+      endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
       stepNumber: i + 1,
       motions: {
-        blue: handMotion(MotionColor.BLUE, s.blue),
-        red: handMotion(MotionColor.RED, s.red),
+        left: handMotion(HandSide.LEFT, s.left),
+        right: handMotion(HandSide.RIGHT, s.right),
       },
     } as unknown as StepData;
   };
@@ -193,11 +193,11 @@
       letter: l.startLetter,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
-      endPosition: getGridPositionFromLocations(l.startBlue, l.startRed),
+      startPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
+      endPosition: getGridPositionFromLocations(l.startLeft, l.startRight),
       motions: {
-        blue: stat(MotionColor.BLUE, l.startBlue),
-        red: stat(MotionColor.RED, l.startRed),
+        left: stat(HandSide.LEFT, l.startLeft),
+        right: stat(HandSide.RIGHT, l.startRight),
       },
     }) as unknown as StepData;
 
@@ -304,8 +304,8 @@
         <PictographContainer
           pictographData={RESOLVED[l.key]![0]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           stepNumberOverride={true}
           {...PICTO_FLAGS}
         />
@@ -319,8 +319,8 @@
           <PictographContainer
             pictographData={sd}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

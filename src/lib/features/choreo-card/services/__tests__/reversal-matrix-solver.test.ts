@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { solveHandFlips } from "../reversal-seed-service";
 import { processReversals } from "$lib/shared/create/services/reversal-detector";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -36,20 +36,20 @@ function pro(dir: "cw" | "ccw"): Motion {
   return { rotationDirection: dir, motionType: "pro" };
 }
 
-function makeSeq(blue: Motion[], red: Motion[], isCircular: boolean): SequenceData {
-  const steps: StepData[] = blue.map((b, i) => ({
+function makeSeq(left: Motion[], right: Motion[], isCircular: boolean): SequenceData {
+  const steps: StepData[] = left.map((b, i) => ({
     id: `beat-${i + 1}`,
     stepNumber: i + 1,
     duration: 1.0,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     motions: {
-      [MotionColor.BLUE]: b as never,
-      [MotionColor.RED]: red[i] as never,
+      [HandSide.LEFT]: b as never,
+      [HandSide.RIGHT]: right[i] as never,
     },
   }));
   return {
@@ -68,34 +68,34 @@ function makeSeq(blue: Motion[], red: Motion[], isCircular: boolean): SequenceDa
   } as unknown as SequenceData;
 }
 
-function detected(seq: SequenceData): { blue: boolean[]; red: boolean[] } {
+function detected(seq: SequenceData): { left: boolean[]; right: boolean[] } {
   const processed = processReversals(seq);
   return {
-    blue: processed.steps.map((s) => s.blueReversal),
-    red: processed.steps.map((s) => s.redReversal),
+    left: processed.steps.map((s) => s.leftReversal),
+    right: processed.steps.map((s) => s.rightReversal),
   };
 }
 
 describe("reversal matrix solver", () => {
   it("WYSIWYG: detected reversals equal the matrix on a clean loop", () => {
     // 4-beat loop, every beat spinning, both hands start cw.
-    const blueBase = [pro("cw"), pro("cw"), pro("cw"), pro("cw")];
-    const redBase = [pro("cw"), pro("cw"), pro("cw"), pro("cw")];
-    const blueWant = [false, true, false, true]; // 2 reversals → even → clean
-    const redWant = [true, false, true, false]; // first-beat reversal honoured via wrap
+    const leftBase = [pro("cw"), pro("cw"), pro("cw"), pro("cw")];
+    const rightBase = [pro("cw"), pro("cw"), pro("cw"), pro("cw")];
+    const leftWant = [false, true, false, true]; // 2 reversals → even → clean
+    const rightWant = [true, false, true, false]; // first-beat reversal honoured via wrap
 
-    const blueFlips = solveHandFlips(blueBase, blueWant);
-    const redFlips = solveHandFlips(redBase, redWant);
+    const leftFlips = solveHandFlips(leftBase, leftWant);
+    const rightFlips = solveHandFlips(rightBase, rightWant);
 
     const seq = makeSeq(
-      applyFlips(blueBase, blueFlips),
-      applyFlips(redBase, redFlips),
+      applyFlips(leftBase, leftFlips),
+      applyFlips(rightBase, rightFlips),
       true,
     );
 
     const got = detected(seq);
-    expect(got.blue).toEqual(blueWant);
-    expect(got.red).toEqual(redWant);
+    expect(got.left).toEqual(leftWant);
+    expect(got.right).toEqual(rightWant);
   });
 
   it("idempotent: re-solving the result flips nothing", () => {
@@ -116,8 +116,8 @@ describe("reversal matrix solver", () => {
     const seq = makeSeq(applyFlips(base, solveHandFlips(base, want)), base, false);
     const got = detected(seq);
 
-    expect(got.blue[1]).toBe(false); // inert cell — no dot on the static beat
-    expect(got.blue[2]).toBe(true); // honoured on the next spinning beat
-    expect(got.blue[0]).toBe(false); // first beat has no predecessor
+    expect(got.left[1]).toBe(false); // inert cell — no dot on the static beat
+    expect(got.left[2]).toBe(true); // honoured on the next spinning beat
+    expect(got.left[0]).toBe(false); // first beat has no predecessor
   });
 });

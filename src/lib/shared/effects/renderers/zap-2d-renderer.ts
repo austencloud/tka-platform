@@ -8,8 +8,8 @@ type Pt = { x: number; y: number };
 const REF_SPEED = 18;
 
 /**
- * One discharge circuit: a bolt arcs between the blue prop's end (A) and the
- * matching red prop's same end (B). Base props pair blue 0 ↔ red 1; tunnel
+ * One discharge circuit: a bolt arcs between the left prop's end (A) and the
+ * matching right prop's same end (B). Base props pair left 0 ↔ right 1; tunnel
  * layers pair blue `2li` ↔ red `2li+1` at the same end, so every kaleidoscope
  * copy gets its own bolt.
  */
@@ -22,7 +22,7 @@ interface ZapBolt {
 /** One discharge node (a single tip) for the web mesh + terminal glows. */
 interface ZapNode {
   p: Pt;
-  isBlue: boolean;
+  isLeft: boolean;
   speed: number;
 }
 
@@ -67,7 +67,7 @@ export class Zap2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
     emitters: EmitterTip[],
-    scale: number = 1,
+    scale: number = 1
   ): void {
     this.frameCount++;
 
@@ -75,7 +75,10 @@ export class Zap2DRenderer {
     // before prevTip is updated so velocity reflects the step into this frame.
     const speed = new Map<string, number>();
     for (const e of emitters) {
-      speed.set(emitterId(e.propIndex, e.tipIndex), this.speedOf(emitterId(e.propIndex, e.tipIndex), e));
+      speed.set(
+        emitterId(e.propIndex, e.tipIndex),
+        this.speedOf(emitterId(e.propIndex, e.tipIndex), e)
+      );
     }
 
     // Build the circuit bolts: blue prop end ↔ red prop same-end, per family
@@ -98,7 +101,7 @@ export class Zap2DRenderer {
 
     const nodes: ZapNode[] = emitters.map((e) => ({
       p: { x: e.x, y: e.y },
-      isBlue: e.propIndex % 2 === 0,
+      isLeft: e.propIndex % 2 === 0,
       speed: speed.get(emitterId(e.propIndex, e.tipIndex)) ?? 0,
     }));
 
@@ -118,7 +121,8 @@ export class Zap2DRenderer {
       seen.add(id);
       this.prevTip.set(id, { x: e.x, y: e.y });
     }
-    for (const id of this.prevTip.keys()) if (!seen.has(id)) this.prevTip.delete(id);
+    for (const id of this.prevTip.keys())
+      if (!seen.has(id)) this.prevTip.delete(id);
   }
 
   dispose(): void {
@@ -139,12 +143,16 @@ export class Zap2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
     bolts: ZapBolt[],
-    scale: number,
+    scale: number
   ): void {
     // Strike flicker: bolts fire bright in a window each `regenEvery` frames,
     // dim between. Higher frequency = shorter gaps = more strobing.
-    const regenEvery = Math.max(1, Math.round(60 / Math.max(0.1, params.frequency)));
-    const inStrike = this.frameCount % regenEvery < Math.max(1, regenEvery * 0.4);
+    const regenEvery = Math.max(
+      1,
+      Math.round(60 / Math.max(0.1, params.frequency))
+    );
+    const inStrike =
+      this.frameCount % regenEvery < Math.max(1, regenEvery * 0.4);
     const strike = inStrike ? 1 : 0.35;
     // Path-roughness factor: jitter 0.5 ≈ the original look, 0 = nearly straight,
     // 1 = wild forks.
@@ -160,7 +168,16 @@ export class Zap2DRenderer {
         const alpha = clamp01(params.intensity * strike * rnd(0.7, 1));
         const pts: Pt[] = [{ x: A.x, y: A.y }];
         this.jag(A, B, Math.min(dist * 0.28, 70) * jf, pts);
-        this.strokeBolt(ctx, pts, params.lineWidth, params.glowBlur, params.leftColor, grad, alpha, scale);
+        this.strokeBolt(
+          ctx,
+          pts,
+          params.lineWidth,
+          params.glowBlur,
+          params.leftColor,
+          grad,
+          alpha,
+          scale
+        );
 
         // Forks: count from the branching param plus motion energy.
         const branches = Math.round(params.branching * 3 + energy * 3);
@@ -169,10 +186,22 @@ export class Zap2DRenderer {
           const o = pts[idx] ?? pts[0]!;
           const ang = Math.atan2(o.y - A.y, o.x - A.x) + rnd(-0.9, 0.9);
           const len = dist * rnd(0.12, 0.32);
-          const end = { x: o.x + Math.cos(ang) * len, y: o.y + Math.sin(ang) * len };
+          const end = {
+            x: o.x + Math.cos(ang) * len,
+            y: o.y + Math.sin(ang) * len,
+          };
           const bp: Pt[] = [{ x: o.x, y: o.y }];
           this.jag(o, end, Math.min(len * 0.3, 28) * jf, bp);
-          this.strokeBolt(ctx, bp, params.lineWidth * 0.6, params.glowBlur * 0.7, params.leftColor, grad, alpha * 0.6, scale);
+          this.strokeBolt(
+            ctx,
+            bp,
+            params.lineWidth * 0.6,
+            params.glowBlur * 0.7,
+            params.leftColor,
+            grad,
+            alpha * 0.6,
+            scale
+          );
         }
       }
 
@@ -187,7 +216,7 @@ export class Zap2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
     bolts: ZapBolt[],
-    scale: number,
+    scale: number
   ): void {
     // Smooth temporal phase (frame-driven). wobbleRate maps 0..1 → calm..lively;
     // even at 1 it's a controlled undulation, never the old per-frame strobe.
@@ -222,7 +251,10 @@ export class Zap2DRenderer {
         ctx.shadowColor = layer === 0 ? "#cfe0ff" : params.leftColor;
         ctx.strokeStyle = layer === 0 ? "#ffffff" : ctx.shadowColor;
         ctx.globalAlpha = (layer === 0 ? 0.9 : 0.45) * params.intensity;
-        ctx.lineWidth = (layer === 0 ? params.lineWidth * 1.6 : params.lineWidth * (5 - layer)) * scale;
+        ctx.lineWidth =
+          (layer === 0
+            ? params.lineWidth * 1.6
+            : params.lineWidth * (5 - layer)) * scale;
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(A.x, A.y);
@@ -282,7 +314,7 @@ export class Zap2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
     nodes: ZapNode[],
-    scale: number,
+    scale: number
   ): void {
     const maxSpeed = nodes.reduce((m, n) => Math.max(m, n.speed), 0);
     const energy = clamp01(maxSpeed / REF_SPEED);
@@ -295,14 +327,29 @@ export class Zap2DRenderer {
         const B = nodes[j]!.p;
         const dist = Math.hypot(B.x - A.x, B.y - A.y);
 
-        const sameProp = nodes[i]!.isBlue === nodes[j]!.isBlue;
-        const col = sameProp ? (nodes[i]!.isBlue ? params.leftColor : params.rightColor) : "#9d7bff";
+        const sameProp = nodes[i]!.isLeft === nodes[j]!.isLeft;
+        const col = sameProp
+          ? nodes[i]!.isLeft
+            ? params.leftColor
+            : params.rightColor
+          : "#9d7bff";
 
         const pts: Pt[] = [{ x: A.x, y: A.y }];
         this.jag(A, B, Math.min(dist * 0.18, 34) * jf, pts);
-        const width = sameProp ? params.lineWidth * 0.8 : params.lineWidth * 0.55;
+        const width = sameProp
+          ? params.lineWidth * 0.8
+          : params.lineWidth * 0.55;
         const alpha = clamp01(params.intensity * (sameProp ? 0.8 : 0.5));
-        this.strokeBolt(ctx, pts, width, params.glowBlur * 0.7, col, null, alpha, scale);
+        this.strokeBolt(
+          ctx,
+          pts,
+          width,
+          params.glowBlur * 0.7,
+          col,
+          null,
+          alpha,
+          scale
+        );
 
         // Charge dot travelling the edge.
         const f = (this.webPulse + (i * 0.13 + j * 0.07)) % 1;
@@ -320,7 +367,13 @@ export class Zap2DRenderer {
       }
     }
 
-    for (const n of nodes) this.terminal(ctx, n.p, n.isBlue ? params.leftColor : params.rightColor, scale);
+    for (const n of nodes)
+      this.terminal(
+        ctx,
+        n.p,
+        n.isLeft ? params.leftColor : params.rightColor,
+        scale
+      );
   }
 
   // ── Shared drawing primitives ───────────────────────────────────────
@@ -343,7 +396,7 @@ export class Zap2DRenderer {
     ctx: CanvasRenderingContext2D,
     a: Pt,
     b: Pt,
-    params: Zap2DParams,
+    params: Zap2DParams
   ): CanvasGradient | null {
     if (params.leftColor === params.rightColor) return null;
     const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
@@ -361,7 +414,7 @@ export class Zap2DRenderer {
     glowColor: string,
     gradient: CanvasGradient | null,
     alpha: number,
-    scale: number,
+    scale: number
   ): void {
     if (pts.length < 2) return;
     ctx.save();
@@ -396,7 +449,12 @@ export class Zap2DRenderer {
   }
 
   /** Soft radiant glow at a tip terminal. */
-  private terminal(ctx: CanvasRenderingContext2D, p: Pt, color: string, scale: number): void {
+  private terminal(
+    ctx: CanvasRenderingContext2D,
+    p: Pt,
+    color: string,
+    scale: number
+  ): void {
     const r = 22 * scale;
     ctx.save();
     ctx.globalCompositeOperation = "lighter";

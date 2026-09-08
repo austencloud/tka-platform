@@ -8,6 +8,7 @@
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type { RenderedPropSprite } from "$lib/shared/animation-engine/domain/types/rendered-prop-sprite";
 import type { RenderSceneParams } from "$lib/shared/animation-engine/domain/types/animation-render-types";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export type {
   AdditionalLayerRenderData,
@@ -47,7 +48,10 @@ export interface IAnimationRenderer {
    * Get the prop transforms computed during the last renderScene() call.
    * Used by fire overlay to avoid recomputing prop positions independently.
    */
-  getLastPropTransforms(): { blue: RenderedPropTransform | null; red: RenderedPropTransform | null };
+  getLastPropTransforms(): {
+    left: RenderedPropTransform | null;
+    right: RenderedPropTransform | null;
+  };
 
   /**
    * Get every prop sprite that was actually painted in the last frame,
@@ -61,7 +65,10 @@ export interface IAnimationRenderer {
    * (ghost) the real prop graphic at past poses instead of drawing a stick line.
    * Optional — only the Canvas2D renderer provides it.
    */
-  getPropImages?(): { blue: HTMLImageElement | null; red: HTMLImageElement | null };
+  getPropImages?(): {
+    left: HTMLImageElement | null;
+    right: HTMLImageElement | null;
+  };
 
   /**
    * Load prop images for a specific prop type
@@ -70,13 +77,13 @@ export interface IAnimationRenderer {
   loadPropTextures(propType: string): Promise<void>;
 
   /**
-   * Capture the blue prop's last painted transform before a hot-swap changes
+   * Capture the left prop's last painted transform before a hot-swap changes
    * the sequence state. The later crossfade uses this as its visual origin.
    */
-  prepareBluePropCrossfade(): void;
+  prepareLeftPropCrossfade(): void;
 
   /** Red-hand counterpart of prepareBluePropCrossfade. */
-  prepareRedPropCrossfade(): void;
+  prepareRightPropCrossfade(): void;
 
   /**
    * Start the blue-hand prop crossfade (previous sprite fades out, new sprite
@@ -84,58 +91,62 @@ export interface IAnimationRenderer {
    * a genuine prop-type hot-swap, after loadPerColorPropTextures has resolved.
    * No-op if there is no previous sprite to fade from.
    */
-  startBluePropCrossfade(): void;
+  startLeftPropCrossfade(): void;
 
   /** Red-hand counterpart of startBluePropCrossfade. Independent so one hand
    *  can swap while the other holds steady. */
-  startRedPropCrossfade(): void;
+  startRightPropCrossfade(): void;
 
   /**
-   * True while the blue-hand prop crossfade is actively running. The render
+   * True while the left-hand prop crossfade is actively running. The render
    * loop reads this to suppress the trail overlay's tip capture for that
    * color through the whole fade — tip geometry differs between prop types,
    * so stamping through the swap draws a straight-line artifact.
    */
-  isBluePropCrossfadeInProgress(): boolean;
+  isLeftPropCrossfadeInProgress(): boolean;
 
-  /** Red-hand counterpart of isBluePropCrossfadeInProgress. */
-  isRedPropCrossfadeInProgress(): boolean;
+  /** Right-hand counterpart of isLeftPropCrossfadeInProgress. */
+  isRightPropCrossfadeInProgress(): boolean;
 
   /**
-   * Load different prop types for blue and red props
-   * @param bluePropType - Type of prop for blue hand
-   * @param redPropType - Type of prop for red hand
+   * Load different prop types for the left and right props
+   * @param leftPropType - Type of prop for the left hand
+   * @param rightPropType - Type of prop for the right hand
    * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
   loadPerColorPropTextures(
-    bluePropType: string,
-    redPropType: string,
-    darkMode?: boolean
+    leftPropType: string,
+    rightPropType: string,
+    darkMode?: boolean,
+    colors?: TunnelPropColorPair | null
   ): Promise<void>;
 
   /**
    * Load prop images for an additional tunnel layer with per-hand prop types +
-   * custom colors. Blue and red carry independent prop types so each performer
+   * custom colors. Left and right carry independent prop types so each performer
    * (Performer Set) can wear a different prop per hand.
    * @param layerIndex - Additional layer index (0 = first additional layer)
-   * @param bluePropType - Type of the blue-hand prop
-   * @param redPropType - Type of the red-hand prop
-   * @param blueColor - Hex color for the blue prop
-   * @param redColor - Hex color for the red prop
+   * @param leftPropType - Type of the left-hand prop
+   * @param rightPropType - Type of the right-hand prop
+   * @param leftColor - Hex color for the left prop
+   * @param rightColor - Hex color for the right prop
    */
   loadAdditionalLayerPropTextures(
     layerIndex: number,
-    bluePropType: string,
-    redPropType: string,
-    blueColor: string,
-    redColor: string
+    leftPropType: string,
+    rightPropType: string,
+    leftColor: string,
+    rightColor: string
   ): Promise<void>;
 
   /**
    * Load grid image for a specific grid mode
    * @param gridMode - Grid mode (e.g., "diamond", "box")
    */
-  loadGridTexture(gridMode: string, showNonRadialPoints?: boolean): Promise<void>;
+  loadGridTexture(
+    gridMode: string,
+    showNonRadialPoints?: boolean
+  ): Promise<void>;
 
   /**
    * Load glyph image for rendering letter + turns
@@ -179,11 +190,11 @@ export interface IAnimationRenderer {
    * Get the dimensions of the currently loaded blue prop
    * Returns { width: 0, height: 0 } if no prop is loaded
    */
-  getBluePropDimensions(): { width: number; height: number };
+  getLeftPropDimensions(): { width: number; height: number };
 
   /**
    * Get the dimensions of the currently loaded red prop
    * Returns { width: 0, height: 0 } if no prop is loaded
    */
-  getRedPropDimensions(): { width: number; height: number };
+  getRightPropDimensions(): { width: number; height: number };
 }

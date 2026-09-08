@@ -39,11 +39,11 @@ export interface VerifiedStepPosition {
   /** Beat index */
   stepNumber: number;
 
-  /** Blue hand grid location */
-  blueLocation: GridLocation | null;
+  /** Left hand grid location */
+  leftLocation: GridLocation | null;
 
-  /** Red hand grid location */
-  redLocation: GridLocation | null;
+  /** Right hand grid location */
+  rightLocation: GridLocation | null;
 
   /** TKA position label (alpha, beta, gamma) */
   positionLabel: string | null;

@@ -9,6 +9,12 @@ export const ARROW_SPRITE_WATCH_PATH = path.join(
 export const I18N_MESSAGES_WATCH_PATH = "messages";
 
 const APP_SOURCE_WATCH_PATH = "src";
+// SvelteKit rewrites its generated client/server route manifest here whenever
+// a route file is added or removed. Vite only invalidates a cached module when
+// its watcher reports the change, so this subtree must stay watched or every
+// brand-new route serves the stale manifest until the server restarts.
+const SVELTEKIT_OUTPUT_PATH = ".svelte-kit";
+const SVELTEKIT_GENERATED_PATH = "generated";
 const PACKAGES_WATCH_PATH = "packages";
 const PACKAGE_SOURCE_WATCH_PATH = "src";
 
@@ -64,6 +70,13 @@ export function createViteDevWatchIgnoredMatcher(projectRoot: string) {
       if (pathParts[2] === PACKAGE_SOURCE_WATCH_PATH) return false;
       if (pathParts.length === 3) return !isFileOrNeedsStat(stats);
       return true;
+    }
+
+    if (rootEntry === SVELTEKIT_OUTPUT_PATH) {
+      // Keep the generated manifest in HMR scope; types and build output stay
+      // out of it.
+      if (pathParts.length === 1) return false;
+      return pathParts[1] !== SVELTEKIT_GENERATED_PATH;
     }
 
     // Chokidar calls a two-argument matcher once before and once after stat.

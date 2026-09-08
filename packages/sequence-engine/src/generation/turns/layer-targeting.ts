@@ -55,7 +55,7 @@ export interface LayerTargetOptions {
 export interface LayerTargetMiss {
   /** Index into the step array, where 0 is the start position. */
   readonly stepIndex: number;
-  readonly color: "blue" | "red";
+  readonly hand: "left" | "right";
   readonly reason: string;
 }
 
@@ -165,16 +165,16 @@ export function retargetMotionFlip(
   return { motion: { ...motion, turns: half }, satisfied: true };
 }
 
-function wantsBlue(flip: FlipVector): boolean {
+function wantsLeft(flip: FlipVector): boolean {
   return flip === "B" || flip === "X";
 }
 
-function wantsRed(flip: FlipVector): boolean {
+function wantsRight(flip: FlipVector): boolean {
   return flip === "R" || flip === "X";
 }
 
-function withMotions(step: SequenceStep, blue: Motion, red: Motion): SequenceStep {
-  return { ...step, motions: { ...step.motions, blue, red } };
+function withMotions(step: SequenceStep, left: Motion, right: Motion): SequenceStep {
+  return { ...step, motions: { ...step.motions, left, right } };
 }
 
 /**
@@ -198,17 +198,17 @@ export function applyLayerPattern(
     if (!step) break;
 
     const flip = pattern.flips[i]!;
-    const blue = retargetMotionFlip(step.motions.blue, wantsBlue(flip), options);
-    const red = retargetMotionFlip(step.motions.red, wantsRed(flip), options);
+    const left = retargetMotionFlip(step.motions.left, wantsLeft(flip), options);
+    const right = retargetMotionFlip(step.motions.right, wantsRight(flip), options);
 
-    if (!blue.satisfied) {
-      misses.push({ stepIndex, color: "blue", reason: blue.reason ?? "unreachable" });
+    if (!left.satisfied) {
+      misses.push({ stepIndex, hand: "left", reason: left.reason ?? "unreachable" });
     }
-    if (!red.satisfied) {
-      misses.push({ stepIndex, color: "red", reason: red.reason ?? "unreachable" });
+    if (!right.satisfied) {
+      misses.push({ stepIndex, hand: "right", reason: right.reason ?? "unreachable" });
     }
 
-    result[stepIndex] = withMotions(step, blue.motion, red.motion);
+    result[stepIndex] = withMotions(step, left.motion, right.motion);
   }
 
   return { steps: result, satisfied: misses.length === 0, misses };
@@ -235,24 +235,24 @@ export function enforceHandFlipParity(
   const misses: LayerTargetMiss[] = [];
   const target = parity === "odd" ? 1 : 0;
 
-  for (const color of ["blue", "red"] as const) {
+  for (const hand of ["left", "right"] as const) {
     let crossings = 0;
     for (let i = 1; i < result.length; i++) {
-      if (flipsLayer(result[i]!.motions[color])) crossings++;
+      if (flipsLayer(result[i]!.motions[hand])) crossings++;
     }
     if (crossings % 2 === target) continue;
 
     let repaired = false;
     for (let i = result.length - 1; i >= 1; i--) {
       const step = result[i]!;
-      const motion = step.motions[color];
+      const motion = step.motions[hand];
       const retarget = retargetMotionFlip(motion, !flipsLayer(motion), options);
       if (!retarget.satisfied) continue;
 
       result[i] = withMotions(
         step,
-        color === "blue" ? retarget.motion : step.motions.blue,
-        color === "red" ? retarget.motion : step.motions.red
+        hand === "left" ? retarget.motion : step.motions.left,
+        hand === "right" ? retarget.motion : step.motions.right
       );
       repaired = true;
       break;
@@ -261,7 +261,7 @@ export function enforceHandFlipParity(
     if (!repaired) {
       misses.push({
         stepIndex: -1,
-        color,
+        hand,
         reason: `no step could change its crossing to reach ${parity} parity`,
       });
     }

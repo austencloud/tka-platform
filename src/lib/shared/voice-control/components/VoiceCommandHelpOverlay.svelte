@@ -112,7 +112,7 @@
           { phrase: "undo / redo", description: "Undo or redo last step" },
           { phrase: "save", description: "Save sequence" },
           { phrase: "mirror / flip", description: "Mirror or flip sequence" },
-          { phrase: "swap hands", description: "Swap blue and red" },
+          { phrase: "swap hands", description: "Swap left and right" },
           { phrase: "reverse", description: "Reverse step order" },
           { phrase: "rotate", description: "Rotate 90 degrees" },
           { phrase: "clear", description: "Clear sequence" },

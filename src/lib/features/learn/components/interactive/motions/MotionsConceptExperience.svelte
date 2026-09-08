@@ -1,772 +1,531 @@
+<!--
+  Hand Motions keeps the first three paths one at a time, introduces Timing and
+  Direction as a system, then places all six relationships on one comparison
+  board. The board stays the review destination, so focusing a relationship
+  never sends the learner backward through the lesson carousel.
+-->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, tick } from "svelte";
+  import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { getCodexLetterMappingRepo } from "$lib/features/learn/codex/get-codex-letter-mapping-repo";
-  import {
-    Letter as TkaLetter,
-    type Letter,
-  } from "$lib/shared/foundation/domain/models/letter";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { HandMotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { getConceptPlacesByLevel } from "../../../domain/concept-place-registry";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
-  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import LessonStageControls from "../LessonStageControls.svelte";
+  import LessonStageFrame from "../LessonStageFrame.svelte";
+  import LessonStageHeading from "../LessonStageHeading.svelte";
+  import HandMotionPlayer from "../foundations/HandMotionPlayer.svelte";
   import {
-    HAND_MOTION_LESSON,
-    HAND_MOTION_QUESTIONS,
-  } from "../shared/canonical-lesson-content";
-  import LessonPictographStage from "../shared/LessonPictographStage.svelte";
+    ALPHA_BETA_MODES,
+    GAMMA_MODES,
+    HAND_PATH_STEPS,
+    type TimingDirectionMode,
+  } from "../foundations/pictograph-foundation-content";
+  import {
+    HAND_MOTIONS_STAGE_SCHEMA_VERSION,
+    migrateHandMotionsSavedStep,
+  } from "./hand-motions-stage";
+  import TimingDirectionBoard from "./TimingDirectionBoard.svelte";
+  import TimingDirectionIntro from "./TimingDirectionIntro.svelte";
 
   let {
     onComplete,
     onBack,
     viewMode = "step",
-  }: {
+    timingDirectionOnly = false,
+  } = $props<{
     onComplete?: () => void;
     onBack?: () => void;
     viewMode?: ExperienceViewMode;
-  } = $props();
+    timingDirectionOnly?: boolean;
+  }>();
+
+  const allModes: readonly TimingDirectionMode[] = [
+    ...ALPHA_BETA_MODES,
+    ...GAMMA_MODES,
+  ];
+  const modeByFamily = new Map(
+    allModes.map((mode) => [mode.element.familyId, mode])
+  );
+
+  function requireMode(familyId: string): TimingDirectionMode {
+    const mode = modeByFamily.get(familyId);
+    if (!mode) throw new Error(`Missing hand-motion lesson mode ${familyId}`);
+    return mode;
+  }
+
+  const ELEMENTAL_MODES = TND_ELEMENTS.map((element) =>
+    requireMode(element.familyId)
+  );
+  const timingDirectionIndex = HAND_PATH_STEPS.length;
+  const comparisonIndex = timingDirectionIndex + 1;
+  const firstStage = timingDirectionOnly ? timingDirectionIndex : 0;
+  const totalStages = comparisonIndex - firstStage + 1;
+
+  const levelOnePlaces = getConceptPlacesByLevel(1);
+  const curriculumIndex = levelOnePlaces.findIndex(
+    (place) => place.id === "1.3"
+  );
+  const curriculumLabel = `Level 1 · Lesson ${curriculumIndex + 1} of ${levelOnePlaces.length}`;
 
   const haptic = getHapticFeedback();
-  const persistence = getExperiencePersistence("hand-motions-intro");
+  const persistence = getExperiencePersistence(
+    timingDirectionOnly ? "timing-and-direction" : "hand-motions-intro"
+  );
   const saved = persistence.load();
-
-  let phase = $state(Math.min(3, Math.max(1, saved.step || 1)));
-  let selectedMotion = $state<HandMotionType>(
-    persistence.getPhaseData<HandMotionType>("selectedMotion", "shift")
+  const savedSchemaVersion = persistence.getPhaseData("stageSchemaVersion", 1);
+  const savedStep = timingDirectionOnly
+    ? saved.step
+    : migrateHandMotionsSavedStep(
+        saved.step,
+        savedSchemaVersion,
+        HAND_PATH_STEPS.length
+      );
+  const initialStepIndex =
+    viewMode === "scroll"
+      ? comparisonIndex
+      : Math.min(comparisonIndex, Math.max(firstStage, savedStep - 1));
+  let stepIndex = $state(
+    initialStepIndex === comparisonIndex
+      ? timingDirectionIndex
+      : initialStepIndex
   );
-  let questionIndex = $state(
-    Math.min(
-      HAND_MOTION_QUESTIONS.length - 1,
-      persistence.getPhaseData<number>("questionIndex", 0)
-    )
-  );
-  let selectedAnswer = $state<HandMotionType | null>(null);
-  let answerState = $state<"correct" | "wrong" | null>(null);
-  let pictographs = $state<Partial<Record<Letter, PictographData>>>({});
-  let loading = $state(true);
-
-  const activeMotion = $derived(
-    HAND_MOTION_LESSON.find((item) => item.id === selectedMotion) ??
-      HAND_MOTION_LESSON[0]
-  );
-  const activeQuestion = $derived(HAND_MOTION_QUESTIONS[questionIndex]);
-  const questionMotion = $derived(
-    HAND_MOTION_LESSON.find((item) => item.id === activeQuestion.answer) ??
-      HAND_MOTION_LESSON[0]
-  );
-  const feedbackMotion = $derived(
-    HAND_MOTION_LESSON.find((item) => item.id === selectedAnswer) ?? null
-  );
-
-  onMount(async () => {
-    loading = true;
-    getCodexLetterMappingRepo();
-    const letters = [TkaLetter.W, TkaLetter.PHI, TkaLetter.ALPHA] as const;
-    const results = await Promise.all(
-      letters.map(async (letter) => ({
-        letter,
-        pictograph: await letterQueryHandler.getPictographByLetter(
-          letter,
-          GridMode.DIAMOND
-        ),
-      }))
-    );
-
-    pictographs = Object.fromEntries(
-      results
-        .filter(
-          (result): result is { letter: Letter; pictograph: PictographData } =>
-            Boolean(result.pictograph)
-        )
-        .map((result) => [result.letter, result.pictograph])
-    );
-    loading = false;
+  let comparisonMounted = $state(initialStepIndex >= timingDirectionIndex);
+  let comparisonReady = $state(false);
+  let comparisonRequested = $state(initialStepIndex === comparisonIndex);
+  let comparisonPresented = $state(false);
+  let comparisonBoard: TimingDirectionBoard | null = $state(null);
+  let comparisonFocused = $state(false);
+  let experienceElement: HTMLDivElement;
+  let layoutRevision = 0;
+  const stageMotion = createLayoutMotion({
+    getRoot: () => experienceElement,
+    groups: [
+      { selector: ".stage-artifact", datasetKey: "stageArtifact" },
+      { selector: ".stage-controls", datasetKey: "stageControls" },
+    ],
+    getDuration: () => motionDuration(DURATION.emphasis),
+  });
+  onDestroy(() => {
+    ++layoutRevision;
+    stageMotion.cancel();
   });
 
-  function chooseMotion(motion: HandMotionType) {
-    selectedMotion = motion;
-    persistence.savePhaseData("selectedMotion", motion);
-    haptic?.trigger("selection");
+  if (viewMode !== "scroll" && savedStep !== (saved.step || 1)) {
+    persistence.saveStep(savedStep);
+    persistence.savePhaseData(
+      "stageSchemaVersion",
+      HAND_MOTIONS_STAGE_SCHEMA_VERSION
+    );
   }
 
-  function goToPhase(nextPhase: number) {
-    phase = Math.min(3, Math.max(1, nextPhase));
-    persistence.saveStep(phase);
-    selectedAnswer = null;
-    answerState = null;
-    haptic?.trigger("selection");
-  }
+  const activeMotion = $derived(
+    stepIndex < HAND_PATH_STEPS.length ? HAND_PATH_STEPS[stepIndex] : undefined
+  );
+  const isComparison = $derived(stepIndex === comparisonIndex);
+  const headingTitle = $derived(activeMotion?.name ?? "Timing and Direction");
+  const headingEyebrow = $derived(
+    activeMotion
+      ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
+      : undefined
+  );
 
-  function answerQuestion(answer: HandMotionType) {
-    selectedAnswer = answer;
-    answerState = answer === activeQuestion.answer ? "correct" : "wrong";
-    haptic?.trigger(answerState === "correct" ? "success" : "warning");
-  }
-
-  function nextQuestion() {
-    if (questionIndex < HAND_MOTION_QUESTIONS.length - 1) {
-      questionIndex += 1;
-      persistence.savePhaseData("questionIndex", questionIndex);
-      selectedAnswer = null;
-      answerState = null;
-      haptic?.trigger("selection");
+  function goToStep(next: number): void {
+    const clamped = Math.min(comparisonIndex, Math.max(firstStage, next));
+    comparisonRequested = false;
+    if (clamped >= timingDirectionIndex) comparisonMounted = true;
+    if (clamped === comparisonIndex && !comparisonReady) {
+      comparisonRequested = true;
       return;
     }
-    goToPhase(3);
+    if (clamped === stepIndex) return;
+    const revision = ++layoutRevision;
+    const captured = stageMotion.capture();
+    comparisonPresented = false;
+    stepIndex = clamped;
+    if (captured) {
+      void tick().then(() => {
+        if (revision === layoutRevision) stageMotion.play();
+      });
+    }
+    persistence.saveStep(stepIndex + 1);
+    persistence.savePhaseData(
+      "stageSchemaVersion",
+      HAND_MOTIONS_STAGE_SCHEMA_VERSION
+    );
+    haptic?.trigger("selection");
   }
 
-  function complete() {
+  function comparisonPrepared(): void {
+    comparisonReady = true;
+    if (comparisonRequested) goToStep(comparisonIndex);
+  }
+
+  function complete(): void {
     persistence.reset();
     haptic?.trigger("success");
     onComplete?.();
   }
 
-  export function handleBack() {
-    if (phase > 1) {
-      goToPhase(phase - 1);
+  function handlePrimaryAction(): void {
+    if (isComparison) {
+      // A double-click on Next must not finish a board that is still arriving.
+      if (!comparisonPresented) return;
+      complete();
+      return;
+    }
+    goToStep(stepIndex + 1);
+  }
+
+  function handleKeydown(event: KeyboardEvent): void {
+    if (viewMode !== "step") return;
+    if (
+      event.defaultPrevented ||
+      (event.target instanceof Element &&
+        event.target.closest(
+          "button, input, select, textarea, [role='slider'], [role='radiogroup']"
+        ))
+    )
+      return;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      handlePrimaryAction();
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      handleBack();
+    }
+  }
+
+  export function handleBack(): void {
+    comparisonRequested = false;
+    if (isComparison && comparisonBoard?.collapseFocus()) return;
+    if (viewMode === "scroll") {
+      onBack?.();
+      return;
+    }
+    if (stepIndex > firstStage) {
+      goToStep(stepIndex - 1);
       return;
     }
     onBack?.();
   }
 </script>
 
-<div class="experience" class:review-mode={viewMode === "scroll"}>
-  {#if phase === 1}
-    <section class="lesson-grid" aria-labelledby="motions-title">
-      <div class="lesson-copy">
-        <p class="eyebrow">Hand paths</p>
-        <h1 id="motions-title">Shift, dash, or stay put?</h1>
-        <p class="lede">
-          A motion name describes where the <strong>hand</strong> travels. Choose
-          a path, then replay the real pictograph to see it happen.
-        </p>
-
-        <div class="motion-picker" aria-label="Choose a hand path">
-          {#each HAND_MOTION_LESSON as item}
-            <button
-              type="button"
-              class="motion-choice"
-              class:active={selectedMotion === item.id}
-              aria-pressed={selectedMotion === item.id}
-              style:--choice-accent={item.accent}
-              onclick={() => chooseMotion(item.id)}
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+<div
+  bind:this={experienceElement}
+  class="motions-experience"
+  class:is-intro={!activeMotion && !isComparison}
+  class:has-focused-comparison={comparisonFocused}
+  onkeydown={handleKeydown}
+  tabindex="0"
+  role="application"
+  aria-label={`${timingDirectionOnly ? "Timing and direction" : "Hand motions"} lesson, use arrow keys to navigate`}
+>
+  <LessonStageFrame
+    artifactLayout={activeMotion
+      ? "square"
+      : isComparison
+        ? "wide"
+        : "workshop"}
+  >
+    {#snippet heading()}
+      <LessonStageHeading
+        key={headingTitle}
+        title={headingTitle}
+        eyebrow={headingEyebrow}
+      >
+        <p class="motion-description">
+          {#if activeMotion}
+            {activeMotion.guideCaption}
+          {:else}
+            <span class="description-phrase"
+              >These relationships apply to hands, props, and prop ends.</span
             >
-              <span class="choice-name">{item.name}</span>
-              <span class="choice-cue">{item.cue}</span>
-            </button>
-          {/each}
-        </div>
+          {/if}
+        </p>
+      </LessonStageHeading>
+    {/snippet}
 
-        <div class="definition" style:--choice-accent={activeMotion.accent}>
-          <span
-            class="definition-letter"
-            aria-label="Letter {activeMotion.letter}"
+    {#snippet artifact()}
+      <DualSourceCrossfade
+        active={isComparison ? "second" : "first"}
+        duration={DURATION.emphasis}
+        clip={false}
+        onsettled={(source) => {
+          comparisonPresented = source === "second" && isComparison;
+        }}
+      >
+        {#snippet first()}
+          <Crossfade
+            key={activeMotion?.name ?? "timing-intro"}
+            fill={!!activeMotion}
           >
-            {activeMotion.letter}
-          </span>
-          <div>
-            <strong>{activeMotion.name}</strong>
-            <p>{activeMotion.meaning}</p>
-          </div>
-        </div>
-
-        <button
-          class="primary-action"
-          type="button"
-          onclick={() => goToPhase(2)}
-        >
-          Try the path check
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </button>
-      </div>
-
-      <div class="visual-column">
-        <span class="visual-label">Canonical letter {activeMotion.letter}</span>
-        <LessonPictographStage
-          pictograph={pictographs[activeMotion.letter] ?? null}
-          {loading}
-          accent={activeMotion.accent}
-        />
-        <p class="visual-note">
-          Watch the hand point and the prop independently. Static means the hand
-          stays still, not the prop.
-        </p>
-      </div>
-    </section>
-  {:else if phase === 2}
-    <section class="challenge" aria-labelledby="motion-check-title">
-      <div class="challenge-header">
-        <p class="eyebrow">
-          Path check · {questionIndex + 1} of {HAND_MOTION_QUESTIONS.length}
-        </p>
-        <h1 id="motion-check-title">{activeQuestion.prompt}</h1>
-        <p>Replay the pictograph, then name the hand path.</p>
-      </div>
-
-      <div class="challenge-grid">
-        <div class="challenge-visual">
-          <LessonPictographStage
-            pictograph={pictographs[activeQuestion.letter] ?? null}
-            {loading}
-            accent={questionMotion.accent}
-          />
-        </div>
-
-        <div class="answer-panel">
-          <div class="answers" aria-label="Choose the hand path">
-            {#each HAND_MOTION_LESSON as item}
-              <button
-                type="button"
-                class="answer-button"
-                class:selected={selectedAnswer === item.id}
-                class:correct={answerState !== null &&
-                  item.id === activeQuestion.answer}
-                class:wrong={answerState === "wrong" &&
-                  selectedAnswer === item.id}
-                disabled={answerState === "correct"}
-                style:--choice-accent={item.accent}
-                onclick={() => answerQuestion(item.id)}
-              >
-                <span>{item.name}</span>
-                <small>{item.cue}</small>
-              </button>
-            {/each}
-          </div>
-
-          {#if answerState === "wrong" && feedbackMotion}
-            <div class="feedback wrong-feedback" role="status">
-              <i class="fa-solid fa-route" aria-hidden="true"></i>
-              <p>
-                <strong>{feedbackMotion.name}</strong> means
-                {feedbackMotion.meaning.toLowerCase()} This example is
-                <strong>{questionMotion.name.toLowerCase()}</strong>.
-              </p>
-            </div>
-          {:else if answerState === "correct"}
-            <div class="feedback correct-feedback" role="status">
-              <i class="fa-solid fa-check" aria-hidden="true"></i>
-              <p>
-                <strong>{questionMotion.name}.</strong>
-                {questionMotion.meaning}
-              </p>
+            {#if activeMotion}
+              <div class="artifact-state motion-state">
+                <div class="player-frame">
+                  <HandMotionPlayer
+                    sequence={activeMotion.sequence}
+                    ariaLabel={`${activeMotion.name}: ${activeMotion.guideCaption}`}
+                  />
+                </div>
+                <div class="hand-key" aria-label="Left hand is blue">
+                  <span aria-hidden="true"></span>
+                  <strong>Left hand</strong>
+                </div>
+              </div>
+            {:else}
+              <div class="artifact-state timing-direction-state">
+                <TimingDirectionIntro active={!isComparison && !activeMotion} />
+              </div>
+            {/if}
+          </Crossfade>
+        {/snippet}
+        {#snippet second()}
+          {#if comparisonMounted}
+            <div class="artifact-state comparison-state">
+              <TimingDirectionBoard
+                bind:this={comparisonBoard}
+                modes={ELEMENTAL_MODES}
+                articleHrefFor={(mode) =>
+                  `/timing-and-direction/${mode.timing.toLowerCase()}-time-${mode.direction.toLowerCase()}-direction`}
+                active={isComparison && comparisonPresented}
+                onReady={comparisonPrepared}
+                onFocusChange={(focused) => (comparisonFocused = focused)}
+              />
             </div>
           {/if}
+        {/snippet}
+      </DualSourceCrossfade>
+    {/snippet}
 
-          <button
-            class="primary-action"
-            type="button"
-            disabled={answerState !== "correct"}
-            onclick={nextQuestion}
-          >
-            {questionIndex === HAND_MOTION_QUESTIONS.length - 1
-              ? "See the pattern"
-              : "Next pictograph"}
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>
-    </section>
-  {:else}
-    <section class="summary" aria-labelledby="motion-summary-title">
-      <p class="eyebrow">Pattern found</p>
-      <h1 id="motion-summary-title">Read the hand path first</h1>
-      <p class="summary-lede">
-        Every pictograph separates the hand's route from the prop's rotation.
-        These three paths are the foundation.
-      </p>
-
-      <div class="summary-grid">
-        {#each HAND_MOTION_LESSON as item}
-          <article class="summary-card" style:--choice-accent={item.accent}>
-            <span class="summary-letter">{item.letter}</span>
-            <div>
-              <h2>{item.name}</h2>
-              <p>{item.meaning}</p>
-            </div>
-          </article>
-        {/each}
-      </div>
-
-      <button
-        class="primary-action complete-action"
-        type="button"
-        onclick={complete}
-      >
-        Complete hand paths
-        <i class="fa-solid fa-check" aria-hidden="true"></i>
-      </button>
-    </section>
-  {/if}
-
-  <ExperienceProgressIndicator currentStep={phase} totalSteps={3} />
+    {#snippet controls()}
+      <LessonStageControls
+        label={isComparison
+          ? viewMode === "scroll"
+            ? "Done"
+            : "Finish lesson"
+          : comparisonRequested
+            ? "Preparing…"
+            : "Next"}
+        currentStep={stepIndex - firstStage + 1}
+        totalSteps={totalStages}
+        onAction={handlePrimaryAction}
+        onPrevious={handleBack}
+        previousLabel={viewMode === "scroll" ? "Close review" : "Previous"}
+        previousDisabled={viewMode !== "scroll" && stepIndex === firstStage}
+        actionIcon={isComparison ? "check" : "arrow"}
+        {curriculumLabel}
+      />
+    {/snippet}
+  </LessonStageFrame>
 </div>
 
 <style>
-  .experience {
-    --lesson-max: 78rem;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 1rem;
+  .motions-experience {
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: 4.75rem clamp(1rem, 3vw, 3rem) 1rem;
-    overflow: auto;
-    container-type: inline-size;
-  }
-
-  .lesson-grid,
-  .challenge,
-  .summary {
-    width: min(100%, var(--lesson-max));
-    margin: auto;
-  }
-
-  .lesson-grid {
-    display: grid;
-    grid-template-columns: minmax(18rem, 0.88fr) minmax(20rem, 1.12fr);
-    align-items: center;
-    gap: clamp(2rem, 5vw, 5.5rem);
-  }
-
-  .lesson-copy,
-  .visual-column,
-  .challenge-header,
-  .answer-panel,
-  .summary {
-    min-width: 0;
-  }
-
-  .lesson-copy {
-    display: grid;
-    align-content: center;
-    gap: 1.2rem;
-  }
-
-  .eyebrow {
-    margin: 0;
-    color: var(--theme-accent);
-    font-size: clamp(0.72rem, 0.8vw, 0.9rem);
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    max-width: 16ch;
-    margin: 0;
+    overflow: hidden;
     color: var(--theme-text);
-    font-size: clamp(2rem, 4.3cqw, 4.6rem);
-    font-weight: 850;
-    letter-spacing: -0.045em;
-    line-height: 0.98;
+    outline: none;
+  }
+
+  .motions-experience :global(.lesson-stage-frame) {
+    --lesson-artifact-wide-max: var(--shell-w, 96rem);
+  }
+
+  .motions-experience :global(.curriculum-progress),
+  .motions-experience :global(.progress-text) {
+    font-size: clamp(1rem, 1.1vw, 1.25rem);
+    color: var(--theme-text);
+    line-height: 1.4;
+  }
+
+  .motions-experience :global(.progress-stack) {
+    gap: 0.45rem;
+  }
+
+  .motions-experience.has-focused-comparison {
+    container-type: size;
+    min-height: 40rem;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  @media (min-width: 901px) {
+    .has-focused-comparison :global(.lesson-stage-frame) {
+      width: min(
+        100%,
+        var(--shell-w, 96rem),
+        calc((100cqh - 31rem) * 1.7142857 + clamp(17rem, 24cqw, 24rem) + 8rem)
+      );
+      min-width: min(100%, 52rem);
+      margin-inline: auto;
+      grid-template-rows: auto auto auto;
+      align-content: center;
+      gap: clamp(1.25rem, 2.5vh, 3rem);
+      padding-block: 4.5rem 2rem;
+    }
+
+    .has-focused-comparison :global(.stage-artifact) {
+      height: min(
+        calc(100cqh - var(--focused-reserve, 23rem)),
+        calc(
+          (
+              min(100cqw, var(--shell-w, 96rem)) - clamp(17rem, 24cqw, 24rem) -
+                8rem
+            ) /
+            1.7142857 + 6rem
+        )
+      );
+      min-height: 26rem;
+    }
+  }
+
+  @media (min-width: 2400px) {
+    .has-focused-comparison {
+      --focused-reserve: 26rem;
+    }
+  }
+
+  .has-focused-comparison :global(.stage-controls) {
+    width: 100%;
+    min-height: 0;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .has-focused-comparison :global(.lesson-stage-controls) {
+    gap: clamp(1rem, 3vw, 3rem);
+  }
+
+  .motions-experience.is-intro {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: auto;
+    min-height: calc(100svh - 5rem);
+    overflow: visible;
+  }
+
+  .motions-experience.is-intro :global(.lesson-stage-frame) {
+    --lesson-workshop-max: clamp(96rem, 80vw, 160rem);
+    --lesson-artifact-wide-max: clamp(96rem, 80vw, 160rem);
+  }
+  .motions-experience.is-intro :global(.dual-source > .source:first-child) {
+    position: relative;
+  }
+
+  .motion-description {
+    max-width: 60ch;
     text-wrap: balance;
   }
 
-  .lede,
-  .challenge-header > p:last-child,
-  .summary-lede {
-    max-width: 58ch;
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: clamp(1rem, 1.45cqw, 1.2rem);
-    line-height: 1.55;
+  .description-phrase {
+    display: inline-block;
+    max-width: 100%;
   }
 
-  .lede strong {
-    color: var(--theme-text);
+  .artifact-state {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 
-  .motion-picker {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .motion-choice,
-  .answer-button {
-    min-height: 4.5rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.9rem;
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .motion-choice {
-    display: grid;
-    gap: 0.2rem;
-    padding: 0.8rem;
-  }
-
-  .motion-choice:hover,
-  .motion-choice.active {
-    border-color: color-mix(in srgb, var(--choice-accent) 75%, white 10%);
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 14%,
-      var(--theme-card-bg)
-    );
-    box-shadow: inset 0 -3px 0 var(--choice-accent);
-  }
-
-  .choice-name {
-    font-size: 1rem;
-    font-weight: 800;
-  }
-
-  .choice-cue {
-    color: var(--theme-text-dim);
-    font-size: 0.76rem;
-    line-height: 1.25;
-  }
-
-  .definition {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 0.9rem;
-    padding: 1rem;
-    border-left: 4px solid var(--choice-accent);
-    border-radius: 0 0.9rem 0.9rem 0;
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 10%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .definition-letter,
-  .summary-letter {
+  .motion-state {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 3rem;
-    aspect-ratio: 1;
-    border-radius: 0.75rem;
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 22%,
-      var(--theme-panel-bg)
-    );
-    color: var(--theme-text);
-    font-size: 1.55rem;
-    font-weight: 900;
   }
 
-  .definition strong {
-    color: var(--theme-text);
-    font-size: 1rem;
+  .player-frame {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
-  .definition p {
-    margin: 0.2rem 0 0;
-    color: var(--theme-text-dim);
-    font-size: 0.9rem;
-    line-height: 1.45;
-  }
-
-  .primary-action {
+  .hand-key {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    justify-self: start;
-    gap: 0.65rem;
-    min-height: 3.2rem;
-    padding: 0.75rem 1.2rem;
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 70%, white 14%);
-    border-radius: 0.85rem;
-    background: var(--theme-accent);
-    color: #061013;
-    font: inherit;
-    font-weight: 850;
-    cursor: pointer;
-  }
-
-  .primary-action:hover:not(:disabled) {
-    filter: brightness(1.12);
-    transform: translateY(-1px);
-  }
-
-  .primary-action:disabled {
-    cursor: not-allowed;
-    filter: saturate(0.2);
-    opacity: 0.38;
-  }
-
-  button:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--theme-accent) 72%, white);
-    outline-offset: 3px;
-  }
-
-  .visual-column {
-    display: grid;
-    justify-items: center;
-    gap: 0.7rem;
-  }
-
-  .visual-label {
-    color: var(--theme-text-dim);
-    font-size: 0.76rem;
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .visual-note {
-    max-width: 46ch;
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: 0.82rem;
-    line-height: 1.45;
-    text-align: center;
-  }
-
-  .challenge {
-    display: grid;
-    align-content: center;
-    gap: clamp(1.3rem, 3vw, 2.5rem);
-  }
-
-  .challenge-header {
-    display: grid;
-    justify-items: center;
-    gap: 0.55rem;
-    text-align: center;
-  }
-
-  .challenge-header h1 {
-    max-width: 22ch;
-    font-size: clamp(1.8rem, 3.6cqw, 3.5rem);
-  }
-
-  .challenge-grid {
-    display: grid;
-    grid-template-columns: minmax(18rem, 1fr) minmax(18rem, 0.9fr);
-    align-items: center;
-    gap: clamp(1.5rem, 4vw, 4rem);
-  }
-
-  .answer-panel {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .answers {
-    display: grid;
-    gap: 0.65rem;
-  }
-
-  .answer-button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.85rem 1rem;
-  }
-
-  .answer-button span {
-    font-weight: 850;
-  }
-
-  .answer-button small {
-    color: var(--theme-text-dim);
-  }
-
-  .answer-button:hover:not(:disabled),
-  .answer-button.selected {
-    border-color: var(--choice-accent);
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 12%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .answer-button.correct {
-    border-color: var(--semantic-success);
-    box-shadow: inset 4px 0 0 var(--semantic-success);
-  }
-
-  .answer-button.wrong {
-    border-color: var(--semantic-error);
-    box-shadow: inset 4px 0 0 var(--semantic-error);
-  }
-
-  .feedback {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: start;
-    gap: 0.7rem;
-    min-height: 4.6rem;
-    padding: 0.9rem 1rem;
+    gap: 0.45rem;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.65rem;
     border: 1px solid var(--theme-stroke);
-    border-radius: 0.85rem;
-    background: var(--theme-card-bg);
-  }
-
-  .feedback p {
-    margin: 0;
+    border-radius: 999px;
+    background: var(--theme-panel-bg);
     color: var(--theme-text-dim);
-    font-size: 0.9rem;
-    line-height: 1.45;
+    font-size: var(--font-size-min, 0.875rem);
   }
 
-  .feedback strong {
+  .hand-key span {
+    width: 0.8rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--prop-blue, #3d44b8);
+  }
+
+  .hand-key strong {
     color: var(--theme-text);
   }
 
-  .wrong-feedback i {
-    color: var(--semantic-warning, #f0b429);
+  .comparison-state {
+    min-height: 22rem;
   }
 
-  .correct-feedback i {
-    color: var(--semantic-success);
-  }
-
-  .summary {
+  .timing-direction-state {
     display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: 1.25rem;
-    text-align: center;
+    place-items: center;
+    height: auto;
   }
 
-  .summary h1 {
-    max-width: 18ch;
-  }
-
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.8rem;
-    width: 100%;
-    max-width: 64rem;
-  }
-
-  .summary-card {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: start;
-    gap: 0.9rem;
-    padding: 1.1rem;
-    border: 1px solid
-      color-mix(in srgb, var(--choice-accent) 45%, var(--theme-stroke));
-    border-radius: 1rem;
-    background: color-mix(
-      in srgb,
-      var(--choice-accent) 9%,
-      var(--theme-card-bg)
-    );
-    text-align: left;
-  }
-
-  .summary-card h2 {
-    margin: 0;
-    color: var(--theme-text);
-    font-size: 1.05rem;
-  }
-
-  .summary-card p {
-    margin: 0.35rem 0 0;
-    color: var(--theme-text-dim);
-    font-size: 0.84rem;
-    line-height: 1.45;
-  }
-
-  .complete-action {
-    justify-self: center;
-  }
-
-  :global(.experience > .progress-indicator) {
-    justify-self: center;
-  }
-
-  @container (max-width: 760px) {
-    .lesson-grid,
-    .challenge-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .lesson-grid {
-      gap: 1.5rem;
-    }
-
-    .visual-column {
-      order: -1;
-    }
-
-    h1 {
-      font-size: clamp(2rem, 10cqw, 3.4rem);
-    }
-
-    .summary-grid {
-      grid-template-columns: 1fr;
+  @media (max-width: 800px), (max-height: 540px) {
+    .comparison-state {
+      min-height: 0;
     }
   }
 
-  @container (max-width: 480px) {
-    .experience {
-      padding: 4rem 0.75rem 0.75rem;
+  @media (max-width: 900px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      height: auto;
+      min-height: 64rem;
     }
 
-    .motion-picker {
-      grid-template-columns: 1fr;
-    }
-
-    .motion-choice {
-      grid-template-columns: 5.2rem 1fr;
-      align-items: center;
-      min-height: 3.5rem;
-    }
-
-    .answer-button {
-      min-height: 3.5rem;
+    .motions-experience.has-focused-comparison {
+      overflow: visible;
     }
   }
 
-  @media (max-height: 560px) and (min-width: 700px) {
-    .experience {
-      padding-top: 3.9rem;
-    }
-
-    .lesson-grid,
-    .challenge-grid {
-      align-items: start;
-    }
-
-    .lesson-copy {
-      gap: 0.65rem;
-    }
-
-    h1 {
-      font-size: clamp(1.7rem, 4cqw, 2.6rem);
-    }
-
-    .lede,
-    .visual-note {
-      font-size: 0.8rem;
-    }
-
-    .motion-choice {
-      min-height: 3.5rem;
-      padding: 0.55rem 0.7rem;
-    }
-
-    .definition {
-      padding: 0.65rem;
+  @media (max-width: 480px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      min-height: 82rem;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .primary-action,
-    .motion-choice,
-    .answer-button {
-      transition: none;
+  @media (max-height: 540px) and (min-width: 801px) {
+    .motions-experience.has-focused-comparison,
+    .motions-experience.has-focused-comparison :global(.lesson-stage-frame) {
+      height: auto;
+      min-height: 48rem;
+    }
+
+    .motions-experience.has-focused-comparison {
+      overflow: visible;
+    }
+
+    .timing-direction-state {
+      place-items: start center;
     }
   }
 </style>

@@ -4,7 +4,7 @@
  * Two backends:
  * - **Native Cloudflare ratelimit binding** (cross-isolate, memcached-backed,
  *   GA 2025-09). Used for the short-window presets that carry a `binding` field
- *   (GENERAL/AI_CHAT/AI_RENDER/ADMIN — all 60s). `withRateLimit` calls
+ *   (all 60s). `withRateLimit` calls
  *   `env[binding].limit({ key })`. This is the durable enforcement that fixes
  *   the per-isolate-reset bypass (security-hardening F6).
  * - **In-memory sliding window** (this file). Used as the fallback when the
@@ -185,6 +185,12 @@ export const RATE_LIMITS = {
     maxRequests: 20,
     windowMs: 60 * 1000,
     binding: "RL_CARD_SCAN",
+  },
+  /** Public software-history submissions: low-volume and keyed by IP. */
+  SOFTWARE_SUBMISSION: {
+    maxRequests: 4,
+    windowMs: 60 * 1000,
+    binding: "RL_SOFTWARE_SUBMISSION",
   },
   /** Agent feedback ingest: 20 requests per 15 minutes */
   FEEDBACK_INGEST: {

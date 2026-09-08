@@ -21,7 +21,7 @@
   import GridRenderer from "./renderers/GridRenderer.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   // Get state instances
   const playbackState = getPlaybackState();
@@ -50,12 +50,12 @@
   // Tunnel colors - uses centralized getMotionColor (dark mode for animation canvas)
   const tunnelColors = {
     primary: {
-      blue: getMotionColor(MotionColor.BLUE, "dark"),
-      red: getMotionColor(MotionColor.RED, "dark"),
+      left: getMotionColor(HandSide.LEFT, "dark"),
+      right: getMotionColor(HandSide.RIGHT, "dark"),
     },
     secondary: {
-      blue: "#06b6d4",
-      red: "#ec4899",
+      left: "#06b6d4",
+      right: "#ec4899",
     },
   };
 
@@ -149,8 +149,8 @@
         stepPlaybackPauseMs={playbackState.stepPlaybackPauseMs}
         stepPlaybackStepSize={playbackState.stepPlaybackStepSize}
         visible={playbackState.sequences[0]?.visible ?? true}
-        blueVisible={playbackState.sequences[0]?.blueVisible ?? true}
-        redVisible={playbackState.sequences[0]?.redVisible ?? true}
+        leftVisible={playbackState.sequences[0]?.leftVisible ?? true}
+        rightVisible={playbackState.sequences[0]?.rightVisible ?? true}
         onOpenSettings={handleOpenSettings}
       />
     {:else if playbackState.currentMode === "tunnel"}
@@ -165,11 +165,11 @@
         stepPlaybackPauseMs={playbackState.stepPlaybackPauseMs}
         stepPlaybackStepSize={playbackState.stepPlaybackStepSize}
         primaryVisible={playbackState.sequences[0]?.visible ?? true}
-        primaryBlueVisible={playbackState.sequences[0]?.blueVisible ?? true}
-        primaryRedVisible={playbackState.sequences[0]?.redVisible ?? true}
+        primaryLeftVisible={playbackState.sequences[0]?.leftVisible ?? true}
+        primaryRightVisible={playbackState.sequences[0]?.rightVisible ?? true}
         secondaryVisible={playbackState.sequences[1]?.visible ?? true}
-        secondaryBlueVisible={playbackState.sequences[1]?.blueVisible ?? true}
-        secondaryRedVisible={playbackState.sequences[1]?.redVisible ?? true}
+        secondaryLeftVisible={playbackState.sequences[1]?.leftVisible ?? true}
+        secondaryRightVisible={playbackState.sequences[1]?.rightVisible ?? true}
         onOpenSettings={handleOpenSettings}
       />
     {:else if playbackState.currentMode === "mirror"}

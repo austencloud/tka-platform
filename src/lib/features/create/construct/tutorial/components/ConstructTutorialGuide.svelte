@@ -2,6 +2,8 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { WORKSPACE_BUTTON_ICON } from "$lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   const { constructTutorialState } = getCreateModuleContext();
 
@@ -30,39 +32,60 @@
   });
 </script>
 
-{#if constructTutorialState.isActive}
-  <aside
-    class="construct-guide"
-    aria-labelledby="construct-guide-title"
-    aria-describedby="construct-guide-instruction"
-    data-stage={constructTutorialState.stage}
+<div class="guide-transition">
+  <Crossfade
+    key={constructTutorialState.isActive}
+    duration={DURATION.emphasis}
+    animateHeight
   >
-    <div class="guide-progress" aria-hidden="true">
-      <span
-        style:width={`${(constructTutorialState.currentStepNumber / constructTutorialState.totalSteps) * 100}%`}
-      ></span>
-    </div>
+    {#if constructTutorialState.isActive}
+      <aside
+        class="construct-guide"
+        aria-labelledby="construct-guide-title"
+        aria-describedby="construct-guide-instruction"
+        data-stage={constructTutorialState.stage}
+      >
+        <div class="guide-progress" aria-hidden="true">
+          <span
+            style:width={`${(constructTutorialState.currentStepNumber / constructTutorialState.totalSteps) * 100}%`}
+          ></span>
+        </div>
 
-    <div class="guide-copy" aria-live="polite" aria-atomic="true">
-      <span class="guide-kicker">
-        Construct guide · Step {constructTutorialState.currentStepNumber} of
-        {constructTutorialState.totalSteps}
-      </span>
-      <strong id="construct-guide-title">{message.title}</strong>
-      <span id="construct-guide-instruction">{message.instruction}</span>
-    </div>
+        <div class="guide-copy" aria-live="polite" aria-atomic="true">
+          <span class="guide-kicker">
+            Construct guide · Step {constructTutorialState.currentStepNumber}
+            of {constructTutorialState.totalSteps}
+          </span>
+          <strong id="construct-guide-title">{message.title}</strong>
+          <span id="construct-guide-instruction">{message.instruction}</span>
+        </div>
 
-    <PanelButton
-      variant="secondary"
-      ariaLabel="Dismiss Construct guide"
-      onclick={() => constructTutorialState.dismiss()}
-    >
-      Dismiss
-    </PanelButton>
-  </aside>
-{/if}
+        <PanelButton
+          variant="secondary"
+          ariaLabel="Dismiss Construct guide"
+          onclick={() => constructTutorialState.dismiss()}
+        >
+          Dismiss
+        </PanelButton>
+      </aside>
+    {:else}
+      <span class="closed-guide" aria-hidden="true"></span>
+    {/if}
+  </Crossfade>
+</div>
 
 <style>
+  .guide-transition {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .closed-guide {
+    display: block;
+    width: 100%;
+    height: 0;
+  }
+
   .construct-guide {
     position: relative;
     flex: 0 0 auto;

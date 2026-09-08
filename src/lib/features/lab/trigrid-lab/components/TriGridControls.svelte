@@ -36,32 +36,32 @@
 
   interface Props {
     mode: TriGridMode;
-    blueLocation: GridLocation;
-    redLocation: GridLocation;
-    blueOrientation: Orientation;
-    redOrientation: Orientation;
+    leftLocation: GridLocation;
+    rightLocation: GridLocation;
+    leftOrientation: Orientation;
+    rightOrientation: Orientation;
     motionType: TriGridMotionType;
     showGrid: boolean;
     onModeChange: (mode: TriGridMode) => void;
-    onPositionChange: (blue: GridLocation, red: GridLocation) => void;
-    onBlueOrientationChange: (o: Orientation) => void;
-    onRedOrientationChange: (o: Orientation) => void;
+    onPositionChange: (left, right) => void;
+    onLeftOrientationChange: (o: Orientation) => void;
+    onRightOrientationChange: (o: Orientation) => void;
     onMotionTypeChange: (t: TriGridMotionType) => void;
     onToggleGrid: () => void;
   }
 
   const {
     mode,
-    blueLocation,
-    redLocation,
-    blueOrientation,
-    redOrientation,
+    leftLocation,
+    rightLocation,
+    leftOrientation,
+    rightOrientation,
     motionType,
     showGrid,
     onModeChange,
     onPositionChange,
-    onBlueOrientationChange,
-    onRedOrientationChange,
+    onLeftOrientationChange,
+    onRightOrientationChange,
     onMotionTypeChange,
     onToggleGrid,
   }: Props = $props();
@@ -130,10 +130,15 @@
       {#each positions as pos}
         <button
           class="position-btn"
-          class:active={blueLocation === pos.blueLocation && redLocation === pos.redLocation}
-          onclick={() => onPositionChange(pos.blueLocation, pos.redLocation)}
+          class:active={leftLocation === pos.leftLocation &&
+            rightLocation === pos.rightLocation}
+          onclick={() => onPositionChange(pos.leftLocation, pos.rightLocation)}
         >
-          <span class="pos-group" class:beta={pos.group === "beta"} class:gamma={pos.group === "gamma"}>
+          <span
+            class="pos-group"
+            class:beta={pos.group === "beta"}
+            class:gamma={pos.group === "gamma"}
+          >
             {pos.group === "beta" ? "B" : "G"}{pos.index}
           </span>
           <span class="pos-label">{pos.label}</span>
@@ -144,14 +149,14 @@
 
   <!-- Orientation pickers -->
   <section class="control-section">
-    <h3>Blue Orientation</h3>
+    <h3>Left Orientation</h3>
     <div class="orientation-grid">
       {#each TRIGRID_ORIENTATIONS as ori}
         <button
           class="ori-btn blue"
-          class:active={blueOrientation === ori}
-          aria-pressed={blueOrientation === ori}
-          onclick={() => onBlueOrientationChange(ori)}
+          class:active={leftOrientation === ori}
+          aria-pressed={leftOrientation === ori}
+          onclick={() => onLeftOrientationChange(ori)}
           title={orientationLabels[ori]}
         >
           {orientationLabels[ori]}
@@ -161,14 +166,14 @@
   </section>
 
   <section class="control-section">
-    <h3>Red Orientation</h3>
+    <h3>Right Orientation</h3>
     <div class="orientation-grid">
       {#each TRIGRID_ORIENTATIONS as ori}
         <button
           class="ori-btn red"
-          class:active={redOrientation === ori}
-          aria-pressed={redOrientation === ori}
-          onclick={() => onRedOrientationChange(ori)}
+          class:active={rightOrientation === ori}
+          aria-pressed={rightOrientation === ori}
+          onclick={() => onRightOrientationChange(ori)}
           title={orientationLabels[ori]}
         >
           {orientationLabels[ori]}

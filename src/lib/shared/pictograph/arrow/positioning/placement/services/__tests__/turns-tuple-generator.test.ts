@@ -4,7 +4,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -15,15 +15,15 @@ import {
 // hand's slot is untouched.
 describe("TurnsTupleGenerator - halved motion marker", () => {
   it("appends '/' only to the halved hand's slot (Type1 non-hybrid, letter A)", () => {
-    const blueMotion = createMotionData({
-      color: MotionColor.BLUE,
+    const leftMotion = createMotionData({
+      hand: HandSide.LEFT,
       motionType: MotionType.PRO,
       turns: 1,
       isVisible: true,
       segment: { t0: 0, t1: 0.5 },
     });
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.ANTI,
       turns: 2,
       isVisible: true,
@@ -31,7 +31,7 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
 
     const pictograph = createPictographData({
       letter: Letter.A,
-      motions: { blue: blueMotion, red: redMotion },
+      motions: { left: leftMotion, right: rightMotion },
     });
 
     const tuple = turnsTupleGenerator.generateTurnsTuple(pictograph);
@@ -40,14 +40,14 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
   });
 
   it("marks the red slot when red is the halved hand", () => {
-    const blueMotion = createMotionData({
-      color: MotionColor.BLUE,
+    const leftMotion = createMotionData({
+      hand: HandSide.LEFT,
       motionType: MotionType.PRO,
       turns: 1,
       isVisible: true,
     });
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.ANTI,
       turns: 1.5,
       isVisible: true,
@@ -56,7 +56,7 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
 
     const pictograph = createPictographData({
       letter: Letter.A,
-      motions: { blue: blueMotion, red: redMotion },
+      motions: { left: leftMotion, right: rightMotion },
     });
 
     const tuple = turnsTupleGenerator.generateTurnsTuple(pictograph);
@@ -65,15 +65,15 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
   });
 
   it("does NOT append '/' for a non-midpoint segment fraction (e.g. a future quarter-freeze)", () => {
-    const blueMotion = createMotionData({
-      color: MotionColor.BLUE,
+    const leftMotion = createMotionData({
+      hand: HandSide.LEFT,
       motionType: MotionType.PRO,
       turns: 1,
       isVisible: true,
       segment: { t0: 0, t1: 0.25 },
     });
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.ANTI,
       turns: 2,
       isVisible: true,
@@ -81,7 +81,7 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
 
     const pictograph = createPictographData({
       letter: Letter.A,
-      motions: { blue: blueMotion, red: redMotion },
+      motions: { left: leftMotion, right: rightMotion },
     });
 
     const tuple = turnsTupleGenerator.generateTurnsTuple(pictograph);
@@ -91,14 +91,14 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
   });
 
   it("regression: no motion carries a segment, no '/' appears anywhere", () => {
-    const blueMotion = createMotionData({
-      color: MotionColor.BLUE,
+    const leftMotion = createMotionData({
+      hand: HandSide.LEFT,
       motionType: MotionType.PRO,
       turns: 1,
       isVisible: true,
     });
-    const redMotion = createMotionData({
-      color: MotionColor.RED,
+    const rightMotion = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.ANTI,
       turns: 2,
       isVisible: true,
@@ -106,7 +106,7 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
 
     const pictograph = createPictographData({
       letter: Letter.A,
-      motions: { blue: blueMotion, red: redMotion },
+      motions: { left: leftMotion, right: rightMotion },
     });
 
     const tuple = turnsTupleGenerator.generateTurnsTuple(pictograph);

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { MeshStandardMaterial, Texture, Vector2 } from "three";
+import {
+  MeshStandardMaterial,
+  NoColorSpace,
+  RepeatWrapping,
+  Texture,
+  Vector2,
+} from "three";
 
 import {
   inheritRootedWindPatch,
@@ -8,12 +14,61 @@ import {
 import { sampleAutumnLanternFlicker } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-lantern-flicker";
 import { patchAutumnGroundDetailMaterial } from "$lib/shared/3d/environments/scenes/autumn/runtime/ground/autumn-ground-detail";
 import {
+  createAutumnPondNormalMap,
+  createAutumnPondSurfaceMaterial,
+} from "$lib/shared/3d/environments/scenes/autumn/runtime/water/autumn-pond-surface-material";
+import {
   calculateAutumnDepthFogFactor,
   getAutumnDepthCohesionProfile,
   patchAutumnDepthCohesionMaterial,
 } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-depth-cohesion";
 
 describe("Autumn finish systems", () => {
+  it("builds deterministic seamless pond normals without an asset request", () => {
+    const normal = createAutumnPondNormalMap({ seed: 41, size: 32 });
+    const repeat = createAutumnPondNormalMap({ seed: 41, size: 32 });
+    const variant = createAutumnPondNormalMap({ seed: 67, size: 32 });
+    const pixels = normal.image.data as Uint8Array;
+    const repeatedPixels = repeat.image.data as Uint8Array;
+    const variantPixels = variant.image.data as Uint8Array;
+
+    expect(normal.image.width).toBe(32);
+    expect(normal.image.height).toBe(32);
+    expect(normal.wrapS).toBe(RepeatWrapping);
+    expect(normal.wrapT).toBe(RepeatWrapping);
+    expect(normal.colorSpace).toBe(NoColorSpace);
+    expect([...pixels]).toEqual([...repeatedPixels]);
+    expect([...pixels]).not.toEqual([...variantPixels]);
+    expect(
+      Array.from(
+        { length: pixels.length / 4 },
+        (_, index) => pixels[index * 4 + 3]
+      ).every((alpha) => alpha === 255)
+    ).toBe(true);
+
+    normal.dispose();
+    repeat.dispose();
+    variant.dispose();
+  });
+
+  it("renders the pond without triggering Three's full-scene transmission pass", () => {
+    const bodyNormal = new Texture();
+    const coatNormal = new Texture();
+    const material = createAutumnPondSurfaceMaterial(bodyNormal, coatNormal);
+
+    expect(material.transmission).toBe(0);
+    expect(material.transparent).toBe(true);
+    expect(material.opacity).toBeGreaterThanOrEqual(0.6);
+    expect(material.normalMap).toBe(bodyNormal);
+    expect(material.clearcoatNormalMap).toBe(coatNormal);
+    expect(material.clearcoat).toBeGreaterThan(0);
+    expect(material.depthWrite).toBe(false);
+
+    material.dispose();
+    bodyNormal.dispose();
+    coatNormal.dispose();
+  });
+
   it("keeps the lantern flicker restrained and deterministic", () => {
     const samples = Array.from({ length: 240 }, (_, index) =>
       sampleAutumnLanternFlicker(index / 30)
@@ -81,19 +136,25 @@ describe("Autumn finish systems", () => {
     const patch = patchAutumnGroundDetailMaterial(material, detailMap, 0.72);
     const shader = {
       uniforms: {},
-      vertexShader: "#include <common>\n#include <uv_vertex>",
-      fragmentShader: "#include <common>\n#include <map_fragment>",
+      vertexShader:
+        "#include <common>\n#include <uv_vertex>\n#include <begin_vertex>",
+      fragmentShader:
+        "#include <common>\n#include <map_fragment>\n#include <opaque_fragment>",
     };
 
     material.onBeforeCompile(shader as never, {} as never);
 
     expect(shader.uniforms.uAutumnGroundDetailMap.value).toBe(detailMap);
     expect(shader.uniforms.uAutumnGroundDetailStrength.value).toBe(0.72);
-    expect(shader.vertexShader).toContain("vAutumnGroundDetailUv = uv");
+    expect(shader.vertexShader).toContain("vAutumnGroundDetailUv =");
+    expect(shader.vertexShader).toContain("autumnGroundDetailPoint /");
+    expect(shader.vertexShader).toContain("vAutumnGroundWorldPosition");
     expect(shader.fragmentShader).toContain("autumnGroundModulation");
-    expect(shader.fragmentShader).toContain("vec3(1.10, 0.80, 0.62)");
+    expect(shader.fragmentShader).toContain("vec3(1.15, 0.67, 0.42)");
+    expect(shader.fragmentShader).toContain("vec3(1.18, 0.62, 0.38)");
+    expect(shader.fragmentShader).toContain("autumnGroundCopper");
     expect(material.customProgramCacheKey()).toContain(
-      "autumn-ground-detail-v3"
+      "autumn-ground-detail-v7"
     );
     expect(shader.fragmentShader).toContain("autumnCabinLane");
     expect(shader.fragmentShader).toContain("autumnGroundRouteMask");

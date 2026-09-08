@@ -12,8 +12,8 @@ export type ReferenceViewType = "none" | "animation" | "grid";
 export interface AnimationSettings {
   speed: number; // 0.25 to 2.0
   showTrails: boolean;
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
+  leftMotionVisible: boolean;
+  rightMotionVisible: boolean;
 }
 
 export interface GridSettings {
@@ -35,8 +35,8 @@ const DEFAULT_SETTINGS: VideoRecordSettings = {
   animationSettings: {
     speed: 1.0,
     showTrails: true,
-    blueMotionVisible: true,
-    redMotionVisible: true,
+    leftMotionVisible: true,
+    rightMotionVisible: true,
   },
   gridSettings: {
     animated: false,
@@ -44,9 +44,31 @@ const DEFAULT_SETTINGS: VideoRecordSettings = {
   },
 };
 
+export function normalizeLegacyVideoRecordSettings(
+  value: unknown
+): VideoRecordSettings {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return structuredClone(DEFAULT_SETTINGS);
+  }
+  const source = value as Record<string, unknown>;
+  const animationSource =
+    source.animationSettings &&
+    typeof source.animationSettings === "object" &&
+    !Array.isArray(source.animationSettings)
+      ? (source.animationSettings as Record<string, unknown>)
+      : {};
+  const animationSettings = { ...animationSource };
+  animationSettings.leftMotionVisible ??= animationSource.blueMotionVisible;
+  animationSettings.rightMotionVisible ??= animationSource.redMotionVisible;
+  delete animationSettings.blueMotionVisible;
+  delete animationSettings.redMotionVisible;
+  return { ...source, animationSettings } as unknown as VideoRecordSettings;
+}
+
 const settingsPersistence = createPersistenceHelper({
   key: "tka-video-record-settings",
   defaultValue: DEFAULT_SETTINGS,
+  migrate: normalizeLegacyVideoRecordSettings,
 });
 
 export function createVideoRecordSettings() {
@@ -59,8 +81,8 @@ export function createVideoRecordSettings() {
       void settings.referenceView;
       void settings.animationSettings.speed;
       void settings.animationSettings.showTrails;
-      void settings.animationSettings.blueMotionVisible;
-      void settings.animationSettings.redMotionVisible;
+      void settings.animationSettings.leftMotionVisible;
+      void settings.animationSettings.rightMotionVisible;
       void settings.gridSettings.animated;
       void settings.gridSettings.bpm;
 
@@ -85,12 +107,12 @@ export function createVideoRecordSettings() {
       settings.animationSettings.showTrails = show;
     },
 
-    setBlueMotionVisible(visible: boolean) {
-      settings.animationSettings.blueMotionVisible = visible;
+    setLeftMotionVisible(visible: boolean) {
+      settings.animationSettings.leftMotionVisible = visible;
     },
 
-    setRedMotionVisible(visible: boolean) {
-      settings.animationSettings.redMotionVisible = visible;
+    setRightMotionVisible(visible: boolean) {
+      settings.animationSettings.rightMotionVisible = visible;
     },
 
     setGridAnimated(animated: boolean) {

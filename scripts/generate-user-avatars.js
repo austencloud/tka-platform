@@ -403,7 +403,7 @@ async function main() {
     console.log(`  🎨 Background: ${backgroundType} → Gradient: ${gradientId}`);
 
     // Determine prop type (use blue prop, falling back to staff)
-    const propType = settings?.bluePropType || DEFAULT_PROP;
+    const propType = settings?.leftPropType || DEFAULT_PROP;
     console.log(`  🏏 Prop: ${propType}`);
 
     // Generate avatar

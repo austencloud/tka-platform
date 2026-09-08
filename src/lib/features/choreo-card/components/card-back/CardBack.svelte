@@ -70,8 +70,8 @@
      * viewer's own prop settings — right for an in-app preview of the viewer's
      * sequence, wrong for a storefront showing a physical product.
      */
-    bluePropTypeOverride?: string;
-    redPropTypeOverride?: string;
+    leftPropTypeOverride?: string;
+    rightPropTypeOverride?: string;
   }
   let {
     sequence,
@@ -79,8 +79,8 @@
     showTnDDesignation = false,
     mandalaOverlay,
     onMandalaBox,
-    bluePropTypeOverride,
-    redPropTypeOverride,
+    leftPropTypeOverride,
+    rightPropTypeOverride,
   }: Props = $props();
 
   let mandalaAnchorEl = $state<HTMLDivElement | null>(null);
@@ -117,11 +117,11 @@
   // Single-ended prop (club) traces one tip; staff traces both. The mandala
   // must match the card's prop, else a club card shows the double-staff locus.
   // SequenceMandala derives the tip count from these prop types itself.
-  const bluePropType = $derived(
-    bluePropTypeOverride ?? settingsService.settings.bluePropType
+  const leftPropType = $derived(
+    leftPropTypeOverride ?? settingsService.settings.leftPropType
   );
-  const redPropType = $derived(
-    redPropTypeOverride ?? settingsService.settings.redPropType
+  const rightPropType = $derived(
+    rightPropTypeOverride ?? settingsService.settings.rightPropType
   );
 
   const theme = $derived(themeOverride?.visuals ?? getCardBackThemeVisuals(settingsService.settings.backgroundType));
@@ -230,8 +230,8 @@
             size={380}
             darkMode={isDarkTheme}
             pathShape="arc"
-            {bluePropType}
-            {redPropType}
+            {leftPropType}
+            {rightPropType}
           />
         </div>
       </div>

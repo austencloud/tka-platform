@@ -1,7 +1,8 @@
 /**
- * Headless playtest of The First Fire: the grotto's east door → the corridor →
- * the ember bridge over the lava stream → the bent darkening crack → all three
- * bench terraces → the exit stair → the Earth door.
+ * Headless playtest of The First Fire: the grotto east door, the dogleg
+ * corridor, the steam threshold, the torch lane, the DJ court and its
+ * horseshoe orbit, the transfer to EK, the EK orbit, the transfer to FL,
+ * the FL orbit, the growth path, the Earth door.
  *
  * Drives the REAL stack (buildVulcanCaveFloorPlan + MuseumPhysicsProvider) with
  * repeated movePlayer calls, exactly like the in-game controller does, walking
@@ -17,10 +18,9 @@ import {
 import { tileKey } from "$lib/features/museum/domain/museum-grid-types";
 import { TILE_METRES } from "$lib/features/museum/data/drowned-gallery-terrain";
 import {
-  buildFirstFireLayout,
-  BRIDGE_Y,
-  TERRACE_Y,
-} from "$lib/features/museum/data/first-fire-layout";
+  buildFirstFireProcessionBay,
+  CINDER_FLOOR_Y,
+} from "$lib/features/museum/data/first-fire-procession-terrain";
 
 const TILE = TILE_METRES;
 const STANDING_Y = 0.85;
@@ -28,7 +28,7 @@ const STANDING_Y = 0.85;
 const plan = buildVulcanCaveFloorPlan();
 const grid = plan.grid;
 const terrain = grid.terrain!;
-const layout = buildFirstFireLayout(grid)!;
+const procession = buildFirstFireProcessionBay(grid)!.plan;
 
 type TileCoord = { x: number; y: number };
 type WorldPoint = { x: number; z: number };
@@ -217,25 +217,15 @@ const grottoEastDoor = doorCenterTile("cave-water", "east");
 const fireWestDoor = doorCenterTile("cave-fire", "west");
 const fireEastDoor = doorCenterTile("cave-fire", "east");
 
+/** The plan route itself, one waypoint per vertex, doors at either end. */
 const ROUTE: TileCoord[] = [
   grottoEastDoor,
   fireWestDoor,
-  tileOfWorld(layout.probes.bridge),
-  tileOfWorld({
-    x: (layout.crackWest.minX + layout.crackWest.maxX) / 2,
-    z: (layout.crackWest.minZ + layout.crackWest.maxZ) / 2,
-  }),
-  tileOfWorld({
-    x: (layout.crackEast.minX + layout.crackEast.maxX) / 2,
-    z: (layout.crackEast.minZ + layout.crackEast.maxZ) / 2,
-  }),
-  tileOfWorld(layout.probes.terraces[0]!),
-  tileOfWorld(layout.probes.terraces[1]!),
-  tileOfWorld(layout.probes.terraces[2]!),
-  tileOfWorld(layout.probes.terraces[0]!),
-  tileOfWorld(layout.probes.exitStair),
+  ...procession.walkPath
+    .filter((p) => p.x > procession.room.minX + 0.5 && p.x < procession.room.maxX - 0.5)
+    .map(tileOfWorld),
   fireEastDoor,
-];
+].filter((tile, index, all) => index === 0 || tile.x !== all[index - 1]!.x || tile.y !== all[index - 1]!.y);
 
 describe("first fire traversal (headless playtest)", () => {
   let samples: Sample[];
@@ -245,105 +235,34 @@ describe("first fire traversal (headless playtest)", () => {
   });
 
   it("walks the whole route from the grotto door to the Earth door", () => {
-    expect(samples.length).toBeGreaterThan(100);
+    expect(samples.length).toBeGreaterThan(500);
     const target = worldOfTile(fireEastDoor);
     const last = samples.at(-1)!;
     expect(Math.hypot(last.x - target.x, last.z - target.z)).toBeLessThan(0.1);
   });
 
-  it("crosses the ember bridge at the bridge datum", () => {
-    const onBridge = samples.filter(
-      (s) =>
-        s.x >= layout.bridge.minX &&
-        s.x <= layout.bridge.maxX &&
-        s.z >= layout.bridge.minZ &&
-        s.z <= layout.bridge.maxZ
-    );
-    expect(onBridge.length).toBeGreaterThan(10);
-    for (const s of onBridge) {
-      expect(s.elevation).toBeCloseTo(BRIDGE_Y, 5);
-      expect(s.y).toBeCloseTo(BRIDGE_Y + STANDING_Y, 5);
-    }
-  });
-
-  it("stands on all three bench terraces", () => {
-    layout.terraces.forEach((terrace, i) => {
-      const onTerrace = samples.filter(
-        (s) =>
-          s.x >= terrace.minX &&
-          s.x <= terrace.maxX &&
-          s.z >= terrace.minZ &&
-          s.z <= terrace.maxZ
+  it("passes through all three courts in DJ, EK, FL order", () => {
+    const firstVisit = procession.shrines.map((shrine) => {
+      const index = samples.findIndex(
+        (s) => Math.hypot(s.x - shrine.centre.x, s.z - shrine.centre.z) < shrine.orbitRadius + 1
       );
-      expect(onTerrace.length, `terrace ${i}`).toBeGreaterThan(5);
-      for (const s of onTerrace) {
-        expect(s.elevation).toBeCloseTo(TERRACE_Y[i]!, 5);
-      }
+      expect(index, `${shrine.id} never reached`).toBeGreaterThanOrEqual(0);
+      return index;
     });
+    expect(firstVisit[0]).toBeLessThan(firstVisit[1]!);
+    expect(firstVisit[1]).toBeLessThan(firstVisit[2]!);
   });
 
-  it("never pops the floor more than 0.6 m between successive steps", () => {
-    for (let i = 1; i < samples.length; i++) {
-      const jump = Math.abs(samples[i]!.elevation - samples[i - 1]!.elevation);
-      if (jump > 0.6) {
-        throw new Error(
-          `Elevation cliff of ${jump.toFixed(2)} m between ` +
-            `(${samples[i - 1]!.x.toFixed(2)}, ${samples[i - 1]!.z.toFixed(2)}) elev=${samples[i - 1]!.elevation.toFixed(2)} and ` +
-            `(${samples[i]!.x.toFixed(2)}, ${samples[i]!.z.toFixed(2)}) elev=${samples[i]!.elevation.toFixed(2)}`
-        );
-      }
+  it("stays on the cinder datum the whole way", () => {
+    for (const s of samples) {
+      expect(s.elevation).toBe(CINDER_FLOOR_Y);
+      expect(s.y).toBeCloseTo(CINDER_FLOOR_Y + STANDING_Y, 5);
     }
   });
 
-  it("never walks through the fissure, the lava or the shore", () => {
+  it("never walks into basalt", () => {
     for (const s of samples) {
       expect(terrain.blockedAt(s.x, s.z)).toBe(false);
-    }
-  });
-
-  it("reaches the Earth door at museum datum elevation (~0)", () => {
-    const exit = worldOfTile(fireEastDoor);
-    expect(terrain.elevationAt(exit.x, exit.z)).toBeCloseTo(0, 1);
-  });
-
-  it("keeps the fissure a barrier between the front bench and the shore", () => {
-    const start = layout.probes.terraces[2]!;
-    const physics = new MuseumPhysicsProvider(grid, TILE, {
-      x: start.x,
-      y: 0,
-      z: start.z,
-    });
-    const target = layout.probes.shore;
-    for (let i = 0; i < 400; i++) {
-      const pos = physics.getPlayerPosition();
-      const dx = target.x - pos.x;
-      const dz = target.z - pos.z;
-      const dist = Math.hypot(dx, dz);
-      if (dist < 0.1) break;
-      const step = Math.min(0.05, dist);
-      physics.movePlayer(
-        { x: (dx / dist) * step, y: -0.2, z: (dz / dist) * step },
-        1 / 60
-      );
-      const p = physics.getPlayerPosition();
-      expect(terrain.blockedAt(p.x, p.z)).toBe(false);
-    }
-    expect(physics.getPlayerPosition().z).toBeGreaterThanOrEqual(
-      layout.fissure.maxZ - 0.01
-    );
-  });
-
-  it("keeps every performer station unreachable from the benches", () => {
-    const from = tileOfWorld(layout.probes.terraces[2]!);
-    for (const station of layout.stations) {
-      expect(() => bfsPath(from, tileOfWorld(station))).toThrow();
-    }
-  });
-
-  it("reaches the exit stair from every terrace", () => {
-    const exit = tileOfWorld(layout.probes.exitStair);
-    for (const probe of layout.probes.terraces) {
-      expect(() => bfsPath(tileOfWorld(probe), exit)).not.toThrow();
     }
   });
 });

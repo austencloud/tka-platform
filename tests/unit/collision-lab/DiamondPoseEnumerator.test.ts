@@ -34,12 +34,12 @@ describe("DiamondPoseEnumerator", () => {
               for (const rOri of orientations) {
                 const match = poses.filter(
                   (p) =>
-                    p.blueHand.plane === bPlane &&
-                    p.blueHand.position === bPos &&
-                    p.blueHand.orientation === bOri &&
-                    p.redHand.plane === rPlane &&
-                    p.redHand.position === rPos &&
-                    p.redHand.orientation === rOri
+                    p.leftHand.plane === bPlane &&
+                    p.leftHand.position === bPos &&
+                    p.leftHand.orientation === bOri &&
+                    p.rightHand.plane === rPlane &&
+                    p.rightHand.position === rPos &&
+                    p.rightHand.orientation === rOri
                 );
                 expect(match).toHaveLength(1);
                 matches++;
@@ -57,12 +57,12 @@ describe("DiamondPoseEnumerator", () => {
     const poses = enumerateDiamondInOut();
     const wNi_hEo = poses.find((p) => p.id === "wNi-hEo");
     expect(wNi_hEo).toBeDefined();
-    expect(wNi_hEo!.blueHand).toEqual({
+    expect(wNi_hEo!.leftHand).toEqual({
       plane: Plane.WALL,
       position: "N",
       orientation: "in",
     });
-    expect(wNi_hEo!.redHand).toEqual({
+    expect(wNi_hEo!.rightHand).toEqual({
       plane: Plane.WHEEL,
       position: "E",
       orientation: "out",
@@ -77,7 +77,7 @@ describe("DiamondPoseEnumerator", () => {
   it("includes same-plane poses (single-plane combos are a subset)", () => {
     const poses = enumerateDiamondInOut();
     const samePlane = poses.filter(
-      (p) => p.blueHand.plane === p.redHand.plane
+      (p) => p.leftHand.plane === p.rightHand.plane
     );
     // 3 planes × 4 × 2 × 4 × 2 = 192
     expect(samePlane).toHaveLength(192);
@@ -86,7 +86,7 @@ describe("DiamondPoseEnumerator", () => {
   it("includes cross-plane poses (the main reason for this lab)", () => {
     const poses = enumerateDiamondInOut();
     const crossPlane = poses.filter(
-      (p) => p.blueHand.plane !== p.redHand.plane
+      (p) => p.leftHand.plane !== p.rightHand.plane
     );
     // 576 - 192 = 384
     expect(crossPlane).toHaveLength(384);

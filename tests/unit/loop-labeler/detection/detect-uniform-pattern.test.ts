@@ -13,8 +13,8 @@ function makeStep(
     letter: "A",
     startPos: "alpha1",
     endPos: "alpha1",
-    blue: { startLoc: bs, endLoc: be, motionType: bm, propRotDir: bp },
-    red: { startLoc: rs, endLoc: re, motionType: rm, propRotDir: rp },
+    left: { startLoc: bs, endLoc: be, motionType: bm, propRotDir: bp },
+    right: { startLoc: rs, endLoc: re, motionType: rm, propRotDir: rp },
   };
 }
 

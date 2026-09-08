@@ -62,8 +62,8 @@
       rightLabel: card.footer.right,
       notes: card.footer.center,
       iconPath: card.footer.iconPath,
-      bluePropType: deck.bluePropType,
-      redPropType: deck.redPropType,
+      leftPropType: deck.leftPropType,
+      rightPropType: deck.rightPropType,
       deckName: deck.name,
     } as PrintRenderOptions;
   }
@@ -81,8 +81,8 @@
       style: "modern",
       margin: 1,
       darkMode: false,
-      bluePropType: deck.bluePropType,
-      redPropType: deck.redPropType,
+      leftPropType: deck.leftPropType,
+      rightPropType: deck.rightPropType,
       deckName: deck.name,
     });
   }
@@ -155,8 +155,8 @@
           const bundle = await getCardAssetBundle(
             deck.cards.map((c) => c.sequence),
             {
-              bluePropType: deck.bluePropType,
-              redPropType: deck.redPropType,
+              leftPropType: deck.leftPropType,
+              rightPropType: deck.rightPropType,
               theme: deck.theme,
               iconPaths: deck.cards.map((c) => c.footer.iconPath).filter(Boolean) as string[],
             },

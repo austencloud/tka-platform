@@ -248,8 +248,8 @@
     // both-required flip) freeze the lab state — same as when the motions
     // were absent outright (Wave 0 straggler fix: dead presence gate).
     if (
-      !isVisibleMotion(stepData?.motions?.blue) &&
-      !isVisibleMotion(stepData?.motions?.red)
+      !isVisibleMotion(stepData?.motions?.left) &&
+      !isVisibleMotion(stepData?.motions?.right)
     )
       return;
 
@@ -259,8 +259,8 @@
 
     const result = interpolatePropAngles(stepData!, localProgress);
     if (result.isValid) {
-      lab.blueProp = result.blueAngles ?? { ...lab.DEFAULT_PROP_STATE };
-      lab.redProp = result.redAngles ?? { ...lab.DEFAULT_PROP_STATE };
+      lab.leftProp = result.leftAngles ?? { ...lab.DEFAULT_PROP_STATE };
+      lab.rightProp = result.rightAngles ?? { ...lab.DEFAULT_PROP_STATE };
     }
   }
 
@@ -345,9 +345,9 @@
       const propConfig = sequence.creatorIntent?.propConfig
         ? JSON.parse(JSON.stringify(sequence.creatorIntent.propConfig))
         : {
-            bluePropType: (settingsService.settings.bluePropType ||
+            leftPropType: (settingsService.settings.leftPropType ||
               PropType.STAFF) as PropType,
-            redPropType: (settingsService.settings.redPropType ||
+            rightPropType: (settingsService.settings.rightPropType ||
               PropType.STAFF) as PropType,
             catDogMode: settingsService.settings.catDogMode ?? false,
           };
@@ -450,8 +450,8 @@
     <!-- Canvas preview area -->
     <div class="canvas-area">
       <AnimatorCanvas
-        blueProp={lab.blueProp}
-        redProp={lab.redProp}
+        leftProp={lab.leftProp}
+        rightProp={lab.rightProp}
         gridMode={lab.gridMode}
         letter={lab.currentLetter}
         stepData={lab.currentStepData}

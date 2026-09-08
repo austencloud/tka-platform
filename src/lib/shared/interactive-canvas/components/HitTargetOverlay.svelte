@@ -14,7 +14,11 @@
   } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+    type Orientation,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     aimDirectionsFor,
     orientationFromDrag,
@@ -22,7 +26,7 @@
 
   interface Props {
     gridMode: GridMode;
-    activePhaseColor: "blue" | "red" | null;
+    activePhaseHand: HandSideValue | null;
     currentPosition: GridLocation | null;
     disabled: boolean;
     showCenter?: boolean;
@@ -41,7 +45,7 @@
 
   let {
     gridMode,
-    activePhaseColor = null,
+    activePhaseHand = null,
     currentPosition = null,
     disabled = false,
     showCenter = false,
@@ -93,10 +97,10 @@
   function getLabel(location: GridLocation, defaultLabel: string): string {
     if (labelForLocation) return labelForLocation(location, defaultLabel);
     const phase =
-      activePhaseColor === "blue"
-        ? "Blue"
-        : activePhaseColor === "red"
-          ? "Red"
+      activePhaseHand === HandSide.LEFT
+        ? "Left"
+        : activePhaseHand === HandSide.RIGHT
+          ? "Right"
           : "";
     return `${phase} ${defaultLabel}`.trim();
   }
@@ -212,8 +216,8 @@
           x2={dragPoint.x + cos * 138}
           y2={dragPoint.y + sin * 138}
           class:aimed={direction.orientation === dragAim}
-          class:phase-blue={activePhaseColor === "blue"}
-          class:phase-red={activePhaseColor === "red"}
+          class:phase-blue={activePhaseHand === HandSide.LEFT}
+          class:phase-red={activePhaseHand === HandSide.RIGHT}
         />
       {/each}
     </g>
@@ -236,8 +240,8 @@
       r={hitRadius}
       class="hit-target"
       class:is-selected={currentPosition === target.location}
-      class:phase-blue={activePhaseColor === "blue"}
-      class:phase-red={activePhaseColor === "red"}
+      class:phase-blue={activePhaseHand === HandSide.LEFT}
+      class:phase-red={activePhaseHand === HandSide.RIGHT}
       class:pulse={pulseTargets}
       class:disabled
       class:is-aiming={dragLocation === target.location}

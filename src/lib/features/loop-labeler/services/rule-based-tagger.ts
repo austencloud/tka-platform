@@ -41,7 +41,9 @@ export function suggestTags(features: SequenceFeatures): SuggestedTag[] {
 /**
  * Suggest tags and group by confidence level
  */
-export function suggestTagsGrouped(features: SequenceFeatures): TagSuggestionResult {
+export function suggestTagsGrouped(
+  features: SequenceFeatures
+): TagSuggestionResult {
   const tags = suggestTags(features);
   return groupByConfidenceLevel(tags);
 }
@@ -132,7 +134,7 @@ export function getMotionTags(features: SequenceFeatures): SuggestedTag[] {
           "synchronized-reversals",
           "motion",
           0.9,
-          "Blue and red hands reverse together"
+          "Left and right hands reverse together"
         )
       );
     }

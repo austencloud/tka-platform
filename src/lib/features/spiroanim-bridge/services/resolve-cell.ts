@@ -6,7 +6,7 @@
  * TKA's own pictograph dataframes, so the resolver recovers each step by
  * looking up `(letter, startPosition, endPosition)` there and then hands the
  * result to the canonical owners: `applyPendingTurnsToOption` for turns,
- * `propagateOrientationsForColor` for the orientation chain, and
+ * `propagateOrientationsForHand` for the orientation chain, and
  * `hydrateSequence` for letters, positions, word, LOOP, placement and grid
  * mode. Nothing the hydrator owns is derived here.
  *
@@ -44,19 +44,23 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
-import { propagateOrientationsForColor } from "$lib/shared/create/services/orientation-propagation";
+import { propagateOrientationsForHand } from "$lib/shared/create/services/orientation-propagation";
 import { convertToStep } from "$lib/features/create/generate/shared/services/step-converter";
 import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
 
-/** One step as SpiroAnim transcribed it. */
+/**
+ * One step as SpiroAnim transcribed it. Turns are recorded per prop colour —
+ * blue is TKA's left hand, red its right — and may be quarter values: the
+ * even-denominator and two-cycle ratios turn 0.25, 0.5, 0.75 or 1.5 per step.
+ */
 export interface TranscriptionStep {
   letter: string;
   startPosition: string;
@@ -109,7 +113,11 @@ async function getRowIndex(): Promise<Map<string, IndexedRow[]>> {
       const variations =
         await letterQueryHandler.getAllPictographVariations(gridMode);
       for (const pictograph of variations) {
-        if (!pictograph.letter || !pictograph.startPosition || !pictograph.endPosition)
+        if (
+          !pictograph.letter ||
+          !pictograph.startPosition ||
+          !pictograph.endPosition
+        )
           continue;
         const key = rowKey(
           String(pictograph.letter),
@@ -126,12 +134,16 @@ async function getRowIndex(): Promise<Map<string, IndexedRow[]>> {
   return rowIndexPromise;
 }
 
-function rowKey(letter: string, startPosition: string, endPosition: string): string {
+function rowKey(
+  letter: string,
+  startPosition: string,
+  endPosition: string
+): string {
   return `${letter}|${startPosition}|${endPosition}`;
 }
 
-function rotationOf(row: IndexedRow, color: MotionColor): RotationDirection | null {
-  return row.pictograph.motions?.[color]?.rotationDirection ?? null;
+function rotationOf(row: IndexedRow, hand: HandSide): RotationDirection | null {
+  return row.pictograph.motions?.[hand]?.rotationDirection ?? null;
 }
 
 /**
@@ -150,17 +162,18 @@ function chooseRows(
   const buckets = candidates as IndexedRow[][];
 
   const anchor = buckets.find((bucket) => bucket.length === 1)?.[0];
-  const blueDirection = anchor
-    ? rotationOf(anchor, MotionColor.BLUE)
+  const leftDirection = anchor
+    ? rotationOf(anchor, HandSide.LEFT)
     : RotationDirection.CLOCKWISE;
-  const redDirection = anchor ? rotationOf(anchor, MotionColor.RED) : null;
+  const rightDirection = anchor ? rotationOf(anchor, HandSide.RIGHT) : null;
 
   return buckets.map((bucket) => {
     if (bucket.length === 1) return bucket[0]!;
     const matching = bucket.filter(
       (row) =>
-        rotationOf(row, MotionColor.BLUE) === blueDirection &&
-        (redDirection === null || rotationOf(row, MotionColor.RED) === redDirection)
+        rotationOf(row, HandSide.LEFT) === leftDirection &&
+        (rightDirection === null ||
+          rotationOf(row, HandSide.RIGHT) === rightDirection)
     );
     // One match is the shipped case for all 8,640 steps of the corpus. The
     // fallback keeps a future cell resolvable rather than throwing; it is
@@ -172,8 +185,8 @@ function chooseRows(
 function buildSteps(entry: TranscriptionEntry, rows: IndexedRow[]): StepData[] {
   const steps = rows.map((row, i) => {
     const transcribed = entry.steps[i]!;
-    const blue = row.pictograph.motions?.[MotionColor.BLUE];
-    const red = row.pictograph.motions?.[MotionColor.RED];
+    const left = row.pictograph.motions?.[HandSide.LEFT];
+    const right = row.pictograph.motions?.[HandSide.RIGHT];
     // Every motion in this corpus is a shift (pro or anti), which carries its
     // own rotation direction; the explicit directions only matter to dash and
     // static hands, which never appear here.
@@ -181,8 +194,8 @@ function buildSteps(entry: TranscriptionEntry, rows: IndexedRow[]): StepData[] {
       row.pictograph,
       transcribed.blueTurns,
       transcribed.redTurns,
-      blue?.rotationDirection ?? RotationDirection.CLOCKWISE,
-      red?.rotationDirection ?? RotationDirection.CLOCKWISE
+      left?.rotationDirection ?? RotationDirection.CLOCKWISE,
+      right?.rotationDirection ?? RotationDirection.CLOCKWISE
     );
     // The letter is cleared on purpose: the hydrator re-derives it from the
     // motions, so a wrong row shows up as a wrong word instead of being masked
@@ -190,12 +203,12 @@ function buildSteps(entry: TranscriptionEntry, rows: IndexedRow[]): StepData[] {
     return { ...convertToStep(withTurns, i + 1, row.gridMode), letter: null };
   });
 
-  const withBlue = propagateOrientationsForColor(
+  const withLeft = propagateOrientationsForHand(
     steps,
-    MotionColor.BLUE,
+    HandSide.LEFT,
     Orientation.IN
   );
-  return propagateOrientationsForColor(withBlue, MotionColor.RED, Orientation.IN);
+  return propagateOrientationsForHand(withLeft, HandSide.RIGHT, Orientation.IN);
 }
 
 function matchesKey(
@@ -224,7 +237,8 @@ function matchesKey(
  */
 function isCanonicalReading(entry: TranscriptionEntry): boolean {
   if (entry.quarters !== undefined && entry.quarters !== 1) return false;
-  if (entry.reversePlane !== undefined && entry.reversePlane !== false) return false;
+  if (entry.reversePlane !== undefined && entry.reversePlane !== false)
+    return false;
   return true;
 }
 
@@ -243,7 +257,10 @@ function withRequestedOrientation(
   if (clockwiseSteps === 0) return entry;
   const rotated: TranscriptionStep[] = [];
   for (const step of entry.steps) {
-    const startPosition = rotatePositionName(step.startPosition, clockwiseSteps);
+    const startPosition = rotatePositionName(
+      step.startPosition,
+      clockwiseSteps
+    );
     const endPosition = rotatePositionName(step.endPosition, clockwiseSteps);
     if (!startPosition || !endPosition) return null;
     rotated.push({ ...step, startPosition, endPosition });
@@ -256,7 +273,7 @@ function withRequestedOrientation(
  * never guesses — for a malformed key, an unknown cell, or a cell whose steps
  * have no pictograph.
  *
- * The transcription is passed in rather than imported: it is 1,584 entries, and
+ * The transcription is passed in rather than imported: it is 3,312 entries, and
  * a static import would put all of it in the app's main chunk. The route
  * dynamic-imports it.
  */
@@ -268,7 +285,8 @@ export async function resolveCell(
   if (!parsed) return null;
 
   const entry = transcription.find(
-    (candidate) => isCanonicalReading(candidate) && matchesKey(candidate, parsed)
+    (candidate) =>
+      isCanonicalReading(candidate) && matchesKey(candidate, parsed)
   );
   if (!entry) return null;
 
@@ -295,7 +313,11 @@ export async function resolveCell(
         ? {}
         : { spiroanimOrientation: effectiveOrientation(parsed) }),
       attribution:
-        "Concept catalogues and generated geometry by Ryan Girard (spiroanim)",
+        parsed.concept === "8stp"
+          ? "8-Step Concepts and handpaths by Gage DeMello; transcribed from Mentive's SpiroAnim (@rbgirard)"
+          : parsed.concept === "vtg"
+            ? "Vulcan Tech Gospel by Noel Yee; transcribed from Mentive's SpiroAnim (@rbgirard)"
+            : "Quarter Spacing catalog transcribed from Mentive's SpiroAnim (@rbgirard)",
     },
   });
 

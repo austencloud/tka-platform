@@ -14,8 +14,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     ],
     letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
     motionPattern: {
-      blueMotion: "shift",
-      redMotion: "shift"
+      leftMotion: "shift",
+      rightMotion: "shift"
     }
   },
   "2": {
@@ -28,8 +28,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     ],
     letters: ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"],
     motionPattern: {
-      blueMotion: "static OR shift",
-      redMotion: "shift OR static",
+      leftMotion: "static OR shift",
+      rightMotion: "shift OR static",
       note: "Exactly one hand shifts, one is static"
     }
   },
@@ -43,8 +43,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     ],
     letters: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
     motionPattern: {
-      blueMotion: "shift OR dash",
-      redMotion: "dash OR shift",
+      leftMotion: "shift OR dash",
+      rightMotion: "dash OR shift",
       note: "One hand shifts, one dashes"
     }
   },
@@ -62,8 +62,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     letters: ["Φ", "Ψ", "Λ"],
     extendedLetters: ["τ-"],
     motionPattern: {
-      blueMotion: "static OR dash",
-      redMotion: "dash OR static",
+      leftMotion: "static OR dash",
+      rightMotion: "dash OR static",
       note: "Exactly one hand dashes, one is static"
     }
   },
@@ -79,8 +79,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     ],
     letters: ["Φ-", "Ψ-", "Λ-"],
     motionPattern: {
-      blueMotion: "dash",
-      redMotion: "dash"
+      leftMotion: "dash",
+      rightMotion: "dash"
     }
   },
   "6": {
@@ -94,8 +94,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     ],
     letters: ["α", "β", "γ"],
     motionPattern: {
-      blueMotion: "static",
-      redMotion: "static"
+      leftMotion: "static",
+      rightMotion: "static"
     }
   }
 } as const satisfies Record<string, LetterTypeDefinition>;

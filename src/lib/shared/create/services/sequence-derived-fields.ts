@@ -11,7 +11,7 @@
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -31,29 +31,29 @@ import { rotateMotion } from "./motion-transforms";
 export function reconcileStepDerived<T extends StepData>(step: T): T {
   if (!step || step.isBlank) return step;
 
-  const blue = step.motions?.[MotionColor.BLUE];
-  const red = step.motions?.[MotionColor.RED];
+  const left = step.motions?.[HandSide.LEFT];
+  const right = step.motions?.[HandSide.RIGHT];
   // A hand that is "not really there" is an invisible placeholder under the
   // both-required Step shape — same pass-through as the old absent-hand skip
   // (deriving positions from a placeholder's default location would corrupt).
-  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return step;
+  if (!isVisibleMotion(left) || !isVisibleMotion(right)) return step;
 
-  const gridMode: GridMode = deriveGridMode(blue, red);
+  const gridMode: GridMode = deriveGridMode(left, right);
 
   let startPosition = step.startPosition ?? null;
   let endPosition = step.endPosition ?? null;
   try {
     startPosition = getGridPositionFromLocations(
-      blue.startLocation,
-      red.startLocation
+      left.startLocation,
+      right.startLocation
     );
   } catch {
     /* keep prior — corrupt/intermediate location pair */
   }
   try {
     endPosition = getGridPositionFromLocations(
-      blue.endLocation,
-      red.endLocation
+      left.endLocation,
+      right.endLocation
     );
   } catch {
     /* keep prior */
@@ -66,8 +66,8 @@ export function reconcileStepDerived<T extends StepData>(step: T): T {
     endPosition,
     motions: {
       ...step.motions,
-      [MotionColor.BLUE]: { ...blue, gridMode },
-      [MotionColor.RED]: { ...red, gridMode },
+      [HandSide.LEFT]: { ...left, gridMode },
+      [HandSide.RIGHT]: { ...right, gridMode },
     },
   };
 }
@@ -83,8 +83,8 @@ export function normalizeSequenceDerived(seq: SequenceData): SequenceData {
   const firstReal = steps.find(
     (s) =>
       !s.isBlank &&
-      isVisibleMotion(s.motions?.[MotionColor.BLUE]) &&
-      isVisibleMotion(s.motions?.[MotionColor.RED])
+      isVisibleMotion(s.motions?.[HandSide.LEFT]) &&
+      isVisibleMotion(s.motions?.[HandSide.RIGHT])
   );
   const gridMode = firstReal?.gridMode ?? seq.gridMode;
 
@@ -94,7 +94,7 @@ export function normalizeSequenceDerived(seq: SequenceData): SequenceData {
 /** Minimal pose shape shared by StepData and StartPositionData for rotation.
  *  Motions stay partial here: StartPositionData is a pictograph-level pose. */
 type RotatablePose = {
-  motions?: Partial<Record<MotionColor, MotionData | undefined>>;
+  motions?: Partial<Record<HandSide, MotionData | undefined>>;
   isBlank?: boolean;
 };
 
@@ -102,13 +102,13 @@ type RotatablePose = {
  *  fields (positions + gridMode) from the rotated motions. */
 function rotatePose<T extends RotatablePose>(pose: T, steps: number): T {
   if (pose.isBlank) return pose;
-  const blue = pose.motions?.[MotionColor.BLUE];
-  const red = pose.motions?.[MotionColor.RED];
-  if (!blue && !red) return pose;
+  const left = pose.motions?.[HandSide.LEFT];
+  const right = pose.motions?.[HandSide.RIGHT];
+  if (!left && !right) return pose;
   const rotatedMotions = {
     ...pose.motions,
-    ...(blue ? { [MotionColor.BLUE]: rotateMotion(blue, steps) } : {}),
-    ...(red ? { [MotionColor.RED]: rotateMotion(red, steps) } : {}),
+    ...(left ? { [HandSide.LEFT]: rotateMotion(left, steps) } : {}),
+    ...(right ? { [HandSide.RIGHT]: rotateMotion(right, steps) } : {}),
   };
   return reconcileStepDerived({
     ...pose,
@@ -136,8 +136,8 @@ export function rotateSequenceGeometry(seq: SequenceData, steps: number): Sequen
   const firstReal = rotatedSteps.find(
     (s) =>
       !s.isBlank &&
-      isVisibleMotion(s.motions?.[MotionColor.BLUE]) &&
-      isVisibleMotion(s.motions?.[MotionColor.RED])
+      isVisibleMotion(s.motions?.[HandSide.LEFT]) &&
+      isVisibleMotion(s.motions?.[HandSide.RIGHT])
   );
   const gridMode = firstReal?.gridMode ?? startPosition?.gridMode ?? seq.gridMode;
 

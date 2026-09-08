@@ -2,7 +2,7 @@ import {
   PRESET_VALID_COUNTS,
   createFormationFromPreset,
   type FormationPreset,
-} from "@austencloud/scene-3d";
+} from "@austencloud/scene-3d/worker";
 
 export interface PerformerStagePosition {
   x: number;
@@ -18,6 +18,36 @@ export interface PerformerStageBounds {
   depth: number;
   radius: number;
   zOffset: number;
+}
+
+/**
+ * Preserve object identity across equal-valued recomputations.
+ *
+ * The viewer derives its stage bounds from props that share invalidation
+ * granularity with per-frame playback state, so the derived re-runs every
+ * frame during playback. The values are stable, but a fresh object per run
+ * defeats Svelte's equality cutoff, and everything downstream — including
+ * Threlte geometry args, which rebuild their three.js object on every args
+ * change — churns once per frame. Returning the previous object when nothing
+ * changed restores the identity-level firewall for the whole chain.
+ */
+export function createStageBoundsStabilizer(): (
+  next: PerformerStageBounds
+) => PerformerStageBounds {
+  let last: PerformerStageBounds | null = null;
+  return (next) => {
+    if (
+      last &&
+      last.width === next.width &&
+      last.depth === next.depth &&
+      last.radius === next.radius &&
+      last.zOffset === next.zOffset
+    ) {
+      return last;
+    }
+    last = next;
+    return next;
+  };
 }
 
 /** A stage a host authors itself, in metres, centered on the scene origin. */
@@ -154,7 +184,9 @@ export function getCanonicalStagePositions(
 
   const positions: PerformerStagePosition[] = [];
   for (let cast = 1; cast <= count; cast += 1) {
-    for (const [preset, validCounts] of Object.entries(PRESET_VALID_COUNTS)) {
+    for (const [preset, validCounts] of Object.entries(
+      PRESET_VALID_COUNTS as Record<string, readonly number[]>
+    )) {
       // "custom" is whatever the user dragged; it has no canonical footprint.
       if (preset === "custom" || !validCounts.includes(cast)) continue;
       for (const slot of createFormationFromPreset(

@@ -28,12 +28,21 @@ const ASSETS_ROOT = path.resolve(PACKAGE_ROOT, "assets");
 type GridMode = "diamond" | "box" | "skewed";
 
 const DATAFRAME_PATHS: Record<GridMode, string> = {
-  diamond: path.resolve(ASSETS_ROOT, "data/pictographs/DiamondPictographDataframe.csv"),
+  diamond: path.resolve(
+    ASSETS_ROOT,
+    "data/pictographs/DiamondPictographDataframe.csv"
+  ),
   box: path.resolve(ASSETS_ROOT, "data/pictographs/BoxPictographDataframe.csv"),
-  skewed: path.resolve(ASSETS_ROOT, "data/pictographs/SkewedPictographDataframe.csv"),
+  skewed: path.resolve(
+    ASSETS_ROOT,
+    "data/pictographs/SkewedPictographDataframe.csv"
+  ),
 };
 
-const LETTER_MAPPINGS_PATH = path.resolve(ASSETS_ROOT, "data/learn/letter-mappings.json");
+const LETTER_MAPPINGS_PATH = path.resolve(
+  ASSETS_ROOT,
+  "data/learn/letter-mappings.json"
+);
 
 export class NodeDataProvider implements ISequenceDataProvider {
   private letterMappings: LetterMappingsJson | null = null;
@@ -103,25 +112,40 @@ export class NodeDataProvider implements ISequenceDataProvider {
           row[header] = values[index] || "";
         });
 
+        const leftMotionType = row.leftMotionType || row.blueMotionType;
+        const leftStartLocation =
+          row.leftStartLocation || row.blueStartLocation;
+        const leftEndLocation = row.leftEndLocation || row.blueEndLocation;
+        const leftRotationDirection =
+          row.leftRotationDirection || row.blueRotationDirection || "cw";
+        const rightMotionType = row.rightMotionType || row.redMotionType;
+        const rightStartLocation =
+          row.rightStartLocation || row.redStartLocation;
+        const rightEndLocation = row.rightEndLocation || row.redEndLocation;
+        const rightRotationDirection =
+          row.rightRotationDirection || row.redRotationDirection || "cw";
+
         variations.push({
           letter: row.letter,
           startPosition: row.startPosition,
           endPosition: row.endPosition,
-          blueMotionType: row.blueMotionType,
-          blueStartLocation: row.blueStartLocation,
-          blueEndLocation: row.blueEndLocation,
-          blueRotationDirection: row.blueRotationDirection || "cw",
-          redMotionType: row.redMotionType,
-          redStartLocation: row.redStartLocation,
-          redEndLocation: row.redEndLocation,
-          redRotationDirection: row.redRotationDirection || "cw",
+          leftMotionType,
+          leftStartLocation,
+          leftEndLocation,
+          leftRotationDirection,
+          rightMotionType,
+          rightStartLocation,
+          rightEndLocation,
+          rightRotationDirection,
           gridMode: this.gridMode,
         });
       }
 
       this.allVariations = variations;
       this.allVariationsLoaded = true;
-      console.error(`[MCP] Loaded ${variations.length} variations for ${this.gridMode} mode`);
+      console.error(
+        `[MCP] Loaded ${variations.length} variations for ${this.gridMode} mode`
+      );
     } catch (error) {
       console.error(`[MCP] Failed to load variations from CSV:`, error);
       this.allVariationsLoaded = true;
@@ -148,7 +172,9 @@ let defaultProvider: NodeDataProvider | null = null;
 /**
  * Get or create the default NodeDataProvider.
  */
-export function getNodeDataProvider(gridMode: GridMode = "diamond"): NodeDataProvider {
+export function getNodeDataProvider(
+  gridMode: GridMode = "diamond"
+): NodeDataProvider {
   if (!defaultProvider || defaultProvider["gridMode"] !== gridMode) {
     defaultProvider = new NodeDataProvider(gridMode);
   }

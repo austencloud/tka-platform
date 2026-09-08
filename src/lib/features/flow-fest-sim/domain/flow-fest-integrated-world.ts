@@ -142,7 +142,7 @@ export function auditFlowFestIntegratedJourney(
 ): FlowFestIntegratedJourneyAudit {
   const transitions = state.areaHistory.slice(1).map((to, index) => ({
     ordinal: index + 1,
-    from: state.areaHistory[index],
+    from: state.areaHistory[index]!,
     to,
   }));
   const festivalEntries =

@@ -40,6 +40,11 @@ describe("BaseModal fit sizing", () => {
       '[data-testid="base-modal-opened-state"]'
     );
     expect(openedState?.textContent?.trim()).toBe("1:true");
+    expect(
+      document
+        .querySelector("dialog.base-modal")
+        ?.hasAttribute("data-keyboard-shortcuts-ignore")
+    ).toBe(true);
 
     for (const viewport of FOLD_VIEWPORTS) {
       await page.viewport(viewport.width, viewport.height);

@@ -190,8 +190,8 @@ export class SequenceExtender {
     const input = steps.map((step) => ({
       ...step,
       motions: {
-        blue: { ...step.motions.blue },
-        red: { ...step.motions.red },
+        left: { ...step.motions.left },
+        right: { ...step.motions.right },
       },
     }));
     const structurallyCompleted = executor.executeLOOP(input, period);

@@ -58,7 +58,7 @@
   interface MandalaPlacement {
     row: number;
     col: number;
-    variant: "blue" | "red" | "full";
+    variant: "left" | "right" | "full";
   }
 
   interface Props {
@@ -85,8 +85,8 @@
     flipDuration: number;
     cellWidth: number;
     activeDarkMode: boolean;
-    bluePropType: PropType | undefined;
-    redPropType: PropType | undefined;
+    leftPropType: PropType | undefined;
+    rightPropType: PropType | undefined;
     onStepClick: ((stepIndex: number) => void) | undefined;
     /** When provided, render a clickable play badge over the QR (interactive
         viewer only). Click switches to the 2D animation view and starts play. */
@@ -100,7 +100,7 @@
     transitionMode: "crossfade" | "swap";
     isBrowseSoloMode: boolean;
     isMotionSoloMode: boolean;
-    soloColor: "blue" | "red" | undefined;
+    soloHand: "left" | "right" | undefined;
     stepNumFontSize: number;
     formatDuration: (d: number) => string;
     getMotionSoloMotion: (cellIndex: number) => MotionData | undefined;
@@ -134,8 +134,8 @@
     flipDuration,
     cellWidth,
     activeDarkMode,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onStepClick,
     onQrPlayClick,
     clickableStart = false,
@@ -145,7 +145,7 @@
     transitionMode,
     isBrowseSoloMode,
     isMotionSoloMode,
-    soloColor,
+    soloHand,
     stepNumFontSize,
     formatDuration,
     getMotionSoloMotion,
@@ -202,7 +202,7 @@
         {transitionMode}
         {isBrowseSoloMode}
         {isMotionSoloMode}
-        {soloColor}
+        {soloHand}
         {stepNumFontSize}
         {hasMixedDurations}
         {formatDuration}
@@ -226,7 +226,7 @@
         {transitionMode}
         {isBrowseSoloMode}
         {isMotionSoloMode}
-        {soloColor}
+        {soloHand}
         {stepNumFontSize}
         {hasMixedDurations}
         {formatDuration}
@@ -325,7 +325,7 @@
                 {transitionMode}
                           {isBrowseSoloMode}
                           {isMotionSoloMode}
-                          {soloColor}
+                          {soloHand}
                           {stepNumFontSize}
                           {hasMixedDurations}
                           {formatDuration}
@@ -350,7 +350,7 @@
                 {transitionMode}
                           {isBrowseSoloMode}
                           {isMotionSoloMode}
-                          {soloColor}
+                          {soloHand}
                           {stepNumFontSize}
                           {hasMixedDurations}
                           {formatDuration}
@@ -411,7 +411,7 @@
                 {transitionMode}
                         {isBrowseSoloMode}
                         {isMotionSoloMode}
-                        {soloColor}
+                        {soloHand}
                         {stepNumFontSize}
                         {hasMixedDurations}
                         {formatDuration}
@@ -436,7 +436,7 @@
                 {transitionMode}
                         {isBrowseSoloMode}
                         {isMotionSoloMode}
-                        {soloColor}
+                        {soloHand}
                         {stepNumFontSize}
                         {hasMixedDurations}
                         {formatDuration}
@@ -497,7 +497,7 @@
                 {transitionMode}
               {isBrowseSoloMode}
               {isMotionSoloMode}
-              {soloColor}
+              {soloHand}
               {stepNumFontSize}
               {hasMixedDurations}
               {formatDuration}
@@ -522,7 +522,7 @@
                 {transitionMode}
               {isBrowseSoloMode}
               {isMotionSoloMode}
-              {soloColor}
+              {soloHand}
               {stepNumFontSize}
               {hasMixedDurations}
               {formatDuration}
@@ -559,8 +559,8 @@
               show={placement.variant === "full" ? "both" : placement.variant}
               size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
               darkMode={activeDarkMode}
-              {bluePropType}
-              {redPropType}
+              {leftPropType}
+              {rightPropType}
               pathShape={mandalaPathShape}
             />
           </div>
@@ -610,7 +610,7 @@
                 {transitionMode}
             {isBrowseSoloMode}
             {isMotionSoloMode}
-            {soloColor}
+            {soloHand}
             {stepNumFontSize}
             {hasMixedDurations}
             {formatDuration}
@@ -635,7 +635,7 @@
                 {transitionMode}
             {isBrowseSoloMode}
             {isMotionSoloMode}
-            {soloColor}
+            {soloHand}
             {stepNumFontSize}
             {hasMixedDurations}
             {formatDuration}
@@ -672,8 +672,8 @@
             show={placement.variant === "full" ? "both" : placement.variant}
             size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
             darkMode={activeDarkMode}
-            {bluePropType}
-            {redPropType}
+            {leftPropType}
+            {rightPropType}
             pathShape={mandalaPathShape}
           />
         </div>
@@ -1028,7 +1028,7 @@
     }
   }
 
-  /* Mandala fill cell - sits in empty col-0 cells and shows blue/red/full path viz. */
+  /* Mandala fill cell - sits in empty col-0 cells and shows left/right/full paths. */
   .mandala-cell {
     display: flex;
     align-items: center;

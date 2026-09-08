@@ -26,8 +26,8 @@ const NO_CONSTRAINTS: StartEndOptions = {
   endPositions: [],
   mustContainLetters: [],
   mustNotContainLetters: [],
-  blueStartOrientation: Orientation.IN,
-  redStartOrientation: Orientation.IN,
+  leftStartOrientation: Orientation.IN,
+  rightStartOrientation: Orientation.IN,
 };
 
 /** What the public Composer toy opens on — deliberately not the production defaults. */
@@ -199,8 +199,8 @@ describe("buildCustomizeSummary — orientation and letters", () => {
     const summary = buildCustomizeSummary(
       inputFrom(PRODUCTION_STYLE_BASELINE, {
         ...NO_CONSTRAINTS,
-        blueStartOrientation: Orientation.CLOCK,
-        redStartOrientation: Orientation.COUNTER,
+        leftStartOrientation: Orientation.CLOCK,
+        rightStartOrientation: Orientation.COUNTER,
       })
     );
     expect(summary.facts).toEqual(["Ori: CW/CCW"]);
@@ -210,8 +210,8 @@ describe("buildCustomizeSummary — orientation and letters", () => {
     const summary = buildCustomizeSummary(
       inputFrom(PRODUCTION_STYLE_BASELINE, {
         ...NO_CONSTRAINTS,
-        blueStartOrientation: Orientation.IN,
-        redStartOrientation: Orientation.IN,
+        leftStartOrientation: Orientation.IN,
+        rightStartOrientation: Orientation.IN,
       })
     );
     expect(summary.facts).toEqual([]);
@@ -280,7 +280,7 @@ describe("summaryRowBudget", () => {
         ...inputFrom(PRODUCTION_STYLE_BASELINE, {
           ...NO_CONSTRAINTS,
           blockedStartPositions: blockAllExcept(CLASSIC_DIAMOND_POSITIONS),
-          blueStartOrientation: Orientation.CLOCK,
+          leftStartOrientation: Orientation.CLOCK,
         }),
         constraintPreset: "choppy",
         handPathMode: "smooth",

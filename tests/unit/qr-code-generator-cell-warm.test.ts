@@ -57,8 +57,8 @@ describe("QRCodeGenerator canonical cell readiness", () => {
     );
 
     await generator.generateForSequence(sequence, {
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
     });
 
     expect(warm).toHaveBeenCalledTimes(2);
@@ -67,8 +67,8 @@ describe("QRCodeGenerator canonical cell readiness", () => {
       sequence,
       expect.objectContaining({
         isDark: true,
-        bluePropType: PropType.POI,
-        redPropType: PropType.FAN,
+        leftPropType: PropType.POI,
+        rightPropType: PropType.FAN,
         catDogMode: true,
         requireComplete: true,
       })
@@ -81,8 +81,8 @@ describe("QRCodeGenerator canonical cell readiness", () => {
     expect(createShortCode).toHaveBeenCalledWith(
       sequence,
       expect.objectContaining({
-        bluePropType: PropType.POI,
-        redPropType: PropType.FAN,
+        leftPropType: PropType.POI,
+        rightPropType: PropType.FAN,
         catDogMode: true,
       })
     );

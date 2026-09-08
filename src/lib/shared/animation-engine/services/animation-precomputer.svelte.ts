@@ -41,8 +41,8 @@ function getSequencePathHash(
   // Without this, transformed sequences return stale untransformed cached paths.
   const motionFingerprint = seq.steps
     ?.map((s) => {
-      const b = s.motions?.blue;
-      const r = s.motions?.red;
+      const b = s.motions?.left;
+      const r = s.motions?.right;
       const bPart = b
         ? `${b.startLocation}${b.endLocation}${b.motionType}${b.rotationDirection}${b.turns}`
         : "_";
@@ -179,8 +179,8 @@ export class AnimationPrecomputer {
       const calculateStateFunc = (beat: number) => {
         orchestrator.calculateState(beat);
         return {
-          blueProp: orchestrator.getBluePropState(),
-          redProp: orchestrator.getRedPropState(),
+          leftProp: orchestrator.getLeftPropState(),
+          rightProp: orchestrator.getRightPropState(),
         };
       };
 

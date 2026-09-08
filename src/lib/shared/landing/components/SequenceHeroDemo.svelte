@@ -46,8 +46,8 @@
     sequence,
     element = null,
     note,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onReroll,
     rerolling = false,
     errorMessage = null,
@@ -58,6 +58,7 @@
     externalBpm,
     showNotationStrip = false,
     showWordHeader = false,
+    showCaption = true,
     autoPlay = true,
     cornerToggle = false,
     loadPriority = "idle",
@@ -74,8 +75,8 @@
     note: string;
     /** Optional prop-type override so per-prop pages can render the same
         sequence with fans/clubs/buugeng instead of the default staves. */
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     /** When provided, a dice button appears that asks the host to swap in a
         freshly generated sequence in place (no page reload). Notation pages
         omit it, so their static demo is unchanged. */
@@ -112,6 +113,8 @@
     /** Shows the shared animated word header while preserving the square
         canvas beneath it. The header is isolated from persisted app settings. */
     showWordHeader?: boolean;
+    /** Keep the accessible caption while compact hosts show the word in the header. */
+    showCaption?: boolean;
     /** Forwarded to the inline player so a host can start with a still frame. */
     autoPlay?: boolean;
     /** Exposes the inline player's keyboard-accessible play/pause button. */
@@ -323,8 +326,8 @@
               chrome: "minimal",
               fill: true,
               cornerToggle,
-              bluePropType,
-              redPropType,
+              leftPropType,
+              rightPropType,
               onLoopComplete,
               onSequenceBoundary,
               trailSettingsOverride,
@@ -384,8 +387,8 @@
               orientation: notationOrientation,
               loop: false,
               stepPulse: false,
-              bluePropType: bluePropType ?? null,
-              redPropType: redPropType ?? null,
+              leftPropType: leftPropType ?? null,
+              rightPropType: rightPropType ?? null,
             }}
           >
             {#snippet error(_error: unknown, retry: () => void)}
@@ -406,7 +409,7 @@
          competing for visual space. -->
     <figcaption
       class:pending={!sequence}
-      class:notation-caption={showNotationStrip}
+      class:notation-caption={showNotationStrip || !showCaption}
     >
       <Crossfade key={word}>
         <span class="tka-font demo-word">{word}</span>

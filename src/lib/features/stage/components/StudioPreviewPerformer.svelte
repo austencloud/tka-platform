@@ -1,10 +1,10 @@
 <script lang="ts">
   import { T } from "@threlte/core";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import {
-    Avatar3D,
-    DEFAULT_AVATAR_ID,
-    userProportionsState,
-  } from "@austencloud/scene-3d";
+    Character3D,
+    DEFAULT_CHARACTER_ID,
+  } from "$lib/shared/3d/domain/character-model";
   import { cubicInOut } from "svelte/easing";
   import { Tween } from "svelte/motion";
 
@@ -55,11 +55,11 @@
   rotation.y={yaw.current}
   visible={opacity.current > 0.01}
 >
-  <Avatar3D
+  <Character3D
     id="studio-starter-performer-{index}"
-    avatarId={DEFAULT_AVATAR_ID}
-    bluePropState={null}
-    redPropState={null}
+    avatarId={DEFAULT_CHARACTER_ID}
+    leftPropState={null}
+    rightPropState={null}
     isActive={false}
     enableLocomotion
     enableFootPlanting

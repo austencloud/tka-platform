@@ -9,21 +9,33 @@
   - an inline tray that slides up above the bar with the active tab's controls,
   - responsive: full-width sheet on phones, centered floating rounded bar at
     >=700px (matching the mandala dock),
-  - icon-only tabs when the bar is too narrow for labels (no cramming).
+  - icon-only tabs when the bar is too narrow for labels; the row scrolls
+    before any tab can shrink below the shared touch-target floor.
 
   The shell owns NO domain state. Consumers pass their tabs, the active tab,
   a tray Snippet that renders the active tab's body, and the trailing action.
 -->
 <script lang="ts" module>
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+
   export interface ControlDockTab {
     id: string;
     label: string;
     /** FontAwesome class, e.g. "fa-wand-magic-sparkles". Omit to use a color dot. */
     icon?: string;
+    /** Live prop artwork for the Props destination. Takes precedence over icon. */
+    propType?: PropType;
+    fanAppearance?: FanAppearance;
     /** Tints the active state (and the solo dot when there's no icon). */
     accentColor?: string;
     /** Two-color dot pair instead of an icon (mandala "Colors" tab). */
     dots?: [string, string];
+    /**
+     * The tab's destination is open somewhere other than the tray (a host
+     * picker, an overlay). The pill shows pressed without opening a tray.
+     */
+    pressed?: boolean;
   }
 
   export interface ControlDockAction {
@@ -61,6 +73,7 @@
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
   import { SwipeToDismiss } from "$lib/shared/foundation/ui/drawer/swipe-to-dismiss";
+  import RailPropGlyph from "$lib/shared/components/RailPropGlyph.svelte";
 
   interface Props {
     tabs: ControlDockTab[];
@@ -334,12 +347,12 @@
       {#each tabs as t, i (t.id)}
         <button
           class="dock-btn cat"
-          class:active={activeTab === t.id}
+          class:active={activeTab === t.id || !!t.pressed}
           class:open={activeTab === t.id && trayOpen}
           style:--cat-accent={t.accentColor ?? null}
           style:--btn-i={i}
           onclick={() => onTabSelect(t.id)}
-          aria-pressed={activeTab === t.id}
+          aria-pressed={activeTab === t.id || !!t.pressed}
           aria-expanded={activeTab === t.id && trayOpen}
           aria-label={activeTab === t.id && trayOpen
             ? `Close ${t.label}`
@@ -350,6 +363,12 @@
                  collapse chevron, and re-tapping it closes the tray (restoring
                  the ducked nav). -->
             <i class="fas fa-chevron-down" aria-hidden="true"></i>
+          {:else if t.propType}
+            <RailPropGlyph
+              propType={t.propType}
+              fanAppearance={t.fanAppearance}
+              size={20}
+            />
           {:else if t.dots}
             <span class="cat-dots">
               <span class="dot" style:background={t.dots[0]}></span>
@@ -588,9 +607,18 @@
   }
   .cat-scroll {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     gap: 4px;
+    /* The viewer transition temporarily narrows this surface. Keep every tab
+       pressable through that handoff and let the strip carry the overflow. */
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cat-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   /* Secondary CTAs + download live in one group so the bar can stack them
@@ -658,9 +686,14 @@
     transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .dock-btn.cat {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 1 0 var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
     padding: 6px 2px;
+    color: color-mix(
+      in srgb,
+      var(--cat-accent, var(--theme-text-dim, rgba(255, 255, 255, 0.6))) 42%,
+      var(--theme-text-dim, rgba(255, 255, 255, 0.6))
+    );
   }
   .dock-btn.cat.active i {
     transform: translateY(-1px) scale(1.08);

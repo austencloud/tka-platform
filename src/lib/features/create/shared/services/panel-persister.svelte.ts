@@ -80,7 +80,7 @@ export class PanelPersister {
         panelState.openFilterPanel();
         break;
       case "sequenceActions":
-        panelState.openSequenceActionsPanel();
+        panelState.openSequenceActionsPanel("restore");
         break;
       // edit and cap panels require context (step data, LOOP type)
       // so we don't restore them - they need user interaction

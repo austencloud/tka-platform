@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDeckPrintMetadata,
+  buildHandPathDeckPrintMetadata,
   normalizeDeckFooters,
   orderDeckForPrint,
+  usesSerializedCardIdentity,
 } from "../deck-print-model";
 
 describe("deck print model", () => {
@@ -110,5 +112,31 @@ describe("deck print model", () => {
     expect(metadata.title).toBe("Deck 043: 2 cards");
     expect(metadata.subject).toContain("2 sequence cards. Words:");
     expect(metadata.subject).not.toContain("How to Read");
+  });
+
+  it("describes the six-card hand-path deck without sequence language", () => {
+    const metadata = buildHandPathDeckPrintMetadata({
+      deckLabel: "Timing & Direction Hand Paths",
+      deckRefPadded: "044",
+      cardNames: [
+        "Split-Same",
+        "Tog-Same",
+        "Split-Opp",
+        "Tog-Opp",
+        "Quarter-Opp",
+        "Quarter-Same",
+      ],
+      includeHowToRead: false,
+    });
+
+    expect(metadata.title).toBe("Deck 044: 6 cards");
+    expect(metadata.subject).toContain("6 Timing & Direction hand-path");
+    expect(metadata.subject).not.toContain("sequence");
+    expect(metadata.deckSummary).toContain("Hand Path References");
+  });
+
+  it("never allocates QR identities for hand-path reference cards", () => {
+    expect(usesSerializedCardIdentity("hand-path")).toBe(false);
+    expect(usesSerializedCardIdentity("sequence")).toBe(true);
   });
 });

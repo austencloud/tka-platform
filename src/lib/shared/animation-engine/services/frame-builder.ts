@@ -25,8 +25,8 @@ export class FrameBuilder {
       !stepData ||
       typeof stepData !== "object" ||
       !("motions" in stepData) ||
-      !isVisibleMotion(stepData.motions?.blue) ||
-      !isVisibleMotion(stepData.motions?.red)
+      !isVisibleMotion(stepData.motions?.left) ||
+      !isVisibleMotion(stepData.motions?.right)
     ) {
       return "(s, 0, 0)";
     }

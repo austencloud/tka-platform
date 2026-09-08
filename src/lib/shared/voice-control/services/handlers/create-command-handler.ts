@@ -78,7 +78,7 @@ export class CreateCommandHandler implements IVoiceCommandHandler {
         if (!seqState?.currentSequence) {
           return { success: false, message: "No sequence to swap" };
         }
-        await seqState.swapColors();
+        await seqState.swapHands();
         return { success: true, message: "Hands swapped" };
       }
 
@@ -101,7 +101,10 @@ export class CreateCommandHandler implements IVoiceCommandHandler {
       }
 
       default:
-        return { success: false, message: `Unknown create action: ${command.action}` };
+        return {
+          success: false,
+          message: `Unknown create action: ${command.action}`,
+        };
     }
   }
 }

@@ -13,7 +13,9 @@ Reusable header for all card types with consistent styling
   <div class="card-header">
     <div
       class="card-title"
-      style={headerFontSize ? `font-size: ${headerFontSize}` : "font-size: var(--header-font-size, clamp(8px, 2.5cqi, 11px))"}
+      style={headerFontSize
+        ? `font-size: ${headerFontSize}`
+        : "font-size: var(--header-font-size, clamp(8px, 2.5cqi, 11px))"}
     >
       {title}
     </div>
@@ -43,8 +45,8 @@ Reusable header for all card types with consistent styling
     font-weight: 600;
     color: var(--text-color, var(--theme-text));
     text-align: center;
-    letter-spacing: 0.2px;
-    text-transform: uppercase;
+    letter-spacing: var(--card-title-letter-spacing, 0.2px);
+    text-transform: var(--card-title-transform, uppercase);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -146,8 +146,8 @@ export class Ghost2DRenderer {
         if (visual.rimAlpha <= 0.012) continue;
         const color = resolveGhostPropColor(
           sample.snapshot.id,
-          params.blueColor,
-          params.redColor
+          params.leftColor,
+          params.rightColor
         );
         this.blit(ctx, sample.snapshot, color, visual);
       }

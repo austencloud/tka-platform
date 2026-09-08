@@ -32,6 +32,7 @@
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const logger = createComponentLogger("ArrowAdjustmentPanel");
 
@@ -81,9 +82,9 @@
     if (!selectedArrow) return "staff";
     const settings = getSettings();
     const settingsPropType =
-      selectedArrow.color === "blue"
-        ? settings.bluePropType
-        : settings.redPropType;
+      selectedArrow.hand === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
     return (
       (settingsPropType ?? selectedArrow.motionData?.propType)?.toLowerCase() ||
       "staff"
@@ -92,10 +93,13 @@
   const otherPropType = $derived.by(() => {
     if (!selectedArrow) return "staff";
     const settings = getSettings();
-    const otherColor = selectedArrow.color === "blue" ? "red" : "blue";
+    const otherHand =
+      selectedArrow.hand === HandSide.LEFT ? HandSide.RIGHT : HandSide.LEFT;
     const settingsPropType =
-      otherColor === "blue" ? settings.bluePropType : settings.redPropType;
-    const otherMotion = selectedArrow.pictographData?.motions?.[otherColor];
+      otherHand === HandSide.LEFT
+        ? settings.leftPropType
+        : settings.rightPropType;
+    const otherMotion = selectedArrow.pictographData?.motions?.[otherHand];
     return (
       (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
     );
@@ -225,7 +229,7 @@
 
       hapticService?.trigger("selection");
       logger.log(
-        `Rotation override ${isActive ? "applied" : "removed"} for ${selectedArrow.color} ${selectedArrow.motionData.motionType}`
+        `Rotation override ${isActive ? "applied" : "removed"} for ${selectedArrow.hand} ${selectedArrow.motionData.motionType}`
       );
     } catch (err) {
       logger.error("Failed to toggle rotation override:", err);
@@ -408,13 +412,13 @@
 </script>
 
 <div class="arrow-adjustment" data-edit-history-shortcut-scope>
-  <!-- Arrow color indicator -->
+  <!-- Arrow hand indicator; its tint still follows the canonical palette. -->
   <span
     class="arrow-badge"
-    class:blue={selectedArrow?.color === "blue"}
-    class:red={selectedArrow?.color === "red"}
+    class:blue={selectedArrow?.hand === HandSide.LEFT}
+    class:red={selectedArrow?.hand === HandSide.RIGHT}
   >
-    {selectedArrow?.color?.toUpperCase()}
+    {selectedArrow?.hand?.toUpperCase()}
   </span>
 
   <!-- Current adjustment values -->

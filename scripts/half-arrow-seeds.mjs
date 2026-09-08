@@ -21,7 +21,7 @@ import {
 import { GridLocation, GridMode } from "../src/lib/shared/pictograph/grid/domain/enums/grid-enums.ts";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums.ts";
@@ -79,11 +79,11 @@ export function familySeed(mt, turns) {
     stepNumber: 1,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: createPlaceholderMotion(MotionColor.BLUE, {
+      left: createPlaceholderMotion(HandSide.LEFT, {
         location: GridLocation.EAST,
         orientation: Orientation.IN,
       }),
-      red: createMotionData({
+      right: createMotionData({
         motionType: mt,
         rotationDirection: shape.rot,
         startLocation: shape.start,
@@ -91,7 +91,7 @@ export function familySeed(mt, turns) {
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
         turns,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -99,9 +99,9 @@ export function familySeed(mt, turns) {
   };
   const half = buildHalvedStep(full, 0.5);
   if (!half) throw new Error(`familySeed(${mt}, ${turns}): buildHalvedStep returned null`);
-  const red = half.motions.red;
-  const H = POINT[red.endLocation];
-  if (!H) throw new Error(`familySeed(${mt}, ${turns}): no anchor coords for ${red.endLocation}`);
+  const right = half.motions.right;
+  const H = POINT[right.endLocation];
+  if (!H) throw new Error(`familySeed(${mt}, ${turns}): no anchor coords for ${right.endLocation}`);
   return {
     mt,
     turns,
@@ -110,10 +110,10 @@ export function familySeed(mt, turns) {
     start: shape.start,
     end: shape.end,
     rot: shape.rot,
-    mid: red.endLocation,
-    midOrientation: red.endOrientation,
+    mid: right.endLocation,
+    midOrientation: right.endOrientation,
     H,
-    R: calculateSegmentRotation(red.endOrientation, red.endLocation, red.startLocation),
+    R: calculateSegmentRotation(right.endOrientation, right.endLocation, right.startLocation),
     mirrored: seedMirrored(mt, shape.rot),
     halfStep: half,
   };

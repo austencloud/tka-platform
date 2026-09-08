@@ -14,18 +14,18 @@ export interface RainbowSceneConfig {
 
 export function createDefaultRainbowConfig(): RainbowSceneConfig {
   return {
-    fog: { color: "#08001a", density: 0.008 },
+    fog: { color: "#07111f", density: 0.0015 },
     hemisphereLight: {
-      skyColor: "#ffffff",
-      groundColor: "#222244",
-      intensity: 0.7,
+      skyColor: "#a6c2e6",
+      groundColor: "#3d2924",
+      intensity: 0.45,
     },
     platform: {
       enabled: true,
-      radius: 5,
+      radius: 6,
       height: 0.4,
-      glowIntensity: 0.7,
-      spectrumSpeed: 0.15,
+      glowIntensity: 1,
+      spectrumSpeed: 0.6,
     },
   };
 }

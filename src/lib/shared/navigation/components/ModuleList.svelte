@@ -657,6 +657,7 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   /* Center the 5th item (odd one out) */
   .module-grid.layout-five .module-cell:nth-child(5) {
     grid-column: 1 / -1;
+    width: 100%;
     max-width: calc(50% - 7px);
     justify-self: center;
   }
@@ -683,7 +684,7 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   /* ============================================================================
      RESPONSIVE - Wider screen adaptations for each layout
      ============================================================================ */
-  @media (min-width: 400px) {
+  @container (min-width: 360px) {
     /* Few modules on wide screens: horizontal row */
     .module-grid.layout-few {
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -705,28 +706,23 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
 
     /* Five modules on wide: 3+2 layout */
     .module-grid.layout-five {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 16px;
     }
 
     .module-grid.layout-five .module-cell {
       min-height: clamp(100px, 18vh, 160px);
+      grid-column: span 2;
     }
 
     /* 4th and 5th items span to center the bottom row */
     .module-grid.layout-five .module-cell:nth-child(4) {
-      grid-column: 1 / 2;
-      justify-self: end;
-      width: calc(100% + 8px);
-      margin-right: -8px;
+      grid-column: 2 / span 2;
     }
 
     .module-grid.layout-five .module-cell:nth-child(5) {
-      grid-column: 2 / 4;
+      grid-column: 4 / span 2;
       max-width: none;
-      width: calc(100% + 8px);
-      margin-left: -8px;
-      justify-self: start;
     }
 
     /* Six modules on wide: 3×2 grid */
@@ -746,63 +742,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     }
   }
 
-  /* ============================================================================
-     WIDESCREEN DEVICES (Z-Fold unfolded, tablets)
-     Use 4 columns to reduce row count and prevent vertical stretching
-     ============================================================================ */
-  @media (min-width: 700px) and (min-height: 500px) {
-    .section-title {
-      margin: 0 0 8px 4px;
-    }
-
-    .dev-section {
-      padding-top: 10px;
-    }
-
-    .module-section {
-      margin-bottom: 10px;
-    }
-
-    /* Force 4 columns on all layout variants to reduce row count */
-    .module-grid,
-    .module-grid.layout-few,
-    .module-grid.layout-quad,
-    .module-grid.layout-five,
-    .module-grid.layout-six,
-    .module-grid.layout-many {
-      flex: 0 1 auto;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: auto;
-      align-content: start;
-      gap: 10px;
-    }
-
-    /* Reset the 400px five-module centering hacks for 4-col layout */
-    .module-grid.layout-five .module-cell:nth-child(4),
-    .module-grid.layout-five .module-cell:nth-child(5) {
-      grid-column: auto;
-      max-width: none;
-      width: 100%;
-      margin: 0;
-      justify-self: auto;
-    }
-
-    .module-grid .module-cell {
-      min-height: 72px;
-      max-height: 88px;
-    }
-
-    .module-grid .cell-icon {
-      font-size: clamp(22px, 2.8vw, 32px);
-      width: clamp(32px, 4vw, 44px);
-      height: clamp(32px, 4vw, 44px);
-    }
-
-    .module-grid .cell-label {
-      font-size: clamp(11px, 1.3vw, 14px);
-    }
-  }
-
   @media (max-height: 500px) and (orientation: landscape) {
     .module-grid.layout-few,
     .module-grid.layout-quad,
@@ -813,7 +752,15 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
       max-width: none;
     }
 
-    .module-grid .module-cell {
+    .module-grid:is(
+        .layout-few,
+        .layout-quad,
+        .layout-five,
+        .layout-six,
+        .layout-many,
+        .dev-grid
+      )
+      .module-cell {
       min-height: clamp(70px, 12vh, 100px);
     }
   }
@@ -836,7 +783,7 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   /* Three stacked modules should share the space that remains between the
      drawer header and account footer. Viewport-sized cards ignore that chrome
      and push the last card below the footer on narrow, tall phones. */
-  @media (max-width: 399.98px) and (orientation: portrait) {
+  @container (max-width: 359.98px) {
     .module-section[data-module-count="3"] {
       flex: 1 1 0;
       min-height: 0;
@@ -888,6 +835,70 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
 
     .module-grid .cell-label {
       font-size: clamp(11px, 1.5vh, 13px);
+    }
+  }
+
+  /* A wide viewport can still contain a narrow side drawer. Let the list
+     respond to its allocated width, after all count-specific size rules. */
+  @container (min-width: 660px) {
+    .section-title {
+      margin: 0 0 8px 4px;
+    }
+
+    .dev-section {
+      padding-top: 10px;
+    }
+
+    .module-section {
+      margin-bottom: 10px;
+    }
+
+    /* Force 4 columns on all layout variants to reduce row count */
+    .module-grid,
+    .module-grid.layout-few,
+    .module-grid.layout-quad,
+    .module-grid.layout-five,
+    .module-grid.layout-six,
+    .module-grid.layout-many {
+      flex: 0 1 auto;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: auto;
+      align-content: start;
+      gap: 10px;
+    }
+
+    /* Each module occupies one column in the wide drawer. */
+    .module-grid.layout-five .module-cell,
+    .module-grid.layout-five .module-cell:nth-child(4),
+    .module-grid.layout-five .module-cell:nth-child(5) {
+      grid-column: auto;
+      max-width: none;
+      width: 100%;
+      margin: 0;
+      justify-self: auto;
+    }
+
+    .module-grid:is(
+        .layout-few,
+        .layout-quad,
+        .layout-five,
+        .layout-six,
+        .layout-many,
+        .dev-grid
+      )
+      .module-cell {
+      min-height: 72px;
+      max-height: none;
+    }
+
+    .module-grid .module-cell .cell-icon {
+      font-size: clamp(22px, 2.8vw, 32px);
+      width: clamp(32px, 4vw, 44px);
+      height: clamp(32px, 4vw, 44px);
+    }
+
+    .module-grid .module-cell .cell-label {
+      font-size: clamp(11px, 1.3vw, 14px);
     }
   }
 

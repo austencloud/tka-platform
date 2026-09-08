@@ -45,8 +45,8 @@ export function createAssembleHistoryTransition(
   addIfChanged(
     consequences,
     "path",
-    [from.blueSteps, from.redSteps],
-    [to.blueSteps, to.redSteps]
+    [from.leftSteps, from.rightSteps],
+    [to.leftSteps, to.rightSteps]
   );
   addIfChanged(
     consequences,

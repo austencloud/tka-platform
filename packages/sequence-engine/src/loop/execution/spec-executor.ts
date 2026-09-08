@@ -85,11 +85,11 @@ export function executeLOOPSpec(
   sequence: SequenceStep[],
   spec: LOOPSpec,
 ): SequenceStep[] {
-  const blueSpec = spec.blue ?? EMPTY_PROP_SPEC;
-  const redSpec = spec.red ?? EMPTY_PROP_SPEC;
+  const leftSpec = spec.left ?? EMPTY_PROP_SPEC;
+  const rightSpec = spec.right ?? EMPTY_PROP_SPEC;
 
-  if (specsAreEqual(blueSpec, redSpec)) {
-    return executeSymmetricSpec(sequence, blueSpec);
+  if (specsAreEqual(leftSpec, rightSpec)) {
+    return executeSymmetricSpec(sequence, leftSpec);
   }
 
   throw new Error(
@@ -108,28 +108,28 @@ export function executeLOOPSpec(
  * - overlay components do not change length.
  */
 export function getLOOPSpecExpansionMultiplier(spec: LOOPSpec): number {
-  const blueSpec = spec.blue ?? EMPTY_PROP_SPEC;
-  const redSpec = spec.red ?? EMPTY_PROP_SPEC;
+  const leftSpec = spec.left ?? EMPTY_PROP_SPEC;
+  const rightSpec = spec.right ?? EMPTY_PROP_SPEC;
 
-  if (!specsAreEqual(blueSpec, redSpec)) {
+  if (!specsAreEqual(leftSpec, rightSpec)) {
     throw new Error(
       "Asymmetric LOOPSpec expansion is not yet implemented. " +
         "A single seed-length multiplier requires symmetric execution.",
     );
   }
 
-  if (blueSpec.components.size === 0) return 1;
+  if (leftSpec.components.size === 0) return 1;
 
   // RewoundExecutor appends one reversed copy. Its legacy period parameter is
   // accepted for compatibility but does not alter the two-pass execution.
-  if (blueSpec.components.has(LOOPComponent.REWOUND)) return 2;
+  if (leftSpec.components.has(LOOPComponent.REWOUND)) return 2;
 
   let multiplier = 1;
-  const rotated = blueSpec.components.get(LOOPComponent.ROTATED);
+  const rotated = leftSpec.components.get(LOOPComponent.ROTATED);
   if (rotated) {
-    const fuseableAtSamePeriod = hasFuseableAtPeriod(blueSpec, rotated.period);
+    const fuseableAtSamePeriod = hasFuseableAtPeriod(leftSpec, rotated.period);
     const mirrorOrFlipAtSamePeriod = hasMirrorOrFlipAtPeriod(
-      blueSpec,
+      leftSpec,
       rotated.period,
     );
 
@@ -138,7 +138,7 @@ export function getLOOPSpecExpansionMultiplier(spec: LOOPSpec): number {
     }
   }
 
-  for (const period of groupFuseableByPeriod(blueSpec).keys()) {
+  for (const period of groupFuseableByPeriod(leftSpec).keys()) {
     multiplier *= period;
   }
 

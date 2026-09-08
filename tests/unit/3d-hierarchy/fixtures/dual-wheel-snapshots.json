@@ -12,195 +12,115 @@
     "beats": [
       {
         "progress": 0,
-        "blue": {
+        "left": {
           "label": "blue@0.00",
           "inputAngle": 4.712389,
           "inputStaffAngle": 7.853982,
           "plane": "wheel",
-          "propCenter": [
-            0.4,
-            2.1321,
-            0
-          ],
-          "propRotation": [
-            3.141593,
-            1.570796,
-            0
-          ],
+          "propCenter": [0.4, 2.1321, 0],
+          "propRotation": [3.141593, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": 0.4
         },
-        "red": {
+        "right": {
           "label": "red@0.00",
           "inputAngle": 1.570796,
           "inputStaffAngle": 4.712389,
           "plane": "wheel",
-          "propCenter": [
-            -0.4,
-            0.9921,
-            0
-          ],
-          "propRotation": [
-            0,
-            1.570796,
-            0
-          ],
+          "propCenter": [-0.4, 0.9921, 0],
+          "propRotation": [0, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": -0.4
         }
       },
       {
         "progress": 0.25,
-        "blue": {
+        "left": {
           "label": "blue@0.25",
           "inputAngle": 3.926991,
           "inputStaffAngle": 7.068583,
           "plane": "wheel",
-          "propCenter": [
-            0.4,
-            1.965151,
-            -0.403051
-          ],
-          "propRotation": [
-            2.356194,
-            1.570796,
-            0
-          ],
+          "propCenter": [0.4, 1.965151, -0.403051],
+          "propRotation": [2.356194, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": 0.4
         },
-        "red": {
+        "right": {
           "label": "red@0.25",
           "inputAngle": 2.356194,
           "inputStaffAngle": 5.497787,
           "plane": "wheel",
-          "propCenter": [
-            -0.4,
-            1.159049,
-            -0.403051
-          ],
-          "propRotation": [
-            0.785398,
-            1.570796,
-            0
-          ],
+          "propCenter": [-0.4, 1.159049, -0.403051],
+          "propRotation": [0.785398, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": -0.4
         }
       },
       {
         "progress": 0.5,
-        "blue": {
+        "left": {
           "label": "blue@0.50",
           "inputAngle": 3.141593,
           "inputStaffAngle": 6.283185,
           "plane": "wheel",
-          "propCenter": [
-            0.4,
-            1.5621,
-            -0.57
-          ],
-          "propRotation": [
-            1.570796,
-            1.570796,
-            0
-          ],
+          "propCenter": [0.4, 1.5621, -0.57],
+          "propRotation": [1.570796, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": 0.4
         },
-        "red": {
+        "right": {
           "label": "red@0.50",
           "inputAngle": 3.141593,
           "inputStaffAngle": 6.283185,
           "plane": "wheel",
-          "propCenter": [
-            -0.4,
-            1.5621,
-            -0.57
-          ],
-          "propRotation": [
-            1.570796,
-            1.570796,
-            0
-          ],
+          "propCenter": [-0.4, 1.5621, -0.57],
+          "propRotation": [1.570796, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": -0.4
         }
       },
       {
         "progress": 0.75,
-        "blue": {
+        "left": {
           "label": "blue@0.75",
           "inputAngle": 2.356194,
           "inputStaffAngle": 5.497787,
           "plane": "wheel",
-          "propCenter": [
-            0.4,
-            1.159049,
-            -0.403051
-          ],
-          "propRotation": [
-            0.785398,
-            1.570796,
-            0
-          ],
+          "propCenter": [0.4, 1.159049, -0.403051],
+          "propRotation": [0.785398, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": 0.4
         },
-        "red": {
+        "right": {
           "label": "red@0.75",
           "inputAngle": 3.926991,
           "inputStaffAngle": 7.068583,
           "plane": "wheel",
-          "propCenter": [
-            -0.4,
-            1.965151,
-            -0.403051
-          ],
-          "propRotation": [
-            2.356194,
-            1.570796,
-            0
-          ],
+          "propCenter": [-0.4, 1.965151, -0.403051],
+          "propRotation": [2.356194, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": -0.4
         }
       },
       {
         "progress": 1,
-        "blue": {
+        "left": {
           "label": "blue@1.00",
           "inputAngle": 1.570796,
           "inputStaffAngle": 4.712389,
           "plane": "wheel",
-          "propCenter": [
-            0.4,
-            0.9921,
-            0
-          ],
-          "propRotation": [
-            0,
-            1.570796,
-            0
-          ],
+          "propCenter": [0.4, 0.9921, 0],
+          "propRotation": [0, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": 0.4
         },
-        "red": {
+        "right": {
           "label": "red@1.00",
           "inputAngle": 4.712389,
           "inputStaffAngle": 7.853982,
           "plane": "wheel",
-          "propCenter": [
-            -0.4,
-            2.1321,
-            0
-          ],
-          "propRotation": [
-            3.141593,
-            1.570796,
-            0
-          ],
+          "propCenter": [-0.4, 2.1321, 0],
+          "propRotation": [3.141593, 1.570796, 0],
           "skipFacingTransform": true,
           "lateralOffset": -0.4
         }

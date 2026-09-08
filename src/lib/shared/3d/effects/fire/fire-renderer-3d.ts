@@ -43,7 +43,7 @@ import { SampledCurlGrid2D } from "../smoke/smoke-curl-field";
 import { QualityTier } from "../types";
 import type { Fire3DParams } from "$lib/shared/effects/translators/webgl3d-types";
 
-const MAX_FIRE_TIPS = 4;
+const DEFAULT_MAX_DYNAMIC_LIGHTS = 4;
 
 /** Per-tier particle pool sizes (shared across all active tips). High density
  *  is what lets the soft faint blobs overlap into a continuous flame body. */
@@ -134,7 +134,9 @@ interface Particle {
 }
 
 export interface FireTipInput {
-  position: Vector3;
+  /** Stable across frames when one renderer serves multiple performer rigs. */
+  sourceId?: number;
+  position: { x: number; y: number; z: number };
   velocityX: number;
   velocityY: number;
   velocityZ: number;
@@ -147,10 +149,22 @@ export interface FireTipInput {
 
 export interface FireRendererOptions {
   preset?: FireColorPreset;
+  /** Override the fixed per-rig pool when one scene-level renderer is shared. */
+  poolSize?: number;
+  /** Cap expensive point lights independently from the number of fire tips. */
+  maxDynamicLights?: number;
+}
+
+interface FireSourceState {
+  accumulator: number;
+  previousPosition: Vector3;
+  valid: boolean;
+  lastSeenFrame: number;
 }
 
 export class FireRenderer3D {
   private particles: Particle[];
+  private activeParticles: Particle[] = [];
   private poolSize: number;
   private qualityTier: QualityTier;
   private preset: FireColorPreset;
@@ -161,6 +175,7 @@ export class FireRenderer3D {
   private emitRate: number;
   private curlStrength = CURL_STRENGTH;
   private emissiveHot = 0.53;
+  private lightIntensity = 0.302;
   // Intensity also scales particle SIZE so the slider visibly changes the
   // flame's VOLUME (small contained flame ↔ big fire), distinct from
   // brightness which only changes the per-particle glow.
@@ -183,29 +198,46 @@ export class FireRenderer3D {
 
   private lights: PointLight[] = [];
   private lightEnabled: boolean;
+  private maxDynamicLights: number;
 
   private time = 0;
 
-  // Per-tip emission state (continuous accumulator + last tip position for the
-  // path-distributed spawn sweep).
-  private emitAccumulator: number[] = [];
-  private prevTipPos: Vector3[] = [];
-  private prevTipValid: boolean[] = [];
+  // Stable per-source emission state. A scene-level renderer receives a
+  // variable set of tips as performers toggle effects; array position is not
+  // identity and would draw a flame streak between two different performers.
+  private sourceStates = new Map<number, FireSourceState>();
+  private sourceFrame = 0;
 
-  constructor(qualityTier: QualityTier = QualityTier.HIGH, options?: FireRendererOptions) {
+  constructor(
+    qualityTier: QualityTier = QualityTier.HIGH,
+    options?: FireRendererOptions
+  ) {
     this.qualityTier = qualityTier;
     this.preset = options?.preset ?? "classic";
-    this.poolSize = POOL_SIZE[qualityTier];
+    this.poolSize = options?.poolSize ?? POOL_SIZE[qualityTier];
     this.emitRate = EMIT_RATE[qualityTier];
     this.lightEnabled = qualityTier !== QualityTier.LOW;
+    this.maxDynamicLights = Math.max(
+      0,
+      Math.floor(options?.maxDynamicLights ?? DEFAULT_MAX_DYNAMIC_LIGHTS)
+    );
 
     this.particles = new Array(this.poolSize);
     for (let i = 0; i < this.poolSize; i++) {
       this.particles[i] = {
-        x: 0, y: 0, z: 0,
-        vx: 0, vy: 0, vz: 0,
-        age: 0, maxLife: 1, size: 0, seed: 0,
-        pr: 1, pg: 1, pb: 1,
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        age: 0,
+        maxLife: 1,
+        size: 0,
+        seed: 0,
+        pr: 1,
+        pg: 1,
+        pb: 1,
         active: false,
       };
     }
@@ -216,12 +248,6 @@ export class FireRenderer3D {
     this.seeds = new Float32Array(this.poolSize);
     this.instSizes = new Float32Array(this.poolSize);
     this.propColors = new Float32Array(this.poolSize * 3);
-
-    for (let i = 0; i < MAX_FIRE_TIPS; i++) {
-      this.emitAccumulator.push(0);
-      this.prevTipPos.push(new Vector3());
-      this.prevTipValid.push(false);
-    }
   }
 
   initialize(parent: Object3D): void {
@@ -231,12 +257,30 @@ export class FireRenderer3D {
     // Unit quad; the vertex shader billboards + stretches it per instance.
     const geometry = new PlaneGeometry(1, 1);
     // DYNAMIC_DRAW (35048): we rewrite these arrays every frame.
-    geometry.setAttribute("aCenter", new InstancedBufferAttribute(this.centers, 3).setUsage(35048));
-    geometry.setAttribute("aVel", new InstancedBufferAttribute(this.vels, 3).setUsage(35048));
-    geometry.setAttribute("aLife", new InstancedBufferAttribute(this.lives, 1).setUsage(35048));
-    geometry.setAttribute("aSeed", new InstancedBufferAttribute(this.seeds, 1).setUsage(35048));
-    geometry.setAttribute("aSize", new InstancedBufferAttribute(this.instSizes, 1).setUsage(35048));
-    geometry.setAttribute("aPropColor", new InstancedBufferAttribute(this.propColors, 3).setUsage(35048));
+    geometry.setAttribute(
+      "aCenter",
+      new InstancedBufferAttribute(this.centers, 3).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aVel",
+      new InstancedBufferAttribute(this.vels, 3).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aLife",
+      new InstancedBufferAttribute(this.lives, 1).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aSeed",
+      new InstancedBufferAttribute(this.seeds, 1).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aSize",
+      new InstancedBufferAttribute(this.instSizes, 1).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aPropColor",
+      new InstancedBufferAttribute(this.propColors, 3).setUsage(35048)
+    );
 
     this.material = createFireParticleMaterial({
       colors: getFireColors(this.preset),
@@ -249,12 +293,40 @@ export class FireRenderer3D {
     parent.add(this.mesh);
 
     if (this.lightEnabled) {
-      for (let i = 0; i < MAX_FIRE_TIPS; i++) {
+      for (let i = 0; i < this.maxDynamicLights; i++) {
         const light = new PointLight(0xff7a22, 0, 3.2, 2.0);
-        light.visible = false;
+        // Keep the lights in Three's program signature from startup onward.
+        // Toggling visibility changes NUM_POINT_LIGHTS and recompiles every lit
+        // material in the scene on the first Fire click; zero intensity is the
+        // visually inert state without a shader-variant swap.
+        light.visible = true;
         parent.add(light);
         this.lights.push(light);
       }
+    }
+  }
+
+  /**
+   * Make the renderer participate in the scene's hidden startup frames before
+   * a performer asks for Fire. A zero-sized instance is visually inert, but it
+   * forces Three.js to create the instanced attribute buffers and compile the
+   * material while the loading curtain is still opaque.
+   */
+  primeGpuUpload(): void {
+    if (!this.mesh) return;
+    this.instSizes[0] = 0;
+    this.mesh.count = 1;
+    for (const name of [
+      "aCenter",
+      "aVel",
+      "aLife",
+      "aSeed",
+      "aSize",
+      "aPropColor",
+    ]) {
+      (
+        this.mesh.geometry.getAttribute(name) as InstancedBufferAttribute
+      ).needsUpdate = true;
     }
   }
 
@@ -264,24 +336,43 @@ export class FireRenderer3D {
     const safeDt = Math.min(dt, 1 / 15);
     this.time += safeDt;
     this.material.uniforms.uTime!.value = this.time;
+    this.sourceFrame++;
 
     // -- Emit from each active tip --
-    for (let i = 0; i < MAX_FIRE_TIPS; i++) {
-      if (i >= tips.length) {
-        this.prevTipValid[i] = false;
-        continue;
+    for (let i = 0; i < tips.length; i++) {
+      const tip = tips[i]!;
+      const sourceId = tip.sourceId ?? i;
+      let sourceState = this.sourceStates.get(sourceId);
+      if (!sourceState) {
+        sourceState = {
+          accumulator: 0,
+          previousPosition: new Vector3(),
+          valid: false,
+          lastSeenFrame: this.sourceFrame,
+        };
+        this.sourceStates.set(sourceId, sourceState);
       }
-      this.emitFromTip(i, tips[i]!, safeDt);
+      sourceState.lastSeenFrame = this.sourceFrame;
+      this.emitFromTip(sourceState, tip, safeDt);
+    }
+    for (const sourceState of this.sourceStates.values()) {
+      if (sourceState.lastSeenFrame === this.sourceFrame) continue;
+      sourceState.valid = false;
+      sourceState.accumulator = 0;
     }
 
     let visibleCount = 0;
 
-    for (const p of this.particles) {
-      if (!p.active) continue;
-
+    let activeIndex = 0;
+    while (activeIndex < this.activeParticles.length) {
+      const p = this.activeParticles[activeIndex]!;
       p.age += safeDt;
       if (p.age >= p.maxLife) {
         p.active = false;
+        const last = this.activeParticles.pop()!;
+        if (activeIndex < this.activeParticles.length) {
+          this.activeParticles[activeIndex] = last;
+        }
         continue;
       }
 
@@ -294,7 +385,11 @@ export class FireRenderer3D {
       p.vz *= dragFactor;
 
       // Curl-noise swirl in the XY plane (divergence-free => no clumping).
-      const swirl = this.curl.sample(p.x * CURL_SCALE, p.y * CURL_SCALE, this.time);
+      const swirl = this.curl.sample(
+        p.x * CURL_SCALE,
+        p.y * CURL_SCALE,
+        this.time
+      );
       p.vx += swirl.vx * this.curlStrength * safeDt;
       p.vy += swirl.vy * this.curlStrength * safeDt;
 
@@ -316,15 +411,18 @@ export class FireRenderer3D {
       this.propColors[i3 + 1] = p.pg;
       this.propColors[i3 + 2] = p.pb;
       visibleCount++;
+      activeIndex++;
     }
 
     const geo = this.mesh.geometry;
-    (geo.getAttribute("aCenter") as InstancedBufferAttribute).needsUpdate = true;
+    (geo.getAttribute("aCenter") as InstancedBufferAttribute).needsUpdate =
+      true;
     (geo.getAttribute("aVel") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aLife") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aSeed") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aSize") as InstancedBufferAttribute).needsUpdate = true;
-    (geo.getAttribute("aPropColor") as InstancedBufferAttribute).needsUpdate = true;
+    (geo.getAttribute("aPropColor") as InstancedBufferAttribute).needsUpdate =
+      true;
     this.mesh.count = visibleCount;
 
     if (this.lightEnabled) {
@@ -332,40 +430,52 @@ export class FireRenderer3D {
         const light = this.lights[i]!;
         if (i < tips.length) {
           const tip = tips[i]!;
-          light.position.set(tip.position.x, tip.position.y + 0.25, tip.position.z);
-          const jerkBoost = Math.min((tip.jerk ?? 0) / 60, 1) * 1.2;
-          let intensity = 1.5 + Math.min(tip.speed * 0.3, 1.5) + jerkBoost;
+          light.position.set(
+            tip.position.x,
+            tip.position.y + 0.25,
+            tip.position.z
+          );
+          const jerkBoost = Math.min((tip.jerk ?? 0) / 60, 1) * 0.12;
+          let motionScale = 0.75 + Math.min(tip.speed * 0.08, 0.18) + jerkBoost;
           if (this.qualityTier === QualityTier.HIGH) {
-            intensity +=
+            motionScale +=
               Math.sin(this.time * 8.3 + i * 2.1) * 0.18 +
-              Math.sin(this.time * 13.7 + i * 5.3) * 0.12 +
-              Math.sin(this.time * 23.1 + i * 1.7) * 0.06;
+              Math.sin(this.time * 13.7 + i * 5.3) * 0.06 +
+              Math.sin(this.time * 23.1 + i * 1.7) * 0.03;
           }
-          light.intensity = Math.max(intensity, 0.5);
-          light.visible = true;
+          light.intensity = Math.max(this.lightIntensity * motionScale, 0.04);
         } else {
-          light.visible = false;
+          light.intensity = 0;
         }
       }
     }
   }
 
   /** Spawn particles for one tip: continuous at the wick + along the path. */
-  private emitFromTip(i: number, tip: FireTipInput, safeDt: number): void {
-    const prev = this.prevTipPos[i]!;
+  private emitFromTip(
+    sourceState: FireSourceState,
+    tip: FireTipInput,
+    safeDt: number
+  ): void {
+    const prev = sourceState.previousPosition;
     const cur = tip.position;
 
     let segLen = 0;
-    if (this.prevTipValid[i]) {
+    if (sourceState.valid) {
       segLen = Math.hypot(cur.x - prev.x, cur.y - prev.y, cur.z - prev.z);
     }
 
     // Combined demand: idle stream (time-rate) + gapless path coverage.
-    this.emitAccumulator[i]! +=
-      this.emitRate * safeDt + segLen / PATH_SPACING[this.qualityTier];
-    let count = Math.floor(this.emitAccumulator[i]!);
+    // A source's first frame may inherit a large frame-gate delta even though
+    // no visible flame existed during that interval. Start at one 60 Hz slice
+    // so activation produces an immediate core instead of a one-frame burst;
+    // normal density fills in on the following frames.
+    const emissionDt = sourceState.valid ? safeDt : Math.min(safeDt, 1 / 60);
+    sourceState.accumulator +=
+      this.emitRate * emissionDt + segLen / PATH_SPACING[this.qualityTier];
+    let count = Math.floor(sourceState.accumulator);
     if (count > MAX_SPAWN_PER_TIP) count = MAX_SPAWN_PER_TIP;
-    this.emitAccumulator[i]! -= count;
+    sourceState.accumulator -= count;
 
     for (let k = 0; k < count; k++) {
       const particle = this.nextSlot();
@@ -380,17 +490,22 @@ export class FireRenderer3D {
       particle.y = py + (Math.random() - 0.5) * CORE_JITTER;
       particle.z = pz + (Math.random() - 0.5) * CORE_JITTER;
 
-      particle.vx = tip.velocityX * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
+      particle.vx =
+        tip.velocityX * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
       particle.vy =
-        tip.velocityY * VELOCITY_INHERIT + BUOYANCY_SEED + (Math.random() - 0.5) * SPREAD;
-      particle.vz = tip.velocityZ * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
+        tip.velocityY * VELOCITY_INHERIT +
+        BUOYANCY_SEED +
+        (Math.random() - 0.5) * SPREAD;
+      particle.vz =
+        tip.velocityZ * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
 
       // Bias toward short-lived hot core particles; a tail rides longer into smoke.
       const r = Math.random();
       particle.maxLife = LIFE_MIN + r * r * (LIFE_MAX - LIFE_MIN);
       particle.age = 0;
       // sizeScale (from intensity) sets the flame VOLUME; brightness is separate.
-      particle.size = (SIZE_MIN + Math.random() * (SIZE_MAX - SIZE_MIN)) * this.sizeScale;
+      particle.size =
+        (SIZE_MIN + Math.random() * (SIZE_MAX - SIZE_MIN)) * this.sizeScale;
       particle.seed = Math.random();
       const pc = tip.propColor;
       particle.pr = pc ? pc.r : 1;
@@ -399,8 +514,8 @@ export class FireRenderer3D {
       particle.active = true;
     }
 
-    prev.copy(cur);
-    this.prevTipValid[i] = true;
+    prev.set(cur.x, cur.y, cur.z);
+    sourceState.valid = true;
   }
 
   /**
@@ -414,6 +529,10 @@ export class FireRenderer3D {
     const p = this.particles[this.cursor]!;
     this.cursor++;
     if (this.cursor >= this.poolSize) this.cursor = 0;
+    if (!p.active) {
+      p.active = true;
+      this.activeParticles.push(p);
+    }
     return p;
   }
 
@@ -430,10 +549,12 @@ export class FireRenderer3D {
    *                color in the shader (0 = pure fire, 1 = strongly prop-colored).
    */
   updateConfig(params: Fire3DParams): void {
-    this.emitRate = EMIT_RATE[this.qualityTier] * (0.4 + params.intensity * 1.0);
+    this.emitRate =
+      EMIT_RATE[this.qualityTier] * (0.4 + params.intensity * 1.0);
     this.sizeScale = 0.55 + params.intensity * 0.9;
     this.curlStrength = CURL_STRENGTH * (0.4 + params.turbulence * 1.6);
     this.emissiveHot = params.emissiveHot;
+    this.lightIntensity = params.lightIntensity;
     if (this.material) {
       setFireEmissive(this.material, this.emissiveHot);
       setFireColorBlend(this.material, params.colorBlend);
@@ -448,15 +569,14 @@ export class FireRenderer3D {
   }
 
   reset(): void {
-    for (const p of this.particles) {
+    for (const p of this.activeParticles) {
       p.active = false;
     }
-    for (let i = 0; i < MAX_FIRE_TIPS; i++) {
-      this.emitAccumulator[i] = 0;
-      this.prevTipValid[i] = false;
-    }
+    this.activeParticles.length = 0;
+    this.sourceStates.clear();
     for (const light of this.lights) {
-      light.visible = false;
+      light.intensity = 0;
+      light.visible = true;
     }
     if (this.mesh) {
       this.mesh.count = 0;

@@ -18,6 +18,7 @@
   interface Props {
     quality: AutumnQualityConfig;
     groundY?: number;
+    active?: boolean;
     /**
      * Emits one entry per wisp pairing its emissive core material with the LIVE
      * `group.position` Vector3 (mutated in place each frame by the drift task).
@@ -29,12 +30,11 @@
     ) => void;
   }
 
-  let { quality, groundY = 0, onWispTargets }: Props = $props();
+  let { quality, groundY = 0, active = true, onWispTargets }: Props = $props();
 
   // Cool-biased bioluminescence separates the wisps from the amber canopy.
   const WISP_COLORS = ["#68f4dc", "#b58cff", "#ffbf73"] as const;
   const BASE_EMISSIVE = 1.6;
-
 
   interface Wisp {
     group: Group;
@@ -118,43 +118,52 @@
     );
   });
 
-
   let elapsed = 0;
 
   const reducedMotion = $derived(prefersReducedMotion());
   const motionScale = $derived(resolveMotionScale(reducedMotion));
 
-  useTask((delta) => {
-    elapsed += delta * motionScale;
-    const ground = groundY;
-    const activeCamera = camera.current;
-    for (const wisp of wisps) {
-      const t = elapsed * wisp.speed + wisp.phase;
-      wisp.group.position.set(
-        wisp.baseX + Math.sin(t * 0.7) * wisp.driftRadius,
-        ground + wisp.baseHeight + Math.sin(t) * wisp.bobAmplitude,
-        wisp.baseZ + Math.cos(t * 0.5) * wisp.driftRadius
-      );
-
-      // A 10cm wisp is a readable mote across the clearing but becomes a
-      // screen-filling lavender disk if its orbit crosses the camera. Ease
-      // down both scale and opacity in that near-camera interval; the wisp
-      // returns at full strength by 4m and keeps the same path, count, and
-      // interaction target.
-      if (activeCamera) {
-        const distance = wisp.group.position.distanceTo(activeCamera.position);
-        const linearProximity = Math.max(
-          0,
-          Math.min(1, (distance - 1.2) / 2.8)
+  const driftTask = useTask(
+    (delta) => {
+      elapsed += delta * motionScale;
+      const ground = groundY;
+      const activeCamera = camera.current;
+      for (const wisp of wisps) {
+        const t = elapsed * wisp.speed + wisp.phase;
+        wisp.group.position.set(
+          wisp.baseX + Math.sin(t * 0.7) * wisp.driftRadius,
+          ground + wisp.baseHeight + Math.sin(t) * wisp.bobAmplitude,
+          wisp.baseZ + Math.cos(t * 0.5) * wisp.driftRadius
         );
-        const proximity =
-          linearProximity * linearProximity * (3 - 2 * linearProximity);
-        wisp.group.scale.setScalar(0.25 + proximity * 0.75);
-        wisp.coreMat.opacity = 0.58 * proximity;
-      }
-    }
-  });
 
+        // A 10cm wisp is a readable mote across the clearing but becomes a
+        // screen-filling lavender disk if its orbit crosses the camera. Ease
+        // down both scale and opacity in that near-camera interval; the wisp
+        // returns at full strength by 4m and keeps the same path, count, and
+        // interaction target.
+        if (activeCamera) {
+          const distance = wisp.group.position.distanceTo(
+            activeCamera.position
+          );
+          const linearProximity = Math.max(
+            0,
+            Math.min(1, (distance - 1.2) / 2.8)
+          );
+          const proximity =
+            linearProximity * linearProximity * (3 - 2 * linearProximity);
+          wisp.group.scale.setScalar(0.25 + proximity * 0.75);
+          wisp.coreMat.opacity = 0.58 * proximity;
+        }
+      }
+    },
+    { autoStart: false }
+  );
+
+  $effect(() => {
+    if (active) driftTask.start();
+    else driftTask.stop();
+    return () => driftTask.stop();
+  });
 
   onDestroy(() => {
     // Shared geometry disposed once; materials disposed per-wisp.

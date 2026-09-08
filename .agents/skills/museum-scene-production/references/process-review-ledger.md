@@ -1,28 +1,28 @@
-# STOP: Independent Process Review Pending
+# Archived Process Review Ledger
 
-**Status:** PROVISIONAL, awaiting independent Opus and Fable reviews
+**Status:** Historical; not an active production gate
 
 **Requested by:** Austen
 
 **Requested on:** 2026-08-08
 
-If this session is running Claude Opus or Fable, stop museum scene production.
-Review this entire skill package before doing anything else. Do not edit the
-process during the independent review.
+This records a past review request. Do not execute its reviewer brief, stop
+scene production, or infer current recommended reasoning effort from it unless Austen
+explicitly reopens the process audit.
 
 ## Review status
 
-| Stage | Status | Review artifact |
-|---|---|---|
-| Claude Opus independent review | complete | [`references/reviews/2026-08-08-opus.md`](reviews/2026-08-08-opus.md) |
-| Fable independent review | complete | [`references/reviews/2026-08-08-fable.md`](reviews/2026-08-08-fable.md) |
-| Cross-review synthesis | blocked | `references/reviews/2026-08-08-synthesis.md` |
-| Approved changes incorporated | blocked | link after implementation |
-| Skill and validator revalidated | blocked | record commands and results |
-| Real-scene trial completed | blocked | link trial evidence |
-| Austen ratification | blocked | quote and museum tracker item |
+| Stage                           | Status   | Review artifact                                                         |
+| ------------------------------- | -------- | ----------------------------------------------------------------------- |
+| Claude Opus independent review  | complete | [`references/reviews/2026-08-08-opus.md`](reviews/2026-08-08-opus.md)   |
+| Fable independent review        | complete | [`references/reviews/2026-08-08-fable.md`](reviews/2026-08-08-fable.md) |
+| Cross-review synthesis          | blocked  | `references/reviews/2026-08-08-synthesis.md`                            |
+| Approved changes incorporated   | blocked  | link after implementation                                               |
+| Skill and validator revalidated | blocked  | record commands and results                                             |
+| Real-scene trial completed      | blocked  | link trial evidence                                                     |
+| Austen ratification             | blocked  | quote and museum tracker item                                           |
 
-## Reviewer instructions
+## Historical reviewer instructions
 
 1. Read `SKILL.md`, every file in `references/` and `assets/`, and
    `scripts/validate-scene-gates.mjs`.

@@ -33,8 +33,8 @@ describe("allocateTurns — period-4 parity", () => {
     let oddSeen = 0;
     let evenSeen = 0;
     for (let i = 0; i < 100; i++) {
-      const { blue } = allocateTurns(STEP_COUNT, LEVEL_3, MAX_INTENSITY);
-      const total = totalWheelQuarters(blue);
+      const { left } = allocateTurns(STEP_COUNT, LEVEL_3, MAX_INTENSITY);
+      const total = totalWheelQuarters(left);
       if (total % 2 === 0) evenSeen++;
       else oddSeen++;
     }
@@ -45,60 +45,60 @@ describe("allocateTurns — period-4 parity", () => {
 
   it("forces an odd wheel-quarter total for a genuine four-repetition orientation cycle", () => {
     for (let i = 0; i < 50; i++) {
-      const { blue, red } = allocateTurns(STEP_COUNT, LEVEL_3, MAX_INTENSITY, {
+      const { left, right } = allocateTurns(STEP_COUNT, LEVEL_3, MAX_INTENSITY, {
         forcePeriod4OrientationCycle: true,
       });
-      const blueTotal = totalWheelQuarters(blue);
-      const redTotal = totalWheelQuarters(red);
-      expect(blueTotal % 2).toBe(1);
-      expect(redTotal % 2).toBe(1);
+      const leftTotal = totalWheelQuarters(left);
+      const rightTotal = totalWheelQuarters(right);
+      expect(leftTotal % 2).toBe(1);
+      expect(rightTotal % 2).toBe(1);
     }
   });
 
   it("enforced parity produces step counts matching the request", () => {
-    const { blue, red } = allocateTurns(8, LEVEL_3, MAX_INTENSITY, {
+    const { left, right } = allocateTurns(8, LEVEL_3, MAX_INTENSITY, {
       forcePeriod4OrientationCycle: true,
     });
-    expect(blue.length).toBe(8);
-    expect(red.length).toBe(8);
+    expect(left.length).toBe(8);
+    expect(right.length).toBe(8);
   });
 
   it("at L2 (no half turns available), parity enforcement falls back gracefully", () => {
     const LEVEL_2 = 2;
     // Level 2 pool = [0, 1, 2, 3] — no half turns, no way to hit odd parity.
     // Should not crash; returns something.
-    const { blue, red } = allocateTurns(STEP_COUNT, LEVEL_2, MAX_INTENSITY, {
+    const { left, right } = allocateTurns(STEP_COUNT, LEVEL_2, MAX_INTENSITY, {
       forcePeriod4OrientationCycle: true,
     });
-    expect(blue.length).toBe(STEP_COUNT);
-    expect(red.length).toBe(STEP_COUNT);
+    expect(left.length).toBe(STEP_COUNT);
+    expect(right.length).toBe(STEP_COUNT);
   });
 
   it("at L1 (only 0 turns), parity enforcement produces all zeros without crashing", () => {
-    const { blue, red } = allocateTurns(STEP_COUNT, 1, MAX_INTENSITY, {
+    const { left, right } = allocateTurns(STEP_COUNT, 1, MAX_INTENSITY, {
       forcePeriod4OrientationCycle: true,
     });
-    expect(blue).toEqual([0, 0, 0, 0]);
-    expect(red).toEqual([0, 0, 0, 0]);
+    expect(left).toEqual([0, 0, 0, 0]);
+    expect(right).toEqual([0, 0, 0, 0]);
   });
 
   it("single-step partial with parity enforcement still produces a valid odd total", () => {
     // Edge case: wordLength = 1. The implementation preallocates wordLength-1
     // steps randomly then fixes the last. With N=1 that means 0 random + 1 targeted.
-    const { blue } = allocateTurns(1, LEVEL_3, MAX_INTENSITY, {
+    const { left } = allocateTurns(1, LEVEL_3, MAX_INTENSITY, {
       forcePeriod4OrientationCycle: true,
     });
-    expect(blue.length).toBe(1);
-    expect(wheelQuarters(blue[0]!) % 2).toBe(1);
+    expect(left.length).toBe(1);
+    expect(wheelQuarters(left[0]!) % 2).toBe(1);
   });
 
   it("longer partial (8 steps) still hits odd parity reliably", () => {
     for (let i = 0; i < 50; i++) {
-      const { blue, red } = allocateTurns(8, LEVEL_3, MAX_INTENSITY, {
+      const { left, right } = allocateTurns(8, LEVEL_3, MAX_INTENSITY, {
         forcePeriod4OrientationCycle: true,
       });
-      expect(totalWheelQuarters(blue) % 2).toBe(1);
-      expect(totalWheelQuarters(red) % 2).toBe(1);
+      expect(totalWheelQuarters(left) % 2).toBe(1);
+      expect(totalWheelQuarters(right) % 2).toBe(1);
     }
   });
 });

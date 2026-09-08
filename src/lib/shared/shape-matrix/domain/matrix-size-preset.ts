@@ -32,8 +32,8 @@ function axisFilterForSize(size: MatrixSize): AxisFilter {
 /** Full matrix filter set for a size preset — same axis filter on both hands. */
 export function matrixFiltersForSize(size: MatrixSize): MatrixFilters {
   return {
-    blue: axisFilterForSize(size),
-    red: axisFilterForSize(size),
+    left: axisFilterForSize(size),
+    right: axisFilterForSize(size),
     collapse: false,
   };
 }

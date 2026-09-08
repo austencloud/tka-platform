@@ -17,6 +17,8 @@ Variation support:
 
 -->
 <script lang="ts">
+  import { resolveViewingProps } from "$lib/shared/foundation/services/prop-viewing";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
@@ -64,14 +66,15 @@ Variation support:
     onPrimaryAction,
     onHover,
     selected = false,
-    bluePropType = undefined,
-    redPropType = undefined,
+    collectionPropType = null,
+    leftPropType = undefined,
+    rightPropType = undefined,
     catDogModeEnabled = false,
     lightMode = false,
     eager = false,
     handPathMode = false,
-    showBlueMotion = true,
-    showRedMotion = true,
+    showLeftMotion = true,
+    showRightMotion = true,
     addWord,
     addDifficultyLevel,
     allowQR = true,
@@ -87,17 +90,18 @@ Variation support:
     /** Fires on pointer enter (debounced 150ms) for cache pre-warming */
     onHover?: (sequence: SequenceData) => void;
     selected?: boolean;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    collectionPropType?: PropType | null;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     catDogModeEnabled?: boolean;
     lightMode?: boolean;
     /** Skip lazy loading - load thumbnails immediately (use in modals/pickers) */
     eager?: boolean;
     handPathMode?: boolean;
     /** Show blue motion (prop + arrow) in thumbnail. Default: true */
-    showBlueMotion?: boolean;
+    showLeftMotion?: boolean;
     /** Show red motion (prop + arrow) in thumbnail. Default: true */
-    showRedMotion?: boolean;
+    showRightMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
     /** Allow a baked-in QR (signed-in only, gated by the user's showQRCode
@@ -488,7 +492,7 @@ Variation support:
   function handleSendTo() {
     const seq = displayedSequence;
     closeContextMenu();
-    const propType = seq.intendedProp?.bluePropType ?? bluePropType ?? "staff";
+    const propType = seq.intendedProp?.leftPropType ?? leftPropType ?? "staff";
     // Cloud thumbnails are keyed by sequence.word (not .name) - matches PropAwareThumbnail
     const thumbnailUrl = buildThumbnailUrl(
       seq.word || seq.name,
@@ -627,6 +631,11 @@ Variation support:
 </script>
 
 {#snippet cardContents()}
+  {@const viewing = resolveViewingProps(
+    getSettings(),
+    displayedSequence,
+    collectionPropType
+  ).config}
   <!-- view-transition-name enables Google Photos-style morph animation to
        /sequence/[id]. Undefined on any duplicate copy of this sequence that is
        mounted at the same time (see the morph-name claim above). -->
@@ -639,14 +648,14 @@ Variation support:
     <PropAwareThumbnail
       bind:this={thumbnailRef}
       sequence={displayedSequence}
-      {bluePropType}
-      {redPropType}
-      {catDogModeEnabled}
+      leftPropType={viewing.leftPropType}
+      rightPropType={viewing.rightPropType}
+      catDogModeEnabled={viewing.catDogMode}
       {lightMode}
       {eager}
       {handPathMode}
-      {showBlueMotion}
-      {showRedMotion}
+      {showLeftMotion}
+      {showRightMotion}
       {addWord}
       {addDifficultyLevel}
       {allowQR}
@@ -656,6 +665,7 @@ Variation support:
       {#await import("$lib/shared/browse/components/hover-preview/CardHoverPreviewLayer.svelte") then mod}
         <mod.default
           sequence={displayedSequence}
+          {collectionPropType}
           instant={morphDriven}
           headerFrac={sheetHeaderFrac}
           onReady={() => previewReadyResolve?.()}

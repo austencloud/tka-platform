@@ -12,13 +12,13 @@ import { Resvg } from "@resvg/resvg-js";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import type { HandSide } from "@tka/tka-types";
 
 import {
   GridMode,
   Orientation,
   type GridLocation,
   type MotionType,
-  type PropColor,
 } from "./enums.js";
 import {
   getLayer2PointCoordinates,
@@ -244,7 +244,6 @@ const VTG_TO_ELEMENTAL: Record<VTGMode, ElementalType> = {
   QO: "moon", // Quarter Opp
 };
 
-
 export interface MotionInput {
   motionType: string;
   rotationDirection: string;
@@ -252,7 +251,7 @@ export interface MotionInput {
   endLocation: string;
   startOrientation?: string;
   endOrientation?: string;
-  color: string;
+  hand: HandSide;
   turns?: number | "fl"; // Includes Level 6 quarter turns such as 0.25, plus "fl" (float)
 }
 
@@ -260,13 +259,13 @@ export interface PictographInput {
   letter: string;
   startPosition?: string;
   endPosition?: string;
-  blueMotion: MotionInput;
-  redMotion: MotionInput;
+  leftMotion: MotionInput;
+  rightMotion: MotionInput;
   gridMode?: string;
-  /** Whether blue motion has a reversal (direction change from previous step) */
-  blueReversal?: boolean;
-  /** Whether red motion has a reversal (direction change from previous step) */
-  redReversal?: boolean;
+  /** Whether the left motion has a reversal (direction change from previous step) */
+  leftReversal?: boolean;
+  /** Whether the right motion has a reversal (direction change from previous step) */
+  rightReversal?: boolean;
 }
 
 export interface RenderVisibilityOptions {
@@ -279,17 +278,16 @@ export interface RenderVisibilityOptions {
   showReversals?: boolean;
   showGrid?: boolean;
   showNonRadialPoints?: boolean;
-  showBlueMotion?: boolean;
-  showRedMotion?: boolean;
+  showLeftMotion?: boolean;
+  showRightMotion?: boolean;
   // Prop type options (null = use default staff)
-  bluePropType?: string | null;
-  redPropType?: string | null;
+  leftPropType?: string | null;
+  rightPropType?: string | null;
   /** When true, use CSS custom properties for colors */
   themeable?: boolean;
   /** When true, omit XML declaration for inline HTML embedding */
   inline?: boolean;
 }
-
 
 export class StandaloneRenderer {
   private projectRoot: string;
@@ -332,8 +330,8 @@ export class StandaloneRenderer {
   private preprocessInput(input: PictographInput): PictographInput {
     return {
       ...input,
-      blueMotion: this.ensureOrientations(input.blueMotion),
-      redMotion: this.ensureOrientations(input.redMotion),
+      leftMotion: this.ensureOrientations(input.leftMotion),
+      rightMotion: this.ensureOrientations(input.rightMotion),
     };
   }
 
@@ -381,10 +379,10 @@ export class StandaloneRenderer {
       showPositions = false,
       showReversals = false,
       showGrid = true,
-      showBlueMotion = true,
-      showRedMotion = true,
-      bluePropType = null,
-      redPropType = null,
+      showLeftMotion = true,
+      showRightMotion = true,
+      leftPropType = null,
+      rightPropType = null,
       themeable = false,
       inline = false,
     } = options;
@@ -412,55 +410,55 @@ export class StandaloneRenderer {
 
     // 3. Props (using CORRECT placement logic with beta offset)
     // Pass BOTH propTypes to each renderProp call so beta offset can detect when both are hands
-    if (showBlueMotion) {
-      const blueProp = this.renderProp(
+    if (showLeftMotion) {
+      const leftProp = this.renderProp(
         input,
-        input.blueMotion,
+        input.leftMotion,
         gridMode,
         darkMode,
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         themeable
       );
-      if (blueProp)
-        svgParts.push(`<g class="svg-prop svg-prop-blue">${blueProp}</g>`);
+      if (leftProp)
+        svgParts.push(`<g class="svg-prop svg-prop-blue">${leftProp}</g>`);
     }
-    if (showRedMotion) {
-      const redProp = this.renderProp(
+    if (showRightMotion) {
+      const rightProp = this.renderProp(
         input,
-        input.redMotion,
+        input.rightMotion,
         gridMode,
         darkMode,
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         themeable
       );
-      if (redProp)
-        svgParts.push(`<g class="svg-prop svg-prop-red">${redProp}</g>`);
+      if (rightProp)
+        svgParts.push(`<g class="svg-prop svg-prop-red">${rightProp}</g>`);
     }
 
     // 4. Arrows (using CORRECT placement logic WITH adjustments)
-    if (showBlueMotion) {
-      const blueArrow = this.renderArrow(
+    if (showLeftMotion) {
+      const leftArrow = this.renderArrow(
         input,
-        input.blueMotion,
+        input.leftMotion,
         gridMode,
         darkMode,
         themeable
       );
-      if (blueArrow)
-        svgParts.push(`<g class="svg-arrow svg-arrow-blue">${blueArrow}</g>`);
+      if (leftArrow)
+        svgParts.push(`<g class="svg-arrow svg-arrow-blue">${leftArrow}</g>`);
     }
-    if (showRedMotion) {
-      const redArrow = this.renderArrow(
+    if (showRightMotion) {
+      const rightArrow = this.renderArrow(
         input,
-        input.redMotion,
+        input.rightMotion,
         gridMode,
         darkMode,
         themeable
       );
-      if (redArrow)
-        svgParts.push(`<g class="svg-arrow svg-arrow-red">${redArrow}</g>`);
+      if (rightArrow)
+        svgParts.push(`<g class="svg-arrow svg-arrow-red">${rightArrow}</g>`);
     }
 
     // 5. Position glyph (top center)
@@ -495,8 +493,8 @@ export class StandaloneRenderer {
     if (showTKA && input.letter) {
       const letterSvg = this.renderLetterWithTurns(
         input.letter,
-        input.blueMotion?.turns,
-        input.redMotion?.turns,
+        input.leftMotion?.turns,
+        input.rightMotion?.turns,
         darkMode,
         themeable
       );
@@ -517,10 +515,10 @@ export class StandaloneRenderer {
     }
 
     // 9. Reversal indicators (left edge)
-    if (showReversals && (input.blueReversal || input.redReversal)) {
+    if (showReversals && (input.leftReversal || input.rightReversal)) {
       const reversalSvg = this.renderReversalIndicators(
-        input.blueReversal ?? false,
-        input.redReversal ?? false,
+        input.leftReversal ?? false,
+        input.rightReversal ?? false,
         darkMode,
         themeable
       );
@@ -640,40 +638,41 @@ ${svgParts.join("\n")}
     pictograph: PictographInput,
     motion: MotionInput,
     gridMode: GridMode,
-    bluePropType: string | null = null,
-    redPropType: string | null = null
+    leftPropType: string | null = null,
+    rightPropType: string | null = null
   ): { x: number; y: number } {
     // Build input for beta offset calculation
     // CRITICAL: Pass both prop types so beta-offset can detect when BOTH are hands
     const betaInput: BetaOffsetInput = {
-      blueMotion: {
-        startLocation: pictograph.blueMotion.startLocation,
-        endLocation: pictograph.blueMotion.endLocation,
-        endOrientation: pictograph.blueMotion.endOrientation,
-        motionType: pictograph.blueMotion.motionType,
-        color: "blue",
-        propType: bluePropType || undefined,
+      leftMotion: {
+        startLocation: pictograph.leftMotion.startLocation,
+        endLocation: pictograph.leftMotion.endLocation,
+        endOrientation: pictograph.leftMotion.endOrientation,
+        motionType: pictograph.leftMotion.motionType,
+        hand: "left",
+        propType: leftPropType || undefined,
       },
-      redMotion: {
-        startLocation: pictograph.redMotion.startLocation,
-        endLocation: pictograph.redMotion.endLocation,
-        endOrientation: pictograph.redMotion.endOrientation,
-        motionType: pictograph.redMotion.motionType,
-        color: "red",
-        propType: redPropType || undefined,
+      rightMotion: {
+        startLocation: pictograph.rightMotion.startLocation,
+        endLocation: pictograph.rightMotion.endLocation,
+        endOrientation: pictograph.rightMotion.endOrientation,
+        motionType: pictograph.rightMotion.motionType,
+        hand: "right",
+        propType: rightPropType || undefined,
       },
       letter: pictograph.letter,
       gridMode,
     };
 
     // Target motion gets its own propType for offset direction calculation
-    const targetPropType = motion.color === "blue" ? bluePropType : redPropType;
+    const targetPropType =
+      motion.hand === "left" ? leftPropType : rightPropType;
     const targetMotion: BetaMotionInput = {
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
       endOrientation: motion.endOrientation,
       motionType: motion.motionType,
-      color: motion.color as "blue" | "red",
+      hand: motion.hand,
       propType: targetPropType || undefined,
     };
 
@@ -685,8 +684,8 @@ ${svgParts.join("\n")}
     motion: MotionInput,
     gridMode: GridMode,
     darkMode: boolean,
-    bluePropType: string | null = null,
-    redPropType: string | null = null,
+    leftPropType: string | null = null,
+    rightPropType: string | null = null,
     themeable: boolean = false
   ): string {
     // Get the end location and orientation
@@ -708,8 +707,8 @@ ${svgParts.join("\n")}
       pictograph,
       motion,
       gridMode,
-      bluePropType,
-      redPropType
+      leftPropType,
+      rightPropType
     );
     const finalX = placement.x + betaOffset.x;
     const finalY = placement.y + betaOffset.y;
@@ -717,7 +716,7 @@ ${svgParts.join("\n")}
     // Determine prop file name - use provided prop type or default to staff
     // Use the current motion's prop type
     const currentPropType =
-      motion.color === "blue" ? bluePropType : redPropType;
+      motion.hand === "left" ? leftPropType : rightPropType;
     const propFileName = currentPropType
       ? `${currentPropType}.svg`
       : "staff.svg";
@@ -733,9 +732,9 @@ ${svgParts.join("\n")}
 
     // HAND PROP SPECIAL LOGIC (matching PropPlacer.ts and PropSvg.svelte):
     // 1. Hands should NEVER rotate - always use 0 degrees orientation
-    // 2. Red hands are always mirrored (scaleX(-1)) to show left/right anatomically
+    // 2. Right hands are mirrored (scaleX(-1)) to show anatomy correctly.
     const isHand = currentPropType === "hand";
-    const isRedHand = isHand && motion.color === "red";
+    const isRightHand = isHand && motion.hand === "right";
     const rotation = isHand ? 0 : placement.rotation;
 
     try {
@@ -752,7 +751,7 @@ ${svgParts.join("\n")}
       }
 
       const color =
-        motion.color === "blue"
+        motion.hand === "left"
           ? this.resolveColor(
               "--dm-motion-blue",
               BLUE_COLOR_DARK,
@@ -767,7 +766,7 @@ ${svgParts.join("\n")}
               darkMode,
               themeable
             );
-      const colorSuffix = motion.color === "blue" ? "blue" : "red";
+      const colorSuffix = motion.hand === "left" ? "blue" : "red";
       const selectiveColorMode =
         !!currentPropType &&
         (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(
@@ -791,8 +790,8 @@ ${svgParts.join("\n")}
 
       // Canvas2D renderer draws props at their FULL viewBox dimensions
       // within the 950x950 scene - NO additional scaling
-      // Transform: translate to position → rotate → mirror (if red hand) → translate by -center
-      const mirrorTransform = isRedHand ? " scale(-1, 1)" : "";
+      // Transform: translate to position → rotate → mirror the right hand → translate by -center
+      const mirrorTransform = isRightHand ? " scale(-1, 1)" : "";
       return `<g transform="translate(${finalX}, ${finalY}) rotate(${rotation})${mirrorTransform} translate(${-centerX}, ${-centerY})">
   ${innerContent}
 </g>`;
@@ -838,11 +837,11 @@ ${svgParts.join("\n")}
     if (motionType === "dash") {
       // Get the "other" motion for dash location calculation
       const otherMotion =
-        motion.color === "blue" ? pictograph.redMotion : pictograph.blueMotion;
+        motion.hand === "left" ? pictograph.rightMotion : pictograph.leftMotion;
 
       const dashLocationInput: DashLocationInput = {
         letter: pictograph.letter,
-        motionColor: motion.color as "blue" | "red",
+        motionHand: motion.hand,
         motionStartLocation: motion.startLocation,
         motionEndLocation: motion.endLocation,
         motionTurns: motion.turns,
@@ -893,27 +892,27 @@ ${svgParts.join("\n")}
       letter: pictograph.letter,
       gridMode,
       endPosition: pictograph.endPosition,
-      blueMotion: {
+      leftMotion: {
         letter: pictograph.letter,
-        motionType: pictograph.blueMotion.motionType,
-        rotationDirection: pictograph.blueMotion.rotationDirection,
-        startLocation: pictograph.blueMotion.startLocation,
-        endLocation: pictograph.blueMotion.endLocation,
-        color: "blue",
-        turns: pictograph.blueMotion.turns,
-        endOrientation: pictograph.blueMotion.endOrientation as
+        motionType: pictograph.leftMotion.motionType,
+        rotationDirection: pictograph.leftMotion.rotationDirection,
+        startLocation: pictograph.leftMotion.startLocation,
+        endLocation: pictograph.leftMotion.endLocation,
+        hand: "left",
+        turns: pictograph.leftMotion.turns,
+        endOrientation: pictograph.leftMotion.endOrientation as
           | string
           | undefined,
       },
-      redMotion: {
+      rightMotion: {
         letter: pictograph.letter,
-        motionType: pictograph.redMotion.motionType,
-        rotationDirection: pictograph.redMotion.rotationDirection,
-        startLocation: pictograph.redMotion.startLocation,
-        endLocation: pictograph.redMotion.endLocation,
-        color: "red",
-        turns: pictograph.redMotion.turns,
-        endOrientation: pictograph.redMotion.endOrientation as
+        motionType: pictograph.rightMotion.motionType,
+        rotationDirection: pictograph.rightMotion.rotationDirection,
+        startLocation: pictograph.rightMotion.startLocation,
+        endLocation: pictograph.rightMotion.endLocation,
+        hand: "right",
+        turns: pictograph.rightMotion.turns,
+        endOrientation: pictograph.rightMotion.endOrientation as
           | string
           | undefined,
       },
@@ -925,7 +924,7 @@ ${svgParts.join("\n")}
       rotationDirection: motion.rotationDirection,
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
-      color: motion.color as "blue" | "red",
+      hand: motion.hand,
       turns: motion.turns,
       endOrientation: motion.endOrientation as string | undefined,
     };
@@ -971,7 +970,7 @@ ${svgParts.join("\n")}
       // Apply color - replace any existing fill colors with the arrow color
       // Arrow SVGs use #2e3192 as their base color
       const color =
-        motion.color === "blue"
+        motion.hand === "left"
           ? this.resolveColor(
               "--dm-motion-blue",
               BLUE_COLOR_DARK,
@@ -1054,8 +1053,8 @@ ${svgParts.join("\n")}
    * Render turn numbers next to the TKA letter glyph
    */
   private renderTurnNumbers(
-    blueTurns: number | "fl" | undefined,
-    redTurns: number | "fl" | undefined,
+    leftTurns: number | "fl" | undefined,
+    rightTurns: number | "fl" | undefined,
     letterWidth: number,
     letterHeight: number,
     darkMode: boolean,
@@ -1072,10 +1071,10 @@ ${svgParts.join("\n")}
     const topY = -PADDING_Y;
     const bottomY = letterHeight - NUMBER_HEIGHT + PADDING_Y;
 
-    // Render top turn number (blue motion)
-    if (blueTurns !== undefined && blueTurns !== 0) {
+    // Render the top turn number for the left-hand motion.
+    if (leftTurns !== undefined && leftTurns !== 0) {
       const topTurnSvg = this.renderSingleTurnNumber(
-        blueTurns,
+        leftTurns,
         baseX,
         topY,
         "blue",
@@ -1085,10 +1084,10 @@ ${svgParts.join("\n")}
       if (topTurnSvg) parts.push(topTurnSvg);
     }
 
-    // Render bottom turn number (red motion)
-    if (redTurns !== undefined && redTurns !== 0) {
+    // Render the bottom turn number for the right-hand motion.
+    if (rightTurns !== undefined && rightTurns !== 0) {
       const bottomTurnSvg = this.renderSingleTurnNumber(
-        redTurns,
+        rightTurns,
         baseX,
         bottomY,
         "red",
@@ -1207,8 +1206,8 @@ ${svgParts.join("\n")}
    */
   private renderLetterWithTurns(
     letter: string,
-    blueTurns: number | "fl" | undefined,
-    redTurns: number | "fl" | undefined,
+    leftTurns: number | "fl" | undefined,
+    rightTurns: number | "fl" | undefined,
     darkMode: boolean,
     themeable: boolean = false
   ): string {
@@ -1272,8 +1271,8 @@ ${svgParts.join("\n")}
 
       // Render turn numbers (positioned relative to letter)
       const turnNumbersSvg = this.renderTurnNumbers(
-        blueTurns,
-        redTurns,
+        leftTurns,
+        rightTurns,
         width,
         height,
         darkMode,
@@ -1650,15 +1649,15 @@ ${turnNumbersSvg}
    * - All dots are at X_POSITION (71.5) on the left edge
    */
   private renderReversalIndicators(
-    blueReversal: boolean,
-    redReversal: boolean,
+    leftReversal: boolean,
+    rightReversal: boolean,
     darkMode: boolean,
     themeable: boolean = false
   ): string {
     // Use shared core calculation for positioning
     const { dots } = calculateReversalPositions(
-      blueReversal,
-      redReversal,
+      leftReversal,
+      rightReversal,
       darkMode
     );
 

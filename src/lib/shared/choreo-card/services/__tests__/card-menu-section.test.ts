@@ -60,7 +60,7 @@ describe("buildCardMenuSection", () => {
     expect(onSaveToLibrary).toHaveBeenCalledOnce();
   });
 
-  it("columns submenu appears for stepCount >= 4 with Auto + even choices", () => {
+  it("columns submenu appears for stepCount >= 4 with Auto + canonical choices", () => {
     const entries = buildCardMenuSection({ stepCount: 8, onRerender: () => {} });
     expect(ids(entries)).toEqual(["columns-submenu", "rerender"]);
     const submenu = entries[0]!;
@@ -69,8 +69,21 @@ describe("buildCardMenuSection", () => {
       "cols-auto",
       "cols-2",
       "cols-4",
-      "cols-6",
       "cols-8",
+    ]);
+  });
+
+  it("offers three columns for a 12-step card", () => {
+    const entries = buildCardMenuSection({ stepCount: 12 });
+    const submenu = entries[0]!;
+    if (!("children" in submenu) || !submenu.children) throw new Error("no children");
+
+    expect(submenu.children.map((child) => child.id)).toEqual([
+      "cols-auto",
+      "cols-2",
+      "cols-3",
+      "cols-4",
+      "cols-6",
     ]);
   });
 

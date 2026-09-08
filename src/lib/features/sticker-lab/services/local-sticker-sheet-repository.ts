@@ -40,15 +40,23 @@ interface StoredPayloadV2 {
   version: 2;
   sheet: Omit<StickerSheet, "stickers"> & {
     stickers: Array<
-      Omit<StickerUnit, "primitiveRef"> & {
+      Omit<StickerUnit, "primitiveRef" | "variant"> & {
         primitiveRef: StoredPrimitiveRefV2;
+        variant: string;
       }
     >;
   };
 }
 
-interface StoredPayload {
+interface StoredPayloadV3 {
   version: 3;
+  sheet: Omit<StickerSheet, "stickers"> & {
+    stickers: Array<Omit<StickerUnit, "variant"> & { variant: string }>;
+  };
+}
+
+interface StoredPayload {
+  version: 4;
   sheet: StickerSheet;
 }
 
@@ -76,6 +84,10 @@ export class LocalStickerSheetRepository implements IStickerSheetRepository {
 
     if (payload.version === 2) {
       payload = migrateV2toV3(payload as unknown as StoredPayloadV2);
+    }
+
+    if (payload.version === 3) {
+      payload = migrateV3toV4(payload as unknown as StoredPayloadV3);
     }
 
     // Reject unknown future versions.
@@ -129,8 +141,8 @@ function migrateV1toV2(payload: StoredPayloadV1): StoredPayloadV2 {
   };
 }
 
-function migrateV2toV3(payload: StoredPayloadV2): StoredPayload {
-  const stickers: StickerUnit[] = payload.sheet.stickers.map((sticker) => {
+function migrateV2toV3(payload: StoredPayloadV2): StoredPayloadV3 {
+  const stickers: StoredPayloadV3["sheet"]["stickers"] = payload.sheet.stickers.map((sticker) => {
     const ref = sticker.primitiveRef;
     return {
       ...sticker,
@@ -147,6 +159,24 @@ function migrateV2toV3(payload: StoredPayloadV2): StoredPayload {
     sheet: {
       ...payload.sheet,
       stickers,
+    },
+  };
+}
+
+function migrateV3toV4(payload: StoredPayloadV3): StoredPayload {
+  return {
+    version: 4,
+    sheet: {
+      ...payload.sheet,
+      stickers: payload.sheet.stickers.map((sticker) => ({
+        ...sticker,
+        variant:
+          sticker.variant === "blue"
+            ? "left"
+            : sticker.variant === "red"
+              ? "right"
+              : sticker.variant as StickerUnit["variant"],
+      })),
     },
   };
 }

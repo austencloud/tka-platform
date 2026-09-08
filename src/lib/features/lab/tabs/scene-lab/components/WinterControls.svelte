@@ -54,7 +54,7 @@
 
 <ParamPanel title="Authored forest">
   <ParamSlider
-    label="Scenery detail"
+    label="Atmosphere detail"
     value={cfg.forestDetail}
     min={0}
     max={1}
@@ -272,7 +272,7 @@
 {/if}
 
 <ParamPanel
-  title="Ice platform"
+  title="Performance court"
   defaultOpen={false}
   enabled={cfg.platform.enabled}
   onToggle={(v) => (mut().platform.enabled = v)}
@@ -280,20 +280,11 @@
   <ParamSlider
     label="Radius"
     value={cfg.platform.radius}
-    min={2}
-    max={12}
-    step={0.5}
+    min={7.7}
+    max={20}
+    step={0.1}
     unit="m"
     onChange={(v) => (mut().platform.radius = v)}
-  />
-  <ParamSlider
-    label="Height"
-    value={cfg.platform.height}
-    min={0.1}
-    max={1.5}
-    step={0.05}
-    unit="m"
-    onChange={(v) => (mut().platform.height = v)}
   />
   <ParamColor
     label="Color"
@@ -307,13 +298,5 @@
     max={2}
     step={0.05}
     onChange={(v) => (mut().platform.glowIntensity = v)}
-  />
-  <ParamSlider
-    label="Frost density"
-    value={cfg.platform.frostDensity}
-    min={0.2}
-    max={3}
-    step={0.1}
-    onChange={(v) => (mut().platform.frostDensity = v)}
   />
 </ParamPanel>

@@ -19,7 +19,7 @@ import type { SaveResult } from "$lib/features/library/services/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
 import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
@@ -110,18 +110,18 @@ export async function generateRetroSequence(
   // Convert each step's motion pair into a RetroPictographData for the pixel renderer
   const beats: { letter: string; pictograph: RetroPictographData }[] =
     sequenceData.steps.map((step) => {
-      const blueMotion = step.motions[MotionColor.BLUE];
-      const redMotion = step.motions[MotionColor.RED];
+      const leftMotion = step.motions[HandSide.LEFT];
+      const rightMotion = step.motions[HandSide.RIGHT];
 
       const pictograph: RetroPictographData = {
         letter: step.letter ?? "?",
         gridMode: step.gridMode ?? GridMode.DIAMOND,
-        blueHand: blueMotion
-          ? motionToRetroHand(blueMotion)
-          : fallbackHand(MotionColor.BLUE),
-        redHand: redMotion
-          ? motionToRetroHand(redMotion)
-          : fallbackHand(MotionColor.RED),
+        leftHand: leftMotion
+          ? motionToRetroHand(leftMotion)
+          : fallbackHand(HandSide.LEFT),
+        rightHand: rightMotion
+          ? motionToRetroHand(rightMotion)
+          : fallbackHand(HandSide.RIGHT),
       };
 
       return {

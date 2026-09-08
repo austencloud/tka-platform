@@ -7,8 +7,8 @@ export interface DefaultPerformerSettings {
   prop: PropType;
   effortId: EffortId;
   planeMode: PlaneMode;
-  customBluePlane: Plane;
-  customRedPlane: Plane;
+  customLeftPlane: Plane;
+  customRightPlane: Plane;
 }
 
 export interface PerformerSettings {
@@ -20,6 +20,14 @@ export interface PerformerSettings {
    * `"none"` = explicitly off; any other EffectType = that effect.
    */
   effect: EffectType | null;
+  /**
+   * One effect per hand, when the two differ. `null` means both hands take
+   * `effect` above, which is the ordinary case and the only one that existed
+   * before per-hand effects. The renderer already resolves an effect per prop
+   * (`resolveEffect(propIndex, ...)`), so this only has to reach the tip map
+   * that `Viewer3DScene` builds; left is prop 0, right is prop 1.
+   */
+  handEffects: { left: EffectType; right: EffectType } | null;
   staffLengthCm: number | null;
   propBuild: Partial<PropBuild> | null;
 }
@@ -39,6 +47,7 @@ export function makeDefaultPerformerSettings(): PerformerSettings {
     effortId: null,
     prop: null,
     effect: null,
+    handEffects: null,
     staffLengthCm: null,
     propBuild: null,
   };
@@ -55,7 +64,7 @@ export function makeStandaloneDefaults(): DefaultPerformerSettings {
     prop: PropType.STAFF,
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
-    customBluePlane: Plane.WALL,
-    customRedPlane: Plane.WALL,
+    customLeftPlane: Plane.WALL,
+    customRightPlane: Plane.WALL,
   };
 }

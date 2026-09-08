@@ -20,14 +20,15 @@
   let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
-  const selectedIndex = $derived(viewer.selectedPerformerIndex);
-  const isAllMode = $derived(selectedIndex === null);
-
-  const selected = $derived.by(() => {
-    if (selectedIndex === null) return null;
-    return viewer.performerManager.performers[selectedIndex] ?? null;
-  });
-  const allPerformers = $derived(viewer.performerManager.performers);
+  const selectedIndex = $derived(viewer.primaryPerformerIndex);
+  const isAllMode = $derived(viewer.isAllPerformersSelected);
+  const selected = $derived(
+    selectedIndex === null
+      ? null
+      : (viewer.performerManager.performers[selectedIndex] ?? null)
+  );
+  const scopedPerformers = $derived(viewer.scopedPerformers());
+  const isMultiMode = $derived(scopedPerformers.length > 1 && !isAllMode);
 
   // The full nine-plane catalog, derived from the enum so a new plane can
   // never be missing here. Enum order already groups the fusion planes by
@@ -42,44 +43,46 @@
     return PLANE_LABELS[plane].replace(/ Plane$/, "");
   }
 
-  function sharedPlane(hand: "blue" | "red"): Plane | null {
+  function sharedPlane(hand: "left" | "right"): Plane | null {
     const defaultPlane =
-      hand === "blue"
-        ? viewer.defaultSettings.customBluePlane
-        : viewer.defaultSettings.customRedPlane;
+      hand === "left"
+        ? viewer.defaultSettings.customLeftPlane
+        : viewer.defaultSettings.customRightPlane;
     const first =
-      hand === "blue"
-        ? allPerformers[0]?.effectiveBluePlane
-        : allPerformers[0]?.effectiveRedPlane;
+      hand === "left"
+        ? scopedPerformers[0]?.effectiveLeftPlane
+        : scopedPerformers[0]?.effectiveRightPlane;
     if (!first) return defaultPlane;
 
-    const everyoneMatches = allPerformers.every((performer) =>
-      hand === "blue"
-        ? performer.effectiveBluePlane === first
-        : performer.effectiveRedPlane === first
+    const everyoneMatches = scopedPerformers.every((performer) =>
+      hand === "left"
+        ? performer.effectiveLeftPlane === first
+        : performer.effectiveRightPlane === first
     );
     return everyoneMatches ? first : null;
   }
 
-  const bluePlane = $derived(
-    isAllMode
-      ? sharedPlane("blue")
-      : (selected?.effectiveBluePlane ?? Plane.WALL)
+  const leftPlane = $derived(
+    isAllMode || isMultiMode
+      ? sharedPlane("left")
+      : (selected?.effectiveLeftPlane ?? Plane.WALL)
   );
 
-  const redPlane = $derived(
-    isAllMode ? sharedPlane("red") : (selected?.effectiveRedPlane ?? Plane.WALL)
+  const rightPlane = $derived(
+    isAllMode || isMultiMode
+      ? sharedPlane("right")
+      : (selected?.effectiveRightPlane ?? Plane.WALL)
   );
 
   const isOverridden = $derived(
-    !isAllMode && (selected?.hasOverride.planes ?? false)
+    !isAllMode && !isMultiMode && (selected?.hasOverride.planes ?? false)
   );
   const overrideCount = $derived(
-    isAllMode ? viewer.overrideCountForCategory("planes") : 0
+    scopedPerformers.filter((performer) => performer.hasOverride.planes).length
   );
 
   function hasHandOnPlane(plane: Plane): boolean {
-    return bluePlane === plane || redPlane === plane;
+    return leftPlane === plane || rightPlane === plane;
   }
 
   function isVisible(plane: Plane): boolean {
@@ -87,9 +90,7 @@
   }
 
   const hasStepOverrides = $derived(
-    isAllMode
-      ? allPerformers.some((performer) => performer.hasStepOverrides)
-      : (selected?.hasStepOverrides ?? false)
+    scopedPerformers.some((performer) => performer.hasStepOverrides)
   );
 
   // visiblePlanes is genuinely global scene state (single $state on the
@@ -100,8 +101,8 @@
   // scene), so it must not count there either - otherwise Reset can never
   // reach a state where it disappears again.
   const isPlaneStateNonDefault = $derived(
-    bluePlane !== Plane.WALL ||
-      redPlane !== Plane.WALL ||
+    leftPlane !== viewer.defaultSettings.customLeftPlane ||
+      rightPlane !== viewer.defaultSettings.customRightPlane ||
       hasStepOverrides ||
       (isAllMode && viewer.visiblePlanes.size > 0)
   );
@@ -121,11 +122,11 @@
 
   function handleHandSlotClick(
     e: MouseEvent,
-    hand: "blue" | "red",
+    hand: "left" | "right",
     plane: Plane
   ) {
     e.stopPropagation();
-    const currentPlane = hand === "blue" ? bluePlane : redPlane;
+    const currentPlane = hand === "left" ? leftPlane : rightPlane;
     if (currentPlane === plane) return;
 
     viewer.setHandPlaneScoped(hand, plane);
@@ -140,20 +141,8 @@
 
   function handleResetPlanesClick(e: MouseEvent) {
     e.stopPropagation();
-    if (isAllMode) {
-      viewer.setDefaultHandPlane("blue", Plane.WALL);
-      viewer.setDefaultHandPlane("red", Plane.WALL);
-      viewer.resetAllPerformersPlanes();
-      for (const performer of allPerformers) {
-        performer.clearBeatPlaneOverrides();
-      }
-      viewer.hideAllPlanes();
-    } else if (selected) {
-      selected.resetPlanes();
-      for (const p of viewer.scopedPerformers()) {
-        p.clearBeatPlaneOverrides();
-      }
-    }
+    viewer.resetPlanesScoped();
+    if (isAllMode) viewer.hideAllPlanes();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_planes",
@@ -164,7 +153,7 @@
   }
 
   function resetAllOverrides(): void {
-    viewer.resetAllPerformersPlanes();
+    viewer.resetPlanesScoped();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_planes",
@@ -175,7 +164,7 @@
   }
 
   function resetSelectedPlanes(): void {
-    selected?.resetPlanes();
+    viewer.resetPlanesScoped();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_planes",
@@ -200,23 +189,23 @@
 </script>
 
 <div class="planes-popover">
-  {#if isAllMode && overrideCount > 0}
+  {#if (isAllMode || isMultiMode) && overrideCount > 0}
     <CascadeBadge
       mode="overrides"
       {overrideCount}
       categoryLabel="planes"
       onReset={resetAllOverrides}
     />
-  {:else if !isAllMode && isOverridden}
+  {:else if !isAllMode && !isMultiMode && isOverridden}
     <CascadeBadge mode="custom" onReset={resetSelectedPlanes} />
-  {:else if !isAllMode}
+  {:else if !isAllMode && !isMultiMode}
     <CascadeBadge mode="default" />
   {/if}
 
   <div class="planes-header">
     <p class="planes-hint">
-      Each hand spins in one plane. Tap <strong>Blue</strong> or
-      <strong>Red</strong> to move that hand; the eye shows or hides a plane's guide
+      Each hand spins in one plane. Tap <strong>Left</strong> or
+      <strong>Right</strong> to move that hand; the eye shows or hides a plane's guide
       ring.
     </p>
     <button
@@ -255,8 +244,8 @@
 
   <div class="planes-body">
     <PlanesDiagram
-      {bluePlane}
-      {redPlane}
+      {leftPlane}
+      {rightPlane}
       visiblePlanes={viewer.visiblePlanes}
     />
 
@@ -311,21 +300,21 @@
         <div class="plane-right">
           <button
             class="hand-chip blue"
-            class:filled={bluePlane === plane}
-            onclick={(e) => handleHandSlotClick(e, "blue", plane)}
-            aria-pressed={bluePlane === plane}
-            aria-label={`Blue hand on ${label}`}
+            class:filled={leftPlane === plane}
+            onclick={(e) => handleHandSlotClick(e, "left", plane)}
+            aria-pressed={leftPlane === plane}
+            aria-label={`Left hand on ${label}`}
           >
-            Blue
+            Left
           </button>
           <button
             class="hand-chip red"
-            class:filled={redPlane === plane}
-            onclick={(e) => handleHandSlotClick(e, "red", plane)}
-            aria-pressed={redPlane === plane}
-            aria-label={`Red hand on ${label}`}
+            class:filled={rightPlane === plane}
+            onclick={(e) => handleHandSlotClick(e, "right", plane)}
+            aria-pressed={rightPlane === plane}
+            aria-label={`Right hand on ${label}`}
           >
-            Red
+            Right
           </button>
         </div>
       </div>

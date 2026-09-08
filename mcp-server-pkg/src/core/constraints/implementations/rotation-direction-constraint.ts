@@ -4,7 +4,7 @@
  * Filters or prefers specific rotation directions (cw/ccw) for one or both hands.
  *
  * Examples:
- * - "blue clockwise" - require blue hand to rotate clockwise
+ * - "left clockwise" - require left hand to rotate clockwise
  * - "all counter-clockwise" - require both hands CCW
  * - "prefer cw" - soft preference for clockwise
  */
@@ -19,7 +19,7 @@ import type {
 
 export type RotationDirectionMode = "require" | "prefer";
 export type RotationDirection = "cw" | "ccw";
-export type HandTarget = "blue" | "red" | "both";
+export type HandTarget = "left" | "right" | "both";
 
 export interface RotationDirectionConstraintOptions {
   /** The rotation direction to target */
@@ -45,7 +45,8 @@ export class RotationDirectionConstraint implements IVariationConstraint {
 
     const handStr =
       options.hand === "both" ? "both hands" : `${options.hand} hand`;
-    const dirStr = options.direction === "cw" ? "clockwise" : "counter-clockwise";
+    const dirStr =
+      options.direction === "cw" ? "clockwise" : "counter-clockwise";
 
     this.description =
       options.mode === "require"
@@ -67,72 +68,72 @@ export class RotationDirectionConstraint implements IVariationConstraint {
   private evaluateVariation(candidate: PictographData): ConstraintScore {
     const { direction, hand, mode } = this.options;
 
-    const blueDir = candidate.blueMotion.rotationDirection;
-    const redDir = candidate.redMotion.rotationDirection;
+    const leftDir = candidate.leftMotion.rotationDirection;
+    const rightDir = candidate.rightMotion.rotationDirection;
 
     // Static motions have no rotation - treat as neutral
-    const blueStatic =
-      candidate.blueMotion.motionType === "static" ||
-      blueDir === "no_rot" ||
-      blueDir === "noRotation";
-    const redStatic =
-      candidate.redMotion.motionType === "static" ||
-      redDir === "no_rot" ||
-      redDir === "noRotation";
+    const leftStatic =
+      candidate.leftMotion.motionType === "static" ||
+      leftDir === "no_rot" ||
+      leftDir === "noRotation";
+    const rightStatic =
+      candidate.rightMotion.motionType === "static" ||
+      rightDir === "no_rot" ||
+      rightDir === "noRotation";
 
     // Check for match
-    const blueMatch = blueStatic ? true : blueDir === direction;
-    const redMatch = redStatic ? true : redDir === direction;
+    const leftMatch = leftStatic ? true : leftDir === direction;
+    const rightMatch = rightStatic ? true : rightDir === direction;
 
     let score: number;
     let satisfied: boolean;
     let reason: string;
 
     switch (hand) {
-      case "blue":
-        if (blueStatic) {
+      case "left":
+        if (leftStatic) {
           score = 0.5;
           satisfied = true;
-          reason = "Blue hand is static (no rotation)";
+          reason = "Left hand is static (no rotation)";
         } else {
-          score = blueMatch ? 1 : 0;
-          satisfied = blueMatch;
-          reason = blueMatch
-            ? `Blue hand is ${direction}`
-            : `Blue hand is ${blueDir} (expected ${direction})`;
+          score = leftMatch ? 1 : 0;
+          satisfied = leftMatch;
+          reason = leftMatch
+            ? `Left hand is ${direction}`
+            : `Left hand is ${leftDir} (expected ${direction})`;
         }
         break;
 
-      case "red":
-        if (redStatic) {
+      case "right":
+        if (rightStatic) {
           score = 0.5;
           satisfied = true;
-          reason = "Red hand is static (no rotation)";
+          reason = "Right hand is static (no rotation)";
         } else {
-          score = redMatch ? 1 : 0;
-          satisfied = redMatch;
-          reason = redMatch
-            ? `Red hand is ${direction}`
-            : `Red hand is ${redDir} (expected ${direction})`;
+          score = rightMatch ? 1 : 0;
+          satisfied = rightMatch;
+          reason = rightMatch
+            ? `Right hand is ${direction}`
+            : `Right hand is ${rightDir} (expected ${direction})`;
         }
         break;
 
       case "both":
       default:
-        if (blueStatic && redStatic) {
+        if (leftStatic && rightStatic) {
           score = 0.5;
           satisfied = true;
           reason = "Both hands are static";
-        } else if (blueMatch && redMatch) {
+        } else if (leftMatch && rightMatch) {
           score = 1;
           satisfied = true;
           reason = `Both hands are ${direction}`;
-        } else if (blueMatch || redMatch) {
+        } else if (leftMatch || rightMatch) {
           score = 0.5;
           satisfied = false;
-          reason = blueMatch
-            ? `Only blue hand is ${direction}`
-            : `Only red hand is ${direction}`;
+          reason = leftMatch
+            ? `Only left hand is ${direction}`
+            : `Only right hand is ${direction}`;
         } else {
           score = 0;
           satisfied = false;
@@ -152,29 +153,29 @@ export class RotationDirectionConstraint implements IVariationConstraint {
   private checkSatisfaction(candidate: PictographData): boolean {
     const { direction, hand } = this.options;
 
-    const blueDir = candidate.blueMotion.rotationDirection;
-    const redDir = candidate.redMotion.rotationDirection;
+    const leftDir = candidate.leftMotion.rotationDirection;
+    const rightDir = candidate.rightMotion.rotationDirection;
 
-    const blueStatic =
-      candidate.blueMotion.motionType === "static" ||
-      blueDir === "no_rot" ||
-      blueDir === "noRotation";
-    const redStatic =
-      candidate.redMotion.motionType === "static" ||
-      redDir === "no_rot" ||
-      redDir === "noRotation";
+    const leftStatic =
+      candidate.leftMotion.motionType === "static" ||
+      leftDir === "no_rot" ||
+      leftDir === "noRotation";
+    const rightStatic =
+      candidate.rightMotion.motionType === "static" ||
+      rightDir === "no_rot" ||
+      rightDir === "noRotation";
 
-    const blueOk = blueStatic || blueDir === direction;
-    const redOk = redStatic || redDir === direction;
+    const leftOk = leftStatic || leftDir === direction;
+    const rightOk = rightStatic || rightDir === direction;
 
     switch (hand) {
-      case "blue":
-        return blueOk;
-      case "red":
-        return redOk;
+      case "left":
+        return leftOk;
+      case "right":
+        return rightOk;
       case "both":
       default:
-        return blueOk && redOk;
+        return leftOk && rightOk;
     }
   }
 }
@@ -182,34 +183,34 @@ export class RotationDirectionConstraint implements IVariationConstraint {
 /**
  * Convenience factories
  */
-export function blueClockwise(): RotationDirectionConstraint {
+export function leftClockwise(): RotationDirectionConstraint {
   return new RotationDirectionConstraint({
     direction: "cw",
-    hand: "blue",
+    hand: "left",
     mode: "require",
   });
 }
 
-export function blueCounterClockwise(): RotationDirectionConstraint {
+export function leftCounterClockwise(): RotationDirectionConstraint {
   return new RotationDirectionConstraint({
     direction: "ccw",
-    hand: "blue",
+    hand: "left",
     mode: "require",
   });
 }
 
-export function redClockwise(): RotationDirectionConstraint {
+export function rightClockwise(): RotationDirectionConstraint {
   return new RotationDirectionConstraint({
     direction: "cw",
-    hand: "red",
+    hand: "right",
     mode: "require",
   });
 }
 
-export function redCounterClockwise(): RotationDirectionConstraint {
+export function rightCounterClockwise(): RotationDirectionConstraint {
   return new RotationDirectionConstraint({
     direction: "ccw",
-    hand: "red",
+    hand: "right",
     mode: "require",
   });
 }

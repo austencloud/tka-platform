@@ -29,8 +29,8 @@ export function createPostStudioSequenceRef(
     revisionId: [
       "preview",
       sequence.canonicalSignature ?? sequence.canonicalHandPath ?? "",
-      sequence.bluePathHash ?? "",
-      sequence.redPathHash ?? "",
+      sequence.leftPathHash ?? "",
+      sequence.rightPathHash ?? "",
       sequence.word,
       sequence.steps.length,
     ].join(":"),

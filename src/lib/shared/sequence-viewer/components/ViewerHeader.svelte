@@ -14,6 +14,14 @@
   import ShareActionMenu from "$lib/shared/share/components/ShareActionMenu.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+  const handColors = $derived(getSettings().primaryPropColors ?? {
+    left: getMotionColor(HandSide.LEFT, getSettings().darkMode ? "dark" : "light"),
+    right: getMotionColor(HandSide.RIGHT, getSettings().darkMode ? "dark" : "light"),
+  });
 
   interface HeaderNavigation {
     label: string;
@@ -40,6 +48,12 @@
     hidden?: boolean;
     embedded?: boolean;
     navigation?: HeaderNavigation;
+    /** A non-word title that outranks `sequence.word` — e.g. a tunnel's own
+     *  name, which is a composition (cast, formation, props) rather than a
+     *  single alphabet word. When set, the header shows this text instead of
+     *  the glyph-rendered word, and word-specific actions (copy, read aloud)
+     *  are disabled: they operate on a TKA word, and this title is not one. */
+    titleOverride?: string | null;
     openAppHref?: string;
     onAccountSignIn?: () => void;
     onAccountOpenApp?: () => void;
@@ -52,8 +66,8 @@
     onRemix?: () => void;
     onPracticeToggle?: () => void;
     canToggleMotionVisibility?: boolean;
-    onMotionToggleBlue?: () => void;
-    onMotionToggleRed?: () => void;
+    onMotionToggleLeft?: () => void;
+    onMotionToggleRight?: () => void;
     onVideoUpload?: () => void;
     isPublished: boolean;
     onPublish?: () => void;
@@ -76,6 +90,7 @@
     hidden = false,
     embedded = false,
     navigation,
+    titleOverride = null,
     openAppHref,
     onAccountSignIn,
     onAccountOpenApp,
@@ -88,8 +103,8 @@
     onRemix,
     onPracticeToggle,
     canToggleMotionVisibility = false,
-    onMotionToggleBlue,
-    onMotionToggleRed,
+    onMotionToggleLeft,
+    onMotionToggleRight,
     onVideoUpload,
     isPublished,
     onPublish,
@@ -124,6 +139,13 @@
   const identityWord = $derived(
     sequence.word || sequence.displayName || sequence.name || "Sequence"
   );
+  const trimmedTitleOverride = $derived(titleOverride?.trim() || "");
+  /** Plain-text title actually shown in the slot: the override when present,
+   *  else the word identity. */
+  const displayTitle = $derived(trimmedTitleOverride || identityWord);
+  /** True only when the slot is showing `sequence.word` itself — gates the
+   *  glyph renderer and the word-specific actions in the menu below. */
+  const isWordTitle = $derived(!trimmedTitleOverride && !!sequence.word);
   const activeWordStepNumber = $derived(
     ctx.editingPane !== "image" &&
       ctx.highlightedStepIndex !== null &&
@@ -139,6 +161,9 @@
       showOpenAppAction ||
       !!onDeleteRequest
   );
+  const hasRightActions = $derived(
+    (hasAccountEntry && !!openAppHref) || !!exportSettings || !embedded
+  );
 
   let shareMenuOpen = $state(false);
 
@@ -149,10 +174,13 @@
 </script>
 
 <header
+  style:--motion-left-color={handColors.left}
+  style:--motion-right-color={handColors.right}
   class="viewer-header"
   class:compact={compactChrome}
   class:labelled={labelledChrome}
   class:with-navigation={!!navigation}
+  class:word-roomy={!hasRightActions}
   data-hidden={hidden}
 >
   <div class="header-side header-left">
@@ -272,8 +300,8 @@
         <div class="context-actions">
           {#if canToggleMotionVisibility}
             <MotionVisibilityToggle
-              onToggleBlue={onMotionToggleBlue}
-              onToggleRed={onMotionToggleRed}
+              onToggleLeft={onMotionToggleLeft}
+              onToggleRight={onMotionToggleRight}
             />
           {/if}
 
@@ -352,10 +380,10 @@
           guideActionLabel={guideAction?.label}
           motionVisibility={canToggleMotionVisibility
             ? {
-                showBlue: ctx.viewerVisibility.blueMotion,
-                showRed: ctx.viewerVisibility.redMotion,
-                onToggleBlue: onMotionToggleBlue ?? (() => {}),
-                onToggleRed: onMotionToggleRed ?? (() => {}),
+                showLeft: ctx.viewerVisibility.leftMotion,
+                showRight: ctx.viewerVisibility.rightMotion,
+                onToggleLeft: onMotionToggleLeft ?? (() => {}),
+                onToggleRight: onMotionToggleRight ?? (() => {}),
               }
             : undefined}
           onOpenChange={onOverflowOpenChange}
@@ -377,13 +405,17 @@
         onpointerup={actions.onpointerup}
         onpointercancel={actions.onpointercancel}
         onpointerleave={actions.onpointerleave}
-        aria-haspopup="menu"
-        aria-expanded={actions.isOpen}
-        aria-label={`Current word: ${actions.copyableWord}. Open word actions.`}
-        title={`Word actions for ${actions.copyableWord}`}
+        aria-haspopup={isWordTitle ? "menu" : undefined}
+        aria-expanded={isWordTitle ? actions.isOpen : undefined}
+        aria-label={isWordTitle
+          ? `Current word: ${actions.copyableWord}. Open word actions.`
+          : displayTitle}
+        title={isWordTitle
+          ? `Word actions for ${actions.copyableWord}`
+          : displayTitle}
       >
         <span class="word-display">
-          {#if sequence.word}
+          {#if isWordTitle}
             <WordHeader
               word={sequence.word}
               visible
@@ -392,14 +424,16 @@
               activeStepNumber={activeWordStepNumber}
             />
           {:else}
-            <span class="word-text">{identityWord}</span>
+            <span class="word-text">{displayTitle}</span>
           {/if}
         </span>
-        <i
-          class="fas fa-chevron-down word-disclosure"
-          class:open={actions.isOpen}
-          aria-hidden="true"
-        ></i>
+        {#if isWordTitle}
+          <i
+            class="fas fa-chevron-down word-disclosure"
+            class:open={actions.isOpen}
+            aria-hidden="true"
+          ></i>
+        {/if}
       </button>
 
       {#if actions.copied}
@@ -410,7 +444,8 @@
     {/snippet}
 
     <WordActionMenu
-      word={identityWord}
+      word={isWordTitle ? identityWord : ""}
+      enabled={isWordTitle}
       errorContext={{ module: "sequence-viewer" }}
       trigger={wordTrigger}
     />
@@ -897,6 +932,14 @@
 
     .viewer-header:not(.with-navigation) .header-word-slot {
       width: clamp(72px, calc(100vw - 292px), 132px);
+    }
+
+    /* Embedded viewers do not render account/share/close actions on the right.
+       Spend that genuinely free space on the sequence identity instead of
+       applying the full-header reservation and shrinking a normal word to a
+       five-pixel glyph size. */
+    .viewer-header.word-roomy .header-word-slot {
+      width: clamp(136px, 40vw, 156px);
     }
   }
 

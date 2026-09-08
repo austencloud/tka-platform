@@ -27,14 +27,14 @@ function createRowFromValues(headers: string[], values: string[]): ParsedCsvRow 
     endPosition: row["endPosition"] || "",
     timing: row["timing"] || "",
     direction: row["direction"] || "",
-    blueMotionType: row["blueMotionType"] || "",
-    blueRotationDirection: row["blueRotationDirection"] || "",
-    blueStartLocation: row["blueStartLocation"] || row["blueStartLoc"] || "",
-    blueEndLocation: row["blueEndLocation"] || "",
-    redMotionType: row["redMotionType"] || "",
-    redRotationDirection: row["redRotationDirection"] || "",
-    redStartLocation: row["redStartLocation"] || row["redStartLoc"] || "",
-    redEndLocation: row["redEndLocation"] || "",
+    leftMotionType: row["blueMotionType"] || "",
+    leftRotationDirection: row["blueRotationDirection"] || "",
+    leftStartLocation: row["blueStartLocation"] || row["blueStartLoc"] || "",
+    leftEndLocation: row["blueEndLocation"] || "",
+    rightMotionType: row["redMotionType"] || "",
+    rightRotationDirection: row["redRotationDirection"] || "",
+    rightStartLocation: row["redStartLocation"] || row["redStartLoc"] || "",
+    rightEndLocation: row["redEndLocation"] || "",
     ...row,
   } as ParsedCsvRow;
 }
@@ -197,21 +197,21 @@ export function getColumnMapping(headers: string[]): Record<string, string> {
   const mapping: Record<string, string> = {};
 
   const variations: Record<string, string[]> = {
-    blueStartLocation: [
+    leftStartLocation: [
       "blueStartLocation",
       "blueStartLoc",
       "blue_start_location",
     ],
-    blueEndLocation: [
+    leftEndLocation: [
       "blueEndLocation",
       "blue_end_location",
     ],
-    redStartLocation: [
+    rightStartLocation: [
       "redStartLocation",
       "redStartLoc",
       "red_start_location",
     ],
-    redEndLocation: ["redEndLocation", "red_end_location"],
+    rightEndLocation: ["redEndLocation", "red_end_location"],
   };
 
   for (const [standardName, variants] of Object.entries(variations)) {

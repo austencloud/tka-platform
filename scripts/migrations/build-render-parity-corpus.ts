@@ -75,7 +75,7 @@ for (const raw of sequences) {
     const h = hydrate(raw) as SequenceData;
     steps += h.steps?.length ?? 0;
     for (const s of h.steps ?? []) {
-      if (s.blueReversal || s.redReversal) reversalSteps++;
+      if (s.leftReversal || s.rightReversal) reversalSteps++;
     }
   } catch {
     hydrateFailures++;

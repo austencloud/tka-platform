@@ -16,12 +16,12 @@
     sequence.slice(0, Math.min(8, period)).split('')
   );
 
-  function getDots(symbol: string): { red: boolean; blue: boolean } {
+  function getDots(symbol: string): { right: boolean; left: boolean } {
     switch (symbol) {
-      case 'P': return { red: true, blue: true };
-      case 'R': return { red: true, blue: false };
-      case 'B': return { red: false, blue: true };
-      default:  return { red: false, blue: false };
+      case 'P': return { right: true, left: true };
+      case 'R': return { right: true, left: false };
+      case 'B': return { right: false, left: true };
+      default:  return { right: false, left: false };
     }
   }
 </script>
@@ -30,8 +30,8 @@
   {#each symbols as symbol}
     {@const dots = getDots(symbol)}
     <div class="dot-col">
-      <div class="dot" class:red={dots.red} class:empty={!dots.red}></div>
-      <div class="dot" class:blue={dots.blue} class:empty={!dots.blue}></div>
+      <div class="dot" class:red={dots.right} class:empty={!dots.right}></div>
+      <div class="dot" class:blue={dots.left} class:empty={!dots.left}></div>
     </div>
   {/each}
 </div>

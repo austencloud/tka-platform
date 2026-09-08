@@ -83,8 +83,8 @@ function sequence(length: number, overrides: Partial<Motion> = {}): SequenceStep
       stepNumber: i,
       duration: 1,
       motions: {
-        blue: motion(i, overrides),
-        red: motion(i + 2, overrides),
+        left: motion(i, overrides),
+        right: motion(i + 2, overrides),
       },
     } as SequenceStep);
   }
@@ -98,15 +98,15 @@ function sequence(length: number, overrides: Partial<Motion> = {}): SequenceStep
  */
 function propagatedSignature(steps: SequenceStep[]): LayerId[] {
   const propagator = new OrientationPropagator(new OrientationCalculator());
-  let propagated = propagator.propagateForColor([...steps], "blue", "in");
-  propagated = propagator.propagateForColor(propagated, "red", "in");
+  let propagated = propagator.propagateForColor([...steps], "left", "in");
+  propagated = propagator.propagateForColor(propagated, "right", "in");
 
   const signature: LayerId[] = [];
   for (let i = 1; i < propagated.length; i++) {
     const step = propagated[i]!;
     const layer = layerOf(
-      step.motions.blue.endOrientation,
-      step.motions.red.endOrientation
+      step.motions.left.endOrientation,
+      step.motions.right.endOrientation
     );
     expect(layer, `step ${i} sits on the orientation cycle`).not.toBeNull();
     signature.push(layer!);
@@ -293,7 +293,7 @@ describe("applyLayerPattern — the signature comes out as asked", () => {
 
 describe("enforceHandFlipParity", () => {
   it("makes each prop cross an even number of times, closing the loop", () => {
-    // Three crossings on blue, one on red — both odd, so neither prop comes home.
+    // Three crossings on left, one on right — both odd, so neither prop comes home.
     const start = applyLayerPattern(sequence(6), parsePattern("1:BBBR..")!).steps;
     expect(isLayerClosed(layerPatternOf(start.slice(1)))).toBe(false);
 
@@ -310,11 +310,11 @@ describe("enforceHandFlipParity", () => {
     expect(result.satisfied).toBe(true);
     expect(isLayerClosed(layerPatternOf(result.steps.slice(1)))).toBe(false);
 
-    for (const color of ["blue", "red"] as const) {
+    for (const hand of ["left", "right"] as const) {
       const crossings = result.steps
         .slice(1)
-        .filter((step) => flipsLayer(step.motions[color])).length;
-      expect(crossings % 2, `${color} crossings`).toBe(1);
+        .filter((step) => flipsLayer(step.motions[hand])).length;
+      expect(crossings % 2, `${hand} crossings`).toBe(1);
     }
   });
 
@@ -337,16 +337,16 @@ describe("enforceHandFlipParity", () => {
       prefloatRotationDirection: "cw",
     });
     for (let i = 1; i < floaty.length; i++) {
-      expect(flipsLayer(floaty[i]!.motions.blue)).toBe(true);
+      expect(flipsLayer(floaty[i]!.motions.left)).toBe(true);
     }
 
     const result = enforceHandFlipParity(floaty, "odd");
     expect(result.satisfied).toBe(true);
-    for (const color of ["blue", "red"] as const) {
+    for (const hand of ["left", "right"] as const) {
       const crossings = result.steps
         .slice(1)
-        .filter((step) => flipsLayer(step.motions[color])).length;
-      expect(crossings % 2, `${color} crossings`).toBe(1);
+        .filter((step) => flipsLayer(step.motions[hand])).length;
+      expect(crossings % 2, `${hand} crossings`).toBe(1);
     }
   });
 });

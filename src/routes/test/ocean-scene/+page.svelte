@@ -259,8 +259,8 @@
       {currentStep}
       {isPlaying}
       {bpm}
-      bluePropType="staff"
-      redPropType="staff"
+      leftPropType="staff"
+      rightPropType="staff"
       hideOverlays={compactControls}
       hidePerformerBadges={hideDensePerformerBadges}
       fullScreen={true}

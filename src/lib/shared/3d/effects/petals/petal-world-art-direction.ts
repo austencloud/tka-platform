@@ -38,9 +38,14 @@ export const NEUTRAL_PETAL_ENVIRONMENT_PROFILE: PetalEnvironmentProfile3D = {
   ambientEmissionScale: 1,
 };
 
-const PETAL_ENVIRONMENT_PROFILES: Record<
-  BackgroundType,
-  PetalEnvironmentProfile3D
+// PRIDE_BACKGROUND_TYPE is resolved at runtime (see background-type-migration)
+// rather than being the literal `BackgroundType.PRIDE`, so this computed key
+// can't be statically proven to fill that slot of the enum - hence `Partial`.
+// `resolvePetalEnvironmentProfile` below already falls back to the neutral
+// profile for a key that ends up missing, so nothing here should ever
+// actually be `undefined` at runtime.
+const PETAL_ENVIRONMENT_PROFILES: Partial<
+  Record<BackgroundType, PetalEnvironmentProfile3D>
 > = {
   [BackgroundType.FOREST]: {
     backdropLuminance: 0.035,

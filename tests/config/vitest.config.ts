@@ -67,6 +67,13 @@ export default defineConfig({
       singleFork: true,
     },
 
+    // The default five-second budget is too short once the full 1,600+ file
+    // suite shares one fork: otherwise-fast dynamic imports and repository
+    // scans can spend several seconds behind unrelated transforms. Keep real
+    // hangs bounded while allowing the release gate to produce deterministic
+    // results under normal shared-machine load.
+    testTimeout: 30_000,
+
     isolate: true,
 
     outputFile: {

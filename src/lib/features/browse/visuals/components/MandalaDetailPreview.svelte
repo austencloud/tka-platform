@@ -68,8 +68,8 @@
       {sequence}
       size={stageSize}
       show={payload.variant}
-      bluePropType={payload.bluePropType}
-      redPropType={payload.redPropType}
+      leftPropType={payload.leftPropType}
+      rightPropType={payload.rightPropType}
       pathShape={payload.pathShape ?? "arc"}
       animate={animating}
       animateMin={ANIMATE_MIN}

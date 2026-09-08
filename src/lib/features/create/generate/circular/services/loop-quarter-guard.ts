@@ -15,12 +15,12 @@
  * safety net that also repairs already-stored sequences.
  */
 
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 /** True when both hands' end orientation equals their start orientation. */
 export function orientationCloses(firstBeat: StepData, lastBeat: StepData): boolean {
-  for (const color of [MotionColor.BLUE, MotionColor.RED] as const) {
+  for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
     const start = firstBeat.motions[color]?.startOrientation;
     const end = lastBeat.motions[color]?.endOrientation;
     if (start == null || end == null || start !== end) return false;

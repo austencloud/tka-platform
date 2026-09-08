@@ -15,15 +15,15 @@ import type {
 import { tilePeriod } from "$lib/shared/create/domain/rhythm/rhythm-mask";
 
 export function stripToTurnPattern(
-  blue: readonly TurnValue[],
-  red: readonly TurnValue[],
+  left: readonly TurnValue[],
+  right: readonly TurnValue[],
   seqLen: number,
 ): TurnPattern {
-  const tb = tilePeriod(blue, seqLen);
-  const tr = tilePeriod(red, seqLen);
+  const tb = tilePeriod(left, seqLen);
+  const tr = tilePeriod(right, seqLen);
   const entries: TurnPatternEntry[] = [];
   for (let i = 0; i < seqLen; i++) {
-    entries.push({ stepIndex: i, blue: tb[i]!, red: tr[i]! });
+    entries.push({ stepIndex: i, left: tb[i]!, right: tr[i]! });
   }
   return {
     id: "strip",

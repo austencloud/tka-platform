@@ -32,12 +32,12 @@
 
   let {
     propType = null,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
   }: {
     propType?: PropType | string | null;
-    bluePropType?: PropType | string | null;
-    redPropType?: PropType | string | null;
+    leftPropType?: PropType | string | null;
+    rightPropType?: PropType | string | null;
   } = $props();
 
   const settingsState = settingsService;
@@ -45,11 +45,11 @@
   const animationSettingsState = animationScope?.settings ?? animationSettings;
 
   // Fall back to user's global settings when props not explicitly provided
-  const effectiveBluePropType = $derived(
-    bluePropType ?? propType ?? settingsState.settings.bluePropType ?? null
+  const effectiveLeftPropType = $derived(
+    leftPropType ?? propType ?? settingsState.settings.leftPropType ?? null
   );
-  const effectiveRedPropType = $derived(
-    redPropType ?? propType ?? settingsState.settings.redPropType ?? null
+  const effectiveRightPropType = $derived(
+    rightPropType ?? propType ?? settingsState.settings.rightPropType ?? null
   );
 
   // Visibility state
@@ -75,11 +75,11 @@
 
   // Both ends toggle for bilateral props
   const showBothEndsToggle = $derived.by(() => {
-    const blueIsBilateral =
-      effectiveBluePropType != null && isBilateralProp(effectiveBluePropType);
-    const redIsBilateral =
-      effectiveRedPropType != null && isBilateralProp(effectiveRedPropType);
-    return (blueIsBilateral || redIsBilateral) && currentTrailStyle !== "off";
+    const leftIsBilateral =
+      effectiveLeftPropType != null && isBilateralProp(effectiveLeftPropType);
+    const rightIsBilateral =
+      effectiveRightPropType != null && isBilateralProp(effectiveRightPropType);
+    return (leftIsBilateral || rightIsBilateral) && currentTrailStyle !== "off";
   });
 
   const isBothEnds = $derived(
@@ -97,7 +97,7 @@
   // Get prop-specific labels for the ends (e.g., "Thumb"/"Pinky" for staff)
   const endLabels = $derived.by(() => {
     // Use whichever prop is bilateral for the labels
-    const propToCheck = effectiveBluePropType ?? effectiveRedPropType;
+    const propToCheck = effectiveLeftPropType ?? effectiveRightPropType;
     if (propToCheck && isBilateralProp(propToCheck)) {
       return getBilateralEndLabels(propToCheck);
     }

@@ -78,7 +78,7 @@ export class ScreenSpaceAdjustmentTransformer {
       // the WRONG quadrant → arrow moves the wrong way. Remove once resolved.
       if (typeof globalThis !== "undefined" && (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW) {
         console.log(
-          `[XFORM] ${String(motionData.color)} mt=${String(motionData.motionType).toLowerCase()}` +
+          `[XFORM] ${String(motionData.hand)} mt=${String(motionData.motionType).toLowerCase()}` +
             ` rot=${String(motionData.rotationDirection).toLowerCase()} loc=${location} qi=${quadrantIndex}` +
             ` fwdMatrix[a,b,c,d]=[${a},${b},${c},${d}] det=${det}` +
             ` in=(${x},${y}) → invRef=(${Math.round(invX)},${Math.round(invY)})`,

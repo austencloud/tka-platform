@@ -296,7 +296,7 @@ Card-based architecture with integrated Generate button:
           actionsState.onSpellGenerate();
         } else {
           const propType =
-            (settingsService.settings.bluePropType as PropType) ||
+            (settingsService.settings.leftPropType as PropType) ||
             PropTypeEnum.STAFF;
           const options = uiConfigToGenerationOptions(
             configState.config,
@@ -309,7 +309,7 @@ Card-based architecture with integrated Generate button:
         generateTourState.start();
       },
       getCurrentPropType: () =>
-        settingsService.settings.bluePropType || "staff",
+        settingsService.settings.leftPropType || "staff",
     };
     setGeneratorVoiceRef(voiceRef);
 

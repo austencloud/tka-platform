@@ -1,3 +1,4 @@
+import type { ResolvedPropConfig } from "$lib/shared/foundation/services/recorded-prop-intent";
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import type { ShareOptions } from "../domain/models/share-options";
@@ -7,6 +8,7 @@ import { buildCardRenderOptions } from "./card-render-options";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import { hashString } from "$lib/shared/foundation/services/content-hasher";
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+import type { CardPresentation } from "$lib/shared/share/domain/models/card-presentation";
 
 export const CARD_BLOB_CACHE_MAX_ENTRIES = 3;
 export const CARD_BLOB_CACHE_MAX_BYTES = 24 * 1024 * 1024;
@@ -89,6 +91,7 @@ export class Sharer {
   async getCardImageBlob(
     sequence: SequenceData,
     opts: {
+      propConfig?: ResolvedPropConfig;
       darkMode: boolean;
       /**
        * Geometry the live card preview measured. Auto columns have no fixed
@@ -96,6 +99,8 @@ export class Sharer {
        * card on screen. Callers with a preview pass theirs.
        */
       resolvedAutoLayout?: ResolvedAutoLayout | null;
+      /** Current card or one-share footer override. */
+      cardPresentation?: CardPresentation;
     },
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
@@ -104,9 +109,11 @@ export class Sharer {
       format: "PNG" as const,
       quality: 1.0,
       ...buildCardRenderOptions(sequence, {
+        propConfig: opts.propConfig,
         darkMode: opts.darkMode,
         isHandPath: !!sequence.metadata?.isHandPathVisualization,
         resolvedAutoLayout: opts.resolvedAutoLayout ?? null,
+        cardPresentation: opts.cardPresentation,
       }),
     };
 
@@ -116,7 +123,7 @@ export class Sharer {
     // them from the global manager at render time. That makes them real inputs
     // to the image and invisible to a key built from the options alone — toggle
     // TKA off and the cache hands back the card that still has it. (The same
-    // reasoning already put bluePropType/redPropType in the options object.)
+    // reasoning already put leftPropType/rightPropType in the options object.)
     const cacheKey = hashString(
       `${JSON.stringify(sequence)}\n${JSON.stringify(renderOptions)}\n${JSON.stringify(
         getVisibilityStateManager().getState()
@@ -236,8 +243,8 @@ export class Sharer {
       stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
       visibilityOverrides: {
         darkMode: shareOptions.darkMode,
       },
@@ -272,8 +279,8 @@ export class Sharer {
       stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
       visibilityOverrides: {
         darkMode: shareOptions.darkMode,
       },

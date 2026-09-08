@@ -150,27 +150,27 @@
       };
 
       const verifiedBeats: VerifiedStepPosition[] = result.beats.map((step) => {
-        const bluePos = step.positions.find((p) => p.hand === "blue");
-        const redPos = step.positions.find((p) => p.hand === "red");
+        const leftPos = step.positions.find((p) => p.hand === "left");
+        const rightPos = step.positions.find((p) => p.hand === "right");
 
         // Apply corrections if any
-        let blueLocation = bluePos?.location ?? null;
-        let redLocation = redPos?.location ?? null;
+        let leftLocation = leftPos?.location ?? null;
+        let rightLocation = rightPos?.location ?? null;
 
         for (const correction of corrections) {
           if (correction.stepNumber === step.index && correction.field === "hand_position") {
-            if (correction.hand === "blue") {
-              blueLocation = correction.correctedValue as typeof blueLocation;
-            } else if (correction.hand === "red") {
-              redLocation = correction.correctedValue as typeof redLocation;
+            if (correction.hand === "left") {
+              leftLocation = correction.correctedValue as typeof leftLocation;
+            } else if (correction.hand === "right") {
+              rightLocation = correction.correctedValue as typeof rightLocation;
             }
           }
         }
 
         return {
           stepNumber: step.index,
-          blueLocation,
-          redLocation,
+          leftLocation,
+          rightLocation,
           positionLabel: step.positionLabel,
           startTime: step.startTime,
           endTime: step.endTime,

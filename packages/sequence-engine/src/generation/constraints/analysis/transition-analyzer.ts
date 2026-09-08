@@ -57,58 +57,58 @@ export interface WordAnalysis {
   propReversalBlockers: string[];
 }
 
-function hasHandReversal(from: PictographData, to: PictographData): { blue: boolean; red: boolean } {
-  const fromBlueHandPath = getHandpathDirection(
-    from.blueMotion.startLocation,
-    from.blueMotion.endLocation
+function hasHandReversal(from: PictographData, to: PictographData): { left: boolean; right: boolean } {
+  const fromLeftHandPath = getHandpathDirection(
+    from.leftMotion.startLocation,
+    from.leftMotion.endLocation
   );
-  const toBlueHandPath = getHandpathDirection(
-    to.blueMotion.startLocation,
-    to.blueMotion.endLocation
+  const toLeftHandPath = getHandpathDirection(
+    to.leftMotion.startLocation,
+    to.leftMotion.endLocation
   );
-  const fromRedHandPath = getHandpathDirection(
-    from.redMotion.startLocation,
-    from.redMotion.endLocation
+  const fromRightHandPath = getHandpathDirection(
+    from.rightMotion.startLocation,
+    from.rightMotion.endLocation
   );
-  const toRedHandPath = getHandpathDirection(
-    to.redMotion.startLocation,
-    to.redMotion.endLocation
+  const toRightHandPath = getHandpathDirection(
+    to.rightMotion.startLocation,
+    to.rightMotion.endLocation
   );
 
   // Only cw ↔ ccw is a reversal (dash/static are neutral)
-  const blueReversal =
-    (fromBlueHandPath === HandPath.CLOCKWISE && toBlueHandPath === HandPath.COUNTER_CLOCKWISE) ||
-    (fromBlueHandPath === HandPath.COUNTER_CLOCKWISE && toBlueHandPath === HandPath.CLOCKWISE);
-  const redReversal =
-    (fromRedHandPath === HandPath.CLOCKWISE && toRedHandPath === HandPath.COUNTER_CLOCKWISE) ||
-    (fromRedHandPath === HandPath.COUNTER_CLOCKWISE && toRedHandPath === HandPath.CLOCKWISE);
+  const leftReversal =
+    (fromLeftHandPath === HandPath.CLOCKWISE && toLeftHandPath === HandPath.COUNTER_CLOCKWISE) ||
+    (fromLeftHandPath === HandPath.COUNTER_CLOCKWISE && toLeftHandPath === HandPath.CLOCKWISE);
+  const rightReversal =
+    (fromRightHandPath === HandPath.CLOCKWISE && toRightHandPath === HandPath.COUNTER_CLOCKWISE) ||
+    (fromRightHandPath === HandPath.COUNTER_CLOCKWISE && toRightHandPath === HandPath.CLOCKWISE);
 
-  return { blue: blueReversal, red: redReversal };
+  return { left: leftReversal, right: rightReversal };
 }
 
-function hasPropReversal(from: PictographData, to: PictographData): { blue: boolean; red: boolean } {
+function hasPropReversal(from: PictographData, to: PictographData): { left: boolean; right: boolean } {
   // Get effective prop rotation (considering motion type)
-  const fromBlueRotation = getEffectivePropRotation(from.blueMotion);
-  const toBlueRotation = getEffectivePropRotation(to.blueMotion);
-  const fromRedRotation = getEffectivePropRotation(from.redMotion);
-  const toRedRotation = getEffectivePropRotation(to.redMotion);
+  const fromLeftRotation = getEffectivePropRotation(from.leftMotion);
+  const toLeftRotation = getEffectivePropRotation(to.leftMotion);
+  const fromRightRotation = getEffectivePropRotation(from.rightMotion);
+  const toRightRotation = getEffectivePropRotation(to.rightMotion);
 
-  const blueReversal =
-    fromBlueRotation !== null &&
-    toBlueRotation !== null &&
-    fromBlueRotation !== toBlueRotation;
-  const redReversal =
-    fromRedRotation !== null &&
-    toRedRotation !== null &&
-    fromRedRotation !== toRedRotation;
+  const leftReversal =
+    fromLeftRotation !== null &&
+    toLeftRotation !== null &&
+    fromLeftRotation !== toLeftRotation;
+  const rightReversal =
+    fromRightRotation !== null &&
+    toRightRotation !== null &&
+    fromRightRotation !== toRightRotation;
 
-  return { blue: blueReversal, red: redReversal };
+  return { left: leftReversal, right: rightReversal };
 }
 
 /**
  * Returns null for static motions (no rotation).
  */
-function getEffectivePropRotation(motion: PictographData["blueMotion"]): "cw" | "ccw" | null {
+function getEffectivePropRotation(motion: PictographData["leftMotion"]): "cw" | "ccw" | null {
   if (motion.motionType === "static") {
     return null;
   }
@@ -147,7 +147,7 @@ export function analyzeTransition(
       const propRev = hasPropReversal(from, to);
 
       // No hand reversal?
-      if (!handRev.blue && !handRev.red) {
+      if (!handRev.left && !handRev.right) {
         noHandReversalCount++;
         if (!noHandReversalExample) {
           noHandReversalExample = { fromVariation: fromIdx, toVariation: toIdx };
@@ -155,7 +155,7 @@ export function analyzeTransition(
       }
 
       // No prop reversal?
-      if (!propRev.blue && !propRev.red) {
+      if (!propRev.left && !propRev.right) {
         noPropReversalCount++;
         if (!noPropReversalExample) {
           noPropReversalExample = { fromVariation: fromIdx, toVariation: toIdx };
@@ -163,7 +163,7 @@ export function analyzeTransition(
       }
 
       // Both hands reverse?
-      if (handRev.blue && handRev.red) {
+      if (handRev.left && handRev.right) {
         bothHandsReverseCount++;
       }
     }

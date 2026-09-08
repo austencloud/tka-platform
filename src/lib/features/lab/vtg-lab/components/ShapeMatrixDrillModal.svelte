@@ -8,7 +8,7 @@
 
   interface Props {
     open: boolean;
-    pair: { blue: Flower; red: Flower } | null;
+    pair: { left: Flower; right: Flower } | null;
     data: ShapeMatrixData;
     onClose: () => void;
   }
@@ -20,8 +20,8 @@
   // The chosen cell's overlaid mandala (the grid cell's render), pinned above.
   const mandalaUrl = $derived.by(() => {
     if (!pair) return "";
-    const b = data.blue.get(flowerKey(pair.blue));
-    const r = data.red.get(flowerKey(pair.red));
+    const b = data.left.get(flowerKey(pair.left));
+    const r = data.right.get(flowerKey(pair.right));
     return b && r ? renderCell(b, r, 200, data.clubTipDx) : "";
   });
 
@@ -32,8 +32,8 @@
       return;
     }
     const overlay = {
-      blue: data.blue.get(flowerKey(p.blue))?.blue ?? [],
-      red: data.red.get(flowerKey(p.red))?.red ?? [],
+      left: data.left.get(flowerKey(p.left))?.left ?? [],
+      right: data.right.get(flowerKey(p.right))?.right ?? [],
       clubTipDx: data.clubTipDx,
     };
     let cancelled = false;
@@ -55,7 +55,7 @@
 <BaseModal {open} onclose={onClose} size="xl">
   {#snippet header()}
     <ModalHeader
-      title={pair ? `${flowerLabel(pair.blue)}  ⊕  ${flowerLabel(pair.red)}` : ""}
+      title={pair ? `${flowerLabel(pair.left)}  ⊕  ${flowerLabel(pair.right)}` : ""}
       subtitle="Six VTG modes that trace this overlay — front + back, rendered with clubs"
       showClose
       {onClose}

@@ -39,6 +39,7 @@ import {
 } from "../../../src/loop/detection/LOOPDetector.js";
 import { LOOPType } from "../../../src/loop/loop-types.js";
 import type { SequenceStep } from "../../../src/core/types/sequence-engine-types.js";
+import { normalizeLegacySteps } from "@tka/tka-types";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_PATH = path.resolve(
@@ -53,8 +54,16 @@ interface FixtureSample {
   steps: SequenceStep[];
 }
 
-const FIXTURES: Record<string, FixtureSample[]> = JSON.parse(
-  readFileSync(FIXTURE_PATH, "utf8"),
+const FIXTURES: Record<string, FixtureSample[]> = Object.fromEntries(
+  Object.entries(
+    JSON.parse(readFileSync(FIXTURE_PATH, "utf8")) as Record<string, FixtureSample[]>
+  ).map(([type, samples]) => [
+    type,
+    samples.map((sample) => ({
+      ...sample,
+      steps: normalizeLegacySteps(sample.steps),
+    })),
+  ])
 );
 
 function functional(sample: FixtureSample): string[] {
@@ -63,8 +72,8 @@ function functional(sample: FixtureSample): string[] {
 
 function engineClass(sample: FixtureSample): string[] {
   const r = loopDetectorClass.detectLOOPType(sample.steps);
-  if (!r.spec?.blue) return [];
-  return [...r.spec.blue.components.keys()].map(String).sort();
+  if (!r.spec?.left) return [];
+  return [...r.spec.left.components.keys()].map(String).sort();
 }
 
 function classLoopType(sample: FixtureSample): string | null {

@@ -17,7 +17,7 @@ export function createCircularFuseSoloSequence(
   solo: SoloPropData
 ): SequenceData {
   const sequence = updateSequenceData(
-    soloPropToSequence(solo, side === "blue" ? "left" : "right"),
+    soloPropToSequence(solo, side),
     { isCircular: true }
   );
 

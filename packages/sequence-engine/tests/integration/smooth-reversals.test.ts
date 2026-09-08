@@ -23,7 +23,7 @@ import type { PositionGroup, LetterPositionInfo } from "../../src/core/types/seq
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
-    color: "blue",
+    hand: "left",
     startLocation: "n",
     endLocation: "s",
     motionType: "pro",
@@ -40,8 +40,8 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
     endPosition: "alpha1",
     timing: "together",
     direction: "together",
-    blueMotion: makeMotion({ color: "blue" }),
-    redMotion: makeMotion({ color: "red" }),
+    leftMotion: makeMotion({ hand: "left" }),
+    rightMotion: makeMotion({ hand: "right" }),
     ...overrides,
   };
 }
@@ -51,23 +51,23 @@ function makePictograph(overrides: Partial<PictographData> & { letter: string })
 //   α - Type 6 start position (static at each position)
 //   A - alpha1→beta3 (pro, has cw AND ccw variations)
 //   B - beta3→alpha1 (pro, has cw AND ccw variations)
-//   C - alpha1→alpha1 (static blue, pro red — has cw AND ccw for red)
-//   D - beta3→beta3 (static blue, pro red — has cw AND ccw for red)
+//   C - alpha1→alpha1 (static left, pro right — has cw AND ccw for right)
+//   D - beta3→beta3 (static left, pro right — has cw AND ccw for right)
 const MOCK_PICTOGRAPHS: PictographData[] = [
   // Start positions
   makePictograph({
     letter: "α",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
   }),
   makePictograph({
     letter: "α",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "n", endLocation: "n" }),
   }),
 
   // A: alpha1→beta3, CW variant
@@ -75,16 +75,16 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "A",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "s", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "e" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "s", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "e" }),
   }),
   // A: alpha1→beta3, CCW variant
   makePictograph({
     letter: "A",
     startPosition: "alpha1",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "s", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "e" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "s", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "e" }),
   }),
 
   // B: beta3→alpha1, CW variant
@@ -92,48 +92,48 @@ const MOCK_PICTOGRAPHS: PictographData[] = [
     letter: "B",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "e", endLocation: "n" }),
   }),
   // B: beta3→alpha1, CCW variant
   makePictograph({
     letter: "B",
     startPosition: "beta3",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "e", endLocation: "n" }),
   }),
 
-  // C: alpha1→alpha1 — static blue (noRotation), pro red with cw/ccw variants
+  // C: alpha1→alpha1 — static left (noRotation), pro right with cw/ccw variants
   makePictograph({
     letter: "C",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "n" }),
   }),
   makePictograph({
     letter: "C",
     startPosition: "alpha1",
     endPosition: "alpha1",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "s", endLocation: "s" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "n" }),
   }),
 
-  // D: beta3→beta3 — static blue (noRotation), pro red with cw/ccw variants
+  // D: beta3→beta3 — static left (noRotation), pro right with cw/ccw variants
   makePictograph({
     letter: "D",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "cw", startLocation: "n", endLocation: "n" }),
   }),
   makePictograph({
     letter: "D",
     startPosition: "beta3",
     endPosition: "beta3",
-    blueMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
-    redMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "n" }),
+    leftMotion: makeMotion({ motionType: "static", rotationDirection: "noRotation", startLocation: "e", endLocation: "e" }),
+    rightMotion: makeMotion({ motionType: "pro", rotationDirection: "ccw", startLocation: "n", endLocation: "n" }),
   }),
 ];
 
@@ -174,18 +174,18 @@ const mockTransitionGraph: ITransitionGraph = {
 
 // Reversal detection helper
 
-function findReversals(steps: { blueMotion: MotionData; redMotion: MotionData }[]): string[] {
+function findReversals(steps: { leftMotion: MotionData; rightMotion: MotionData }[]): string[] {
   const issues: string[] = [];
 
-  for (const color of ["blue", "red"] as const) {
+  for (const hand of ["left", "right"] as const) {
     let lastDir: string | null = null;
     for (let i = 0; i < steps.length; i++) {
-      const motion = color === "blue" ? steps[i]!.motions.blue : steps[i]!.motions.red;
+      const motion = hand === "left" ? steps[i]!.motions.left : steps[i]!.motions.right;
       const dir = motion.rotationDirection;
       if (!dir || dir === "noRotation" || dir === "no_rot") continue;
 
       if (lastDir && lastDir !== dir) {
-        issues.push(`${color} reversal at step ${i}: ${lastDir}→${dir}`);
+        issues.push(`${hand} reversal at step ${i}: ${lastDir}→${dir}`);
       }
       lastDir = dir;
     }
@@ -217,15 +217,15 @@ describe("Smooth constraint prevents prop reversals", () => {
 
       const reversals = findReversals(result.sequence);
       if (reversals.length > 0) {
-        // Dump the blue directions and turns for debugging
-        const blueData = result.sequence.map((s, i) => ({
+        // Dump the left directions and turns for debugging
+        const leftData = result.sequence.map((s, i) => ({
           step: i,
           letter: s.letter,
-          blueType: s.blueMotion.motionType,
-          blueDir: s.blueMotion.rotationDirection,
-          blueTurns: s.blueMotion.turns,
+          leftType: s.leftMotion.motionType,
+          leftDir: s.leftMotion.rotationDirection,
+          leftTurns: s.leftMotion.turns,
         }));
-        allReversals.push(`Run ${run}: ${reversals.join(", ")} | DATA: ${JSON.stringify(blueData)}`);
+        allReversals.push(`Run ${run}: ${reversals.join(", ")} | DATA: ${JSON.stringify(leftData)}`);
       }
     }
 

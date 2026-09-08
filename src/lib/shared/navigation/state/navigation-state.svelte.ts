@@ -16,6 +16,7 @@ import {
 import {
   MODULE_DEFINITIONS,
   normalizeModuleId,
+  normalizeSectionId,
 } from "../config/module-definitions";
 
 import {
@@ -31,6 +32,12 @@ import {
 import { panelPersistenceState } from "./panel-persistence-state.svelte";
 
 import { hasMimeErrorOccurred, verifyTabSwitch } from "../../hmr-helper";
+
+export type CreateFrontDoorSource =
+  | "direct"
+  | "navigation"
+  | "workspace"
+  | "history";
 
 export {
   CREATE_TABS,
@@ -60,6 +67,12 @@ export {
 export function createNavigationState() {
   let currentCreateMode = $state<string>("construct");
   let currentLearnMode = $state<string>("concepts");
+
+  // A module home is navigation intent, not a fake tab. The active tab remains
+  // valid behind it so returning to a workspace restores in-progress work.
+  let activeModuleHome = $state<ModuleId | null>("create");
+  let createFrontDoorSource = $state<CreateFrontDoorSource>("direct");
+  let hasRememberedCreateMode = $state(false);
 
   let currentModule = $state<ModuleId>("create");
   let activeTab = $state<string>(DEFAULT_CREATE_TAB);
@@ -121,7 +134,13 @@ export function createNavigationState() {
       const raw = localStorage.getItem(MODULE_LAST_TABS_KEY);
       if (!raw) return null;
       const map: Record<string, string> = JSON.parse(raw);
-      return map[moduleId] || null;
+      const savedTab = map[moduleId] || null;
+      const normalizedTab = normalizeSectionId(moduleId, savedTab);
+      if (normalizedTab && normalizedTab !== savedTab) {
+        map[moduleId] = normalizedTab;
+        localStorage.setItem(MODULE_LAST_TABS_KEY, JSON.stringify(map));
+      }
+      return normalizedTab ?? null;
     } catch {
       return null;
     }
@@ -140,6 +159,7 @@ export function createNavigationState() {
     const savedCreateMode = localStorage.getItem(CURRENT_CREATE_MODE_KEY);
     if (savedCreateMode && CREATE_TABS.some((t) => t.id === savedCreateMode)) {
       currentCreateMode = savedCreateMode;
+      hasRememberedCreateMode = true;
     }
 
     const savedLearnMode = localStorage.getItem(CURRENT_LEARN_MODE_KEY);
@@ -194,6 +214,9 @@ export function createNavigationState() {
           searchParams.get("section")?.toLowerCase();
 
         const normalizedModule = normalizeModuleId(rawUrlModule);
+        if (normalizedModule) {
+          urlTab = normalizeSectionId(normalizedModule, urlTab);
+        }
 
         // Moderation folded into Admin as a tab (2026-06-30): a bare /moderation
         // deep link normalizes to the Admin module — open its Moderation tab.
@@ -209,6 +232,7 @@ export function createNavigationState() {
             activeTab = DEFAULT_CREATE_TAB;
           } else {
             currentModule = normalizedModule;
+            activeModuleHome = null;
 
             if (urlModuleDefinition.sections.length > 0) {
               const validTab = urlTab
@@ -217,10 +241,18 @@ export function createNavigationState() {
 
               if (validTab && urlTab) {
                 activeTab = urlTab;
+                if (normalizedModule === "create") {
+                  activeModuleHome = null;
+                  hasRememberedCreateMode = true;
+                }
               } else if (normalizedModule === "create") {
-                // Bare /create always lands on the default tab (construct),
-                // never a remembered sub-tab like assemble.
-                activeTab = DEFAULT_CREATE_TAB;
+                // Bare /create is a generic creation intent. Keep the last
+                // valid method as the backing tab so returning through the
+                // chooser can restore its state without pretending it is a
+                // separate navigation section.
+                activeTab = currentCreateMode || DEFAULT_CREATE_TAB;
+                activeModuleHome = "create";
+                createFrontDoorSource = "direct";
               } else {
                 const savedTab = loadModuleTab(normalizedModule);
                 if (
@@ -234,11 +266,16 @@ export function createNavigationState() {
               }
             } else {
               activeTab = "";
+              activeModuleHome = urlModuleDefinition.home
+                ? normalizedModule
+                : null;
             }
           }
         } else {
           currentModule = "create";
           activeTab = DEFAULT_CREATE_TAB;
+          activeModuleHome = "create";
+          createFrontDoorSource = "direct";
         }
       }
     }
@@ -279,7 +316,11 @@ export function createNavigationState() {
     }
   }
 
-  function setCurrentModule(moduleId: ModuleId, targetTab?: string) {
+  function setCurrentModule(
+    moduleId: ModuleId,
+    targetTab?: string,
+    entrySource: CreateFrontDoorSource = "navigation"
+  ) {
     if (MODULE_DEFINITIONS.some((m) => m.id === moduleId)) {
       const previousModuleLocal = currentModule;
 
@@ -301,13 +342,16 @@ export function createNavigationState() {
       const moduleDefinition = MODULE_DEFINITIONS.find(
         (m) => m.id === moduleId
       );
+      const normalizedTargetTab = normalizeSectionId(moduleId, targetTab);
       let nextTab = "";
       if (moduleDefinition && moduleDefinition.sections.length > 0) {
         if (
-          targetTab &&
-          moduleDefinition.sections.some((tab) => tab.id === targetTab)
+          normalizedTargetTab &&
+          moduleDefinition.sections.some(
+            (tab) => tab.id === normalizedTargetTab
+          )
         ) {
-          nextTab = targetTab;
+          nextTab = normalizedTargetTab;
         } else {
           const savedTab = loadModuleTab(moduleId);
           if (
@@ -325,6 +369,17 @@ export function createNavigationState() {
       }
 
       activeTab = nextTab;
+
+      activeModuleHome =
+        moduleDefinition?.home && !normalizedTargetTab ? moduleId : null;
+
+      if (moduleId === "create") {
+        if (normalizedTargetTab) {
+          hasRememberedCreateMode = true;
+        } else {
+          createFrontDoorSource = entrySource;
+        }
+      }
 
       if (previousModuleLocal !== moduleId) {
         try {
@@ -361,6 +416,9 @@ export function createNavigationState() {
   }
 
   function setActiveTab(tabId: string) {
+    const normalizedTabId = normalizeSectionId(currentModule, tabId);
+    if (!normalizedTabId) return;
+
     const debug =
       typeof window !== "undefined" &&
       (window as unknown as Record<string, unknown>).__DEBUG_NAV__;
@@ -369,12 +427,13 @@ export function createNavigationState() {
       (m) => m.id === currentModule
     );
     const tabExists = moduleDefinition?.sections.some(
-      (tab) => tab.id === tabId
+      (tab) => tab.id === normalizedTabId
     );
 
     if (debug) {
       console.log("[NavState] setActiveTab called:", {
         tabId,
+        normalizedTabId,
         currentModule,
         moduleFound: !!moduleDefinition,
         tabExists,
@@ -387,16 +446,22 @@ export function createNavigationState() {
       return;
     }
 
+    activeModuleHome = null;
+
+    if (currentModule === "create") {
+      hasRememberedCreateMode = true;
+    }
+
     const previousTab = activeTab;
 
-    activeTab = tabId;
+    activeTab = normalizedTabId;
 
-    if (previousTab === tabId) {
+    if (previousTab === normalizedTabId) {
       return;
     }
 
     try {
-      const moduleWithTab = `${currentModule}:${tabId}`;
+      const moduleWithTab = `${currentModule}:${normalizedTabId}`;
       const previousModuleWithTab = `${currentModule}:${previousTab}`;
       void logModuleView(moduleWithTab, previousModuleWithTab);
     } catch {
@@ -406,7 +471,10 @@ export function createNavigationState() {
     try {
       import("../../presence/get-presence-tracker")
         .then(({ getPresenceTracker }) => {
-          void getPresenceTracker().updateLocation(currentModule, tabId);
+          void getPresenceTracker().updateLocation(
+            currentModule,
+            normalizedTabId
+          );
         })
         .catch(() => {
           /* presence is non-critical */
@@ -416,19 +484,19 @@ export function createNavigationState() {
     }
 
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(ACTIVE_TAB_KEY, tabId);
-      saveModuleTab(currentModule, tabId);
+      localStorage.setItem(ACTIVE_TAB_KEY, normalizedTabId);
+      saveModuleTab(currentModule, normalizedTabId);
     }
 
     const module = getCurrentModule();
     if (module === "create") {
-      setCreateMode(tabId);
+      setCreateMode(normalizedTabId);
     } else if (module === "learn") {
-      setLearnMode(tabId);
+      setLearnMode(normalizedTabId);
     }
 
     if (import.meta.env.DEV && hasMimeErrorOccurred()) {
-      void verifyTabSwitch(tabId, 200);
+      void verifyTabSwitch(normalizedTabId, 200);
     }
   }
 
@@ -458,12 +526,42 @@ export function createNavigationState() {
     }
   }
 
+  function openModuleHome(
+    moduleId: ModuleId,
+    source: CreateFrontDoorSource = "navigation"
+  ): void {
+    const moduleDefinition = MODULE_DEFINITIONS.find(
+      (definition) => definition.id === moduleId
+    );
+    if (currentModule !== moduleId || !moduleDefinition?.home) return;
+    activeModuleHome = moduleId;
+    if (moduleId === "create") createFrontDoorSource = source;
+  }
+
+  function openCreateFrontDoor(
+    source: CreateFrontDoorSource = "navigation"
+  ): void {
+    openModuleHome("create", source);
+  }
+
   return {
     get currentCreateMode() {
       return currentCreateMode;
     },
     get currentLearnMode() {
       return currentLearnMode;
+    },
+    get isCreateFrontDoorOpen() {
+      return activeModuleHome === "create";
+    },
+    get activeModuleHome() {
+      return activeModuleHome;
+    },
+    get createFrontDoorSource() {
+      return createFrontDoorSource;
+    },
+    get hasRememberedCreateMode() {
+      return hasRememberedCreateMode;
     },
 
     get currentModule() {
@@ -545,6 +643,11 @@ export function createNavigationState() {
 
     setCurrentModule,
     setActiveTab,
+    openModuleHome,
+    openCreateFrontDoor,
+    isModuleHomeOpen(moduleId: ModuleId) {
+      return currentModule === moduleId && activeModuleHome === moduleId;
+    },
     getCurrentModule,
     getActiveTab,
     getTabsForModule,

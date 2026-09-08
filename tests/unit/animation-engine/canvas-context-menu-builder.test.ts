@@ -116,8 +116,8 @@ describe("canvas context menu builder", () => {
     expect(paths()?.checked).toBe(false);
     paths()?.action?.();
 
-    expect(vm.getVisibility("bluePathLines")).toBe(true);
-    expect(vm.getVisibility("redPathLines")).toBe(true);
+    expect(vm.getVisibility("leftPathLines")).toBe(true);
+    expect(vm.getVisibility("rightPathLines")).toBe(true);
     expect(paths()?.checked).toBe(true);
   });
 });

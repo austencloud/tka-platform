@@ -8,6 +8,14 @@
 -->
 <script lang="ts">
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import {
+    toExportTakeoverPhase,
+    exportPhaseLabelKey,
+  } from "$lib/shared/video-export/services/export-takeover-phase";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import RenderFilmCard from "./record-scene/RenderFilmCard.svelte";
+  import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   interface Props {
     countdownValue: number;
     isRecording: boolean;
@@ -17,6 +25,11 @@
     exportProgress: VideoExportProgress | null;
     isExporting: boolean;
     onCancelExport: () => void;
+    /** Non-null between Stop and the offline render: the person is choosing
+     *  how good the render should be, or backing out to record again. */
+    pendingRender: { durationSeconds: number } | null;
+    onConfirmRender: () => void;
+    onDiscardRender: () => void;
   }
 
   let {
@@ -27,21 +40,22 @@
     exportProgress,
     isExporting,
     onCancelExport,
+    pendingRender,
+    onConfirmRender,
+    onDiscardRender,
   }: Props = $props();
 
-  const progressPercent = $derived(
-    exportProgress ? Math.round(exportProgress.progress * 100) : 0
-  );
+  const exportOptions = getExportOptionsState();
 
-  const stageLabel = $derived(() => {
-    if (!exportProgress) return "";
-    switch (exportProgress.stage) {
-      case "capturing": return "Rendering frames";
-      case "encoding": return "Encoding video";
-      case "complete": return "Complete";
-      default: return "Exporting";
-    }
-  });
+  // Pass 2 hands off to the shared, app-wide export takeover. Blocking the 3D
+  // container alone was the bug: every control outside it stayed live while the
+  // deterministic render read from the scene.
+  const takeover = $derived(
+    toExportTakeoverPhase(exportProgress, isExporting && !isRecording)
+  );
+  const takeoverLabel = $derived(
+    takeover.labelKey ? t(takeover.labelKey) : ""
+  );
 
   function formatTime(seconds: number): string {
     const m = Math.floor(seconds / 60);
@@ -71,25 +85,25 @@
   </div>
 {/if}
 
-{#if isExporting && exportProgress && !isRecording}
-  <div class="overlay export-overlay" aria-live="polite">
-    <div class="export-card">
-      <div class="export-header">
-        <span class="export-title">{stageLabel()}</span>
-        <span class="export-percent">{progressPercent}%</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" style="width: {progressPercent}%"></div>
-      </div>
-      {#if exportProgress.currentFrame != null && exportProgress.totalFrames}
-        <div class="export-detail">
-          Frame {exportProgress.currentFrame} / {exportProgress.totalFrames}
-        </div>
-      {/if}
-      <button class="cancel-btn" onclick={onCancelExport}>Cancel</button>
-    </div>
+{#if pendingRender && !isRecording}
+  <div class="overlay export-overlay">
+    <RenderFilmCard
+      durationSeconds={pendingRender.durationSeconds}
+      {exportOptions}
+      onRender={onConfirmRender}
+      onDiscard={onDiscardRender}
+    />
   </div>
 {/if}
+
+<ExportTakeover
+  phase={takeover.phase}
+  progress={exportProgress?.progress ?? 0}
+  phaseLabel={takeoverLabel}
+  error={exportProgress?.error ?? null}
+  onCancel={onCancelExport}
+  label="Rendering your film"
+/>
 
 <style>
   .overlay {
@@ -123,8 +137,11 @@
   }
 
   .recording-badge {
-    top: 16px;
-    left: 16px;
+    /* Anchored where the Record Scene pill lives, so recording reads as that
+       control changing state. The top-left corner belongs to the performer
+       selector and must stay visible while the camera path is captured. */
+    bottom: var(--record-scene-bottom, 80px);
+    right: var(--record-scene-right, 12px);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -199,73 +216,10 @@
     pointer-events: auto;
   }
 
-  .export-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 24px 32px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 16px;
-    min-width: 260px;
-    max-width: 320px;
-  }
-
-  .export-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-  }
-
-  .export-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .export-percent {
-    font-size: 14px;
-    font-weight: 700;
-    color: white;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .progress-track {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-    border-radius: 3px;
-    transition: width 0.15s ease-out;
-  }
-
-  .export-detail {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .cancel-btn {
-    align-self: center;
-    padding: 6px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.7);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .cancel-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
-    color: white;
+  @media (max-width: 600px) {
+    .recording-badge {
+      right: 8px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

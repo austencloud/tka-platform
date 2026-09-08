@@ -87,8 +87,8 @@ export interface IMotionQueryHandler {
    * Used when reversing sequences to find the correct letter for the reversed motion
    */
   findLetterByMotionConfiguration(
-    blueMotion: MotionData,
-    redMotion: MotionData,
+    leftMotion: MotionData,
+    rightMotion: MotionData,
     gridMode: GridMode
   ): Promise<string | null>;
 }

@@ -450,10 +450,10 @@ export class SequenceFramePreRenderer {
       const metadata = this.orchestrator.getMetadata();
 
       // Use per-color prop types - propType removed from sequences (viewer preference)
-      if (metadata.bluePropType && metadata.redPropType) {
+      if (metadata.leftPropType && metadata.rightPropType) {
         await this.offscreenRenderer.loadPerColorPropTextures(
-          metadata.bluePropType,
-          metadata.redPropType
+          metadata.leftPropType,
+          metadata.rightPropType
         );
       }
 
@@ -464,8 +464,8 @@ export class SequenceFramePreRenderer {
 
     // Calculate animation state for this playback position
     this.orchestrator.calculateState(playbackPosition);
-    const blueProp = this.orchestrator.getBluePropState();
-    const redProp = this.orchestrator.getRedPropState();
+    const leftProp = this.orchestrator.getLeftPropState();
+    const rightProp = this.orchestrator.getRightPropState();
     const currentLetter = this.orchestrator.getCurrentLetter();
 
     // CRITICAL FIX: Load glyph texture for current letter if present
@@ -476,11 +476,11 @@ export class SequenceFramePreRenderer {
 
     // Get prop dimensions from metadata
     const metadata = this.orchestrator.getMetadata();
-    const bluePropDimensions = metadata.bluePropDimensions || {
+    const leftPropDimensions = metadata.leftPropDimensions || {
       width: 50,
       height: 150,
     };
-    const redPropDimensions = metadata.redPropDimensions || {
+    const rightPropDimensions = metadata.rightPropDimensions || {
       width: 50,
       height: 150,
     };
@@ -490,58 +490,58 @@ export class SequenceFramePreRenderer {
     // We're capturing the full frame which includes everything
 
     // Check if props should be flipped (Buugeng family only) and get prop types
-    let bluePropFlipped = false;
-    let redPropFlipped = false;
-    let bluePropType = "staff";
-    let redPropType = "staff";
+    let leftPropFlipped = false;
+    let rightPropFlipped = false;
+    let leftPropType = "staff";
+    let rightPropType = "staff";
     try {
       const settingsState = settingsService;
       const settings = settingsState.currentSettings;
       const buugengFamily = ["buugeng", "bigbuugeng"];
-      bluePropType = (
-        settings?.bluePropType ||
+      leftPropType = (
+        settings?.leftPropType ||
         settings?.propType ||
         "staff"
       ).toLowerCase();
-      redPropType = (
-        settings?.redPropType ||
+      rightPropType = (
+        settings?.rightPropType ||
         settings?.propType ||
         "staff"
       ).toLowerCase();
-      bluePropFlipped = buugengFamily.includes(bluePropType)
-        ? (settings?.blueBuugengFlipped ?? false)
+      leftPropFlipped = buugengFamily.includes(leftPropType)
+        ? (settings?.leftBuugengFlipped ?? false)
         : false;
-      redPropFlipped = buugengFamily.includes(redPropType)
-        ? (settings?.redBuugengFlipped ?? false)
+      rightPropFlipped = buugengFamily.includes(rightPropType)
+        ? (settings?.rightBuugengFlipped ?? false)
         : false;
     } catch {
       // Settings not available, use defaults
     }
 
     this.offscreenRenderer.renderScene({
-      blueProp,
-      redProp,
+      leftProp,
+      rightProp,
       gridVisible: true,
       gridMode: (metadata.gridMode ?? null) as string | null, // renderScene expects string|null
       letter: currentLetter,
       turnsTuple: null,
-      bluePropDimensions,
-      redPropDimensions,
-      blueTrailPoints: [], // No trails in pre-render frames
-      redTrailPoints: [],
+      leftPropDimensions,
+      rightPropDimensions,
+      leftTrailPoints: [], // No trails in pre-render frames
+      rightTrailPoints: [],
       trailSettings: config.trailSettings,
       currentTime: timestamp,
       visibility: {
         gridVisible: true,
         propsVisible: true,
         trailsVisible: false, // No trails in pre-render
-        blueMotionVisible: true,
-        redMotionVisible: true,
+        leftMotionVisible: true,
+        rightMotionVisible: true,
       },
-      bluePropFlipped,
-      redPropFlipped,
-      bluePropType,
-      redPropType,
+      leftPropFlipped,
+      rightPropFlipped,
+      leftPropType,
+      rightPropType,
     });
 
     // Capture the rendered frame as ImageBitmap

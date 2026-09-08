@@ -225,8 +225,8 @@ export interface BuildOptions {
 
   /**
    * Turns to use instead of rolling them at random, given as a repeating
-   * period per prop. `{ blue: [0, 1.5], red: [0.5] }` means blue alternates no
-   * turn and a turn and a half while red takes a half turn every step.
+   * period per prop. `{ left: [0, 1.5], right: [0.5] }` means left alternates no
+   * turn and a turn and a half while right takes a half turn every step.
    *
    * The period is indexed modulo its own length, so it covers every step the
    * search produces, including the bridge steps inserted between letters that
@@ -257,7 +257,7 @@ export interface BuildOptions {
    * Ask for a specific layer signature — which of the four radial/non-radial
    * combinations the props sit in, step by step. Give it either a pattern
    * object or its written form, `"1:.XB."`: a starting layer and one symbol per
-   * step saying which props cross there (`.` neither, `B` blue, `R` red, `X`
+   * step saying which props cross there (`.` neither, `B` left, `R` right, `X`
    * both).
    *
    * The pattern is independent of the word, so the same one laid over a
@@ -298,11 +298,11 @@ export interface BuildOptions {
   /** Letters that MUST appear at least once in the generated sequence. */
   mustContainLetters?: string[];
 
-  /** Override the starting orientation for the blue prop (e.g. "in", "out", "clock", "counter") */
-  blueStartOrientation?: string;
+  /** Override the starting orientation for the left prop (e.g. "in", "out", "clock", "counter") */
+  leftStartOrientation?: string;
 
-  /** Override the starting orientation for the red prop (e.g. "in", "out", "clock", "counter") */
-  redStartOrientation?: string;
+  /** Override the starting orientation for the right prop (e.g. "in", "out", "clock", "counter") */
+  rightStartOrientation?: string;
 }
 
 /**
@@ -469,7 +469,7 @@ export class SequenceBuilder {
     }
 
     const openOrientations: string[] = [];
-    for (const side of ["blue", "red"] as const) {
+    for (const side of ["left", "right"] as const) {
       const startOrientation = first.motions[side].startOrientation;
       const endOrientation = last.motions[side].endOrientation;
       if (startOrientation !== endOrientation) {
@@ -511,7 +511,7 @@ export class SequenceBuilder {
 
     const detected = loopDetectorClass.detectLOOPType(result.sequence);
     const actualRaw = new Set<string>();
-    for (const propSpec of [detected.spec?.blue, detected.spec?.red]) {
+    for (const propSpec of [detected.spec?.left, detected.spec?.right]) {
       for (const component of propSpec?.components.keys() ?? []) {
         actualRaw.add(String(component));
       }
@@ -756,8 +756,8 @@ export class SequenceBuilder {
       letters,
       propContinuity,
       {
-        blueStartOrientation: options.blueStartOrientation,
-        redStartOrientation: options.redStartOrientation,
+        leftStartOrientation: options.leftStartOrientation,
+        rightStartOrientation: options.rightStartOrientation,
       },
       resolveLayerShaping(options)
     );
@@ -1183,8 +1183,8 @@ export class SequenceBuilder {
       letters,
       propContinuity,
       {
-        blueStartOrientation: options.blueStartOrientation,
-        redStartOrientation: options.redStartOrientation,
+        leftStartOrientation: options.leftStartOrientation,
+        rightStartOrientation: options.rightStartOrientation,
       },
       resolveLayerShaping(options)
     );
@@ -1335,8 +1335,8 @@ export class SequenceBuilder {
     letters: string[],
     propContinuity?: "maximize" | "allow-reversals" | "force-reversals",
     orientationOverrides?: {
-      blueStartOrientation?: string;
-      redStartOrientation?: string;
+      leftStartOrientation?: string;
+      rightStartOrientation?: string;
     },
     layerShaping?: {
       /** Put the sequence in these layers, step by step. */
@@ -1364,64 +1364,64 @@ export class SequenceBuilder {
       // The source owns the bounds question. A random allocation still runs out
       // past its length, exactly as before; a pattern answers at every index,
       // which is what lets it cover the bridge steps the search inserted.
-      const blueTurns =
-        stepTurnIndex >= 0 ? turnSource.at(stepTurnIndex, "blue") : undefined;
-      const redTurns =
-        stepTurnIndex >= 0 ? turnSource.at(stepTurnIndex, "red") : undefined;
+      const leftTurns =
+        stepTurnIndex >= 0 ? turnSource.at(stepTurnIndex, "left") : undefined;
+      const rightTurns =
+        stepTurnIndex >= 0 ? turnSource.at(stepTurnIndex, "right") : undefined;
 
       // Get the previous step's rotation directions for continuity
       const prevStep =
         sequence.length > 0 ? sequence[sequence.length - 1] : undefined;
-      const prevBlueRot = prevStep?.motions.blue.rotationDirection;
-      const prevRedRot = prevStep?.motions.red.rotationDirection;
+      const prevLeftRot = prevStep?.motions.left.rotationDirection;
+      const prevRightRot = prevStep?.motions.right.rotationDirection;
 
-      const blueTurn = materializeTurn(pd.blueMotion, blueTurns, {
-        previousRotation: prevBlueRot,
+      const leftTurn = materializeTurn(pd.leftMotion, leftTurns, {
+        previousRotation: prevLeftRot,
         propContinuity,
       });
-      const redTurn = materializeTurn(pd.redMotion, redTurns, {
-        previousRotation: prevRedRot,
+      const rightTurn = materializeTurn(pd.rightMotion, rightTurns, {
+        previousRotation: prevRightRot,
         propContinuity,
       });
 
       // PictographData from the variation provider carries string-typed
       // motion fields (loaded from JSON). Cast at the boundary into the
       // unified Motion/Step enums — the JSON is trusted.
-      const blueMotion = {
-        motionType: blueTurn.motionType as Motion["motionType"],
-        startLocation: pd.blueMotion.startLocation as Motion["startLocation"],
-        endLocation: pd.blueMotion.endLocation as Motion["endLocation"],
+      const leftMotion = {
+        motionType: leftTurn.motionType as Motion["motionType"],
+        startLocation: pd.leftMotion.startLocation as Motion["startLocation"],
+        endLocation: pd.leftMotion.endLocation as Motion["endLocation"],
         rotationDirection:
-          blueTurn.rotationDirection as Motion["rotationDirection"],
-        startOrientation: pd.blueMotion
+          leftTurn.rotationDirection as Motion["rotationDirection"],
+        startOrientation: pd.leftMotion
           .startOrientation as Motion["startOrientation"],
-        endOrientation: pd.blueMotion
+        endOrientation: pd.leftMotion
           .endOrientation as Motion["endOrientation"],
-        turns: blueTurn.turns as Motion["turns"],
+        turns: leftTurn.turns as Motion["turns"],
         plane: "wall" as Motion["plane"],
-        ...(blueTurn.prefloatMotionType && {
+        ...(leftTurn.prefloatMotionType && {
           prefloatMotionType:
-            blueTurn.prefloatMotionType as Motion["motionType"],
+            leftTurn.prefloatMotionType as Motion["motionType"],
           prefloatRotationDirection:
-            blueTurn.prefloatRotationDirection as Motion["rotationDirection"],
+            leftTurn.prefloatRotationDirection as Motion["rotationDirection"],
         }),
       };
-      const redMotion = {
-        motionType: redTurn.motionType as Motion["motionType"],
-        startLocation: pd.redMotion.startLocation as Motion["startLocation"],
-        endLocation: pd.redMotion.endLocation as Motion["endLocation"],
+      const rightMotion = {
+        motionType: rightTurn.motionType as Motion["motionType"],
+        startLocation: pd.rightMotion.startLocation as Motion["startLocation"],
+        endLocation: pd.rightMotion.endLocation as Motion["endLocation"],
         rotationDirection:
-          redTurn.rotationDirection as Motion["rotationDirection"],
-        startOrientation: pd.redMotion
+          rightTurn.rotationDirection as Motion["rotationDirection"],
+        startOrientation: pd.rightMotion
           .startOrientation as Motion["startOrientation"],
-        endOrientation: pd.redMotion.endOrientation as Motion["endOrientation"],
-        turns: redTurn.turns as Motion["turns"],
+        endOrientation: pd.rightMotion.endOrientation as Motion["endOrientation"],
+        turns: rightTurn.turns as Motion["turns"],
         plane: "wall" as Motion["plane"],
-        ...(redTurn.prefloatMotionType && {
+        ...(rightTurn.prefloatMotionType && {
           prefloatMotionType:
-            redTurn.prefloatMotionType as Motion["motionType"],
+            rightTurn.prefloatMotionType as Motion["motionType"],
           prefloatRotationDirection:
-            redTurn.prefloatRotationDirection as Motion["rotationDirection"],
+            rightTurn.prefloatRotationDirection as Motion["rotationDirection"],
         }),
       };
       sequence.push({
@@ -1429,7 +1429,7 @@ export class SequenceBuilder {
         letter: pd.letter as SequenceStep["letter"],
         startPosition: pd.startPosition as SequenceStep["startPosition"],
         endPosition: pd.endPosition as SequenceStep["endPosition"],
-        motions: { blue: blueMotion, red: redMotion },
+        motions: { left: leftMotion, right: rightMotion },
         stepNumber: i,
         duration: 1,
         isBridge,
@@ -1465,21 +1465,21 @@ export class SequenceBuilder {
     const propagator = new OrientationPropagator(
       new OrientationCalculatorImpl()
     );
-    const blueStartOrientation = (orientationOverrides?.blueStartOrientation ||
-      shaped[0]?.motions.blue.endOrientation ||
+    const leftStartOrientation = (orientationOverrides?.leftStartOrientation ||
+      shaped[0]?.motions.left.endOrientation ||
       "in") as Orientation;
     let propagated = propagator.propagateForColor(
       shaped,
-      "blue",
-      blueStartOrientation
+      "left",
+      leftStartOrientation
     );
-    const redStartOrientation = (orientationOverrides?.redStartOrientation ||
-      shaped[0]?.motions.red.endOrientation ||
+    const rightStartOrientation = (orientationOverrides?.rightStartOrientation ||
+      shaped[0]?.motions.right.endOrientation ||
       "in") as Orientation;
     propagated = propagator.propagateForColor(
       propagated,
-      "red",
-      redStartOrientation
+      "right",
+      rightStartOrientation
     );
 
     // Update step 0 (start position) orientations when overrides are provided.
@@ -1487,33 +1487,33 @@ export class SequenceBuilder {
     // The start position is a static hold, so start and end orientation are the same.
     if (orientationOverrides && propagated[0]) {
       const sp = propagated[0];
-      if (orientationOverrides.blueStartOrientation) {
-        const blueOri =
-          orientationOverrides.blueStartOrientation as Motion["startOrientation"];
+      if (orientationOverrides.leftStartOrientation) {
+        const leftOri =
+          orientationOverrides.leftStartOrientation as Motion["startOrientation"];
         propagated[0] = {
           ...sp,
           motions: {
-            blue: {
-              ...sp.motions.blue,
-              startOrientation: blueOri,
-              endOrientation: blueOri,
+            left: {
+              ...sp.motions.left,
+              startOrientation: leftOri,
+              endOrientation: leftOri,
             },
-            red: sp.motions.red,
+            right: sp.motions.right,
           },
         };
       }
-      if (orientationOverrides.redStartOrientation) {
-        const redOri =
-          orientationOverrides.redStartOrientation as Motion["startOrientation"];
+      if (orientationOverrides.rightStartOrientation) {
+        const rightOri =
+          orientationOverrides.rightStartOrientation as Motion["startOrientation"];
         const sp2 = propagated[0]!;
         propagated[0] = {
           ...sp2,
           motions: {
-            blue: sp2.motions.blue,
-            red: {
-              ...sp2.motions.red,
-              startOrientation: redOri,
-              endOrientation: redOri,
+            left: sp2.motions.left,
+            right: {
+              ...sp2.motions.right,
+              startOrientation: rightOri,
+              endOrientation: rightOri,
             },
           },
         };
@@ -1526,8 +1526,8 @@ export class SequenceBuilder {
     // the numbers here cover the bridge steps too. Step 0 is the start position
     // and carries no turns, hence the offset.
     const turnAllocation: TurnAllocation = {
-      blue: propagated.slice(1).map((_, i) => turnSource.at(i, "blue") ?? 0),
-      red: propagated.slice(1).map((_, i) => turnSource.at(i, "red") ?? 0),
+      left: propagated.slice(1).map((_, i) => turnSource.at(i, "left") ?? 0),
+      right: propagated.slice(1).map((_, i) => turnSource.at(i, "right") ?? 0),
     };
 
     return {
@@ -1624,8 +1624,8 @@ export class SequenceBuilder {
     for (let i = letterRederiveStart; i < extendedSteps.length; i++) {
       const step = extendedSteps[i]!;
       const derivedLetter = findLetterByMotions(
-        step.motions.blue,
-        step.motions.red,
+        step.motions.left,
+        step.motions.right,
         allPictographs
       );
       if (!derivedLetter) {

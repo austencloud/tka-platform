@@ -4,7 +4,7 @@
  */
 
 import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
-import { MotionColor as MotionColorEnum } from "../../pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../pictograph/shared/domain/enums/pictograph-enums";
 
 export interface ComponentLoadingState {
   loadingStates: Record<string, boolean>;
@@ -18,8 +18,8 @@ export function getRequiredComponents(data: PictographData | null): string[] {
   if (!data?.motions) return components;
 
   const motions = data.motions;
-  if (motions[MotionColorEnum.BLUE]?.isVisible) components.push("prop-blue");
-  if (motions[MotionColorEnum.RED]?.isVisible) components.push("prop-red");
+  if (motions[HandSide.LEFT]?.isVisible) components.push("prop-blue");
+  if (motions[HandSide.RIGHT]?.isVisible) components.push("prop-red");
 
   return components;
 }

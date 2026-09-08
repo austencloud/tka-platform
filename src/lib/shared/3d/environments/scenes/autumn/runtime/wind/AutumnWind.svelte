@@ -21,9 +21,10 @@
   interface Props {
     scene: Object3D | null;
     tier: AutumnQualityTier;
+    active?: boolean;
   }
 
-  let { scene, tier }: Props = $props();
+  let { scene, tier, active = true }: Props = $props();
 
   const windDirection = new Vector2(0.86, 0.5).normalize();
   const activeUniforms = new Set<RootedWindUniforms>();
@@ -78,10 +79,19 @@
 
   const reducedMotion = $derived(prefersReducedMotion());
 
-  useTask((delta) => {
-    for (const uniforms of activeUniforms) {
-      uniforms.strength.value = reducedMotion ? 0 : 0.14;
-      uniforms.time.value += delta;
-    }
+  const windTask = useTask(
+    (delta) => {
+      for (const uniforms of activeUniforms) {
+        uniforms.strength.value = reducedMotion ? 0 : 0.14;
+        uniforms.time.value += delta;
+      }
+    },
+    { autoStart: false }
+  );
+
+  $effect(() => {
+    if (active) windTask.start();
+    else windTask.stop();
+    return () => windTask.stop();
   });
 </script>

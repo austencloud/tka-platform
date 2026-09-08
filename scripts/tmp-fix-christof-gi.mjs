@@ -2,7 +2,7 @@
  * One-off repair for Christofborkott's fused sequence saved with a truncated
  * word ("GI") and a doubled-word name ("IIECCKIIECCK").
  *
- * Correct values were computed by running the doc's blueSoloProp/redSoloProp
+ * Correct values were computed by running the doc's legacy blueSoloProp/redSoloProp
  * through the FIXED fuse pipeline (fuseSequences + deriveLettersForSequence
  * against the real CSV dataframes) in
  * src/lib/features/fuse/services/__tests__/fused-word-derivation.test.ts:

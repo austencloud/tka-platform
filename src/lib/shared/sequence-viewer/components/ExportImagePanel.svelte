@@ -18,7 +18,12 @@
   import { onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import { DURATION } from "$lib/shared/transitions/transitions";
+  import {
+    DURATION,
+    SLIDE,
+    STAGGER,
+  } from "$lib/shared/transitions/transitions";
+  import { flyFade, motionDuration } from "$lib/shared/transitions/motion";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -35,6 +40,12 @@
     type ResolvedAutoLayout,
   } from "$lib/shared/render/services/container-aware-layout";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import CardFooterEditor from "$lib/shared/share/components/CardFooterEditor.svelte";
+  import {
+    cardPresentationFromFooterSettings,
+    resolveCardFooter,
+    type CardPresentation,
+  } from "$lib/shared/share/domain/models/card-presentation";
 
   type PanelLayout = "sidebar" | "bottom" | "inline";
 
@@ -52,6 +63,12 @@
       value: string | number | boolean | null,
       coalesce?: boolean
     ) => void;
+    /** Current sequence/session footer. Omitted means account defaults. */
+    cardPresentation?: CardPresentation;
+    onCardPresentationChange?: (value: CardPresentation) => void;
+    onSaveCardPresentation?: () => void | Promise<void>;
+    cardPresentationDirty?: boolean;
+    cardPresentationSaving?: boolean;
   }
 
   let {
@@ -61,6 +78,11 @@
     resolvedAutoLayout = null,
     onClose,
     onSettingChange,
+    cardPresentation,
+    onCardPresentationChange,
+    onSaveCardPresentation,
+    cardPresentationDirty = false,
+    cardPresentationSaving = false,
   }: Props = $props();
 
   type AnalyticsValue = string | number | boolean | null;
@@ -111,10 +133,33 @@
     void compositionVersion;
     return imageComposition.addDifficultyLevel;
   });
-  const showNotes = $derived.by(() => {
+  const effectiveCardPresentation = $derived.by(() => {
     void compositionVersion;
-    return imageComposition.showNotes;
+    return (
+      cardPresentation ??
+      cardPresentationFromFooterSettings(
+        imageComposition.showNotes,
+        imageComposition.customNotesText
+      )
+    );
   });
+
+  function changeCardPresentation(next: CardPresentation): void {
+    if (onCardPresentationChange) {
+      onCardPresentationChange(next);
+      return;
+    }
+
+    const previous = effectiveCardPresentation;
+    const footer = resolveCardFooter(next);
+    imageComposition.setShowNotes(footer.show);
+    if (footer.show) imageComposition.setCustomNotesText(footer.text);
+    reportSetting(
+      "card_footer",
+      JSON.stringify(previous),
+      JSON.stringify(next)
+    );
+  }
   const showQRCode = $derived.by(() => {
     void compositionVersion;
     return imageComposition.showQRCode;
@@ -411,21 +456,16 @@
                 >
               </div>
             </div>
-            <div class="field">
-              <span class="field-label">Footer</span>
-              <div class="rt-chip-row">
-                <button
-                  type="button"
-                  class="rt-chip"
-                  aria-pressed={showNotes}
-                  onclick={() =>
-                    toggleCompositionSetting(
-                      "notes",
-                      showNotes,
-                      imageComposition.setShowNotes.bind(imageComposition)
-                    )}>Notes</button
-                >
-              </div>
+            <div class="footer-editor-field">
+              <CardFooterEditor
+                value={effectiveCardPresentation}
+                onchange={changeCardPresentation}
+                description="Appears inside the card image."
+                onSave={onSaveCardPresentation}
+                dirty={cardPresentationDirty}
+                saving={cardPresentationSaving}
+                idBase="inline-card-footer"
+              />
             </div>
           {:else if activeTab === "pictograph"}
             <div class="field">
@@ -528,6 +568,9 @@
                 </div>
               </div>
             {/if}
+            {#if hasInfoCell && canQRCode}
+              <p class="qr-scope-note">QR codes appear on opened cards and exports. Gallery thumbnails stay QR-free.</p>
+            {/if}
             <!-- Start position is its own group: the Show toggle plus (when on) the
                single-select layout. Kept apart from the Info-cell chooser so the
                segmented control never sits next to loose chips (label mirrors the
@@ -622,7 +665,13 @@
   <div
     class="export-panel"
     class:inline={layout === "inline"}
-    transition:fade={{ duration: 200 }}
+    in:flyFade={{
+      duration: DURATION.normal,
+      delay: motionDuration(STAGGER.relaxed),
+      x: SLIDE.sm,
+      y: 0,
+    }}
+    out:flyFade={{ duration: DURATION.fast, x: SLIDE.sm, y: 0 }}
     role="region"
     aria-label="Card settings"
   >
@@ -694,23 +743,16 @@
           </div>
         </div>
 
-        <!-- Footer section -->
-        <div class="setting-row">
-          <span class="setting-label">Footer</span>
-          <div class="chip-group">
-            <button
-              type="button"
-              class="chip"
-              class:active={showNotes}
-              onclick={() =>
-                toggleCompositionSetting(
-                  "notes",
-                  showNotes,
-                  imageComposition.setShowNotes.bind(imageComposition)
-                )}
-              aria-pressed={showNotes}>Notes</button
-            >
-          </div>
+        <div class="footer-editor-field">
+          <CardFooterEditor
+            value={effectiveCardPresentation}
+            onchange={changeCardPresentation}
+            description="Appears inside the card image."
+            onSave={onSaveCardPresentation}
+            dirty={cardPresentationDirty}
+            saving={cardPresentationSaving}
+            idBase="card-footer"
+          />
         </div>
 
         <!-- Pictograph section -->
@@ -841,6 +883,10 @@
           {/if}
         {/if}
 
+        {#if hasInfoCell && canQRCode}
+          <p class="qr-scope-note">QR codes appear on opened cards and exports. Gallery thumbnails stay QR-free.</p>
+        {/if}
+
         <div class="setting-row">
           <span class="setting-label">Start</span>
           <div class="chip-group">
@@ -927,7 +973,6 @@
 {/if}
 
 <style>
-
   /* Mobile dock tray density (mirrors AnimationPanel .dock-dense).
      Tight vertical rhythm on purpose — every px the tray gives up goes to the
      card/media hero above it. Touch targets stay at 44px (the chips); only
@@ -1180,6 +1225,22 @@
     gap: 12px;
   }
 
+  .footer-editor-field {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 10px;
+    background: var(--theme-card-bg);
+  }
+
+  .qr-scope-note {
+    margin: 0;
+    color: var(--theme-text-secondary);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.5;
+  }
+
   .setting-label {
     min-width: 72px;
     font-size: var(--font-size-compact, 12px);
@@ -1289,7 +1350,6 @@
   .chip i {
     font-size: 12px;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .chip {

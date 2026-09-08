@@ -191,7 +191,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
   {
     category: "create",
     action: "swap",
-    description: "Swap the blue and red hand assignments",
+    description: "Swap the left and right hand assignments",
     activeInModules: ["create"],
   },
   {
@@ -279,7 +279,6 @@ export const ACTION_CATALOG: ActionDefinition[] = [
       "buugeng",
       "triad",
       "sword",
-      "sickles",
       "hand",
       "chicken",
       "guitar",
@@ -288,7 +287,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
       "energy_saber",
       "energy_staff",
     ],
-    validArgs: { hand: "both | blue | red" },
+    validArgs: { hand: "both | left | right" },
   },
   {
     category: "sequence",

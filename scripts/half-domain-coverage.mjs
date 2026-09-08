@@ -22,7 +22,7 @@ import { GridMode, GridLocation } from "../src/lib/shared/pictograph/grid/domain
 import { PropType } from "../src/lib/shared/pictograph/prop/domain/enums/prop-type.ts";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums.ts";
@@ -53,8 +53,8 @@ const step = (mt, turns, startOri, rot) => {
     stepNumber: 1,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: createPlaceholderMotion(MotionColor.BLUE, { location: E, orientation: Orientation.IN }),
-      red: createMotionData({
+      left: createPlaceholderMotion(HandSide.LEFT, { location: E, orientation: Orientation.IN }),
+      right: createMotionData({
         motionType: mt,
         rotationDirection: rot,
         startLocation: from,
@@ -64,7 +64,7 @@ const step = (mt, turns, startOri, rot) => {
         // computed. IN is a safe placeholder across the sweep.
         endOrientation: Orientation.IN,
         turns,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -88,7 +88,7 @@ for (const mt of Object.keys(SHAPES)) {
           rows.push({ mt, turns, startOri, rot, status: "BLOCKED", detail: err || "buildHalvedStep -> null" });
           continue;
         }
-        const asset = getArrowSvgPath(half.motions.red);
+        const asset = getArrowSvgPath(half.motions.right);
         const onDisk = existsSync(resolve(process.cwd(), `static${asset}`));
         const perTurn = /_half_[\d.]+\.svg$/.test(asset);
         const status = onDisk && perTurn ? "COVERED" : onDisk ? "MISSING(art: falls back to bare _half)" : "MISSING(no file)";

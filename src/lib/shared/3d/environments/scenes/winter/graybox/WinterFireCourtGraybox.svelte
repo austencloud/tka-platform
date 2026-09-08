@@ -9,7 +9,8 @@
   import { T } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
   import { onDestroy } from "svelte";
-  import { userProportionsState, type AvatarId } from "@austencloud/scene-3d";
+  import { userProportionsState } from "@austencloud/scene-3d";
+  import type { CharacterId } from "$lib/shared/3d/domain/character-model";
   import type { Object3D } from "three";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
@@ -31,7 +32,7 @@
 
   interface SpinnerProfile {
     id: string;
-    avatarId: AvatarId;
+    characterId: CharacterId;
     propType: PropType;
     sequence: SequenceData;
   }
@@ -39,19 +40,19 @@
   const spinnerProfiles: SpinnerProfile[] = [
     {
       id: "spinner-1",
-      avatarId: "ch12",
+      characterId: "ch12",
       propType: PropType.POI,
       sequence: GHGH,
     },
     {
       id: "spinner-2",
-      avatarId: "ch21",
+      characterId: "ch21",
       propType: PropType.STAFF,
       sequence: GGGG_CW,
     },
     {
       id: "spinner-3",
-      avatarId: "ch34",
+      characterId: "ch34",
       propType: PropType.FAN,
       sequence: HHHH_CCW,
     },
@@ -133,7 +134,7 @@
       worldZ={spinner.z}
       facingAngle={spinner.facingAngle}
       surfaceElevation={courtSurfaceElevation}
-      avatarId={profile.avatarId}
+      characterId={profile.characterId}
       propType={profile.propType}
       sequence={profile.sequence}
       onReady={() => markFriendReady(spinner.id)}

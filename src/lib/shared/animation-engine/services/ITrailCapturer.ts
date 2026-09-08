@@ -64,9 +64,9 @@ export interface ITrailCapturer {
   getTrailPoints(propIndex: 0 | 1, tipIndex: number, layerIndex?: number): TrailPoint[];
 
   getAllTrailPoints(): {
-    blue: TrailPoint[];
-    red: TrailPoint[];
-    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>;
+    left: TrailPoint[];
+    right: TrailPoint[];
+    additionalLayers: Array<{ left: TrailPoint[]; right: TrailPoint[] }>;
   };
 
   /**
@@ -74,9 +74,9 @@ export interface ITrailCapturer {
    * CRITICAL: Use this in hot paths to prevent GC pressure on mobile
    */
   fillTrailPointArrays(
-    blue: TrailPoint[],
-    red: TrailPoint[],
-    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>
+    left: TrailPoint[],
+    right: TrailPoint[],
+    additionalLayers: Array<{ left: TrailPoint[]; right: TrailPoint[] }>
   ): void;
 
   /**
@@ -85,7 +85,7 @@ export interface ITrailCapturer {
    * base prop paths (propIndex 0/1) only.
    */
   fillAdditionalLayerTrails(
-    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>
+    additionalLayers: Array<{ left: TrailPoint[]; right: TrailPoint[] }>
   ): void;
 
   /**

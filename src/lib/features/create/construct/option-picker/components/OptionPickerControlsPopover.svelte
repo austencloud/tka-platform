@@ -22,17 +22,18 @@
     showFilter: boolean;
     showTurnControls?: boolean;
     isContinuousOnly: boolean;
+    optionAvailability?: { shownCount: number; hiddenCount: number };
     onToggleContinuous?: (value: boolean) => void;
     level: TurnLevel;
     onLevelChange: (level: TurnLevel) => void;
-    blueTurns: TurnValue;
-    redTurns: TurnValue;
-    blueRotation: RotationDirection;
-    redRotation: RotationDirection;
-    onBlueChange: (value: TurnValue) => void;
-    onRedChange: (value: TurnValue) => void;
-    onBlueRotationChange: (dir: RotationDirection) => void;
-    onRedRotationChange: (dir: RotationDirection) => void;
+    leftTurns: TurnValue;
+    rightTurns: TurnValue;
+    leftRotation: RotationDirection;
+    rightRotation: RotationDirection;
+    onLeftChange: (value: TurnValue) => void;
+    onRightChange: (value: TurnValue) => void;
+    onLeftRotationChange: (dir: RotationDirection) => void;
+    onRightRotationChange: (dir: RotationDirection) => void;
     open?: boolean;
     triggerDensity?: "standard" | "compact";
   }
@@ -41,32 +42,33 @@
     showFilter,
     showTurnControls = true,
     isContinuousOnly,
+    optionAvailability,
     onToggleContinuous,
     level,
     onLevelChange,
-    blueTurns,
-    redTurns,
-    blueRotation,
-    redRotation,
-    onBlueChange,
-    onRedChange,
-    onBlueRotationChange,
-    onRedRotationChange,
+    leftTurns,
+    rightTurns,
+    leftRotation,
+    rightRotation,
+    onLeftChange,
+    onRightChange,
+    onLeftRotationChange,
+    onRightRotationChange,
     open = $bindable(false),
     triggerDensity = "standard",
   }: Props = $props();
 
   const modeLabel = $derived(isContinuousOnly ? "Continuous" : "All");
-  const blueTurnLabel = $derived(formatTurnValue(blueTurns));
-  const redTurnLabel = $derived(formatTurnValue(redTurns));
+  const leftTurnLabel = $derived(formatTurnValue(leftTurns));
+  const rightTurnLabel = $derived(formatTurnValue(rightTurns));
 
   const triggerLabel = $derived.by(() => {
     const details = ["Option settings"];
     if (showFilter) details.push(`Showing ${modeLabel.toLowerCase()}`);
     if (showTurnControls) {
       details.push(`Level ${level}`);
-      details.push(`Blue turns ${blueTurnLabel}`);
-      details.push(`Red turns ${redTurnLabel}`);
+      details.push(`Left turns ${leftTurnLabel}`);
+      details.push(`Right turns ${rightTurnLabel}`);
     }
     return details.join(". ");
   });
@@ -127,6 +129,7 @@
               </div>
 
               <OptionPickerHeader
+                {optionAvailability}
                 layout="compact"
                 {showFilter}
                 {showTurnControls}
@@ -134,14 +137,14 @@
                 {onToggleContinuous}
                 {level}
                 {onLevelChange}
-                {blueTurns}
-                {redTurns}
-                {blueRotation}
-                {redRotation}
-                {onBlueChange}
-                {onRedChange}
-                {onBlueRotationChange}
-                {onRedRotationChange}
+                {leftTurns}
+                {rightTurns}
+                {leftRotation}
+                {rightRotation}
+                {onLeftChange}
+                {onRightChange}
+                {onLeftRotationChange}
+                {onRightRotationChange}
               />
             </div>
           {/if}

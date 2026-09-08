@@ -298,11 +298,18 @@ becomes private while open, we bail back to the list instead of showing a ghost.
     );
   }
 
-  function handleSequenceAction(action: string, sequence: SequenceData) {
+  function handleSequenceAction(
+    action: string,
+    sequence: SequenceData,
+    variations?: SequenceData[]
+  ) {
     if (action === "view-detail") {
       openSequenceViewer(sequence, {
+        source: "browse_collection",
+        collectionPropType: collection?.propType,
         returnPath: "/browse",
         returnLabel: collection?.name ?? "Collection",
+        variations,
       });
     }
   }
@@ -736,12 +743,14 @@ becomes private while open, we bail back to the list instead of showing a ghost.
             if (following) {
               void followedCollectionsState.unfollow(
                 foreignOwnerId,
-                collectionId
+                collectionId,
+                "community_collection"
               );
             } else {
               void followedCollectionsState.follow(
                 foreignOwnerId,
-                collectionId
+                collectionId,
+                "community_collection"
               );
             }
           }}
@@ -850,8 +859,10 @@ becomes private while open, we bail back to the list instead of showing a ghost.
       </div>
     {:else}
       <BrowsePanel
+        collectionPropType={collection?.propType}
         {engine}
         layout="compact"
+        eager={false}
         curatedSortLabel="Collection order"
         toolbarVariant="embedded"
         resultTotal={visibleCount ?? members.length}

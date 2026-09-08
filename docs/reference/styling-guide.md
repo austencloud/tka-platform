@@ -2,6 +2,20 @@
 
 Loaded on demand when doing CSS work. Not needed every session.
 
+This reference explains how to implement the visual system. Read
+`docs/architecture/visual-design-canon.md` for the product's composition,
+surface, typography, color, control, motion, and responsive direction.
+
+## Permanent Pattern Ban
+
+Never attach a thin decorative colored strip to one edge of a card, tile,
+panel, row, button, callout, or other UI container. This includes strips used
+for identity, status, severity, selection, and emphasis. The ban covers edge
+borders, inset shadows, pseudo-elements, child elements, and gradients.
+
+Read `.claude/rules/no-left-edge-accent-bar.md` before styling a containing
+surface. Existing examples are legacy violations, not precedent.
+
 ---
 
 ## NEVER Create Global CSS Utility Classes in Svelte
@@ -79,7 +93,7 @@ value or from the fact that the text is technically visible.
 2. **Cards/Sub-panels**: `background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));` + `border: 1.5px solid var(--theme-stroke)`
 3. **Hover States**: `border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));`
 
-### Override Drawer Glassmorphism
+### Drawer Surface Override
 
 ```css
 :global(.your-drawer-class) {
@@ -89,6 +103,10 @@ value or from the fact that the text is technically visible.
 ```
 
 **When to use blur:** ONLY for modal backdrops. Never for content panels, drawers, forms, or interactive surfaces.
+
+Historical token names and comments that say "glassmorphism" do not define the
+current visual direction. Product surfaces are matte, theme-aware, and quiet.
+They use contrast, stroke, spacing, and layering without content-surface blur.
 
 ---
 

@@ -13,16 +13,16 @@ import type { LayerRenderOptions } from "../services/types";
 
 export interface BaseLayerKeyComponents {
   motionHash: string;
-  bluePropType: string;
-  redPropType: string;
+  leftPropType: string;
+  rightPropType: string;
   // Chirality mirrors the prop AND (via the preparer) can collapse the beta
   // separation offset, so it is base-layer image identity.
-  blueBuugengFlipped: boolean;
-  redBuugengFlipped: boolean;
+  leftBuugengFlipped: boolean;
+  rightBuugengFlipped: boolean;
   darkMode: boolean;
   size: number;
-  showBlueMotion: boolean;
-  showRedMotion: boolean;
+  showLeftMotion: boolean;
+  showRightMotion: boolean;
   showTnD: boolean;
   showElemental: boolean;
   showPositions: boolean;
@@ -42,15 +42,15 @@ export interface GridPointsLayerKeyComponents {
 export interface TKALayerKeyComponents {
   letter: string;
   turnsTuple: string;
-  blueMotionType: string;
-  redMotionType: string;
+  leftMotionType: string;
+  rightMotionType: string;
   darkMode: boolean;
   size: number;
 }
 
 export interface ReversalLayerKeyComponents {
-  blueReversal: boolean;
-  redReversal: boolean;
+  leftReversal: boolean;
+  rightReversal: boolean;
   size: number;
 }
 
@@ -74,21 +74,21 @@ function hashComponents(obj: object): string {
 }
 
 function deriveMotionHash(pictograph: PreparedPictographData): string {
-  const blueMotion = pictograph.motions?.blue;
-  const redMotion = pictograph.motions?.red;
+  const leftMotion = pictograph.motions?.left;
+  const rightMotion = pictograph.motions?.right;
 
   const parts: string[] = [];
 
-  if (blueMotion) {
-    parts.push(`b:${blueMotion.motionType ?? ""}:${blueMotion.startLocation ?? ""}:${blueMotion.endLocation ?? ""}`);
-    parts.push(`bt:${blueMotion.turns ?? 0}:${blueMotion.rotationDirection ?? ""}`);
-    parts.push(`bo:${blueMotion.startOrientation ?? ""}:${blueMotion.endOrientation ?? ""}`);
+  if (leftMotion) {
+    parts.push(`b:${leftMotion.motionType ?? ""}:${leftMotion.startLocation ?? ""}:${leftMotion.endLocation ?? ""}`);
+    parts.push(`bt:${leftMotion.turns ?? 0}:${leftMotion.rotationDirection ?? ""}`);
+    parts.push(`bo:${leftMotion.startOrientation ?? ""}:${leftMotion.endOrientation ?? ""}`);
   }
 
-  if (redMotion) {
-    parts.push(`r:${redMotion.motionType ?? ""}:${redMotion.startLocation ?? ""}:${redMotion.endLocation ?? ""}`);
-    parts.push(`rt:${redMotion.turns ?? 0}:${redMotion.rotationDirection ?? ""}`);
-    parts.push(`ro:${redMotion.startOrientation ?? ""}:${redMotion.endOrientation ?? ""}`);
+  if (rightMotion) {
+    parts.push(`r:${rightMotion.motionType ?? ""}:${rightMotion.startLocation ?? ""}:${rightMotion.endLocation ?? ""}`);
+    parts.push(`rt:${rightMotion.turns ?? 0}:${rightMotion.rotationDirection ?? ""}`);
+    parts.push(`ro:${rightMotion.startOrientation ?? ""}:${rightMotion.endOrientation ?? ""}`);
   }
 
   const prepared = pictograph._prepared;
@@ -105,14 +105,14 @@ export function getBaseLayerComponents(
 ): BaseLayerKeyComponents {
   return {
     motionHash: deriveMotionHash(pictograph),
-    bluePropType: options.bluePropType ?? pictograph.motions?.blue?.propType ?? "staff",
-    redPropType: options.redPropType ?? pictograph.motions?.red?.propType ?? "staff",
-    blueBuugengFlipped: options.blueBuugengFlipped ?? false,
-    redBuugengFlipped: options.redBuugengFlipped ?? false,
+    leftPropType: options.leftPropType ?? pictograph.motions?.left?.propType ?? "staff",
+    rightPropType: options.rightPropType ?? pictograph.motions?.right?.propType ?? "staff",
+    leftBuugengFlipped: options.leftBuugengFlipped ?? false,
+    rightBuugengFlipped: options.rightBuugengFlipped ?? false,
     darkMode: options.darkMode,
     size: options.size,
-    showBlueMotion: options.showBlueMotion ?? true,
-    showRedMotion: options.showRedMotion ?? true,
+    showLeftMotion: options.showLeftMotion ?? true,
+    showRightMotion: options.showRightMotion ?? true,
     showTnD: options.showTnD ?? false,
     showElemental: options.showElemental ?? false,
     showPositions: options.showPositions ?? false,
@@ -160,8 +160,8 @@ export function getTKALayerComponents(
   return {
     letter: String(pictograph.letter ?? ""),
     turnsTuple,
-    blueMotionType: pictograph.motions?.blue?.motionType ?? "",
-    redMotionType: pictograph.motions?.red?.motionType ?? "",
+    leftMotionType: pictograph.motions?.left?.motionType ?? "",
+    rightMotionType: pictograph.motions?.right?.motionType ?? "",
     darkMode: options.darkMode,
     size: options.size,
   };
@@ -181,15 +181,15 @@ export function getReversalLayerComponents(
   size: number
 ): ReversalLayerKeyComponents {
   return {
-    blueReversal: stepData.blueReversal ?? false,
-    redReversal: stepData.redReversal ?? false,
+    leftReversal: stepData.leftReversal ?? false,
+    rightReversal: stepData.rightReversal ?? false,
     size,
   };
 }
 
 export function deriveReversalLayerKey(stepData: StepData, size: number): string {
   const components = getReversalLayerComponents(stepData, size);
-  return `rev:${components.blueReversal ? "b" : ""}${components.redReversal ? "r" : ""}_${size}`;
+  return `rev:${components.leftReversal ? "b" : ""}${components.rightReversal ? "r" : ""}_${size}`;
 }
 
 export function deriveBeatLayerKey(stepNumber: number, darkMode: boolean, size: number): string {

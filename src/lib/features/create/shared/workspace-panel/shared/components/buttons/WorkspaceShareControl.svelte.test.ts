@@ -11,7 +11,6 @@ function createProps(
 ): ShareControlProps {
   return {
     useMobileSheet: false,
-    hasFullAccount: true,
     disabled: false,
     tooltip: "Share sequence",
     cardPhase: "ready" as const,
@@ -22,7 +21,6 @@ function createProps(
     awaitingFreshGesture: false,
     canShareCard: true,
     onTriggerClick: vi.fn(),
-    onGuestShare: vi.fn(),
     onShareCard: vi.fn(),
     onSendSequence: vi.fn(),
     onCopyLink: vi.fn(),
@@ -55,25 +53,17 @@ describe("WorkspaceShareControl", () => {
     ).toEqual(["Send Sequence", "Share Card…", "Copy Link", "Download Card"]);
   });
 
-  it("routes a guest to account creation without exposing share actions", async () => {
-    const onGuestShare = vi.fn();
-    render(
-      WorkspaceShareControl,
-      createProps({
-        hasFullAccount: false,
-        onGuestShare,
-      })
-    );
+  it("opens the same share actions without an account gate", async () => {
+    render(WorkspaceShareControl, createProps());
 
     await page.getByRole("button", { name: "Share sequence" }).click();
 
-    expect(onGuestShare).toHaveBeenCalledOnce();
     await expect
       .element(page.getByRole("menu", { name: "Share sequence" }))
-      .not.toBeInTheDocument();
+      .toBeInTheDocument();
     await expect
-      .element(page.getByText("Send Sequence", { exact: true }))
-      .not.toBeInTheDocument();
+      .element(page.getByText("Share Card…", { exact: true }))
+      .toBeInTheDocument();
   });
 
   it("uses the same ordered action list in the mobile sheet", async () => {

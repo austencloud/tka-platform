@@ -9,15 +9,22 @@
 
   import EmailPasswordAuth from "./EmailPasswordAuth.svelte";
   import EmailLinkAuth from "./EmailLinkAuth.svelte";
-  import LastUsedBadge from "./LastUsedBadge.svelte";
+  import LastUsedBadge from "$lib/shared/components/LastUsedBadge.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
 
   interface Props {
     mode?: "signin" | "signup";
+    compact?: boolean;
+    showMethods?: boolean;
   }
 
-  let { mode = $bindable("signin") }: Props = $props();
+  let {
+    mode = $bindable("signin"),
+    compact = false,
+    showMethods = false,
+  }: Props = $props();
 
   const lastMethod = getLastAuthMethod();
 
@@ -25,53 +32,58 @@
   // created. Returning password users resume where they left off; everyone
   // else starts on the no-password path.
   let activeTab = $state<"magic" | "password">(
-    lastMethod === "password" ? "password" : "magic"
+    !compact && lastMethod === "password" ? "password" : "magic"
   );
 </script>
 
 <div class="email-auth-tabs">
-  <div class="tab-bar" role="tablist">
-    <button
-      type="button"
-      role="tab"
-      aria-selected={activeTab === "magic"}
-      class="tab"
-      class:active={activeTab === "magic"}
-      onclick={() => (activeTab = "magic")}
-      aria-label={lastMethod === "magic-link"
-        ? "Email code, last used on this device"
-        : undefined}
-    >
-      {#if lastMethod === "magic-link"}
-        <LastUsedBadge />
-      {/if}
-      <i class="fas fa-envelope" aria-hidden="true"></i>
-      <span>Email code</span>
-    </button>
-    <button
-      type="button"
-      role="tab"
-      aria-selected={activeTab === "password"}
-      class="tab"
-      class:active={activeTab === "password"}
-      onclick={() => (activeTab = "password")}
-      aria-label={lastMethod === "password"
-        ? `${t("auth_password")}, last used on this device`
-        : undefined}
-    >
-      {#if lastMethod === "password"}
-        <LastUsedBadge />
-      {/if}
-      <i class="fas fa-key" aria-hidden="true"></i>
-      <span>{t("auth_password")}</span>
-    </button>
-  </div>
+  {#if !compact || showMethods}
+    <div class="tab-bar" role="tablist" transition:growFade>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === "magic"}
+        class="tab"
+        class:active={activeTab === "magic"}
+        onclick={() => (activeTab = "magic")}
+        aria-label={lastMethod === "magic-link"
+          ? "Email code, last used on this device"
+          : undefined}
+      >
+        {#if lastMethod === "magic-link"}
+          <LastUsedBadge />
+        {/if}
+        <i class="fas fa-envelope" aria-hidden="true"></i>
+        <span>Email code</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === "password"}
+        class="tab"
+        class:active={activeTab === "password"}
+        onclick={() => (activeTab = "password")}
+        aria-label={lastMethod === "password"
+          ? `${t("auth_password")}, last used on this device`
+          : undefined}
+      >
+        {#if lastMethod === "password"}
+          <LastUsedBadge />
+        {/if}
+        <i class="fas fa-key" aria-hidden="true"></i>
+        <span>{t("auth_password")}</span>
+      </button>
+    </div>
+  {/if}
 
-  <div class="tab-content" role="tabpanel">
+  <div
+    class="tab-content"
+    role={!compact || showMethods ? "tabpanel" : undefined}
+  >
     {#if activeTab === "magic"}
-      <EmailLinkAuth />
+      <EmailLinkAuth {compact} />
     {:else}
-      <EmailPasswordAuth bind:mode />
+      <EmailPasswordAuth bind:mode showModeSwitch={!compact} />
     {/if}
   </div>
 </div>

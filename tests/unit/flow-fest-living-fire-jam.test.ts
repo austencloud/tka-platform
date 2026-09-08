@@ -49,7 +49,7 @@ const LAYOUT: FlowFestFestivalCommunityLayout = {
     },
     {
       id: "walker",
-      avatarId: "ch10",
+      avatarId: "ch21",
       role: "spectator",
       behavior: "perimeter-walk",
       x: -12,

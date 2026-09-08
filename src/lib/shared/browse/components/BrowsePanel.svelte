@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PropViewingControl from "./PropViewingControl.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onMount, onDestroy } from "svelte";
   import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
   import { PinchZoomGridController } from "$lib/shared/browse/services/pinch-zoom-grid-controller";
@@ -19,6 +21,7 @@
   import { withResultsMorph } from "$lib/shared/transitions/results-morph";
 
   interface Props {
+    collectionPropType?: PropType | null;
     engine: BrowseEngine;
     layout: "fullpage" | "compact" | "minimal";
     onSelect?: (sequence: SequenceData, variations?: SequenceData[]) => void;
@@ -52,6 +55,15 @@
      * Never shown for a filter-zero empty state — that state's fix is
      * "Clear all filters", not a new-content action. */
     emptyAction?: { label: string; onClick: () => void };
+    emptyState?: {
+      message: string;
+      description: string;
+      secondaryAction?: {
+        label: string;
+        description: string;
+        onClick: () => void;
+      };
+    };
     /** Optional personal-library multi-selection controller. The gallery stays
      * generic; the host owns what the primary batch action does. */
     selection?: {
@@ -107,6 +119,7 @@
     warming = false,
     onSaveSmart,
     emptyAction,
+    emptyState,
     selection,
     showSelectionAction = true,
     hideSelectionToolbar = false,
@@ -114,6 +127,7 @@
     toolbarVariant = "panel",
     resultTotal,
     collectionContext,
+    collectionPropType,
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? layout !== "minimal");
@@ -348,6 +362,10 @@
     {/if}
   {/if}
 
+  {#if engine.viewMode.subject !== "hands"}
+    <PropViewingControl {collectionPropType} />
+  {/if}
+
   {#if showFilterBar}
     <BrowseFilterBar {engine} chipsOnly={!!onOpenFilters} {onSaveSmart} />
   {/if}
@@ -377,7 +395,12 @@
             : 'fa-inbox'} empty-icon"
           aria-hidden="true"
         ></i>
-        <p class="empty-message">{emptyMessage}</p>
+        <p class="empty-message">
+          {(!engine.hasActiveFilters && emptyState?.message) || emptyMessage}
+        </p>
+        {#if !engine.hasActiveFilters && emptyState}
+          <p class="empty-description">{emptyState.description}</p>
+        {/if}
         {#if engine.hasActiveFilters}
           <button
             class="clear-filters-btn"
@@ -391,6 +414,17 @@
                a real button, never a bare link (clickables-look-like-buttons). -->
           <PanelButton variant="primary" onclick={emptyAction.onClick}>
             {emptyAction.label}
+          </PanelButton>
+        {/if}
+        {#if !engine.hasActiveFilters && emptyState?.secondaryAction}
+          <p class="empty-description">
+            {emptyState.secondaryAction.description}
+          </p>
+          <PanelButton
+            variant="secondary"
+            onclick={emptyState.secondaryAction.onClick}
+          >
+            {emptyState.secondaryAction.label}
           </PanelButton>
         {/if}
       </div>
@@ -424,6 +458,7 @@
                 : undefined}
               scrollElement={contentEl}
               {collectionContext}
+              {collectionPropType}
               onSectionGridReady={(api) => (sectionApi = api)}
               onActiveSectionChange={(title) => (activeSection = title)}
             />
@@ -579,6 +614,16 @@
     font-size: var(--font-size-base, 16px);
     color: var(--theme-text, #ffffff);
     font-weight: 500;
+    text-align: center;
+    max-width: 38rem;
+  }
+
+  .empty-description {
+    margin: 0;
+    max-width: 32rem;
+    text-align: center;
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.5;
   }
 
   .clear-filters-btn {

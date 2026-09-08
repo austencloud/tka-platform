@@ -10,6 +10,7 @@
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { createStepCellAnimationManager } from "../services/step-cell-animation-manager";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     step,
@@ -19,6 +20,7 @@
     onLongPress,
     shouldAnimate = false,
     isSelected = false,
+    autoFocusOnSelection = true,
     isPracticeStep = false,
     // Active mode for context-aware messaging
     activeMode = null,
@@ -34,10 +36,10 @@
     // Used to reset hasAnimated even when step.id stays the same
     animationEpoch = 0,
     // Prop type overrides for demo/preview rendering (bypasses global settings)
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     transitionKey = null,
     onContentReady = undefined,
   } = $props<{
@@ -48,6 +50,14 @@
     onLongPress?: () => void;
     shouldAnimate?: boolean;
     isSelected?: boolean;
+    /**
+     * Whether a newly selected cell should take keyboard focus.
+     *
+     * Editing grids opt into this by default so repeated Delete presses keep
+     * working. Playback previews disable it because their selection advances
+     * automatically and must never steal focus from surrounding controls.
+     */
+    autoFocusOnSelection?: boolean;
     isPracticeStep?: boolean;
     // Active mode
     activeMode?: BuildModeId | null;
@@ -61,14 +71,14 @@
     widthMultiplier?: number;
     // Animation epoch - increments when a new sequence animation starts
     animationEpoch?: number;
-    /** Override prop type for blue hand. Bypasses global settings for demo/preview rendering. */
-    bluePropTypeOverride?: PropType;
-    /** Override prop type for red hand. Bypasses global settings for demo/preview rendering. */
-    redPropTypeOverride?: PropType;
+    /** Override prop type for left hand. Bypasses global settings for demo/preview rendering. */
+    leftPropTypeOverride?: PropType;
+    /** Override prop type for right hand. Bypasses global settings for demo/preview rendering. */
+    rightPropTypeOverride?: PropType;
     /** Display-only color for the blue-hand prop and arrow. */
-    blueColorOverride?: string;
+    leftColorOverride?: string;
     /** Display-only color for the red-hand prop and arrow. */
-    redColorOverride?: string;
+    rightColorOverride?: string;
     /** Stable history identity used to preserve prop and arrow motion through reordering. */
     transitionKey?: string | null;
     /**
@@ -125,15 +135,15 @@
 
   // Arrow layer adjustment modal state
   let arrowModalOpen = $state(false);
-  let arrowModalColor = $state<"blue" | "red">("blue");
+  let arrowModalHand = $state<HandSide>(HandSide.LEFT);
 
   // Show arrow adjustment in context menu for admin users on non-blank beats
   const showArrowAdjustment = $derived(
     isAdmin() && !step.isBlank && step.stepNumber !== 0
   );
 
-  function handleAdjustArrow(color: "blue" | "red") {
-    arrowModalColor = color;
+  function handleAdjustArrow(hand: HandSide) {
+    arrowModalHand = hand;
     arrowModalOpen = true;
   }
 
@@ -198,7 +208,13 @@
       wasSelected = isSelected;
       return;
     }
-    if (hasMounted && isSelected && !wasSelected && cellElement) {
+    if (
+      autoFocusOnSelection &&
+      hasMounted &&
+      isSelected &&
+      !wasSelected &&
+      cellElement
+    ) {
       // Small delay to ensure DOM is settled after deletion animation
       requestAnimationFrame(() => {
         // Use preventScroll to avoid pulling user's viewport during animation playback
@@ -335,21 +351,29 @@
   tabindex="0"
   aria-label={ariaLabel}
 >
+  <!--
+    Selection skin. The gold ring and its glow live on this always-mounted
+    overlay so selection only ever animates `opacity`, which the compositor
+    owns. Previously the cell itself transitioned `border`, `background` and
+    `box-shadow`: the border tween animated layout (0 -> 3px) and the shadow
+    tween forced a repaint of every selected cell for 350ms.
+  -->
+  <span class="selection-skin" aria-hidden="true"></span>
+
   <!-- Normal pictograph (will show empty grid when step.isBlank) -->
   <!-- Always disable Svelte transitions to allow CSS transitions on props/arrows -->
   <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
   <PictographContainer
     pictographData={stepDataWithSelection}
     disableTransitions={true}
-    propRenderContext="editor"
     {musicalPosition}
     {widthMultiplier}
     cellIndex={index}
     {transitionKey}
-    {bluePropTypeOverride}
-    {redPropTypeOverride}
-    {blueColorOverride}
-    {redColorOverride}
+    {leftPropTypeOverride}
+    {rightPropTypeOverride}
+    {leftColorOverride}
+    {rightColorOverride}
     onReady={onContentReady}
     readyEpoch={animationEpoch}
   />
@@ -365,7 +389,7 @@
   <ArrowLayerModal
     bind:open={arrowModalOpen}
     stepData={step}
-    arrowColor={arrowModalColor}
+    arrowHand={arrowModalHand}
   />
 {/if}
 
@@ -390,9 +414,6 @@
     background: transparent;
     transition:
       transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.35s ease-out,
-      border 0.35s ease-out,
-      background 0.35s ease-out,
       opacity 0.25s ease-out;
 
     /* Prevent text selection during long-press */
@@ -481,14 +502,16 @@
       opacity 0.15s ease-out;
   }
 
-  /* Elevated Luxury - 2025/2026 Selection State */
-  .step-cell.selected {
-    /* Ensure it appears above other steps */
-    z-index: 10;
-    position: relative;
-
-    /* Gold gradient border - no background to keep pictograph visible */
+  /*
+   * Selection skin: the gold gradient ring plus its layered glow, painted once
+   * on a mounted overlay and revealed by opacity alone. It replaces the border,
+   * background and box-shadow the cell used to transition on itself.
+   */
+  .selection-skin {
+    position: absolute;
+    inset: 0;
     border: 3px solid transparent;
+    border-radius: 12px;
     background:
       linear-gradient(transparent, transparent) padding-box,
       linear-gradient(
@@ -498,13 +521,25 @@
           #d97706
         )
         border-box;
-    border-radius: 12px;
-
-    /* Layered shadows for depth and premium glow */
     box-shadow:
       0 0 20px rgba(251, 191, 36, 0.5),
       0 8px 32px rgba(251, 191, 36, 0.3),
       0 0 0 1px rgba(251, 191, 36, 0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease-out;
+  }
+
+  .step-cell.selected .selection-skin,
+  .step-cell.animate.selected .selection-skin {
+    opacity: 1;
+  }
+
+  /* Elevated Luxury - 2025/2026 Selection State */
+  .step-cell.selected {
+    /* Ensure it appears above other steps */
+    z-index: 10;
+    position: relative;
 
     /* Scale effect - expands equally on all sides */
     transform: scale(1.08);
@@ -513,11 +548,7 @@
     opacity: 1;
 
     /* Smooth spring animation - longer duration for more noticeable fade-in */
-    transition:
-      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 0.35s ease-out,
-      border 0.35s ease-out,
-      background 0.35s ease-out;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Selection fade-in animation using a pseudo-element for the glow */
@@ -556,25 +587,9 @@
     }
   }
 
-  /* Selection styling DURING animation - border/glow visible while step animates in */
+  /* Selection styling DURING animation - the skin above stays visible. */
   .step-cell.animate.selected {
     z-index: 10;
-    border: 3px solid transparent;
-    background:
-      linear-gradient(transparent, transparent) padding-box,
-      linear-gradient(
-          135deg,
-          var(--semantic-warning),
-          var(--semantic-warning),
-          #d97706
-        )
-        border-box;
-    border-radius: 12px;
-    box-shadow:
-      0 0 20px rgba(251, 191, 36, 0.5),
-      0 8px 32px rgba(251, 191, 36, 0.3),
-      0 0 0 1px rgba(251, 191, 36, 0.2);
-    /* Let animation control transform/opacity, but show selection border/glow */
   }
 
   .step-cell.selected:hover {
@@ -583,6 +598,10 @@
     /* Hovered cell reads as closest, matching the non-selected hover tier */
     z-index: 11;
     transform: scale(1.12);
+  }
+
+  /* Hover deepens the glow in a single repaint rather than a shadow tween. */
+  .step-cell.selected:hover .selection-skin {
     box-shadow:
       0 0 30px rgba(251, 191, 36, 0.7),
       0 12px 48px rgba(251, 191, 36, 0.4),
@@ -776,10 +795,15 @@
 
   /**
    * Cascade with depth: the cell rises into the plane rather than fading in
-   * place. Blur clearing as it rises is the depth cue — it reads as pulling
-   * focus — and the brief overshoot past 1 gives it something to land against.
+   * place. Scale carries the depth cue and the brief overshoot past 1 gives it
+   * something to land against.
    *
-   * Transform, opacity and filter only. Nothing here can reflow a neighbour.
+   * Transform, opacity and a cheap colour filter only. Nothing here can reflow
+   * a neighbour. The depth blur that used to open this gesture was removed: a
+   * 3px gaussian forced an offscreen surface and a convolution pass for every
+   * arriving cell on every frame of the entrance, which is what made a step
+   * landing in the workspace stutter. Brightness and saturation keep the
+   * documented ridge without the convolution.
    */
   /**
    * The cell arrives ALONG the wave axis, not straight up.
@@ -795,7 +819,7 @@
     0% {
       opacity: 0;
       transform: translate3d(-11px, -11px, 0) scale(0.88);
-      filter: blur(3px) brightness(1.4) saturate(1.3);
+      filter: brightness(1.4) saturate(1.3);
     }
     55% {
       opacity: 1;
@@ -804,7 +828,7 @@
          four bands are lit at once — the front reads as a bright ridge moving
          across the grid instead of 44 unrelated arrivals. The light lives in
          the cell, so unlike an overlay it can never fall on empty canvas. */
-      filter: blur(0) brightness(1.32) saturate(1.24);
+      filter: brightness(1.32) saturate(1.24);
     }
     75% {
       transform: translate3d(1.5px, 1.5px, 0) scale(1.015);
@@ -812,7 +836,7 @@
     100% {
       opacity: 1;
       transform: none;
-      filter: blur(0) brightness(1) saturate(1);
+      filter: brightness(1) saturate(1);
     }
   }
 
@@ -835,6 +859,9 @@
     .step-cell.selected::before {
       animation: none;
       opacity: 1;
+    }
+    .selection-skin {
+      transition-duration: 0.01ms;
     }
     .practice-intense {
       animation: none;

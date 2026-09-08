@@ -20,7 +20,10 @@ import { auth, getFirestoreInstance } from "../../auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
-import type { AppSettings } from "../domain/app-settings";
+import {
+  normalizeLegacyAppSettings,
+  type AppSettings,
+} from "../domain/app-settings";
 
 export class FirebaseSettingsPersister {
   private unsubscribe: Unsubscribe | null = null;
@@ -62,7 +65,7 @@ export class FirebaseSettingsPersister {
           createdAt: _createdAt,
           ...settings
         } = data;
-        return settings as AppSettings;
+        return normalizeLegacyAppSettings(settings);
       }
       return null;
     } catch (error) {
@@ -112,12 +115,12 @@ export class FirebaseSettingsPersister {
   /**
    * Mirror the selected prop onto users/{uid}.activeProp so the publicly
    * readable user doc carries the creator's prop identity (browse creators
-   * queries can't reach the settings subcollection). Blue hand is the
+   * queries can't reach the settings subcollection). The left hand is the
    * tiebreaker; in practice both hands match. Non-fatal: a failed mirror
    * leaves a stale badge, not broken settings.
    */
   private async mirrorActiveProp(settings: AppSettings): Promise<void> {
-    const activeProp = settings.bluePropType;
+    const activeProp = settings.leftPropType;
     if (!activeProp || activeProp === this.lastMirroredActiveProp) return;
 
     const user = auth.currentUser;
@@ -228,7 +231,7 @@ export class FirebaseSettingsPersister {
               } = data;
               // An existing document with no settings is still authoritative:
               // subscribers must clear stale optional slices such as imageExport.
-              callback(settings as AppSettings);
+              callback(normalizeLegacyAppSettings(settings));
             }
           },
           (error) => {

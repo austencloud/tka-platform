@@ -178,7 +178,7 @@ async function executeTool(
     case "show_motion_examples":
       return toolExecutor.showMotionExamples(
         args.motionType as string,
-        (args.hand as "blue" | "red" | "both") ?? "both"
+        (args.hand as "left" | "right" | "both" | "blue" | "red") ?? "both"
       );
 
     case "explain_sequence":
@@ -490,11 +490,16 @@ function buildTools(container: TikaServerContainer) {
 
     show_motion_examples: tool({
       description: "Show visual examples for a motion type.",
-      inputSchema: jsonSchema<{ motionType: string; hand?: "blue" | "red" | "both" }>({
+      inputSchema: jsonSchema<{ motionType: string; hand?: "left" | "right" | "both" | "blue" | "red" }>({
         type: "object",
         properties: {
           motionType: { type: "string" },
-          hand: { type: "string", enum: ["blue", "red", "both"], default: "both" },
+          hand: {
+            type: "string",
+            enum: ["left", "right", "both", "blue", "red"],
+            default: "both",
+            description: "Performer hand. Prefer left/right; blue/red are legacy aliases.",
+          },
         },
         required: ["motionType"],
       }),
@@ -738,7 +743,7 @@ function buildTools(container: TikaServerContainer) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Regex to detect JSON objects leaked into response text */
-const JSON_LEAK_PATTERN = /\{[\s\S]*?"(?:type|explanation|contextData|inlinePictograph|startPosition|endPosition|blueMotion|redMotion)"[\s\S]*?\}/;
+const JSON_LEAK_PATTERN = /\{[\s\S]*?"(?:type|explanation|contextData|inlinePictograph|startPosition|endPosition|leftMotion|rightMotion|blueMotion|redMotion)"[\s\S]*?\}/;
 
 function countInlineContent(steps: Array<{ toolResults: Array<{ output: unknown }> }>): number {
   let count = 0;

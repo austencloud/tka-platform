@@ -6,23 +6,48 @@
  */
 
 import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
-import type { ITrailCapturer, AdditionalLayerProps } from "$lib/shared/animation-engine/services/ITrailCapturer";
+import type {
+  ITrailCapturer,
+  AdditionalLayerProps,
+} from "$lib/shared/animation-engine/services/ITrailCapturer";
 import type { TrailSettings } from "../domain/types/trail-types";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AnimationPathCache } from "$lib/shared/animation-engine/services/animation-path-cache";
-import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/frame-budget-monitor'
+import type { FrameBudgetMonitor } from "$lib/shared/animation-engine/services/frame-budget-monitor";
 import type { FireTipTracker } from "./fire-tip-tracker";
-import type { FireOverlayConfig, PropFlameColor } from "../domain/types/fire-types";
+import type {
+  FireOverlayConfig,
+  PropFlameColor,
+} from "../domain/types/fire-types";
 import type { LedSampler } from "./led-sampler";
 import type { LedOverlayConfig } from "../domain/types/led-types";
-import type { Bloom2DParams, Bubbles2DParams, Ghost2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Animal2DParams, Smoke2DParams, Sparkles2DParams, GooParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import type {
+  Bloom2DParams,
+  Bubbles2DParams,
+  Ghost2DParams,
+  Frost2DParams,
+  Ink2DParams,
+  Petals2DParams,
+  Pulse2DParams,
+  Silk2DParams,
+  Animal2DParams,
+  Smoke2DParams,
+  Sparkles2DParams,
+  GooParams,
+  Zap2DParams,
+} from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
-import type { EffectType, TipEffectMap } from "../domain/types/tip-effect-types";
+import type {
+  EffectType,
+  TipEffectMap,
+} from "../domain/types/tip-effect-types";
 import type { EffectRendererLike } from "./effects/effect-renderer";
 import type { MandalaOverlayCanvas } from "$lib/shared/mandala/services/mandala-overlay-canvas";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
 import type {
   MandalaPathOptions,
   StepLike,
@@ -69,23 +94,24 @@ export interface RenderVisibilitySettings {
   gridVisible: boolean;
   propsVisible: boolean;
   trailsVisible: boolean;
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
+  leftMotionVisible: boolean;
+  rightMotionVisible: boolean;
 }
 
 /**
  * Props state for rendering
  */
 export interface RenderPropsState {
-  blueProp: PropState | null;
-  redProp: PropState | null;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
   /** Additional tunnel layers (index 0 = layer 1, up to 3) */
   additionalLayers: AdditionalLayerProps[];
-  bluePropDimensions: PropDimensions;
-  redPropDimensions: PropDimensions;
+  leftPropDimensions: PropDimensions;
+  rightPropDimensions: PropDimensions;
   /** Tunnel rainbow spectrum. When false, overlaid layers inherit the base
    *  blue/red colors instead of a per-layer spectrum hue. Default true. */
   tunnelSpectrum: boolean;
+  tunnelPropColors?: TunnelPropColorPair | null;
   /** Spotlight: the selected performer (0 = base "you", k = copy arm k), or null.
    *  When set, every other family dims. Default null (no spotlight). */
   tunnelSelectedLayer?: number | readonly number[] | null;
@@ -99,6 +125,7 @@ export interface RenderFrameParams {
   currentStep: number;
   trailSettings: TrailSettings;
   gridVisible: boolean;
+  gridOpacity?: number;
   gridMode: GridMode | null;
   letter: Letter | null;
   props: RenderPropsState;
@@ -106,11 +133,11 @@ export interface RenderFrameParams {
   /** Whether animation playback is active (controls render loop continuation) */
   isPlaying: boolean;
   /** Prop flip settings (for asymmetric props like Buugeng) */
-  bluePropFlipped?: boolean;
-  redPropFlipped?: boolean;
+  leftPropFlipped?: boolean;
+  rightPropFlipped?: boolean;
   /** Prop types - used for prop-specific rendering rules (e.g., hands never rotate) */
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   /** Fire overlay configuration (null or undefined = disabled) */
   fireConfig?: FireOverlayConfig | null;
   /** Whether dark mode is active (used by fire renderer for intensity boost) */
@@ -234,10 +261,23 @@ export interface IAnimationRenderLoop {
    */
   setExternallyDriven(value: boolean): void;
 
+  /**
+   * Route this loop through the canonical off-screen / hidden-tab gate
+   * (`shared/render-gating/render-activity-gate.ts`). While the gate is closed
+   * the rAF stops entirely and the canvas holds its last painted frame; when it
+   * reopens the frame clock is re-seeded and the loop resumes. Pass null to
+   * un-gate. An externally driven loop ignores the gate.
+   */
+  setActivityGate(gate: RenderActivityGate | null): void;
+
   /** Render ONE frame synchronously, now, with an explicit sim dt (seconds).
    *  Bypasses rAF/needsRender scheduling — used by the offscreen export path so
    *  rendering is deterministic. The free-running loop is never started. */
-  renderSync(params: RenderFrameParams, timeMs: number, dtSeconds: number): void;
+  renderSync(
+    params: RenderFrameParams,
+    timeMs: number,
+    dtSeconds: number
+  ): void;
 
   /**
    * Set a target FPS for preview throttling.

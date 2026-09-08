@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  initialViewerModeForUrl,
   viewerModeForRenderMode,
   viewerModeOptions,
 } from "$lib/shared/sequence-viewer/services/viewer-modes";
@@ -47,5 +48,21 @@ describe("sequence viewer Video mode", () => {
     expect(viewerModeForRenderMode("3d")).toBe("animation-3d");
     expect(viewerModeForRenderMode("2d")).toBe("animation");
     expect(viewerModeForRenderMode(null)).toBeUndefined();
+  });
+
+  it("lets a pane param outrank the render-derived mode on the route page", () => {
+    // A full-state link captured on the tunnel pane with the 3D renderer warm
+    // carries BOTH pane=tunnel and render=3d. The pane (the vw slice's
+    // canonical mode owner) must win, or the link reopens on animation-3d
+    // instead of the surface the sender was looking at.
+    expect(initialViewerModeForUrl(false, "tunnel", "3d")).toBeUndefined();
+    // Pane-less ?render= permalinks (minted before pane existed) keep the
+    // render-derived mode.
+    expect(initialViewerModeForUrl(false, null, "3d")).toBe("animation-3d");
+    expect(initialViewerModeForUrl(false, null, "2d")).toBe("animation");
+    // A scan boot forces the card regardless of every other param.
+    expect(initialViewerModeForUrl(true, "tunnel", "3d")).toBe("card");
+    // Nothing in the URL: defer to the device-local remembered surface.
+    expect(initialViewerModeForUrl(false, null, null)).toBeUndefined();
   });
 });

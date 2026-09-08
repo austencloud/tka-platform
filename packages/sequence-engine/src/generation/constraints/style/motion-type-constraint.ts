@@ -7,7 +7,7 @@
  *
  * Examples:
  * - "all pro motions" - require both hands to be pro
- * - "blue pro only" - require blue hand to be pro
+ * - "left pro only" - require left hand to be pro
  * - "no dash" - exclude dash motions
  * - "prefer anti" - soft preference for anti motions
  */
@@ -25,7 +25,7 @@ export type MotionTypeMode =
   | "prefer" // Soft: score higher if this type
   | "exclude"; // Hard: must NOT be this type
 
-export type HandTarget = "blue" | "red" | "both";
+export type HandTarget = "left" | "right" | "both";
 
 export interface MotionTypeConstraintOptions {
   /** The motion type to target */
@@ -88,19 +88,19 @@ export class MotionTypeConstraint implements IVariationConstraint {
   private evaluateVariation(candidate: PictographData): ConstraintScore {
     const { motionType, hand, mode } = this.options;
 
-    const blueMotion = candidate.blueMotion.motionType;
-    const redMotion = candidate.redMotion.motionType;
+    const leftMotion = candidate.leftMotion.motionType;
+    const rightMotion = candidate.rightMotion.motionType;
 
-    let blueMatch = false;
-    let redMatch = false;
+    let leftMatch = false;
+    let rightMatch = false;
 
     // Check for match based on mode
     if (mode === "exclude") {
-      blueMatch = blueMotion !== motionType;
-      redMatch = redMotion !== motionType;
+      leftMatch = leftMotion !== motionType;
+      rightMatch = rightMotion !== motionType;
     } else {
-      blueMatch = blueMotion === motionType;
-      redMatch = redMotion === motionType;
+      leftMatch = leftMotion === motionType;
+      rightMatch = rightMotion === motionType;
     }
 
     // Calculate score based on target hand
@@ -109,32 +109,32 @@ export class MotionTypeConstraint implements IVariationConstraint {
     let reason: string;
 
     switch (hand) {
-      case "blue":
-        score = blueMatch ? 1 : 0;
-        satisfied = blueMatch;
-        reason = blueMatch
-          ? `Blue hand is ${mode === "exclude" ? "not " : ""}${motionType}`
-          : `Blue hand is ${blueMotion} (expected ${mode === "exclude" ? "not " : ""}${motionType})`;
+      case "left":
+        score = leftMatch ? 1 : 0;
+        satisfied = leftMatch;
+        reason = leftMatch
+          ? `Left hand is ${mode === "exclude" ? "not " : ""}${motionType}`
+          : `Left hand is ${leftMotion} (expected ${mode === "exclude" ? "not " : ""}${motionType})`;
         break;
 
-      case "red":
-        score = redMatch ? 1 : 0;
-        satisfied = redMatch;
-        reason = redMatch
-          ? `Red hand is ${mode === "exclude" ? "not " : ""}${motionType}`
-          : `Red hand is ${redMotion} (expected ${mode === "exclude" ? "not " : ""}${motionType})`;
+      case "right":
+        score = rightMatch ? 1 : 0;
+        satisfied = rightMatch;
+        reason = rightMatch
+          ? `Right hand is ${mode === "exclude" ? "not " : ""}${motionType}`
+          : `Right hand is ${rightMotion} (expected ${mode === "exclude" ? "not " : ""}${motionType})`;
         break;
 
       case "both":
       default:
-        score = (blueMatch && redMatch) ? 1 : (blueMatch || redMatch) ? 0.5 : 0;
-        satisfied = blueMatch && redMatch;
-        if (blueMatch && redMatch) {
+        score = (leftMatch && rightMatch) ? 1 : (leftMatch || rightMatch) ? 0.5 : 0;
+        satisfied = leftMatch && rightMatch;
+        if (leftMatch && rightMatch) {
           reason = `Both hands are ${mode === "exclude" ? "not " : ""}${motionType}`;
-        } else if (blueMatch) {
-          reason = `Only blue hand is ${mode === "exclude" ? "not " : ""}${motionType}`;
-        } else if (redMatch) {
-          reason = `Only red hand is ${mode === "exclude" ? "not " : ""}${motionType}`;
+        } else if (leftMatch) {
+          reason = `Only left hand is ${mode === "exclude" ? "not " : ""}${motionType}`;
+        } else if (rightMatch) {
+          reason = `Only right hand is ${mode === "exclude" ? "not " : ""}${motionType}`;
         } else {
           reason = `Neither hand is ${mode === "exclude" ? "not " : ""}${motionType}`;
         }
@@ -152,28 +152,28 @@ export class MotionTypeConstraint implements IVariationConstraint {
   private checkSatisfaction(candidate: PictographData): boolean {
     const { motionType, hand, mode } = this.options;
 
-    const blueMotion = candidate.blueMotion.motionType;
-    const redMotion = candidate.redMotion.motionType;
+    const leftMotion = candidate.leftMotion.motionType;
+    const rightMotion = candidate.rightMotion.motionType;
 
-    let blueOk: boolean;
-    let redOk: boolean;
+    let leftOk: boolean;
+    let rightOk: boolean;
 
     if (mode === "exclude") {
-      blueOk = blueMotion !== motionType;
-      redOk = redMotion !== motionType;
+      leftOk = leftMotion !== motionType;
+      rightOk = rightMotion !== motionType;
     } else {
-      blueOk = blueMotion === motionType;
-      redOk = redMotion === motionType;
+      leftOk = leftMotion === motionType;
+      rightOk = rightMotion === motionType;
     }
 
     switch (hand) {
-      case "blue":
-        return blueOk;
-      case "red":
-        return redOk;
+      case "left":
+        return leftOk;
+      case "right":
+        return rightOk;
       case "both":
       default:
-        return blueOk && redOk;
+        return leftOk && rightOk;
     }
   }
 }

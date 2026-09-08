@@ -84,6 +84,23 @@ describe("start-position preferences by grid mode", () => {
     expect(state.options.blockedStartPositions).toEqual(boxPreference);
   });
 
+  it("restores literal blue/red start orientations", () => {
+    localStorage.setItem(
+      "tka-start-end-session-options",
+      JSON.stringify({
+        mustContainLetters: [],
+        mustNotContainLetters: [],
+        blueStartOrientation: "clock",
+        redStartOrientation: "counter",
+        timestamp: Date.now(),
+      })
+    );
+
+    const state = createStartEndOptionsState(undefined, GridMode.DIAMOND);
+    expect(state.options.leftStartOrientation).toBe("clock");
+    expect(state.options.rightStartOrientation).toBe("counter");
+  });
+
   it("restores custom selections and clears incompatible exact positions", () => {
     const diamondPreference = [GridPosition.ALPHA3, GridPosition.BETA7];
     const boxPreference = [GridPosition.ALPHA4, GridPosition.GAMMA10];

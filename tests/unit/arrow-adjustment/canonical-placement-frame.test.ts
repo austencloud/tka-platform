@@ -8,7 +8,7 @@ import {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -48,10 +48,10 @@ function rotateMotionToBox(motion: MotionData): MotionData {
 function makePair(): {
   diamond: PictographData;
   box: PictographData;
-  diamondBlue: MotionData;
-  boxBlue: MotionData;
+  diamondLeft: MotionData;
+  boxLeft: MotionData;
 } {
-  const diamondBlue = createMotionData({
+  const diamondLeft = createMotionData({
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
     startLocation: GridLocation.SOUTH,
@@ -60,10 +60,10 @@ function makePair(): {
     startOrientation: Orientation.IN,
     endOrientation: Orientation.OUT,
     turns: 1,
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
     gridMode: GridMode.DIAMOND,
   });
-  const diamondRed = createMotionData({
+  const diamondRight = createMotionData({
     motionType: MotionType.ANTI,
     rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
     startLocation: GridLocation.NORTH,
@@ -72,35 +72,35 @@ function makePair(): {
     startOrientation: Orientation.OUT,
     endOrientation: Orientation.IN,
     turns: 0,
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     gridMode: GridMode.DIAMOND,
   });
-  const boxBlue = rotateMotionToBox(diamondBlue);
-  const boxRed = rotateMotionToBox(diamondRed);
+  const boxLeft = rotateMotionToBox(diamondLeft);
+  const boxRight = rotateMotionToBox(diamondRight);
 
   return {
-    diamondBlue,
-    boxBlue,
+    diamondLeft,
+    boxLeft,
     diamond: {
       id: "canonical-a",
       letter: "A" as never,
       endPosition: GridPosition.GAMMA1,
       gridMode: GridMode.DIAMOND,
-      motions: { blue: diamondBlue, red: diamondRed },
+      motions: { left: diamondLeft, right: diamondRight },
     },
     box: {
       id: "box-a",
       letter: "A" as never,
       endPosition: GridPosition.GAMMA2,
       gridMode: GridMode.BOX,
-      motions: { blue: boxBlue, red: boxRed },
+      motions: { left: boxLeft, right: boxRight },
     },
   };
 }
 
 describe("canonical diamond placement frame", () => {
   it("maps every box perimeter location back one exact 45-degree step", () => {
-    const { box, boxBlue } = makePair();
+    const { box, boxLeft } = makePair();
     const perimeter = [
       GridLocation.NORTH,
       GridLocation.NORTHEAST,
@@ -113,7 +113,7 @@ describe("canonical diamond placement frame", () => {
     ];
 
     for (const location of perimeter) {
-      const frame = createCanonicalPlacementContext(box, boxBlue, location);
+      const frame = createCanonicalPlacementContext(box, boxLeft, location);
       expect(frame.location).toBe(rotateLocation(location, -1));
       expect(rotateLocation(frame.location!, 1)).toBe(location);
       expect(frame.motionData.gridMode).toBe(GridMode.DIAMOND);
@@ -136,20 +136,20 @@ describe("canonical diamond placement frame", () => {
   });
 
   it("leaves diamond and non-rotational modes untouched", () => {
-    const { diamond, diamondBlue } = makePair();
+    const { diamond, diamondLeft } = makePair();
     const frame = createCanonicalPlacementContext(
       diamond,
-      diamondBlue,
+      diamondLeft,
       GridLocation.SOUTHWEST
     );
     expect(frame.rotationDegrees).toBe(0);
     expect(frame.pictographData).toBe(diamond);
-    expect(frame.motionData).toBe(diamondBlue);
+    expect(frame.motionData).toBe(diamondLeft);
     expect(frame.location).toBe(GridLocation.SOUTHWEST);
   });
 
   it("runs the entire box tier cascade in diamond and rotates only its final screen vector", async () => {
-    const { box, boxBlue, diamondBlue } = makePair();
+    const { box, boxLeft, diamondLeft } = makePair();
     const defaultGridModes: string[] = [];
     const specialPlacer = {
       getSpecialJsonAdjustmentOnly: vi.fn(async (motion: MotionData) => {
@@ -180,18 +180,18 @@ describe("canonical diamond placement frame", () => {
       directionalTupleProcessor
     );
 
-    const boxLocation = boxBlue.arrowLocation;
+    const boxLocation = boxLeft.arrowLocation;
     const diagnostics = await calculator.getDiagnostics(
       box,
-      boxBlue,
+      boxLeft,
       "A",
       boxLocation,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     const canonicalLocation = rotateLocation(boxLocation, -1) as GridLocation;
     const canonicalFinal = directionalTupleProcessor.processDirectionalTuples(
       new Point(CANONICAL_SPECIAL.x, CANONICAL_SPECIAL.y),
-      diamondBlue,
+      diamondLeft,
       canonicalLocation
     );
     const expected = rotatePlacementVectorToDisplayed(canonicalFinal, 45);
@@ -208,37 +208,37 @@ describe("canonical diamond placement frame", () => {
   });
 
   it("gives equivalent Box and Diamond arrows the same persisted identities", () => {
-    const { box, boxBlue, diamond, diamondBlue } = makePair();
+    const { box, boxLeft, diamond, diamondLeft } = makePair();
     const boxSpecialKey = computeSpecialOverrideKey(
       box,
-      boxBlue,
-      MotionColor.BLUE
+      boxLeft,
+      HandSide.LEFT
     );
     const diamondSpecialKey = computeSpecialOverrideKey(
       diamond,
-      diamondBlue,
-      MotionColor.BLUE
+      diamondLeft,
+      HandSide.LEFT
     );
     const keyGenerator = new GlobalAdjustmentKeyGenerator(turnsTupleGenerator);
     const boxGlobalKey = keyGenerator.generateKey(
-      boxBlue,
+      boxLeft,
       box,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     const diamondGlobalKey = keyGenerator.generateKey(
-      diamondBlue,
+      diamondLeft,
       diamond,
-      MotionColor.BLUE
+      HandSide.LEFT
     );
     const boxPropGeometryKey = derivePropGeometryKey(
       box,
-      boxBlue,
-      MotionColor.BLUE
+      boxLeft,
+      HandSide.LEFT
     );
     const diamondPropGeometryKey = derivePropGeometryKey(
       diamond,
-      diamondBlue,
-      MotionColor.BLUE
+      diamondLeft,
+      HandSide.LEFT
     );
 
     expect(boxSpecialKey).toBe(diamondSpecialKey);
@@ -250,19 +250,19 @@ describe("canonical diamond placement frame", () => {
   });
 
   it("uses one canonical identity for every rotational display grid", () => {
-    const { box, boxBlue } = makePair();
+    const { box, boxLeft } = makePair();
     const specialKey = computeSpecialOverrideKey(
       box,
-      boxBlue,
-      MotionColor.BLUE
+      boxLeft,
+      HandSide.LEFT
     );
     const globalKey = new GlobalAdjustmentKeyGenerator(
       turnsTupleGenerator
-    ).generateKey(boxBlue, box, MotionColor.BLUE);
+    ).generateKey(boxLeft, box, HandSide.LEFT);
     const propGeometryKey = derivePropGeometryKey(
       box,
-      boxBlue,
-      MotionColor.BLUE
+      boxLeft,
+      HandSide.LEFT
     );
 
     expect(specialKey.startsWith("canonical|")).toBe(true);
@@ -271,11 +271,11 @@ describe("canonical diamond placement frame", () => {
   });
 
   it("round-trips a box WASD screen delta through the canonical tuple inverse", () => {
-    const { box, boxBlue } = makePair();
+    const { box, boxLeft } = makePair();
     const frame = createCanonicalPlacementContext(
       box,
-      boxBlue,
-      boxBlue.arrowLocation
+      boxLeft,
+      boxLeft.arrowLocation
     );
     const requested = { x: 0, y: -20 };
     const canonicalScreen = rotateScreenVectorToCanonical(

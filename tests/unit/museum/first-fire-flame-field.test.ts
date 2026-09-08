@@ -12,7 +12,7 @@ import {
 import {
   extractFirstFireFlameAnchors,
   FirstFireFlameFieldRenderer,
-} from "../../../src/routes/test/first-fire-graybox/first-fire-flame-field";
+} from "../../../src/lib/features/museum/services/first-fire-flame-field";
 
 function instancedFlameGuide(
   name: string,

@@ -123,24 +123,24 @@ function clamp01(value: number): number {
 }
 
 function getCrossBodyDemand(
-  blueLocation: GridLocation,
-  redLocation: GridLocation,
+  leftLocation: GridLocation,
+  rightLocation: GridLocation,
   handRadius: number
 ): number {
-  const blue = gridLocationToPosition3D(Plane.WALL, blueLocation, handRadius);
-  const red = gridLocationToPosition3D(Plane.WALL, redLocation, handRadius);
+  const left = gridLocationToPosition3D(Plane.WALL, leftLocation, handRadius);
+  const right = gridLocationToPosition3D(Plane.WALL, rightLocation, handRadius);
 
   // Blue is the performer's left hand and naturally occupies -X. Red is the
   // right hand and naturally occupies +X. Reaching the other way asks the
   // torso and shoulders to follow instead of forcing an arm through the chest.
-  const blueCross = Math.max(0, blue.x) / handRadius;
-  const redCross = Math.max(0, -red.x) / handRadius;
+  const leftCross = Math.max(0, left.x) / handRadius;
+  const rightCross = Math.max(0, -right.x) / handRadius;
   const centerDemand =
-    blueLocation === GridLocation.CENTER || redLocation === GridLocation.CENTER
+    leftLocation === GridLocation.CENTER || rightLocation === GridLocation.CENTER
       ? 0.35
       : 0;
 
-  return clamp01(Math.max(blueCross, redCross, centerDemand));
+  return clamp01(Math.max(leftCross, rightCross, centerDemand));
 }
 
 /**
@@ -149,13 +149,13 @@ function getCrossBodyDemand(
  * open fan instead of borrowing the staff grid's tip geometry.
  */
 export function getFanSceneLayout({
-  blueLocation,
-  redLocation,
+  leftLocation,
+  rightLocation,
   propType,
   basePropLength,
 }: {
-  blueLocation: GridLocation;
-  redLocation: GridLocation;
+  leftLocation: GridLocation;
+  rightLocation: GridLocation;
   propType: PropType;
   basePropLength: number;
 }): FanSceneLayout {
@@ -167,8 +167,8 @@ export function getFanSceneLayout({
   const bladeRadius = basePropLength * FAN_BLADE_RADIUS_RATIO * fanScale;
   const outerRadius = handRadius + bladeRadius;
   const crossBodyDemand = getCrossBodyDemand(
-    blueLocation,
-    redLocation,
+    leftLocation,
+    rightLocation,
     handRadius
   );
 

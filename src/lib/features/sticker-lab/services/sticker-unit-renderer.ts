@@ -9,10 +9,10 @@ import {
 } from "../domain/sticker-constants";
 
 const LIGHT_MODE_PALETTE: MandalaPalette = {
-  blueStroke: "#1e40af",
-  blueFill: "transparent",
-  redStroke: "#991b1b",
-  redFill: "transparent",
+  leftStroke: "#1e40af",
+  leftFill: "transparent",
+  rightStroke: "#991b1b",
+  rightFill: "transparent",
   purpleStroke: "#6b21a8",
   purpleFill: "transparent",
 };
@@ -46,7 +46,7 @@ export function renderStickerUnitSVG(unit: StickerUnit, mandalaPaths: MandalaPat
   ].join("\n");
 }
 
-function toMandalaShow(variant: StickerVariant): "blue" | "red" | "both" {
+function toMandalaShow(variant: StickerVariant): "left" | "right" | "both" {
   return variant === "full" ? "both" : variant;
 }
 

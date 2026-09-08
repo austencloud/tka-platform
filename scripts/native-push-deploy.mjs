@@ -21,16 +21,15 @@ import { fileURLToPath } from "node:url";
 import {
   buildWindowsCommandLine,
   choosePushedCommit,
-  createArchiveExtractionPlan,
   createNativeBuildEnv,
+  createSnapshotCheckoutPlan,
   inspectZipFilenameFlags,
   parseAdbDevices,
   parseJavaMajor,
   parsePushUpdates,
   readJavaProperty,
-  selectSnapshotArchive,
-  selectSnapshotExtractor,
   selectAndroidDevice,
+  selectAndroidSdkRoot,
 } from "./lib/native-push-deploy-core.mjs";
 
 const MIN_FREE_MEMORY_BYTES = 4 * 1024 ** 3;
@@ -174,36 +173,27 @@ function acquireLock(lockPath) {
   return () => rmSync(lockPath, { force: true });
 }
 
-function resolveAdb(repoRoot) {
+function resolveAndroidSdkRoot(repoRoot) {
+  const localProperties = join(repoRoot, "android", "local.properties");
+  return selectAndroidSdkRoot(
+    {
+      androidHome: process.env.ANDROID_HOME,
+      androidSdkRoot: process.env.ANDROID_SDK_ROOT,
+      localProperties: existsSync(localProperties)
+        ? readFileSync(localProperties, "utf8")
+        : "",
+      localAppData: process.env.LOCALAPPDATA,
+    },
+    existsSync
+  );
+}
+
+function resolveAdb(repoRoot, androidSdkRoot) {
   const candidates = [];
   if (process.env.ADB) candidates.push(process.env.ADB);
 
-  for (const sdkRoot of [
-    process.env.ANDROID_HOME,
-    process.env.ANDROID_SDK_ROOT,
-  ]) {
-    if (sdkRoot) candidates.push(join(sdkRoot, "platform-tools", "adb.exe"));
-  }
-
-  const localProperties = join(repoRoot, "android", "local.properties");
-  if (existsSync(localProperties)) {
-    const sdkRoot = readJavaProperty(
-      readFileSync(localProperties, "utf8"),
-      "sdk.dir"
-    );
-    if (sdkRoot) candidates.push(join(sdkRoot, "platform-tools", "adb.exe"));
-  }
-
-  if (process.env.LOCALAPPDATA) {
-    candidates.push(
-      join(
-        process.env.LOCALAPPDATA,
-        "Android",
-        "Sdk",
-        "platform-tools",
-        "adb.exe"
-      )
-    );
+  if (androidSdkRoot) {
+    candidates.push(join(androidSdkRoot, "platform-tools", "adb.exe"));
   }
 
   const match = candidates.find(
@@ -277,32 +267,26 @@ function copyLocalBuildInputs(repoRoot, snapshotRoot) {
   }
 }
 
-function createSnapshot(
-  repoRoot,
-  snapshotRoot,
-  archivePath,
-  archiveFormat,
-  commit
-) {
+function createSnapshot(repoRoot, snapshotRoot, snapshotIndex, commit) {
   mkdirSync(snapshotRoot, { recursive: true });
-  run(
-    "git",
-    ["archive", `--format=${archiveFormat}`, `--output=${archivePath}`, commit],
-    {
-      cwd: repoRoot,
-    }
+  const checkout = createSnapshotCheckoutPlan(
+    dirname(snapshotRoot),
+    snapshotRoot,
+    snapshotIndex,
+    commit
   );
-  const extraction = createArchiveExtractionPlan(
-    dirname(archivePath),
-    archivePath,
-    snapshotRoot
-  );
-  const extractor = selectSnapshotExtractor();
-  if (process.platform === "win32" && !existsSync(extractor)) {
-    throw new Error(`Windows archive extractor was not found: ${extractor}`);
+  const checkoutEnv = {
+    ...process.env,
+    GIT_INDEX_FILE: checkout.indexPath,
+  };
+
+  try {
+    run("git", checkout.readTreeArgs, { cwd: repoRoot, env: checkoutEnv });
+    run("git", checkout.checkoutArgs, { cwd: repoRoot, env: checkoutEnv });
+  } finally {
+    rmSync(snapshotIndex, { force: true });
+    rmSync(`${snapshotIndex}.lock`, { force: true });
   }
-  run(extractor, extraction.args, { cwd: extraction.cwd });
-  rmSync(archivePath, { force: true });
 
   copyLocalBuildInputs(repoRoot, snapshotRoot);
 
@@ -317,14 +301,15 @@ function createSnapshot(
   );
 }
 
-function removeSnapshot(buildRoot, snapshotRoot, archivePath) {
+function removeSnapshot(buildRoot, snapshotRoot, snapshotIndex) {
   assertInside(buildRoot, snapshotRoot);
-  assertInside(buildRoot, archivePath);
+  assertInside(buildRoot, snapshotIndex);
 
   const moduleLink = join(snapshotRoot, "node_modules");
   if (existsSync(moduleLink)) unlinkSync(moduleLink);
   rmSync(snapshotRoot, { recursive: true, force: true });
-  rmSync(archivePath, { force: true });
+  rmSync(snapshotIndex, { force: true });
+  rmSync(`${snapshotIndex}.lock`, { force: true });
 }
 
 function describeDevice(device) {
@@ -411,7 +396,8 @@ export async function main() {
     cwd: repoRoot,
   });
   const shortCommit = commit.slice(0, 10);
-  const adb = resolveAdb(repoRoot);
+  const androidSdkRoot = resolveAndroidSdkRoot(repoRoot);
+  const adb = resolveAdb(repoRoot, androidSdkRoot);
   const javaHome = resolveJavaHome();
 
   if (options.dryRun) {
@@ -422,9 +408,10 @@ export async function main() {
     const target = initialSelection.device
       ? describeDevice(initialSelection.device)
       : "APK only";
+    const sdk = androidSdkRoot ?? "Android SDK missing";
     const jdk = javaHome ?? "JDK 21 missing";
     console.log(
-      `[native] Dry run: build ${shortCommit}; target: ${target}; JDK: ${jdk}.`
+      `[native] Dry run: build ${shortCommit}; target: ${target}; SDK: ${sdk}; JDK: ${jdk}.`
     );
     return;
   }
@@ -441,8 +428,7 @@ export async function main() {
   const gitCommonDir = resolve(repoRoot, gitCommonDirRaw);
   const buildRoot = join(gitCommonDir, "tka-native-push");
   const snapshotRoot = join(buildRoot, "source");
-  const snapshotArchive = selectSnapshotArchive();
-  const archivePath = join(buildRoot, snapshotArchive.filename);
+  const snapshotIndex = join(buildRoot, "source.index");
   const lockPath = join(buildRoot, "build.lock");
   assertInside(gitCommonDir, buildRoot);
   if (!javaHome) {
@@ -457,19 +443,19 @@ export async function main() {
     ...process.env,
     DISABLE_PWA: "true",
     JAVA_HOME: javaHome,
+    ...(androidSdkRoot
+      ? {
+          ANDROID_HOME: androidSdkRoot,
+          ANDROID_SDK_ROOT: androidSdkRoot,
+        }
+      : {}),
   };
 
   let snapshotCreated = false;
   try {
     console.log(`[native] Building Android app from ${shortCommit}.`);
-    removeSnapshot(buildRoot, snapshotRoot, archivePath);
-    createSnapshot(
-      repoRoot,
-      snapshotRoot,
-      archivePath,
-      snapshotArchive.format,
-      commit
-    );
+    removeSnapshot(buildRoot, snapshotRoot, snapshotIndex);
+    createSnapshot(repoRoot, snapshotRoot, snapshotIndex, commit);
     snapshotCreated = true;
 
     console.log("[native] 1/4 Build web bundle");
@@ -605,9 +591,9 @@ export async function main() {
       if (
         snapshotCreated ||
         existsSync(snapshotRoot) ||
-        existsSync(archivePath)
+        existsSync(snapshotIndex)
       ) {
-        removeSnapshot(buildRoot, snapshotRoot, archivePath);
+        removeSnapshot(buildRoot, snapshotRoot, snapshotIndex);
       }
     } finally {
       releaseLock();

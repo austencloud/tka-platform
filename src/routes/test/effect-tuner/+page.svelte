@@ -85,14 +85,14 @@
   // Prop selection flows through the REAL production source of truth
   // (settingsService) so the trail system + TrailsPanel gating + bilateral
   // tracking all see the same prop the canvas renders.
-  const propType = $derived<PropType>(settingsService.settings.bluePropType ?? PropType.STAFF);
+  const propType = $derived<PropType>(settingsService.settings.leftPropType ?? PropType.STAFF);
 
   function selectProp(p: PropType) {
     // In-memory only (NOT updateSetting) → picking a prop here never persists to
     // the user's real app settings (no localStorage / Firebase write). The
     // originals are snapshotted on mount and restored on unmount.
-    settingsService.settings.bluePropType = p;
-    settingsService.settings.redPropType = p;
+    settingsService.settings.leftPropType = p;
+    settingsService.settings.rightPropType = p;
     animationSettings.setCurrentPropType(String(p));
   }
 
@@ -106,11 +106,11 @@
     // canvas reads only animationSettings.trail and trail presets never take.
     const settings = foldTrailIntentIntoSettings(animationSettings.trail, effectsConfig.trails);
     if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
-      const blue = settingsService.settings.bluePropType;
-      const red = settingsService.settings.redPropType;
+      const left = settingsService.settings.leftPropType;
+      const right = settingsService.settings.rightPropType;
       const hasBilateral =
-        (blue != null && isBilateralProp(String(blue))) ||
-        (red != null && isBilateralProp(String(red)));
+        (left != null && isBilateralProp(String(left))) ||
+        (right != null && isBilateralProp(String(right)));
       if (!hasBilateral) settings.trackingMode = TrackingMode.RIGHT_END;
     }
     return settings;
@@ -387,8 +387,8 @@
     // system reads them (settingsService / animationSettings, the latter
     // auto-persists). So snapshot the user's originals now and restore on leave
     // — tuning here must never stick to their real app.
-    const origBlue = settingsService.settings.bluePropType;
-    const origRed = settingsService.settings.redPropType;
+    const origLeft = settingsService.settings.leftPropType;
+    const origRight = settingsService.settings.rightPropType;
     const origTrail = { ...animationSettings.trail };
     const origPropType = animationSettings.currentPropType;
 
@@ -426,31 +426,31 @@
       // Restore the user's real prop + trail settings. Prop is in-memory;
       // updateSettings re-persists the original trail, undoing any in-session
       // auto-save the trail singleton made.
-      settingsService.settings.bluePropType = origBlue;
-      settingsService.settings.redPropType = origRed;
+      settingsService.settings.leftPropType = origLeft;
+      settingsService.settings.rightPropType = origRight;
       animationSettings.updateSettings({ trail: origTrail });
       animationSettings.setCurrentPropType(origPropType);
     };
   });
 
   // ── Per-layer prop derivation at the shared playhead ────────
-  type LayerProps = { blue: PropState; red: PropState; step: StepData | null; stepOneBased: number };
+  type LayerProps = { left: PropState; right: PropState; step: StepData | null; stepOneBased: number };
 
   function propsFor(seq: SequenceData | null): LayerProps {
     if (!seq || seq.steps.length === 0) {
-      return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: 1 };
+      return { left: { ...DEFAULT_PROP_STATE }, right: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: 1 };
     }
     const n = seq.steps.length;
     const idx = Math.min(n - 1, Math.max(0, Math.floor(playheadBeat)));
     const progress = Math.max(0, Math.min(0.9999, playheadBeat - Math.floor(playheadBeat)));
     const step = seq.steps[idx] ?? null;
     if (!step) {
-      return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: idx + 1 };
+      return { left: { ...DEFAULT_PROP_STATE }, right: { ...DEFAULT_PROP_STATE }, step: null, stepOneBased: idx + 1 };
     }
     const r = interpolatePropAngles(step, progress);
     return {
-      blue: r.isValid ? (r.blueAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
-      red: r.isValid ? (r.redAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
+      left: r.isValid ? (r.leftAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
+      right: r.isValid ? (r.rightAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
       step,
       stepOneBased: idx + 1,
     };
@@ -460,7 +460,7 @@
   const additionalLayers = $derived<AdditionalLayerProps[]>(
     rotated.map((seq) => {
       const p = propsFor(seq);
-      return { blueProp: p.blue, redProp: p.red };
+      return { leftProp: p.left, rightProp: p.right };
     }),
   );
   const propTypeStr = $derived(String(propType));
@@ -610,11 +610,11 @@
         <div class="stage">
           {#if base}
             <AnimatorCanvas
-              blueProp={baseLayer.blue}
-              redProp={baseLayer.red}
+              leftProp={baseLayer.left}
+              rightProp={baseLayer.right}
               {additionalLayers}
-              bluePropType={propTypeStr}
-              redPropType={propTypeStr}
+              leftPropType={propTypeStr}
+              rightPropType={propTypeStr}
               sequenceData={base}
               stepData={baseLayer.step}
               currentStep={baseLayer.stepOneBased}

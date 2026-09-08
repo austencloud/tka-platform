@@ -41,8 +41,8 @@ const sequence = {
 const input: ThumbnailRenderInput = {
   sequenceName: "AB",
   sequenceId: "seq-1",
-  bluePropType: PropType.STAFF,
-  redPropType: PropType.STAFF,
+  leftPropType: PropType.STAFF,
+  rightPropType: PropType.STAFF,
   catDogModeEnabled: false,
   lightMode: false,
   variant: "gallery",

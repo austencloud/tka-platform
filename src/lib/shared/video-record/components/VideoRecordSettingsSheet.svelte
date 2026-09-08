@@ -18,8 +18,8 @@
     isMobile = false,
     referenceView,
     gridSettings,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
     onClose = () => {},
     onReferenceViewChange = () => {},
     onGridSettingsChange = () => {},
@@ -28,8 +28,8 @@
     isMobile: boolean;
     referenceView: ReferenceViewType;
     gridSettings: GridSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     onClose?: () => void;
     onReferenceViewChange?: (view: ReferenceViewType) => void;
     onGridSettingsChange?: (settings: GridSettings) => void;
@@ -105,7 +105,7 @@
             <h3>Animation Settings</h3>
 
             <!-- Trail Controls (Off/Subtle/Vivid) with bilateral toggle -->
-            <SimpleTrailControls {bluePropType} {redPropType} />
+            <SimpleTrailControls {leftPropType} {rightPropType} />
           </section>
         {/if}
 

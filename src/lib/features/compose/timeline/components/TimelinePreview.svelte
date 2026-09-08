@@ -67,8 +67,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   let currentSequence = $state<SequenceData | null>(null);
 
   // Prop states for rendering
-  let bluePropState = $state<PropState | null>(null);
-  let redPropState = $state<PropState | null>(null);
+  let leftPropState = $state<PropState | null>(null);
+  let rightPropState = $state<PropState | null>(null);
 
   // Find the active clip at playhead position
   const activeClip = $derived.by(() => {
@@ -216,8 +216,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
       untrack(() => {
         currentClipId = null;
         currentSequence = null;
-        bluePropState = null;
-        redPropState = null;
+        leftPropState = null;
+        rightPropState = null;
       });
       return;
     }
@@ -243,8 +243,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
 
       // Get the calculated prop states
       const propStates = animationOrchestrator!.getCurrentPropStates();
-      bluePropState = propStates.blue;
-      redPropState = propStates.red;
+      leftPropState = propStates.left;
+      rightPropState = propStates.right;
     });
   });
 
@@ -264,8 +264,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
       // Wrap all state updates in untrack to prevent effect cycles
       untrack(() => {
         currentSequence = sequence;
-        bluePropState = propStates.blue;
-        redPropState = propStates.red;
+        leftPropState = propStates.left;
+        rightPropState = propStates.right;
       });
     } catch (err) {
       console.error("TimelinePreview: animation init failed:", err);
@@ -317,11 +317,11 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         <span>{error}</span>
       </div>
-    {:else if activeClip && currentSequence && bluePropState && redPropState}
+    {:else if activeClip && currentSequence && leftPropState && rightPropState}
       <div class="canvas-container">
         <AnimatorCanvas
-          blueProp={bluePropState}
-          redProp={redPropState}
+          leftProp={leftPropState}
+          rightProp={rightPropState}
           gridVisible={true}
           gridMode={currentSequence.gridMode ?? null}
           letter={currentLetter}

@@ -50,8 +50,8 @@
     const tx = -Math.sin(c.a);
     const ty = Math.cos(c.a);
     return {
-      blue: { x: c.x + tx * staffHalf, y: c.y + ty * staffHalf },
-      red: { x: c.x - tx * staffHalf, y: c.y - ty * staffHalf },
+      left: { x: c.x + tx * staffHalf, y: c.y + ty * staffHalf },
+      right: { x: c.x - tx * staffHalf, y: c.y - ty * staffHalf },
     };
   }
 </script>
@@ -98,18 +98,18 @@
       {/if}
       <!-- Staff body (the prop) — bright neutral so it reads on a dark stage. -->
       <line
-        x1={h.blue.x}
-        y1={h.blue.y}
-        x2={h.red.x}
-        y2={h.red.y}
+        x1={h.left.x}
+        y1={h.left.y}
+        x2={h.right.x}
+        y2={h.right.y}
         stroke="var(--theme-text, rgba(255,255,255,0.85))"
         stroke-width={endR * 0.8}
         stroke-linecap="round"
         opacity="0.75"
       />
       <!-- Hand ends (blue thumb / red pinky), semantic prop colors. -->
-      <circle class="end" cx={h.blue.x} cy={h.blue.y} r={endR} fill="var(--prop-blue, #2E86DE)" />
-      <circle class="end" cx={h.red.x} cy={h.red.y} r={endR} fill="var(--prop-red, #E74C3C)" />
+      <circle class="end" cx={h.left.x} cy={h.left.y} r={endR} fill="var(--prop-blue, #2E86DE)" />
+      <circle class="end" cx={h.right.x} cy={h.right.y} r={endR} fill="var(--prop-red, #E74C3C)" />
     </g>
   {/each}
 </svg>

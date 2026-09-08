@@ -29,12 +29,12 @@ import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enum
 
 /** Level 1 gamma Quarter-Opp step 1: blue S→W (cw handpath), red E→N (ccw). */
 function gammaQuarterOppStep1(): PictographData {
-  const hand = (color: "blue" | "red", s: string, e: string): MotionData =>
+  const motion = (hand: "left" | "right", s: string, e: string): MotionData =>
     createMotionData({
       motionType: "pro" as MotionData["motionType"],
       startLocation: s as MotionData["startLocation"],
       endLocation: e as MotionData["endLocation"],
-      color: color as MotionData["color"],
+      hand,
       propType: "hand" as MotionData["propType"],
       gridMode: "diamond" as MotionData["gridMode"],
     });
@@ -42,7 +42,10 @@ function gammaQuarterOppStep1(): PictographData {
     id: "gamma-qo-1",
     letter: null,
     gridMode: "diamond",
-    motions: { blue: hand("blue", "s", "w"), red: hand("red", "e", "n") },
+    motions: {
+      left: motion("left", "s", "w"),
+      right: motion("right", "e", "n"),
+    },
   } as unknown as PictographData;
 }
 
@@ -57,37 +60,40 @@ const locationCalc = new ArrowLocationCalculator();
 
 describe("hand-path float arrows are never mirrored", () => {
   it("keeps the handpath direction on rotationDirection (unchanged behavior)", () => {
-    expect(transformed.motions.blue!.motionType).toBe("float");
-    expect(transformed.motions.blue!.rotationDirection).toBe("cw");
-    expect(transformed.motions.red!.rotationDirection).toBe("ccw");
+    expect(transformed.motions.left!.motionType).toBe("float");
+    expect(transformed.motions.left!.rotationDirection).toBe("cw");
+    expect(transformed.motions.right!.rotationDirection).toBe("ccw");
   });
 
   it("does not mirror either hand float (ccw was the regression)", () => {
     const placeholder = {} as ArrowPlacementData;
     expect(
-      shouldMirrorArrow(placeholder, transformed, transformed.motions.blue!)
+      shouldMirrorArrow(placeholder, transformed, transformed.motions.left!)
     ).toBe(false);
     expect(
-      shouldMirrorArrow(placeholder, transformed, transformed.motions.red!)
+      shouldMirrorArrow(placeholder, transformed, transformed.motions.right!)
     ).toBe(false);
   });
 
   it("renders each chevron along its hand's chord (rotation = chord - 45)", async () => {
     const cases = [
-      { color: "blue" as const, loc: GridLocation.SOUTHWEST, rotation: 180 },
-      { color: "red" as const, loc: GridLocation.NORTHEAST, rotation: 180 },
+      { hand: "left" as const, loc: GridLocation.SOUTHWEST, rotation: 180 },
+      { hand: "right" as const, loc: GridLocation.NORTHEAST, rotation: 180 },
     ];
     for (const c of cases) {
-      const motion = transformed.motions[c.color]!;
+      const motion = transformed.motions[c.hand]!;
       const loc = await (
         locationCalc as unknown as {
-          calculateLocation(m: MotionData, p: PictographData): Promise<GridLocation>;
+          calculateLocation(
+            m: MotionData,
+            p: PictographData
+          ): Promise<GridLocation>;
         }
       ).calculateLocation(motion, transformed);
       expect(loc).toBe(c.loc);
-      expect(await rotationCalc.calculateRotation(motion, loc, transformed)).toBe(
-        c.rotation
-      );
+      expect(
+        await rotationCalc.calculateRotation(motion, loc, transformed)
+      ).toBe(c.rotation);
     }
   });
 });
@@ -96,8 +102,14 @@ describe("float rotation maps are exact chord geometry", () => {
   // float.svg's chevron points SE (45deg) at rotation 0, so the correct rotation
   // for a shift is (angle of the start->end chord in screen coords) - 45.
   const COORD: Record<string, [number, number]> = {
-    n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0],
-    ne: [1, -1], se: [1, 1], sw: [-1, 1], nw: [-1, -1],
+    n: [0, -1],
+    e: [1, 0],
+    s: [0, 1],
+    w: [-1, 0],
+    ne: [1, -1],
+    se: [1, 1],
+    sw: [-1, 1],
+    nw: [-1, -1],
   };
   const chordRotation = (start: string, end: string) => {
     const dx = COORD[end][0] - COORD[start][0];
@@ -107,26 +119,38 @@ describe("float rotation maps are exact chord geometry", () => {
   };
 
   const CW: [string, string, string][] = [
-    ["n", "e", "ne"], ["e", "s", "se"], ["s", "w", "sw"], ["w", "n", "nw"],
-    ["ne", "se", "e"], ["se", "sw", "s"], ["sw", "nw", "w"], ["nw", "ne", "n"],
+    ["n", "e", "ne"],
+    ["e", "s", "se"],
+    ["s", "w", "sw"],
+    ["w", "n", "nw"],
+    ["ne", "se", "e"],
+    ["se", "sw", "s"],
+    ["sw", "nw", "w"],
+    ["nw", "ne", "n"],
   ];
   const CCW: [string, string, string][] = [
-    ["e", "n", "ne"], ["n", "w", "nw"], ["w", "s", "sw"], ["s", "e", "se"],
-    ["se", "ne", "e"], ["ne", "nw", "n"], ["nw", "sw", "w"], ["sw", "se", "s"],
+    ["e", "n", "ne"],
+    ["n", "w", "nw"],
+    ["w", "s", "sw"],
+    ["s", "e", "se"],
+    ["se", "ne", "e"],
+    ["ne", "nw", "n"],
+    ["nw", "sw", "w"],
+    ["sw", "se", "s"],
   ];
 
   for (const [start, end, arrow] of CW) {
     it(`cw ${start}->${end} at ${arrow}`, () => {
-      expect(
-        floatClockwiseHandpathMap[arrow as GridLocation]
-      ).toBe(chordRotation(start, end));
+      expect(floatClockwiseHandpathMap[arrow as GridLocation]).toBe(
+        chordRotation(start, end)
+      );
     });
   }
   for (const [start, end, arrow] of CCW) {
     it(`ccw ${start}->${end} at ${arrow}`, () => {
-      expect(
-        floatCounterClockwiseHandpathMap[arrow as GridLocation]
-      ).toBe(chordRotation(start, end));
+      expect(floatCounterClockwiseHandpathMap[arrow as GridLocation]).toBe(
+        chordRotation(start, end)
+      );
     });
   }
 });

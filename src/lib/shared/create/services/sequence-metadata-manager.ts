@@ -7,6 +7,7 @@ import {
   DifficultyLevel,
   type GenerationOptions,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import { DIFFICULTY_TO_LEVEL } from "$lib/shared/create/utils/config-mapper";
 
 export function generateSequenceName(options: GenerationOptions): string {
   const timestamp = new Date().toLocaleString("en-US", {
@@ -29,23 +30,17 @@ export function calculateWordFromBeats(steps: Step[]): string {
 }
 
 export function mapDifficultyToLevel(difficulty: DifficultyLevel): number {
-  switch (difficulty) {
-    case DifficultyLevel.BEGINNER:
-      return 1;
-    case DifficultyLevel.INTERMEDIATE:
-      return 2;
-    case DifficultyLevel.ADVANCED:
-      return 3;
-    default:
-      return 2;
-  }
+  // Single source of truth for difficulty<->level lives in config-mapper.ts
+  // (DIFFICULTY_TO_LEVEL). This used to be a hand-maintained switch that never
+  // learned about SKEWED, so a Level 4 request silently built at Level 2.
+  return DIFFICULTY_TO_LEVEL[difficulty] ?? 2;
 }
 
 export function createGenerationMetadata(options: {
   stepsGenerated: number;
   propContinuity: string;
-  blueRotationDirection: string;
-  redRotationDirection: string;
+  leftRotationDirection: string;
+  rightRotationDirection: string;
   turnIntensity: number;
   level: number;
 }): Record<string, unknown> {
@@ -55,8 +50,8 @@ export function createGenerationMetadata(options: {
     algorithm: "freeform",
     stepsGenerated: options.stepsGenerated,
     propContinuity: options.propContinuity,
-    blueRotationDirection: options.blueRotationDirection,
-    redRotationDirection: options.redRotationDirection,
+    leftRotationDirection: options.leftRotationDirection,
+    rightRotationDirection: options.rightRotationDirection,
     turnIntensity: options.turnIntensity,
     level: options.level,
   };

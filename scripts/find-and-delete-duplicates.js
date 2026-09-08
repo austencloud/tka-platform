@@ -62,8 +62,8 @@ function computeFingerprint(data) {
     startPosition: sp ? { motions: extractMotions(sp.motions), gridMode: sp.gridMode ?? null } : null,
     steps: steps.map((s) => ({
       letter: s.letter ?? null,
-      blueReversal: s.blueReversal,
-      redReversal: s.redReversal,
+      leftReversal: s.leftReversal,
+      rightReversal: s.rightReversal,
       isBlank: s.isBlank,
       duration: s.duration,
       motions: extractMotions(s.motions),

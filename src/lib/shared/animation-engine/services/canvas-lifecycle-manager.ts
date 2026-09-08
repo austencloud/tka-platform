@@ -206,7 +206,7 @@ export class CanvasLifecycleManager {
     };
 
     const initResizeServiceFn = (): void => {
-      this._doInitResizeService(containerElement);
+      this._doInitResizeService(containerElement, () => startRenderLoopFn());
     };
 
     const initGlyphTextureLoaderFn = (): void => {
@@ -234,7 +234,7 @@ export class CanvasLifecycleManager {
     const startRenderLoopFn = (): void => {
       this._renderLoop?.triggerRender(() => {
         const props = getLastPropsRef();
-        return buildFrameParams(props ?? { blueProp: null, redProp: null });
+        return buildFrameParams(props ?? { leftProp: null, rightProp: null });
       });
     };
 
@@ -317,7 +317,7 @@ export class CanvasLifecycleManager {
       orchestrator: this._orchestrator,
       TrailCapturer: this._trailCapturer,
       renderer: this._animationRenderer,
-      propDimensions: state.bluePropDimensions,
+      propDimensions: state.leftPropDimensions,
       canvasSize,
       instanceId,
     });
@@ -338,10 +338,20 @@ export class CanvasLifecycleManager {
     );
   }
 
-  private _doInitResizeService(containerElement: HTMLDivElement): void {
+  private _doInitResizeService(
+    containerElement: HTMLDivElement,
+    redraw: () => void
+  ): void {
     if (!this._animationRenderer) return;
+    const renderer = this._animationRenderer;
     this._resizer = new CanvasResizerImpl();
-    this._resizer.initialize(containerElement, this._animationRenderer);
+    this._resizer.initialize(containerElement, {
+      resize: async (size) => {
+        await renderer.resize(size);
+        // Resizing clears the canvas. A paused player has no next frame to repair it.
+        if (this._containerElement === containerElement) redraw();
+      },
+    });
   }
 
   private _doInitGlyphTextureLoader(): void {
@@ -396,7 +406,7 @@ export class CanvasLifecycleManager {
       containerElement,
       canvasSize,
       renderLoopService: renderLoop,
-      getFrameParams: () => buildFrameParams(getLastPropsRef() ?? { blueProp: null, redProp: null }),
+      getFrameParams: () => buildFrameParams(getLastPropsRef() ?? { leftProp: null, rightProp: null }),
       getVM,
     });
 

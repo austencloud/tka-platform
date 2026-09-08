@@ -54,8 +54,8 @@ describe("StanceSimulator reach", () => {
         new Vector3(0, 1, 0)
       )
     );
-    expect(result.reachShortfall.blue).toBeLessThan(0.001);
-    expect(result.reachShortfall.red).toBeLessThan(0.001);
+    expect(result.reachShortfall.left).toBeLessThan(0.001);
+    expect(result.reachShortfall.right).toBeLessThan(0.001);
   });
 
   it("reports positive shortfall for a target far beyond reach", () => {
@@ -75,7 +75,7 @@ describe("StanceSimulator reach", () => {
       makeStaffTarget(target, new Vector3(0, 1, 0)),
       makeStaffTarget(rightTarget, new Vector3(0, 1, 0))
     );
-    expect(result.reachShortfall.blue).toBeGreaterThan(2 - maxReach - 0.01);
+    expect(result.reachShortfall.left).toBeGreaterThan(2 - maxReach - 0.01);
     expect(result.feasible).toBe(false);
   });
 
@@ -97,7 +97,7 @@ describe("StanceSimulator reach", () => {
       makeStaffTarget(target, new Vector3(0, 1, 0)),
       makeStaffTarget(rightTarget, new Vector3(0, 1, 0))
     );
-    expect(stepped.reachShortfall.blue).toBeLessThan(neutral.reachShortfall.blue);
+    expect(stepped.reachShortfall.left).toBeLessThan(neutral.reachShortfall.left);
   });
 });
 

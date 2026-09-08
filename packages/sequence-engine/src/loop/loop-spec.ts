@@ -38,7 +38,7 @@ export enum LOOPComponent {
   ROTATED = "rotated", // 180° or 90° position rotation
   MIRRORED = "mirrored", // Reflection; legacy default is the north-south axis
   FLIPPED = "flipped", // Reflection; legacy default is the east-west axis
-  SWAPPED = "swapped", // Blue/red hand exchange
+  SWAPPED = "swapped", // Left/right hand exchange
   INVERTED = "inverted", // PRO ↔ ANTI motion direction flip
   REWOUND = "rewound", // Time reversal (plays backward)
 
@@ -92,13 +92,13 @@ export interface PropLOOPSpec {
 /**
  * Full compositional LOOP specification for a sequence.
  *
- * Specifies independent per-prop transformations for blue and red.
+ * Specifies independent per-prop transformations for left and right.
  * When both props have the same components and periods, the LOOP is symmetric.
  * Both props are optional — a spec may apply to only one prop.
  */
 export interface LOOPSpec {
-  readonly blue?: PropLOOPSpec;
-  readonly red?: PropLOOPSpec;
+  readonly left?: PropLOOPSpec;
+  readonly right?: PropLOOPSpec;
 }
 
 // WIRE FORMAT TYPES (JSON / Firestore safe)
@@ -123,11 +123,11 @@ export type PropLOOPSpecWire = Record<string, ComponentSpecWire>;
 
 /**
  * Wire form of a full LOOPSpec (JSON / Firestore safe).
- * Blue and red are optional — a spec may apply to only one prop.
+ * Left and right are optional — a spec may apply to only one prop.
  */
 export interface LOOPSpecWire {
-  blue?: PropLOOPSpecWire;
-  red?: PropLOOPSpecWire;
+  left?: PropLOOPSpecWire;
+  right?: PropLOOPSpecWire;
 }
 
 // WIRE ↔ RUNTIME CONVERTERS
@@ -171,18 +171,27 @@ function propSpecFromWire(wire: PropLOOPSpecWire): PropLOOPSpec {
  */
 export function loopSpecToWire(spec: LOOPSpec): LOOPSpecWire {
   const wire: LOOPSpecWire = {};
-  if (spec.blue !== undefined) wire.blue = propSpecToWire(spec.blue);
-  if (spec.red !== undefined) wire.red = propSpecToWire(spec.red);
+  if (spec.left !== undefined) wire.left = propSpecToWire(spec.left);
+  if (spec.right !== undefined) wire.right = propSpecToWire(spec.right);
   return wire;
 }
 
 /**
  * Deserialize a LOOPSpec from its wire form.
  */
-export function loopSpecFromWire(wire: LOOPSpecWire): LOOPSpec {
+export function loopSpecFromWire(
+  wire: LOOPSpecWire & {
+    /** @deprecated Legacy display-color key for the left hand. */
+    blue?: PropLOOPSpecWire;
+    /** @deprecated Legacy display-color key for the right hand. */
+    red?: PropLOOPSpecWire;
+  }
+): LOOPSpec {
+  const left = wire.left ?? wire.blue;
+  const right = wire.right ?? wire.red;
   return {
-    ...(wire.blue !== undefined ? { blue: propSpecFromWire(wire.blue) } : {}),
-    ...(wire.red !== undefined ? { red: propSpecFromWire(wire.red) } : {}),
+    ...(left !== undefined ? { left: propSpecFromWire(left) } : {}),
+    ...(right !== undefined ? { right: propSpecFromWire(right) } : {}),
   };
 }
 
@@ -221,13 +230,13 @@ function lcm(a: number, b: number): number {
 export function loopSpecPeriod(spec: LOOPSpec): number {
   const periods: number[] = [];
 
-  if (spec.blue !== undefined) {
-    for (const compSpec of spec.blue.components.values()) {
+  if (spec.left !== undefined) {
+    for (const compSpec of spec.left.components.values()) {
       periods.push(compSpec.period);
     }
   }
-  if (spec.red !== undefined) {
-    for (const compSpec of spec.red.components.values()) {
+  if (spec.right !== undefined) {
+    for (const compSpec of spec.right.components.values()) {
       periods.push(compSpec.period);
     }
   }
@@ -251,13 +260,13 @@ export function singleComponent(
 }
 
 /**
- * Build a symmetric LOOPSpec where blue and red share identical specs.
+ * Build a symmetric LOOPSpec where left and right share identical specs.
  */
 export function symmetricSpec(
   components: ReadonlyMap<LOOPComponent, ComponentSpec>
 ): LOOPSpec {
   const prop: PropLOOPSpec = { components };
-  return { blue: prop, red: prop };
+  return { left: prop, right: prop };
 }
 
 /**
@@ -267,7 +276,7 @@ export function allActiveComponents(
   spec: LOOPSpec
 ): ReadonlyMap<LOOPComponent, ComponentSpec> {
   const result = new Map<LOOPComponent, ComponentSpec>();
-  for (const prop of [spec.blue, spec.red]) {
+  for (const prop of [spec.left, spec.right]) {
     if (!prop) continue;
     for (const [comp, cSpec] of prop.components) {
       const existing = result.get(comp);
@@ -283,9 +292,9 @@ export function allActiveComponents(
  * Returns true if the LOOPSpec has no active components on either prop.
  */
 export function isEmptySpec(spec: LOOPSpec): boolean {
-  const blueEmpty = !spec.blue || spec.blue.components.size === 0;
-  const redEmpty = !spec.red || spec.red.components.size === 0;
-  return blueEmpty && redEmpty;
+  const leftEmpty = !spec.left || spec.left.components.size === 0;
+  const rightEmpty = !spec.right || spec.right.components.size === 0;
+  return leftEmpty && rightEmpty;
 }
 
 /**
@@ -353,11 +362,11 @@ export function loopSpecWithReflectionAxis(
     return { components };
   };
 
-  const blue = updateProp(spec.blue);
-  const red = updateProp(spec.red);
+  const left = updateProp(spec.left);
+  const right = updateProp(spec.right);
   return {
-    ...(blue ? { blue } : {}),
-    ...(red ? { red } : {}),
+    ...(left ? { left } : {}),
+    ...(right ? { right } : {}),
   };
 }
 
@@ -371,7 +380,7 @@ export const EMPTY_PROP_SPEC: PropLOOPSpec = { components: new Map() };
  * Convert a legacy flat LOOPType string + integer period to a compositional LOOPSpec.
  *
  * Uses string.includes() parsing to detect which components are present.
- * Both blue and red receive the same PropLOOPSpec (symmetric by definition
+ * Both left and right receive the same PropLOOPSpec (symmetric by definition
  * for all legacy LOOP types).
  *
  * @param loopType  A LOOPType enum value or its string equivalent
@@ -421,7 +430,7 @@ export function loopSpecFromLegacyRhythm(
   rotationPeriod: number
 ): LOOPSpec {
   const spec = loopSpecFromLegacy(loopType, 2);
-  const propSpec = spec.blue ?? spec.red;
+  const propSpec = spec.left ?? spec.right;
 
   if (
     rotationPeriod === 2 ||
@@ -460,11 +469,11 @@ export function validateLOOPSpec(spec: LOOPSpec): LOOPSpecValidationError[] {
 
   const activePropEntries = (
     [
-      ["blue", spec.blue],
-      ["red", spec.red],
-    ] as Array<["blue" | "red", PropLOOPSpec | undefined]>
+      ["left", spec.left],
+      ["right", spec.right],
+    ] as Array<["left" | "right", PropLOOPSpec | undefined]>
   ).filter(
-    (entry): entry is ["blue" | "red", PropLOOPSpec] => entry[1] !== undefined
+    (entry): entry is ["left" | "right", PropLOOPSpec] => entry[1] !== undefined
   );
 
   for (const [propName, propSpec] of activePropEntries) {
@@ -516,21 +525,21 @@ export function validateLOOPSpec(spec: LOOPSpec): LOOPSpecValidationError[] {
     }
   }
 
-  const blueHasSwap = spec.blue?.components.has(LOOPComponent.SWAPPED) ?? false;
-  const redHasSwap = spec.red?.components.has(LOOPComponent.SWAPPED) ?? false;
-  if (blueHasSwap !== redHasSwap) {
+  const leftHasSwap = spec.left?.components.has(LOOPComponent.SWAPPED) ?? false;
+  const rightHasSwap = spec.right?.components.has(LOOPComponent.SWAPPED) ?? false;
+  if (leftHasSwap !== rightHasSwap) {
     errors.push({
       rule: "swapped_symmetry",
       message: "SWAPPED must be present in both props or neither",
     });
   }
-  if (blueHasSwap && redHasSwap) {
-    const bluePeriod = spec.blue!.components.get(LOOPComponent.SWAPPED)!.period;
-    const redPeriod = spec.red!.components.get(LOOPComponent.SWAPPED)!.period;
-    if (bluePeriod !== redPeriod) {
+  if (leftHasSwap && rightHasSwap) {
+    const leftPeriod = spec.left!.components.get(LOOPComponent.SWAPPED)!.period;
+    const rightPeriod = spec.right!.components.get(LOOPComponent.SWAPPED)!.period;
+    if (leftPeriod !== rightPeriod) {
       errors.push({
         rule: "swapped_symmetry",
-        message: `SWAPPED period mismatch: blue=${bluePeriod}, red=${redPeriod}`,
+        message: `SWAPPED period mismatch: left=${leftPeriod}, right=${rightPeriod}`,
       });
     }
   }

@@ -101,6 +101,9 @@ const viewerCompanionSurfaceSource = read(
 const viewerPracticeLaneSource = read(
   "src/lib/shared/sequence-viewer/components/ViewerPracticeLane.svelte"
 );
+const controlDockSource = read(
+  "src/lib/shared/sequence-viewer/components/ControlDock.svelte"
+);
 const hostEntries = Object.entries(HOSTS).map(
   ([name, rels]) => [name, rels.map(read).join("\n")] as const
 );
@@ -123,6 +126,15 @@ describe("SequenceViewerShell host contract", () => {
     expect(viewerCompanionSurfaceSource).toContain("<ChoreoCard");
     expect(viewerCompanionSurfaceSource).toContain("<ArtPane");
     expect(viewerPracticeLaneSource).toContain("<PracticeLanePane");
+  });
+
+  it("keeps compressed mobile dock tabs pressable", () => {
+    expect(controlDockSource).toMatch(
+      /\.cat-scroll\s*\{[\s\S]*?overflow-x:\s*auto;/
+    );
+    expect(controlDockSource).toMatch(
+      /\.dock-btn\.cat\s*\{[\s\S]*?min-width:\s*var\(--min-touch-target, 44px\);/
+    );
   });
 
   it("shell exists and exposes the host prop seam", () => {

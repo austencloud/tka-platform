@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  createIndependentTunnelPerformer,
+  createTunnelComposition,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import type { CollectedTunnel } from "../tunnel-collection-types";
 import {
   describeTunnelForDiscovery,
@@ -25,7 +30,10 @@ function tunnel(
       tunnel: {
         config: { ...DEFAULT_CONFIG, speedOverrides: {} },
         gridVisible: false,
-        spectrum: false,
+        colors: {
+          mode: "hands",
+          custom: { left: "#2e8bf0", right: "#ed1c24" },
+        },
         section: "tunnel",
         presetRecipe: null,
       },
@@ -34,13 +42,13 @@ function tunnel(
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
-        bluePathLines: true,
-        redPathLines: true,
+        leftPathLines: true,
+        rightPathLines: true,
       },
       playback: { bpm: 60, playbackMode: "continuous" },
       props: {
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       },
       trailRender: { mode: "off" },
     },
@@ -52,8 +60,8 @@ describe("tunnel discovery metadata", () => {
   it("describes props, authored performers, generated copies, and transforms", () => {
     const item = tunnel("orbit", "Orbit", 10);
     item.snapshot.props = {
-      bluePropType: PropType.FAN,
-      redPropType: PropType.CLUB,
+      leftPropType: PropType.FAN,
+      rightPropType: PropType.CLUB,
     };
     item.snapshot.tunnel.config = {
       ...DEFAULT_CONFIG,
@@ -66,23 +74,20 @@ describe("tunnel discovery metadata", () => {
     item.snapshot.effects = {
       activeEffect: "bloom",
     } as typeof item.snapshot.effects;
-    item.composition = {
-      version: 1,
-      id: "composition",
-      name: "Orbit",
-      performers: Array.from({ length: 3 }, (_, index) => ({
-        id: `p${index}`,
-        label: `Performer ${index + 1}`,
-        source: {
-          kind: "independent" as const,
-          sequence: { id: `s${index}`, name: "A", word: "A", steps: [] },
-        },
-        timing: { stepOffset: 0, speed: 1 },
-      })),
-      formation: item.snapshot.tunnel.config,
-      createdAt: 1,
-      updatedAt: 1,
-    };
+    item.composition = createTunnelComposition(
+      Array.from({ length: 3 }, (_, index) =>
+        createIndependentTunnelPerformer(
+          createSequenceData({ id: `s${index}`, name: "A", word: "A" }),
+          index
+        )
+      ),
+      {
+        id: "composition",
+        name: "Orbit",
+        formation: item.snapshot.tunnel.config,
+        now: 1,
+      }
+    );
 
     expect(describeTunnelForDiscovery(item)).toMatchObject({
       authoredCount: 3,
@@ -99,8 +104,8 @@ describe("tunnel discovery metadata", () => {
   it("searches the rendered artifact details rather than only the title", () => {
     const item = tunnel("orbit", "Orbit", 10);
     item.snapshot.props = {
-      bluePropType: PropType.FAN,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.FAN,
+      rightPropType: PropType.FAN,
     };
     item.snapshot.tunnel.config = {
       ...DEFAULT_CONFIG,
@@ -123,23 +128,20 @@ describe("tunnel discovery metadata", () => {
       fold: 8,
       speedOverrides: {},
     };
-    many.composition = {
-      version: 1,
-      id: "many-composition",
-      name: "Many",
-      performers: Array.from({ length: 4 }, (_, index) => ({
-        id: `p${index}`,
-        label: `Performer ${index + 1}`,
-        source: {
-          kind: "independent" as const,
-          sequence: { id: `s${index}`, name: "A", word: "A", steps: [] },
-        },
-        timing: { stepOffset: 0, speed: 1 },
-      })),
-      formation: many.snapshot.tunnel.config,
-      createdAt: 1,
-      updatedAt: 1,
-    };
+    many.composition = createTunnelComposition(
+      Array.from({ length: 4 }, (_, index) =>
+        createIndependentTunnelPerformer(
+          createSequenceData({ id: `s${index}`, name: "A", word: "A" }),
+          index
+        )
+      ),
+      {
+        id: "many-composition",
+        name: "Many",
+        formation: many.snapshot.tunnel.config,
+        now: 1,
+      }
+    );
 
     expect(
       sortTunnelDiscovery([older, newer, many], "recent").map((x) => x.id)

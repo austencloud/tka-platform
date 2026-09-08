@@ -14,8 +14,8 @@ describe("deck-releaser recipe round-trip", () => {
     seedNumber = 0;
     releaserState = createDeckReleaserState({
       storage: null,
-      getBluePropType: () => undefined,
-      getRedPropType: () => undefined,
+      getLeftPropType: () => undefined,
+      getRightPropType: () => undefined,
       mintSeed: () => `test-seed-${++seedNumber}`,
       nextReferenceNumber: () => 1,
     });
@@ -26,8 +26,8 @@ describe("deck-releaser recipe round-trip", () => {
   ) {
     return createDeckReleaserState({
       storage,
-      getBluePropType: () => undefined,
-      getRedPropType: () => undefined,
+      getLeftPropType: () => undefined,
+      getRightPropType: () => undefined,
       mintSeed: () => `extra-seed-${++seedNumber}`,
       nextReferenceNumber: () => 2,
     });

@@ -49,6 +49,15 @@
   } from "$lib/features/flow-fest-sim/domain/flow-fest-population";
   import type { FlowFestPerformerSequenceProof } from "./flow-fest-performer-sequences";
   import FlowFestForestEcology from "./FlowFestForestEcology.svelte";
+  import FlowFestParkedCars from "./FlowFestParkedCars.svelte";
+  import {
+    settleFlowFestParkedCarOnGround,
+    type FlowFestParkedCarPlacement,
+  } from "./flow-fest-parked-cars";
+  import { flowFestParkedCarModel } from "./flow-fest-parked-car-catalog";
+  import type { FlowFestGateQueueCar } from "./flow-fest-camp-plan";
+  import { sampleFlowFestTerrainWorldY } from "../flow-fest-graybox/flow-fest-terrain-host";
+  import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
   import FlowFestGroundSurface from "./FlowFestGroundSurface.svelte";
   import FlowFestHeroFire from "./FlowFestHeroFire.svelte";
   import { getFlowFestVisualProfile } from "./flow-fest-visual-system";
@@ -62,6 +71,8 @@
     fireJamEnergy?: number;
     playerPosition?: { x: number; y: number; z: number };
     showCampDressing?: boolean;
+    /** Other arrivals waiting at the gate, placed like the lot's parked cars. */
+    gateQueueCars?: readonly FlowFestGateQueueCar[];
     onForestCullingSample?: (details: InstanceFrustumCullingStats) => void;
     onGrassCullingSample?: (details: InstanceFrustumCullingStats) => void;
     onReady?: (
@@ -82,6 +93,7 @@
 
   let dressing = $state<FlowFestProductionDressing | null>(null);
   let contract = $state<FlowFestRuntimeContract | null>(null);
+  let queueTerrain = $state.raw<ImportedTerrainDataV2 | null>(null);
   let heroFireY = $state(12);
   let nightHeartY = $state(12);
   let heroFirePosition = $state({ x: 89, z: -113.5 });
@@ -98,6 +110,37 @@
 
   const campEstablished = $derived(
     isFlowFestCampEstablishedPhase(props.progressPhase)
+  );
+  /**
+   * The gate queue settles on the same graded terrain as the lot, so its
+   * tyres meet the drive instead of hovering over the highest wheel.
+   */
+  const gateQueuePlacements = $derived.by((): FlowFestParkedCarPlacement[] => {
+    const terrain = queueTerrain;
+    const cars = props.gateQueueCars ?? [];
+    if (!terrain || cars.length === 0) return [];
+    return cars.map((car) => {
+      const rotation = car.headingRadians - Math.PI / 2;
+      return {
+        x: car.x,
+        z: car.z,
+        rotation,
+        modelId: car.modelId,
+        paintIndex: car.paintIndex,
+        ...settleFlowFestParkedCarOnGround(
+          flowFestParkedCarModel(car.modelId),
+          { x: car.x, z: car.z, rotation },
+          (x, z) => sampleFlowFestTerrainWorldY(terrain, x, z)
+        ),
+      };
+    });
+  });
+  const parkedCarPlacements = $derived(
+    dressing
+      ? gateQueuePlacements.length > 0
+        ? [...dressing.parkedCars, ...gateQueuePlacements]
+        : dressing.parkedCars
+      : []
   );
   const festivalActive = $derived(
     props.moment === "night" ||
@@ -215,6 +258,7 @@
     next.setFestivalActive(festivalActive);
     dressing?.dispose();
     dressing = next;
+    queueTerrain = terrain;
     animatedLedRings = nextAnimatedLedRings;
     contract = loadedContract;
     builtBranch = branch;
@@ -307,6 +351,12 @@
         groundLifeAssetsReady: 0,
       },
       groundSurface: next.groundSurface.audit,
+      parkedCars: {
+        placements: next.parkedCars.length,
+        models: new Set(next.parkedCars.map((car) => car.modelId)).size,
+        carInstancesReady: 0,
+        carModelsReady: 0,
+      } as Record<string, unknown>,
     };
     (globalThis as Record<string, unknown>).__flowFestProduction = proof;
     props.onReady?.({
@@ -444,6 +494,50 @@
     props.onError?.(
       `Forest ecology assets failed to load (${report.failed.length} of ${report.expected}): ${detail}`
     );
+  }
+
+  let reportedParkedCarAssetFailure = "";
+
+  function recordParkedCarAssets(
+    report: FlowFestForestEcologyAssetReport
+  ): void {
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { parkedCars?: Record<string, unknown> }
+      | undefined;
+    if (proof?.parkedCars) {
+      proof.parkedCars.assetStatus = report.status;
+      proof.parkedCars.assetsExpected = report.expected;
+      proof.parkedCars.assetsLoaded = report.ready;
+      proof.parkedCars.assetsPending = report.pending;
+      proof.parkedCars.assetsFailed = report.failed;
+    }
+    if (report.status !== "failed") return;
+    const signature = report.failed.map((entry) => entry.key).join(",");
+    if (signature === reportedParkedCarAssetFailure) return;
+    reportedParkedCarAssetFailure = signature;
+    const detail = report.failed
+      .map((entry) => `${entry.key} (${entry.url}): ${entry.message}`)
+      .join("; ");
+    console.error(
+      `[flow-fest-sim] Parked cars are incomplete — ${report.failed.length} of ${report.expected} bodies failed to load. ${detail}`
+    );
+    props.onError?.(
+      `Parked-car assets failed to load (${report.failed.length} of ${report.expected}): ${detail}`
+    );
+  }
+
+  function recordParkedCarsReady(details: {
+    carInstances: number;
+    carModels: number;
+  }): void {
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { parkedCars?: Record<string, unknown> }
+      | undefined;
+    if (!proof?.parkedCars) return;
+    proof.parkedCars.carInstancesReady = details.carInstances;
+    proof.parkedCars.carModelsReady = details.carModels;
   }
 
   function recordForestEcologyCulling(
@@ -731,6 +825,12 @@
     onReady={recordForestEcologyReady}
     onCullingSample={recordForestEcologyCulling}
     onGrassCullingSample={recordForestGrassCulling}
+  />
+  <FlowFestParkedCars
+    placements={parkedCarPlacements}
+    visible={props.showCampDressing !== false}
+    onAssetReport={recordParkedCarAssets}
+    onReady={recordParkedCarsReady}
   />
 {/if}
 

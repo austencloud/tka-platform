@@ -18,7 +18,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -32,8 +32,8 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
-  const B = MotionColor.BLUE;
-  const R = MotionColor.RED;
+  const B = HandSide.LEFT;
+  const R = HandSide.RIGHT;
 
   const STAFF_D =
     "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";
@@ -41,7 +41,7 @@
   const BLUE_FILL = "#2E3192";
 
   const mo = (
-    color: MotionColor,
+    color: HandSide,
     type: MotionType,
     from: GridLocation,
     to: GridLocation,
@@ -62,13 +62,13 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const pic = (id: string, blue: ReturnType<typeof mo>, red: ReturnType<typeof mo>) => ({
+  const pic = (id: string, left, right) => ({
     id: `l2t2-${id}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { blue, red },
+    motions: { left, right },
   });
-  const stat = (color: MotionColor, loc: GridLocation, ori: Orientation, rot: RotationDirection = NOROT, turns = 0) =>
+  const stat = (color: HandSide, loc: GridLocation, ori: Orientation, rot: RotationDirection = NOROT, turns = 0) =>
     mo(color, MotionType.STATIC, loc, loc, rot, ori, turns % 2 === 1 ? OUT : IN, turns);
 
   type Hand = { type: MotionType; from: GridLocation; to: GridLocation; rot: RotationDirection; turns: number };
@@ -83,7 +83,7 @@
     start: ReturnType<typeof pic>;
     end: ReturnType<typeof pic>;
     combined: ReturnType<typeof pic>;
-    halfway: { motion: HalfwayMotion; color: MotionColor }[];
+    halfway: { motion: HalfwayMotion; color: HandSide }[];
   };
 
   const half = (h: Hand): number => (h.type === MotionType.ANTI || h.type === MotionType.DASH ? 1 : 0) + h.turns;
@@ -96,16 +96,16 @@
     supPos: "hi" | "lo";
     dot: "same" | "opp" | null;
     captions: boolean;
-    blue: Hand;
-    red: Hand;
+    left: Hand;
+    right: Hand;
   }): Strip {
-    const bEnd = endOf(opts.blue);
-    const rEnd = endOf(opts.red);
-    const handStart = (c: MotionColor, h: Hand) =>
+    const bEnd = endOf(opts.left);
+    const rEnd = endOf(opts.right);
+    const handStart = (c: HandSide, h: Hand) =>
       h.type === MotionType.STATIC ? stat(c, h.from, IN) : stat(c, h.from, IN);
-    const handEnd = (c: MotionColor, h: Hand, eo: Orientation) =>
+    const handEnd = (c: HandSide, h: Hand, eo: Orientation) =>
       h.type === MotionType.STATIC ? stat(c, h.to, eo, h.rot, h.turns) : stat(c, h.to, eo);
-    const combinedHand = (c: MotionColor, h: Hand, eo: Orientation) =>
+    const combinedHand = (c: HandSide, h: Hand, eo: Orientation) =>
       mo(c, h.type, h.from, h.to, h.rot, IN, eo, h.turns);
     const hm = (h: Hand, eo: Orientation): HalfwayMotion => ({
       type: h.type,
@@ -124,12 +124,12 @@
       supColor: opts.supPos === "hi" ? RED_FILL : BLUE_FILL,
       dot: opts.dot,
       captions: opts.captions,
-      start: pic("start", handStart(B, opts.blue), handStart(R, opts.red)),
-      end: pic("end", handEnd(B, opts.blue, bEnd), handEnd(R, opts.red, rEnd)),
-      combined: pic("full", combinedHand(B, opts.blue, bEnd), combinedHand(R, opts.red, rEnd)),
+      start: pic("start", handStart(B, opts.left), handStart(R, opts.right)),
+      end: pic("end", handEnd(B, opts.left, bEnd), handEnd(R, opts.right, rEnd)),
+      combined: pic("full", combinedHand(B, opts.left, bEnd), combinedHand(R, opts.right, rEnd)),
       halfway: [
-        { motion: hm(opts.blue, bEnd), color: B },
-        { motion: hm(opts.red, rEnd), color: R },
+        { motion: hm(opts.left, bEnd), color: B },
+        { motion: hm(opts.right, rEnd), color: R },
       ],
     };
   }
@@ -139,9 +139,9 @@
   const SHIFT_RED = (turns: number): Hand => ({ type: MotionType.PRO, from: N, to: E, rot: CW, turns });
 
   const STRIPS: Strip[] = [
-    makeStrip({ y: 305, labelLines: ["“W-High-One”"], labelY: 327, supPos: "hi", dot: null, captions: true, blue: STAT_BLUE(0, NOROT), red: SHIFT_RED(1) }),
-    makeStrip({ y: 563, labelLines: ["“W-Same", "Low-One”"], labelY: 576, supPos: "lo", dot: "same", captions: true, blue: STAT_BLUE(1, CW), red: SHIFT_RED(0) }),
-    makeStrip({ y: 666, labelLines: ["“W-Opp", "Low-One”"], labelY: 684, supPos: "lo", dot: "opp", captions: false, blue: STAT_BLUE(1, CCW), red: SHIFT_RED(0) }),
+    makeStrip({ y: 305, labelLines: ["“W-High-One”"], labelY: 327, supPos: "hi", dot: null, captions: true, left: STAT_BLUE(0, NOROT), right: SHIFT_RED(1) }),
+    makeStrip({ y: 563, labelLines: ["“W-Same", "Low-One”"], labelY: 576, supPos: "lo", dot: "same", captions: true, left: STAT_BLUE(1, CW), right: SHIFT_RED(0) }),
+    makeStrip({ y: 666, labelLines: ["“W-Opp", "Low-One”"], labelY: 684, supPos: "lo", dot: "opp", captions: false, left: STAT_BLUE(1, CCW), right: SHIFT_RED(0) }),
   ];
 
   // ── Layout (pt) ─────────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@
   const ARROW_W = 14.5;
 
   const poses = (strip: Strip) =>
-    strip.halfway.map((h) => ({ ...halfwayPose(h.motion, h.color), fill: h.color === MotionColor.BLUE ? BLUE_FILL : RED_FILL }));
+    strip.halfway.map((h) => ({ ...halfwayPose(h.motion, h.color), fill: h.color === HandSide.LEFT ? BLUE_FILL : RED_FILL }));
 </script>
 
 <div class="t2-page">
@@ -248,7 +248,7 @@
 
     <!-- start -->
     <div class="mini" style="left:{START_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.start} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.start} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <!-- halfway -->
     <div class="mini" style="left:{HALF_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
@@ -262,11 +262,11 @@
     </div>
     <!-- end -->
     <div class="mini" style="left:{END_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.end} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.end} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <!-- combined -->
     <div class="mini" style="left:{COMB_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.combined} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.combined} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <div class="comb-label" style="left:{COMB_X * S}px; top:{(strip.y + SIZE - 10) * S}px; width:{SIZE * S}px">
       W<span class="sup {strip.supPos}" style="color:{strip.supColor}">1</span>

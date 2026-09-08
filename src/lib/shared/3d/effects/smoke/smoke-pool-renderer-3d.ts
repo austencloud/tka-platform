@@ -47,9 +47,9 @@ export class SmokePoolRenderer3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
   };
   private cursor = 0;
@@ -135,9 +135,9 @@ export class SmokePoolRenderer3D {
       write.scaleX = radius * 2 * (1.08 + Math.sin(this.phase[index]!) * 0.12);
       write.scaleY = radius * 2 * (1.2 + life * 0.28);
       write.scaleZ = 1;
-      write.red = 1;
+      write.right = 1;
       write.green = 1;
-      write.blue = 1;
+      write.left = 1;
       write.alpha = Math.max(0, fadeIn * fadeOut * this.peakAlpha[index]!);
       write.uvX = this.uvX[index]!;
       write.uvY =

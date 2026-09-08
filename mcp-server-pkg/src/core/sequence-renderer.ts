@@ -9,7 +9,11 @@
  * - Smart cell borders between occupied cells
  */
 
-import { getStandaloneRenderer, type RenderVisibilityOptions } from "./standalone-renderer.js";
+import {
+  getStandaloneRenderer,
+  type PictographInput,
+  type RenderVisibilityOptions,
+} from "./standalone-renderer.js";
 
 // canvas is an optional dependency - dynamically import to avoid crash if not installed
 let canvasModule: typeof import("canvas") | null = null;
@@ -20,7 +24,7 @@ async function getCanvas() {
     } catch {
       throw new Error(
         "The 'canvas' package is required for sequence rendering but is not installed. " +
-        "Install it with: npm install canvas"
+          "Install it with: npm install canvas"
       );
     }
   }
@@ -50,19 +54,71 @@ import { calculateDifficultyLevel } from "./difficulty-calculator.js";
  * Key = beat count (not including start position), value = [totalColumns, rows].
  */
 const START_COLUMN_LAYOUTS: Record<number, [number, number]> = {
-  0: [1, 1], 1: [2, 1], 2: [2, 2], 3: [2, 3], 4: [3, 2],
-  5: [3, 3], 6: [4, 2], 7: [3, 4], 8: [3, 4], 9: [4, 3],
-  10: [3, 5], 11: [4, 4], 12: [4, 4], 13: [4, 5], 14: [4, 5],
-  15: [4, 5], 16: [5, 4], 17: [5, 5], 18: [5, 5], 19: [5, 5],
-  20: [5, 5], 21: [5, 6], 22: [5, 6], 23: [5, 6], 24: [5, 6],
-  25: [5, 7], 26: [5, 7], 27: [5, 7], 28: [5, 7], 29: [5, 8],
-  30: [5, 8], 31: [5, 8], 32: [5, 8], 33: [5, 9], 34: [5, 9],
-  35: [5, 9], 36: [5, 9], 37: [5, 10], 38: [5, 10], 39: [5, 10],
-  40: [5, 10], 41: [5, 11], 42: [5, 11], 43: [5, 11], 44: [5, 11],
-  45: [5, 12], 46: [5, 12], 47: [5, 12], 48: [5, 12], 49: [5, 13],
-  50: [5, 13], 51: [5, 13], 52: [5, 13], 53: [5, 14], 54: [5, 14],
-  55: [5, 14], 56: [5, 14], 57: [5, 15], 58: [5, 15], 59: [5, 15],
-  60: [5, 15], 61: [5, 16], 62: [5, 16], 63: [5, 16], 64: [5, 16],
+  0: [1, 1],
+  1: [2, 1],
+  2: [2, 2],
+  3: [2, 3],
+  4: [3, 2],
+  5: [3, 3],
+  6: [4, 2],
+  7: [3, 4],
+  8: [3, 4],
+  9: [4, 3],
+  10: [3, 5],
+  11: [4, 4],
+  12: [4, 4],
+  13: [4, 5],
+  14: [4, 5],
+  15: [4, 5],
+  16: [5, 4],
+  17: [5, 5],
+  18: [5, 5],
+  19: [5, 5],
+  20: [5, 5],
+  21: [5, 6],
+  22: [5, 6],
+  23: [5, 6],
+  24: [5, 6],
+  25: [5, 7],
+  26: [5, 7],
+  27: [5, 7],
+  28: [5, 7],
+  29: [5, 8],
+  30: [5, 8],
+  31: [5, 8],
+  32: [5, 8],
+  33: [5, 9],
+  34: [5, 9],
+  35: [5, 9],
+  36: [5, 9],
+  37: [5, 10],
+  38: [5, 10],
+  39: [5, 10],
+  40: [5, 10],
+  41: [5, 11],
+  42: [5, 11],
+  43: [5, 11],
+  44: [5, 11],
+  45: [5, 12],
+  46: [5, 12],
+  47: [5, 12],
+  48: [5, 12],
+  49: [5, 13],
+  50: [5, 13],
+  51: [5, 13],
+  52: [5, 13],
+  53: [5, 14],
+  54: [5, 14],
+  55: [5, 14],
+  56: [5, 14],
+  57: [5, 15],
+  58: [5, 15],
+  59: [5, 15],
+  60: [5, 15],
+  61: [5, 16],
+  62: [5, 16],
+  63: [5, 16],
+  64: [5, 16],
 };
 
 function getStartColumnLayout(stepCount: number): [number, number] {
@@ -70,11 +126,11 @@ function getStartColumnLayout(stepCount: number): [number, number] {
 }
 
 /**
- * Turn allocation per step (blue and red get independent values)
+ * Turn allocation per step (left and right get independent values)
  */
 export interface TurnAllocation {
-  blue: (number | "fl")[];
-  red: (number | "fl")[];
+  left: (number | "fl")[];
+  right: (number | "fl")[];
 }
 
 export interface SequenceRenderOptions {
@@ -139,7 +195,9 @@ export async function renderSequenceToImage(
   // Include all steps (including step 0 start position)
   // Apply reversal detection if showReversals is enabled
   const isLoop = !!(opts.loopComponents && opts.loopComponents.length > 0);
-  const letterSteps = opts.showReversals ? detectReversals(steps, isLoop) : steps;
+  const letterSteps = opts.showReversals
+    ? detectReversals(steps, isLoop)
+    : steps;
 
   if (letterSteps.length === 0) {
     throw new Error("No steps to render");
@@ -151,7 +209,7 @@ export async function renderSequenceToImage(
   // Get base orientation based on level
   const baseOrientation = getStartOrientationForLevel(difficultyLevel);
 
-  // Turn allocation (per step, per color)
+  // Turn allocation (per step, per hand)
   const turnAllocation = opts.turnAllocation;
 
   // Check if we need header and footer
@@ -160,12 +218,15 @@ export async function renderSequenceToImage(
   const hasFooter = true;
 
   // Calculate layout dimensions
-  const { width, height, columns, rows, headerHeight, footerHeight, gridStartY } = calculateLayout(
-    letterSteps.length,
-    opts,
-    hasHeader,
-    hasFooter
-  );
+  const {
+    width,
+    height,
+    columns,
+    rows,
+    headerHeight,
+    footerHeight,
+    gridStartY,
+  } = calculateLayout(letterSteps.length, opts, hasHeader, hasFooter);
 
   // Create main canvas
   const { createCanvas } = await getCanvas();
@@ -182,8 +243,8 @@ export async function renderSequenceToImage(
     size: opts.cellSize,
     showTKA: true,
     showGrid: true,
-    showBlueMotion: true,
-    showRedMotion: true,
+    showLeftMotion: true,
+    showRightMotion: true,
     showTND: false,
     showPositions: false,
     showReversals: opts.showReversals ?? false,
@@ -203,39 +264,44 @@ export async function renderSequenceToImage(
     // Step 0 is start position (always 0 turns)
     // Other steps get their turns from the allocation array (indexed by stepNumber - 1)
     const allocationIndex = step.stepNumber - 1;
-    const blueTurns = step.stepNumber === 0 ? 0 : (turnAllocation?.blue[allocationIndex] ?? 0);
-    const redTurns = step.stepNumber === 0 ? 0 : (turnAllocation?.red[allocationIndex] ?? 0);
+    const leftTurns =
+      step.stepNumber === 0 ? 0 : (turnAllocation?.left[allocationIndex] ?? 0);
+    const rightTurns =
+      step.stepNumber === 0 ? 0 : (turnAllocation?.right[allocationIndex] ?? 0);
 
-    const pictographInput = {
+    const pictographInput: PictographInput = {
       letter: step.letter,
       startPosition: step.startPosition,
       endPosition: step.endPosition,
-      blueMotion: {
-        motionType: step.blueMotion.motionType,
-        rotationDirection: step.blueMotion.rotationDirection || "no_rotation",
-        startLocation: step.blueMotion.startLocation,
-        endLocation: step.blueMotion.endLocation,
-        color: "blue",
-        turns: blueTurns,
-        startOrientation: step.blueMotion.startOrientation || baseOrientation,
+      leftMotion: {
+        motionType: step.leftMotion.motionType,
+        rotationDirection: step.leftMotion.rotationDirection || "no_rotation",
+        startLocation: step.leftMotion.startLocation,
+        endLocation: step.leftMotion.endLocation,
+        hand: "left",
+        turns: leftTurns,
+        startOrientation: step.leftMotion.startOrientation || baseOrientation,
       },
-      redMotion: {
-        motionType: step.redMotion.motionType,
-        rotationDirection: step.redMotion.rotationDirection || "no_rotation",
-        startLocation: step.redMotion.startLocation,
-        endLocation: step.redMotion.endLocation,
-        color: "red",
-        turns: redTurns,
-        startOrientation: step.redMotion.startOrientation || baseOrientation,
+      rightMotion: {
+        motionType: step.rightMotion.motionType,
+        rotationDirection: step.rightMotion.rotationDirection || "no_rotation",
+        startLocation: step.rightMotion.startLocation,
+        endLocation: step.rightMotion.endLocation,
+        hand: "right",
+        turns: rightTurns,
+        startOrientation: step.rightMotion.startOrientation || baseOrientation,
       },
       // Reversal indicators (if detected)
-      blueReversal: step.blueReversal,
-      redReversal: step.redReversal,
+      leftReversal: step.leftReversal,
+      rightReversal: step.rightReversal,
     };
 
     try {
       // Render individual pictograph
-      const pngBuffer = await renderer.renderToPng(pictographInput, visibilityOptions);
+      const pngBuffer = await renderer.renderToPng(
+        pictographInput,
+        visibilityOptions
+      );
 
       // Load and draw onto composite canvas
       const { loadImage } = await getCanvas();
@@ -248,7 +314,14 @@ export async function renderSequenceToImage(
 
       // Draw step number overlaid on pictograph (top-left corner)
       if (opts.showStepNumbers) {
-        drawOverlaidStepNumber(ctx, step.stepNumber, x, y, opts.cellSize, opts.darkMode);
+        drawOverlaidStepNumber(
+          ctx,
+          step.stepNumber,
+          x,
+          y,
+          opts.cellSize,
+          opts.darkMode
+        );
       }
     } catch (error) {
       // Draw error placeholder
@@ -262,7 +335,15 @@ export async function renderSequenceToImage(
   }
 
   // Draw smart cell borders between occupied cells
-  drawSmartCellBorders(ctx, columns, rows, opts.cellSize, letterSteps.length, gridStartY, opts.darkMode);
+  drawSmartCellBorders(
+    ctx,
+    columns,
+    rows,
+    opts.cellSize,
+    letterSteps.length,
+    gridStartY,
+    opts.darkMode
+  );
 
   // Draw word header if enabled
   if (hasHeader && headerHeight > 0) {
@@ -273,7 +354,10 @@ export async function renderSequenceToImage(
     // Build letter styles from seed word only (for LOOP sequences)
     // This shows ONLY the original letters, not the transformed portion
     const seedLetters = opts.seedWord
-      ? letterSteps.filter((s) => s.stepNumber > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber))
+      ? letterSteps.filter(
+          (s) =>
+            s.stepNumber > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber)
+        )
       : letterSteps.filter((s) => s.stepNumber > 0);
 
     // Filter out bridge letters from styles since they aren't displayed in the header.
@@ -378,7 +462,15 @@ function calculateLayout(
     const rows = 1;
     const width = columns * opts.cellSize;
     const height = headerHeight + opts.cellSize + footerHeight;
-    return { width, height, columns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
+    return {
+      width,
+      height,
+      columns,
+      rows,
+      headerHeight,
+      footerHeight,
+      gridStartY: headerHeight,
+    };
   }
 
   // Grid layout using the same layout table as the app
@@ -388,7 +480,15 @@ function calculateLayout(
   const width = totalColumns * opts.cellSize;
   const height = headerHeight + rows * opts.cellSize + footerHeight;
 
-  return { width, height, columns: totalColumns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
+  return {
+    width,
+    height,
+    columns: totalColumns,
+    rows,
+    headerHeight,
+    footerHeight,
+    gridStartY: headerHeight,
+  };
 }
 
 /**
@@ -429,9 +529,21 @@ function drawOverlaidStepNumber(
   // Rounded rectangle
   ctx.moveTo(badgeX + cornerRadius, badgeY);
   ctx.lineTo(badgeX + badgeWidth - cornerRadius, badgeY);
-  ctx.arc(badgeX + badgeWidth - cornerRadius, badgeY + cornerRadius, cornerRadius, -Math.PI / 2, Math.PI / 2);
+  ctx.arc(
+    badgeX + badgeWidth - cornerRadius,
+    badgeY + cornerRadius,
+    cornerRadius,
+    -Math.PI / 2,
+    Math.PI / 2
+  );
   ctx.lineTo(badgeX + cornerRadius, badgeY + badgeHeight);
-  ctx.arc(badgeX + cornerRadius, badgeY + cornerRadius, cornerRadius, Math.PI / 2, -Math.PI / 2);
+  ctx.arc(
+    badgeX + cornerRadius,
+    badgeY + cornerRadius,
+    cornerRadius,
+    Math.PI / 2,
+    -Math.PI / 2
+  );
   ctx.closePath();
   ctx.fill();
 
@@ -464,7 +576,8 @@ function drawSmartCellBorders(
     occupied.add(`${col},${row}`);
   }
 
-  const isOccupied = (col: number, row: number): boolean => occupied.has(`${col},${row}`);
+  const isOccupied = (col: number, row: number): boolean =>
+    occupied.has(`${col},${row}`);
 
   // Draw vertical lines between horizontally adjacent occupied cells
   for (let row = 0; row < rows; row++) {

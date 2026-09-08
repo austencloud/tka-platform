@@ -3,8 +3,8 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 
 export interface StepPairingData {
   readonly letter: Letter | null;
-  readonly blueReversal: boolean;
-  readonly redReversal: boolean;
+  readonly leftReversal: boolean;
+  readonly rightReversal: boolean;
   readonly startPosition: GridPosition | null;
   readonly endPosition: GridPosition | null;
   // Duration is NOT stored here - derived from solo prop steps

@@ -81,8 +81,8 @@ export class SequenceViewer {
         ...startPos,
         stepNumber: 0,
         duration: 1,
-        blueReversal: false,
-        redReversal: false,
+        leftReversal: false,
+        rightReversal: false,
         isBlank: false,
       } as StepData;
     }

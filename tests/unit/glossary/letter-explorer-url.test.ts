@@ -4,8 +4,8 @@ import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pi
 import {
   parseLetterExplorerRoute,
   writeLetterExplorerRoute,
-} from "../../../src/routes/(public)/glossary/_components/codex-boards/letter-explorer-url";
-import { buildComposerDraftHref } from "../../../src/routes/(public)/glossary/_components/codex-boards/letter-explorer-draft";
+} from "../../../src/routes/(public)/atlas/_components/codex-boards/letter-explorer-url";
+import { buildComposerDraftHref } from "../../../src/routes/(public)/atlas/_components/codex-boards/letter-explorer-draft";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { parseDeepLink } from "$lib/shared/navigation/services/sequence-encoder";
 
@@ -13,42 +13,61 @@ const letters = new Set(["A", "B", "W-"]);
 
 describe("letter explorer URL state", () => {
   it("round-trips the selected grid, variation, and unsaved turn edits", () => {
-    const url = new URL("https://tkaflowarts.com/glossary?board=atlas");
+    const url = new URL("https://tkaflowarts.com/atlas?board=atlas");
 
     writeLetterExplorerRoute(url, {
       letter: "B",
       gridMode: GridMode.BOX,
       variation: 7,
-      blueTurns: 1.5,
-      redTurns: "fl",
-      blueRotation: RotationDirection.COUNTER_CLOCKWISE,
-      redRotation: RotationDirection.CLOCKWISE,
+      leftTurns: 1.5,
+      rightTurns: "fl",
+      leftRotation: RotationDirection.COUNTER_CLOCKWISE,
+      rightRotation: RotationDirection.CLOCKWISE,
     });
 
     expect(url.hash).toBe("#cat-letter");
     expect(url.searchParams.get("board")).toBe("atlas");
+    expect(url.searchParams.get("leftTurns")).toBe("1.5");
+    expect(url.searchParams.get("rightTurns")).toBe("fl");
+    expect(url.searchParams.has("blueTurns")).toBe(false);
+    expect(url.searchParams.has("redTurns")).toBe(false);
     expect(parseLetterExplorerRoute(url.searchParams, letters)).toEqual({
       letter: "B",
       gridMode: GridMode.BOX,
       variation: 7,
-      blueTurns: 1.5,
-      redTurns: "fl",
-      blueRotation: RotationDirection.COUNTER_CLOCKWISE,
-      redRotation: RotationDirection.CLOCKWISE,
+      leftTurns: 1.5,
+      rightTurns: "fl",
+      leftRotation: RotationDirection.COUNTER_CLOCKWISE,
+      rightRotation: RotationDirection.CLOCKWISE,
     });
   });
 
-  it("keeps canonical links compact when the beat is unedited", () => {
-    const url = new URL("https://tkaflowarts.com/glossary");
+  it("reads published palette-keyed links but prefers current hand keys", () => {
+    const legacy = new URLSearchParams(
+      "letter=A&blueTurns=0.5&redTurns=1&blueRotation=ccw&redRotation=cw"
+    );
+    expect(parseLetterExplorerRoute(legacy, letters)).toMatchObject({
+      leftTurns: 0.5,
+      rightTurns: 1,
+      leftRotation: RotationDirection.COUNTER_CLOCKWISE,
+      rightRotation: RotationDirection.CLOCKWISE,
+    });
+
+    legacy.set("leftTurns", "1.5");
+    expect(parseLetterExplorerRoute(legacy, letters)?.leftTurns).toBe(1.5);
+  });
+
+  it("keeps canonical links compact when the pictograph is unedited", () => {
+    const url = new URL("https://tkaflowarts.com/atlas");
 
     writeLetterExplorerRoute(url, {
       letter: "W-",
       gridMode: GridMode.DIAMOND,
       variation: 2,
-      blueTurns: 0,
-      redTurns: 0,
-      blueRotation: RotationDirection.CLOCKWISE,
-      redRotation: RotationDirection.COUNTER_CLOCKWISE,
+      leftTurns: 0,
+      rightTurns: 0,
+      leftRotation: RotationDirection.CLOCKWISE,
+      rightRotation: RotationDirection.COUNTER_CLOCKWISE,
     });
 
     expect(url.searchParams.toString()).toBe(
@@ -67,14 +86,14 @@ describe("letter explorer URL state", () => {
       letter: "A",
       gridMode: GridMode.DIAMOND,
       variation: 0,
-      blueTurns: 0,
-      redTurns: 0,
+      leftTurns: 0,
+      rightTurns: 0,
     });
   });
 
   it("removes only explorer-owned parameters when the destination closes", () => {
     const url = new URL(
-      "https://tkaflowarts.com/glossary?board=atlas&letter=B&grid=box&variation=3"
+      "https://tkaflowarts.com/atlas?board=atlas&letter=B&grid=box&variation=3"
     );
 
     writeLetterExplorerRoute(url, null);

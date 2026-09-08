@@ -1,4 +1,4 @@
-import { PropType } from "@austencloud/scene-3d";
+import { PropType } from "@austencloud/scene-3d/worker";
 import {
   BUUGENG_ARTWORK_GEOMETRY,
   BUUGENG_TIP_POINTS,
@@ -14,14 +14,20 @@ import type { PropTipAnchor3D } from "./prop-tip-geometry-3d";
 /**
  * The prop-build inputs that move a prop's tracked effect emitters.
  *
- * `fanBuild` selects which of the four meshes `Fan3D.svelte` renders, and the
- * four do not share a silhouette. Pictograph is a drawn plate sized from
+ * `fanBuild` selects the mesh `Fan3D.svelte` renders. The builds do not share
+ * a silhouette. Pictograph is a drawn plate sized from
  * `getFanPlate(effectiveLength, ...)`, so it follows the user's staff length.
  * Fire and day are fixed-size GLBs: `Fan3D` wraps them in
  * `<T.Group scale={[scale, scale, scale]}>` and never feeds them `length`.
  */
 export interface PropBuildTipGeometry3D {
-  readonly fanBuild: "pictograph" | "fire" | "lotus" | "day";
+  readonly fanBuild:
+    | "pictograph"
+    | "fire"
+    | "lotus"
+    | "day"
+    | "moon"
+    | "flat-grip";
   readonly finish: "fire" | "day";
 }
 
@@ -85,6 +91,15 @@ export const FAN_FIRE_WICK_CENTERS_M = [
   { x: 0.2217705, y: 0.10651613, z: 0 },
 ] as const;
 
+// The same grip-relative metres used by scripts/assets/flat-grip-fire-reference.json.
+export const FAN_FLAT_GRIP_WICK_CENTERS_M = [
+  { x: -0.236230672, y: 0.118622269, z: 0 },
+  { x: -0.134844118, y: 0.224064286, z: 0 },
+  { x: 0.0, y: 0.261577311, z: 0 },
+  { x: 0.127747059, y: 0.215953361, z: 0 },
+  { x: 0.212911765, y: 0.110511345, z: 0 },
+] as const;
+
 /**
  * Wick centres of the 480 x 350mm Medium Lotus fan, measured from its
  * 3 5/8-inch Russian grip. The Blender build reads the same values from
@@ -119,6 +134,19 @@ export const FAN_DAY_RIM_POINTS_M = [
   { x: 0, y: 0.2852692, z: 0 },
   { x: 0.1548603, y: 0.2422228, z: 0 },
   { x: 0.250905, y: 0.1205098, z: 0 },
+] as const;
+
+/**
+ * Five evenly distributed samples on the measured 600 x 380mm Moon fan rim.
+ * The live diffuser owns all 78 physical emitters; these anchors give trails
+ * and the bright moving heads enough span to describe the fan's outer arc.
+ */
+export const FAN_MOON_RIM_POINTS_M = [
+  { x: -0.2897787, y: 0.1045398, z: 0 },
+  { x: -0.212132, y: 0.2336468, z: 0 },
+  { x: 0, y: 0.318, z: 0 },
+  { x: 0.212132, y: 0.2336468, z: 0 },
+  { x: 0.2897787, y: 0.1045398, z: 0 },
 ] as const;
 
 interface Offset3D {
@@ -171,11 +199,17 @@ function fanAnchors(
   if (build.fanBuild === "fire") {
     return fixedAnchors(FAN_FIRE_WICK_CENTERS_M, scale);
   }
+  if (build.fanBuild === "flat-grip") {
+    return fixedAnchors(FAN_FLAT_GRIP_WICK_CENTERS_M, scale);
+  }
   if (build.fanBuild === "lotus") {
     return fixedAnchors(FAN_LOTUS_WICK_CENTERS_M, scale);
   }
   if (build.fanBuild === "day") {
     return fixedAnchors(FAN_DAY_RIM_POINTS_M, scale);
+  }
+  if (build.fanBuild === "moon") {
+    return fixedAnchors(FAN_MOON_RIM_POINTS_M, scale);
   }
   return silhouetteAnchors(
     FAN_TIP_POINTS,

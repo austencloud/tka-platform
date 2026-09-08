@@ -19,7 +19,7 @@ type MotionsMap = PictographData["motions"];
 export function prepareMandalaPropSequence(
   seq: SequenceData,
   opts: {
-    show: "blue" | "red";
+    show: "left" | "right";
     pathShape: MandalaPathShape;
     propType?: PropType;
   }
@@ -30,8 +30,8 @@ export function prepareMandalaPropSequence(
   const hide = (m: MotionData | undefined): MotionData | undefined =>
     m ? { ...m, isVisible: false } : undefined;
   const soloMotions = (motions: MotionsMap): MotionsMap => ({
-    blue: show === "blue" ? tag(motions.blue) : hide(motions.blue),
-    red: show === "red" ? tag(motions.red) : hide(motions.red),
+    left: show === "left" ? tag(motions.left) : hide(motions.left),
+    right: show === "right" ? tag(motions.right) : hide(motions.right),
   });
   // The spread is structurally `T` with a refined `motions`; TS can't narrow a
   // generic spread back to `T`, so assert it (input shape is otherwise preserved).

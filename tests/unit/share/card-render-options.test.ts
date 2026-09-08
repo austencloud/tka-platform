@@ -8,6 +8,7 @@ const ic = {
   addDifficultyLevel: true,
   showLoopGlyph: true,
   showNotes: false,
+  customNotesText: "Created using Flow Arts Composer",
   showQRCode: true,
   showMandala: true,
   _cols: 4 as number | null,
@@ -18,6 +19,8 @@ const ic = {
   getInfoCellChoiceForStepCount: () => ic._choice,
 };
 const vm = { getGridVisibility: () => true };
+const appSettings = { primaryPropColors: { left: "#00ff88", right: "#ff8800" } };
+vi.mock("$lib/shared/application/state/app-state.svelte", () => ({ getSettings: () => appSettings }));
 
 vi.mock("$lib/shared/share/state/image-composition-state.svelte", () => ({
   getImageCompositionManager: () => ic,
@@ -35,6 +38,18 @@ import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-o
 const seq = { steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }] } as any;
 
 describe("buildCardRenderOptions", () => {
+  it("snapshots the primary hand colors into the worker export options", () => {
+    expect(buildCardRenderOptions(seq, { darkMode: false }).visibilityOverrides?.primaryPropColors)
+      .toEqual({ left: "#00ff88", right: "#ff8800" });
+  });
+  it("exports the selected presentation instead of the account props", () => {
+    const options = buildCardRenderOptions(seq, {
+      darkMode: false,
+      propConfig: { leftPropType: "fan", rightPropType: "buugeng", catDogMode: true } as never,
+    });
+    expect(options.leftPropTypeOverride).toBe("fan");
+    expect(options.rightPropTypeOverride).toBe("buugeng");
+  });
   beforeEach(() => {
     ic._cols = 4;
     ic._layout = "row";
@@ -44,6 +59,8 @@ describe("buildCardRenderOptions", () => {
     ic.includeStartPosition = true;
     ic.addDifficultyLevel = true;
     ic.showLoopGlyph = true;
+    ic.showNotes = false;
+    ic.customNotesText = "Created using Flow Arts Composer";
   });
 
   it("threads every panel toggle into the render options (no hand-path)", () => {
@@ -74,6 +91,45 @@ describe("buildCardRenderOptions", () => {
     expect(o).not.toHaveProperty("showBirthday");
     expect(o).not.toHaveProperty("birthday");
     expect(o.addUserInfo).toBe(false);
+  });
+
+  it("renders an explicit card footer without reading private sequence notes", () => {
+    const sequence = {
+      ...seq,
+      notes: "private choreography note",
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Shared from First Fire" },
+      },
+    } as any;
+
+    const options = buildCardRenderOptions(sequence, { darkMode: false });
+
+    expect(options.showNotes).toBe(true);
+    expect(options.addUserInfo).toBe(true);
+    expect(options.customNotesText).toBe("Shared from First Fire");
+    expect(options.notes).toBe("Shared from First Fire");
+    expect(JSON.stringify(options)).not.toContain("private choreography note");
+  });
+
+  it("lets a one-share footer override the saved card presentation", () => {
+    const sequence = {
+      ...seq,
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "credit" },
+      },
+    } as any;
+
+    const options = buildCardRenderOptions(sequence, {
+      darkMode: false,
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Only for this post" },
+      },
+    });
+
+    expect(options.customNotesText).toBe("Only for this post");
   });
 
   it("converts manual STEP columns according to the chosen start placement", () => {

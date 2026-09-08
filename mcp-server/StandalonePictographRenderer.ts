@@ -11,6 +11,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import type { HandSide } from "@tka/tka-types";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -85,15 +86,15 @@ interface MotionInput {
   rotationDirection: string;
   startLocation: string;
   endLocation: string;
-  color: string;
+  hand: HandSide;
 }
 
 interface PictographInput {
   letter: string;
   startPosition?: string;  // For TnD and position glyph calculations
   endPosition?: string;    // For position glyph
-  blueMotion: MotionInput;
-  redMotion: MotionInput;
+  leftMotion: MotionInput;
+  rightMotion: MotionInput;
 }
 
 /**
@@ -116,8 +117,8 @@ export interface RenderVisibilityOptions {
   showNonRadialPoints?: boolean;
 
   // Motions
-  showBlueMotion?: boolean;    // Blue prop + arrow (default: true)
-  showRedMotion?: boolean;     // Red prop + arrow (default: true)
+  showLeftMotion?: boolean;    // Blue prop + arrow (default: true)
+  showRightMotion?: boolean;     // Red prop + arrow (default: true)
 }
 
 // Legacy interface for backwards compatibility
@@ -161,8 +162,8 @@ export class StandalonePictographRenderer {
       showPositions = false,
       showReversals = false,
       showGrid = true,
-      showBlueMotion = true,
-      showRedMotion = true,
+      showLeftMotion = true,
+      showRightMotion = true,
     } = options;
 
     // Handle legacy showLetter option
@@ -183,25 +184,25 @@ export class StandalonePictographRenderer {
     }
 
     // 3. Props (blue and red, if enabled)
-    if (showBlueMotion) {
-      const blueProps = this.renderProp(input.blueMotion, darkMode);
-      if (blueProps) svgParts.push(blueProps);
+    if (showLeftMotion) {
+      const leftProps = this.renderProp(input.leftMotion, darkMode);
+      if (leftProps) svgParts.push(leftProps);
     }
 
-    if (showRedMotion) {
-      const redProps = this.renderProp(input.redMotion, darkMode);
-      if (redProps) svgParts.push(redProps);
+    if (showRightMotion) {
+      const rightProps = this.renderProp(input.rightMotion, darkMode);
+      if (rightProps) svgParts.push(rightProps);
     }
 
     // 4. Arrows (blue and red, if enabled)
-    if (showBlueMotion) {
-      const blueArrow = this.renderArrow(input.blueMotion, darkMode);
-      if (blueArrow) svgParts.push(blueArrow);
+    if (showLeftMotion) {
+      const leftArrow = this.renderArrow(input.leftMotion, darkMode);
+      if (leftArrow) svgParts.push(leftArrow);
     }
 
-    if (showRedMotion) {
-      const redArrow = this.renderArrow(input.redMotion, darkMode);
-      if (redArrow) svgParts.push(redArrow);
+    if (showRightMotion) {
+      const rightArrow = this.renderArrow(input.rightMotion, darkMode);
+      if (rightArrow) svgParts.push(rightArrow);
     }
 
     // 5. Position glyph (start → end) at top center
@@ -293,7 +294,7 @@ ${svgParts.join("\n")}
       let innerContent = innerMatch ? innerMatch[1] : propSvg;
 
       // Apply color
-      const color = motion.color === "blue"
+      const color = motion.hand === "left"
         ? (darkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT)
         : (darkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT);
       innerContent = innerContent.replace(/#000000/gi, color);
@@ -376,7 +377,7 @@ ${svgParts.join("\n")}
       let innerContent = innerMatch ? innerMatch[1] : arrowSvg;
 
       // Apply color
-      const color = motion.color === "blue"
+      const color = motion.hand === "left"
         ? (darkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT)
         : (darkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT);
       innerContent = innerContent.replace(/#000000/gi, color);

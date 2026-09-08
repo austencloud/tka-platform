@@ -12,6 +12,7 @@ import {
 } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
+import type { Scene3DFilm } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
 
 type Viewer3DState = ReturnType<typeof createViewer3DState>;
 
@@ -23,8 +24,14 @@ type Viewer3DState = ReturnType<typeof createViewer3DState>;
 export function createSceneVideoExport(viewer: Viewer3DState) {
   const options = getExportOptionsState();
   let localError = $state<string | null>(null);
+  let isStarting = $state(false);
+  let isCancelling = $state(false);
+  let activeAttempt: AbortController | null = null;
 
-  async function waitForScene(timeoutMs = 10_000): Promise<boolean> {
+  async function waitForScene(
+    signal: AbortSignal,
+    timeoutMs = 10_000
+  ): Promise<boolean> {
     const ready = () =>
       !!viewer.webglCanvas &&
       !!viewer.threlteCamera &&
@@ -34,85 +41,122 @@ export function createSceneVideoExport(viewer: Viewer3DState) {
       !!viewer.threlteResumeAutoLoop;
 
     const deadline = Date.now() + timeoutMs;
-    while (!ready() && Date.now() < deadline) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    while (!signal.aborted && !ready() && Date.now() < deadline) {
+      await waitForNextSceneCheck(signal);
     }
-    return ready();
+    return !signal.aborted && ready();
   }
 
-  async function render(sequence: SequenceData, bpm: number): Promise<boolean> {
+  /**
+   * Render the scene. With no film this exports the current static angle for
+   * the sequence's own length; with one it replays the recorded camera path
+   * for exactly as long as it was recorded, which is what makes a saved film
+   * reproducible at any resolution.
+   */
+  async function render(
+    sequence: SequenceData,
+    bpm: number,
+    film?: Scene3DFilm
+  ): Promise<boolean> {
     localError = null;
-    if (sequenceModalExporter.state.isExporting) return false;
-    if (!(await ensureFullAccountForExport())) return false;
-    if (!(await waitForScene())) {
-      localError = "The 3D scene is still loading. Wait a moment and try again.";
-      return false;
-    }
+    if (isStarting || sequenceModalExporter.state.isExporting) return false;
 
-    const canvas = viewer.webglCanvas;
-    const camera = viewer.threlteCamera as
-      | Video3DExportDependencies["camera"]
-      | null;
-    const renderer = viewer.threlteRenderer as
-      | Video3DExportDependencies["renderer"]
-      | null;
-    const runFrame = viewer.threlteRunFrame;
-    const pauseAutoLoop = viewer.threltePauseAutoLoop;
-    const resumeAutoLoop = viewer.threlteResumeAutoLoop;
-    if (
-      !canvas ||
-      !camera ||
-      !renderer ||
-      !runFrame ||
-      !pauseAutoLoop ||
-      !resumeAutoLoop
-    ) {
-      localError = "The 3D scene is not ready to export yet.";
-      return false;
-    }
+    const attempt = new AbortController();
+    activeAttempt = attempt;
+    isStarting = true;
+    isCancelling = false;
 
-    const videoOptions = options.getVideoOptions();
-    const beatsPerSecond = Math.max(1, bpm) / 60;
-    const sequenceUnits = sequence.steps.reduce(
-      (sum, step) => sum + (step.duration ?? 1),
-      0
-    );
-    const holdUnits =
-      (videoOptions.includeStartPosition ? 1 : 0) +
-      (videoOptions.includeEndHold ? 1 : 0);
-    const cameraKeyframes = new CameraKeyframeBuffer();
-    cameraKeyframes.captureStatic(camera);
-
-    await sequenceModalExporter.export3DAnimation(
-      {
-        fps: videoOptions.fps,
-        loopCount: videoOptions.loopCount,
-        resolution: videoOptions.resolution,
-        includeStartPosition: videoOptions.includeStartPosition,
-        includeEndHold: videoOptions.includeEndHold,
-        quality: videoOptions.quality,
-      },
-      {
-        webglCanvas: canvas,
-        camera,
-        beatsPerSecond,
-        totalDurationSeconds: (sequenceUnits + holdUnits) / beatsPerSecond,
-        cameraKeyframes,
-        renderer,
-        runFrame,
-        pauseAutoLoop,
-        resumeAutoLoop,
-        setExporting: (value) => (viewer.isExporting = value),
-        setExportCurrentStep: (step) => (viewer.exportCurrentStep = step),
-      },
-      {
-        onSuccess: () => undefined,
-        onError: () => undefined,
-        onHaptic: () => undefined,
+    try {
+      if (!(await ensureFullAccountForExport()) || attempt.signal.aborted) {
+        return false;
       }
-    );
+      if (!(await waitForScene(attempt.signal))) {
+        if (!attempt.signal.aborted) {
+          localError =
+            "The 3D scene is still loading. Wait a moment and try again.";
+        }
+        return false;
+      }
 
-    return !!sequenceModalExporter.state.previewBlobUrl;
+      const canvas = viewer.webglCanvas;
+      const camera = viewer.threlteCamera as
+        | Video3DExportDependencies["camera"]
+        | null;
+      const renderer = viewer.threlteRenderer as
+        | Video3DExportDependencies["renderer"]
+        | null;
+      const runFrame = viewer.threlteRunFrame;
+      const pauseAutoLoop = viewer.threltePauseAutoLoop;
+      const resumeAutoLoop = viewer.threlteResumeAutoLoop;
+      if (
+        !canvas ||
+        !camera ||
+        !renderer ||
+        !runFrame ||
+        !pauseAutoLoop ||
+        !resumeAutoLoop
+      ) {
+        localError = "The 3D scene is not ready to export yet.";
+        return false;
+      }
+
+      const videoOptions = options.getVideoOptions();
+      const beatsPerSecond = Math.max(1, bpm) / 60;
+      const sequenceUnits = sequence.steps.reduce(
+        (sum, step) => sum + (step.duration ?? 1),
+        0
+      );
+      const holdUnits =
+        (videoOptions.includeStartPosition ? 1 : 0) +
+        (videoOptions.includeEndHold ? 1 : 0);
+      const cameraKeyframes = film
+        ? CameraKeyframeBuffer.fromKeyframes(film.keyframes)
+        : new CameraKeyframeBuffer();
+      if (!film) cameraKeyframes.captureStatic(camera);
+      const totalDurationSeconds = film
+        ? film.durationSeconds
+        : (sequenceUnits + holdUnits) / beatsPerSecond;
+
+      if (attempt.signal.aborted) return false;
+
+      // export3DAnimation marks the shared exporter active synchronously, so
+      // the progress UI stays present when startup hands off to frame capture.
+      isStarting = false;
+      await sequenceModalExporter.export3DAnimation(
+        {
+          fps: videoOptions.fps,
+          loopCount: videoOptions.loopCount,
+          resolution: videoOptions.resolution,
+          includeStartPosition: videoOptions.includeStartPosition,
+          includeEndHold: videoOptions.includeEndHold,
+          quality: videoOptions.quality,
+        },
+        {
+          webglCanvas: canvas,
+          camera,
+          beatsPerSecond,
+          totalDurationSeconds,
+          cameraKeyframes,
+          renderer,
+          runFrame,
+          pauseAutoLoop,
+          resumeAutoLoop,
+          setExporting: (value) => (viewer.isExporting = value),
+          setExportCurrentStep: (step) => (viewer.exportCurrentStep = step),
+        },
+        {
+          onSuccess: () => undefined,
+          onError: () => undefined,
+          onHaptic: () => undefined,
+        }
+      );
+
+      return !!sequenceModalExporter.state.previewBlobUrl;
+    } finally {
+      if (activeAttempt === attempt) activeAttempt = null;
+      isStarting = false;
+      isCancelling = false;
+    }
   }
 
   async function save(sequence: SequenceData): Promise<void> {
@@ -137,18 +181,39 @@ export function createSceneVideoExport(viewer: Viewer3DState) {
       const sharedState = sequenceModalExporter.state;
       return {
         ...sharedState,
+        isExporting: isStarting || sharedState.isExporting,
+        isCancelling,
         error: localError ?? sharedState.error,
       };
     },
     render,
     save,
-    cancel: () => sequenceModalExporter.cancel(),
+    cancel: () => {
+      if (!isStarting && !sequenceModalExporter.state.isExporting) return;
+      isCancelling = true;
+      activeAttempt?.abort();
+      sequenceModalExporter.cancel();
+    },
     dismissPreview: () => sequenceModalExporter.dismissPreview(),
     clearError: () => {
       localError = null;
       sequenceModalExporter.clearError();
     },
   };
+}
+
+function waitForNextSceneCheck(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const finish = () => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, 100);
+    signal.addEventListener("abort", finish, { once: true });
+  });
 }
 
 export type SceneVideoExportState = ReturnType<typeof createSceneVideoExport>;

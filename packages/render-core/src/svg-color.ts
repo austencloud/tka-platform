@@ -6,7 +6,8 @@
  * let the later prop's color override the earlier prop.
  */
 
-export type MotionColor = "blue" | "red";
+import type { HandSide } from "./types.js";
+
 export type ThemeMode = "dark" | "light";
 
 export const ACCENT_COLORS_TO_PRESERVE = [
@@ -15,15 +16,15 @@ export const ACCENT_COLORS_TO_PRESERVE = [
   "#fff",
 ] as const;
 
-export const MOTION_COLOR_MAP: Record<
-  MotionColor,
+export const HAND_COLOR_MAP: Record<
+  HandSide,
   { dark: string; light: string }
 > = {
-  blue: {
+  left: {
     dark: "#3575E2",
     light: "#3D44B8",
   },
-  red: {
+  right: {
     dark: "#ED1C24",
     light: "#DC2626",
   },
@@ -34,13 +35,13 @@ export const MOTION_COLOR_MAP: Record<
  * fill that is dark (luminance below 0.4) or saturated (above 0.05) and repaints
  * the rest — so a torch keeps its shaft, a sword keeps its gold blade, and the
  * energy pair keeps its neutral hilt and pale core while the blade takes on
- * blue or red.
+ * left or right.
  */
 export const SELECTIVE_COLOR_PROP_TYPES = [
-  // Juggling club: the body carries blue/red motion identity while the rubber
+  // Juggling club: the body carries left/right motion identity while the rubber
   // knob, wrapped handle, shoulder ring and top keep their authored materials.
   "club",
-  // Poi: the head carries blue/red motion identity while the rubber knob and
+  // Poi: the head carries left/right motion identity while the rubber knob and
   // the cord stay neutral, the same split the club uses.
   "poi",
   "torch",
@@ -49,12 +50,12 @@ export const SELECTIVE_COLOR_PROP_TYPES = [
   "energy_saber",
   "energy_staff",
   // LED baton: the braided cable and the light inside each cap are neutral gray
-  // and take blue or red, while the couplers, tubes and cap shells stay clear --
+  // and take left or right, while the couplers, tubes and cap shells stay clear --
   // which is how the real prop is sold, colored shaft under clear ends.
   "capsule_baton",
   // Fire double staff: the anodized tube and its overgrip are neutral gray and
-  // take blue or red, while the kevlar wicks and the gold thumb bands stay as
-  // authored. Kevlar is never blue or red.
+  // take left or right, while the kevlar wicks and the gold thumb bands stay as
+  // authored. Kevlar is never left or right.
   "fire_double_staff",
   "sword-knight",
   "sword-saber",
@@ -64,10 +65,10 @@ export const SELECTIVE_COLOR_PROP_TYPES = [
 ] as const;
 
 export function getMotionColor(
-  color: MotionColor,
+  hand: HandSide,
   mode: ThemeMode = "dark",
 ): string {
-  return MOTION_COLOR_MAP[color]?.[mode] ?? MOTION_COLOR_MAP.blue[mode];
+  return HAND_COLOR_MAP[hand]?.[mode] ?? HAND_COLOR_MAP.left[mode];
 }
 
 function parseHex(hex: string): { r: number; g: number; b: number } | null {
@@ -210,14 +211,14 @@ export interface MotionSvgColorOptions
 
 export function applyMotionColorToSvg(
   svgText: string,
-  motionColor: MotionColor,
+  motionHand: HandSide,
   options: MotionSvgColorOptions = {},
 ): string {
   const mode = options.themeMode ?? "dark";
-  const targetColor = getMotionColor(motionColor, mode);
+  const targetColor = getMotionColor(motionHand, mode);
 
   return applyColorToSvg(svgText, targetColor, {
     ...options,
-    colorSuffix: motionColor,
+    colorSuffix: motionHand,
   });
 }

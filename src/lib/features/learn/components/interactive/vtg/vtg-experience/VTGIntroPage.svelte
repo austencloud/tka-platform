@@ -28,7 +28,7 @@ VTGIntroPage - Introduction page explaining VTG fundamentals
       <VTGComponentCard
         type="timing"
         icon="fa-clock"
-        title="Timing"
+        title="Time"
         options="<strong>Same</strong>, <strong>Opposite</strong>, or <strong>Quarter</strong>"
         subtitle="When do hands start relative to each other?"
       />
@@ -71,7 +71,11 @@ VTGIntroPage - Introduction page explaining VTG fundamentals
     color: white;
     margin: 0;
     text-align: center;
-    background: linear-gradient(135deg, var(--theme-accent, #22d3ee) 0%, var(--theme-accent, #06b6d4) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent, #22d3ee) 0%,
+      var(--theme-accent, #06b6d4) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -110,7 +114,8 @@ VTGIntroPage - Introduction page explaining VTG fundamentals
       color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 0%,
       color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent) 100%
     );
-    border: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
+    border: 2px solid
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
     border-radius: 12px;
     color: white;
     font-size: 1.0625rem;
@@ -127,7 +132,11 @@ VTGIntroPage - Introduction page explaining VTG fundamentals
       color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 0%,
       color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent) 100%
     );
-    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 80%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #22d3ee) 80%,
+      transparent
+    );
     transform: translateY(-2px);
   }
 

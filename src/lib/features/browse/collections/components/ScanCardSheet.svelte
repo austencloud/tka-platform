@@ -273,6 +273,7 @@ the geo dashboard).
       });
     } catch (err) {
       seen.delete(code);
+      if (err instanceof LibraryError && err.code === "GUEST_CAP") return;
       console.error("[ScanCard] add failed:", err);
       toast.error("Couldn't add that card — try again.");
     }
@@ -863,7 +864,6 @@ the geo dashboard).
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
-
 
   .handoff-panel {
     flex: 1;

@@ -1,4 +1,17 @@
 import {
+  clampFlowFestNumber,
+  dampFlowFestNumber,
+  flowFestGroundVehicleGamepadInput,
+  flowFestGroundVehicleKeyboardInput,
+  flowFestGroundVehicleSpeedKilometresPerHour,
+  flowFestGroundVehicleSpeedMilesPerHour,
+  mergeFlowFestGroundVehicleInput,
+  moveFlowFestNumberTowards,
+  reconcileFlowFestGroundVehicleTravel,
+  wrapFlowFestGroundVehicleAngle,
+  type FlowFestGroundVehicleInput,
+} from "./flow-fest-ground-vehicle";
+import {
   FLOW_FEST_GAMEPLAY_SPRINT_MULTIPLIER,
   FLOW_FEST_GAMEPLAY_WALK_SPEED_METERS_PER_SECOND,
 } from "./flow-fest-simulation-contract";
@@ -91,13 +104,8 @@ export const FLOW_FEST_EUC_CONFIG = Object.freeze({
   maximumSimulationCatchUpSeconds: 0.25,
 });
 
-export interface FlowFestElectricUnicycleInput {
-  throttle: number;
-  brake: number;
-  steer: number;
-  performanceMode: boolean;
-  source: "keyboard" | "gamepad" | "mixed" | "none";
-}
+/** The EUC reads the shared ground-vehicle input; see flow-fest-ground-vehicle.ts. */
+export type FlowFestElectricUnicycleInput = FlowFestGroundVehicleInput;
 
 export interface FlowFestElectricUnicycleDynamics {
   speedMetersPerSecond: number;
@@ -131,38 +139,11 @@ export interface FlowFestElectricUnicycleTerrainSamples {
   lateralSpanMeters: number;
 }
 
-export interface FlowFestStandardGamepadSample {
-  connected: boolean;
-  mapping: string;
-  axes: readonly number[];
-  buttons: ReadonlyArray<{ pressed: boolean; value: number }>;
-}
+export type { FlowFestStandardGamepadSample } from "./flow-fest-ground-vehicle";
 
-const TAU = Math.PI * 2;
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(maximum, Math.max(minimum, value));
-}
-
-function moveTowards(
-  current: number,
-  target: number,
-  maximumDelta: number
-): number {
-  if (current < target) return Math.min(target, current + maximumDelta);
-  if (current > target) return Math.max(target, current - maximumDelta);
-  return current;
-}
-
-function damp(
-  current: number,
-  target: number,
-  responsePerSecond: number,
-  deltaSeconds: number
-): number {
-  const blend = 1 - Math.exp(-responsePerSecond * deltaSeconds);
-  return current + (target - current) * blend;
-}
+const clamp = clampFlowFestNumber;
+const moveTowards = moveFlowFestNumberTowards;
+const damp = dampFlowFestNumber;
 
 export function deriveFlowFestEucTerrainAttitude(
   samples: FlowFestElectricUnicycleTerrainSamples
@@ -196,12 +177,7 @@ export function deriveFlowFestEucTerrainAttitude(
   };
 }
 
-export function wrapFlowFestEucAngle(radians: number): number {
-  let wrapped = radians % TAU;
-  if (wrapped > Math.PI) wrapped -= TAU;
-  if (wrapped < -Math.PI) wrapped += TAU;
-  return wrapped;
-}
+export const wrapFlowFestEucAngle = wrapFlowFestGroundVehicleAngle;
 
 export function createFlowFestElectricUnicycleDynamics(
   initial?: Partial<FlowFestElectricUnicycleDynamics>
@@ -219,111 +195,9 @@ export function createFlowFestElectricUnicycleDynamics(
   };
 }
 
-export function flowFestEucKeyboardInput(
-  activeCodes: readonly string[],
-  speedMetersPerSecond: number
-): FlowFestElectricUnicycleInput {
-  const codes = new Set(activeCodes);
-  const forward = codes.has("KeyW") || codes.has("ArrowUp");
-  const reverseOrBrake = codes.has("KeyS") || codes.has("ArrowDown");
-  const regenerativeBrake =
-    codes.has("ControlLeft") || codes.has("ControlRight");
-  // Positive yaw turns the rider toward their left in this world frame. Keep
-  // the input semantic as "positive means left" across keys and thumbsticks.
-  const steer =
-    (codes.has("KeyA") || codes.has("ArrowLeft") ? 1 : 0) -
-    (codes.has("KeyD") || codes.has("ArrowRight") ? 1 : 0);
-  let throttle = forward ? 1 : 0;
-  let brake = regenerativeBrake ? 1 : 0;
-
-  if (reverseOrBrake) {
-    if (speedMetersPerSecond > 0.18) brake = 1;
-    else throttle = -1;
-  }
-
-  const hasInput = throttle !== 0 || brake !== 0 || steer !== 0;
-  return {
-    throttle,
-    brake,
-    steer,
-    performanceMode: codes.has("ShiftLeft") || codes.has("ShiftRight"),
-    source: hasInput ? "keyboard" : "none",
-  };
-}
-
-export function flowFestEucGamepadInput(
-  gamepad: FlowFestStandardGamepadSample | null,
-  speedMetersPerSecond: number
-): FlowFestElectricUnicycleInput {
-  if (!gamepad?.connected || gamepad.mapping !== "standard") {
-    return {
-      throttle: 0,
-      brake: 0,
-      steer: 0,
-      performanceMode: false,
-      source: "none",
-    };
-  }
-
-  const deadzone = (value: number): number => {
-    const magnitude = Math.abs(value);
-    if (magnitude <= 0.12) return 0;
-    return Math.sign(value) * ((magnitude - 0.12) / 0.88);
-  };
-  const leftY = deadzone(gamepad.axes[1] ?? 0);
-  const triggerThrottle = clamp(gamepad.buttons[7]?.value ?? 0, 0, 1);
-  const triggerBrake = clamp(gamepad.buttons[6]?.value ?? 0, 0, 1);
-  const stickThrottle = leftY < 0 ? -leftY : 0;
-  const stickBrakeOrReverse = leftY > 0 ? leftY : 0;
-  let throttle = Math.max(triggerThrottle, stickThrottle);
-  let brake = triggerBrake;
-  if (stickBrakeOrReverse > 0) {
-    if (speedMetersPerSecond > 0.18) {
-      brake = Math.max(brake, stickBrakeOrReverse);
-    } else {
-      throttle = -stickBrakeOrReverse;
-    }
-  }
-  const steer = -deadzone(gamepad.axes[0] ?? 0);
-  const hasInput = throttle !== 0 || brake !== 0 || steer !== 0;
-  return {
-    throttle,
-    brake,
-    steer,
-    performanceMode: gamepad.buttons[5]?.pressed ?? false,
-    source: hasInput ? "gamepad" : "none",
-  };
-}
-
-export function mergeFlowFestEucInput(
-  keyboard: FlowFestElectricUnicycleInput,
-  gamepad: FlowFestElectricUnicycleInput
-): FlowFestElectricUnicycleInput {
-  const keyboardActive = keyboard.source !== "none";
-  const gamepadActive = gamepad.source !== "none";
-  const throttle =
-    Math.abs(gamepad.throttle) > Math.abs(keyboard.throttle)
-      ? gamepad.throttle
-      : keyboard.throttle;
-  const steer =
-    Math.abs(gamepad.steer) > Math.abs(keyboard.steer)
-      ? gamepad.steer
-      : keyboard.steer;
-  return {
-    throttle: clamp(throttle, -1, 1),
-    brake: clamp(Math.max(keyboard.brake, gamepad.brake), 0, 1),
-    steer: clamp(steer, -1, 1),
-    performanceMode: keyboard.performanceMode || gamepad.performanceMode,
-    source:
-      keyboardActive && gamepadActive
-        ? "mixed"
-        : gamepadActive
-          ? "gamepad"
-          : keyboardActive
-            ? "keyboard"
-            : "none",
-  };
-}
+export const flowFestEucKeyboardInput = flowFestGroundVehicleKeyboardInput;
+export const flowFestEucGamepadInput = flowFestGroundVehicleGamepadInput;
+export const mergeFlowFestEucInput = mergeFlowFestGroundVehicleInput;
 
 export function stepFlowFestElectricUnicycle(
   current: FlowFestElectricUnicycleDynamics,
@@ -469,53 +343,20 @@ export function reconcileFlowFestEucCollision(
   requestedVelocity?: { x: number; z: number },
   includeVerticalSurfaceTravel = false
 ): FlowFestElectricUnicycleDynamics {
-  if (Math.abs(current.speedMetersPerSecond) < 0.05) return current;
-  const projectedActualSpeed =
-    actualVelocity.x * Math.sin(current.headingRadians) +
-    actualVelocity.z * Math.cos(current.headingRadians);
-  const projectedRequestedSpeed = requestedVelocity
-    ? requestedVelocity.x * Math.sin(current.headingRadians) +
-      requestedVelocity.z * Math.cos(current.headingRadians)
-    : current.speedMetersPerSecond;
-  const sameDirection =
-    Math.sign(projectedActualSpeed) === Math.sign(current.speedMetersPerSecond);
-  // Rapier resolves a grounded climb into planar and vertical components. If
-  // reconciliation observes only X/Z, a legitimate 30-degree ascent looks
-  // 13% collision-limited every frame and repeatedly erases motor torque. The
-  // vertical component counts only while the character controller is grounded,
-  // so an airborne fall cannot masquerade as successful wheel travel.
-  const verticalSpeed = actualVelocity.y ?? 0;
-  const gradeRatio =
-    Math.abs(projectedActualSpeed) > 1e-6
-      ? Math.abs(verticalSpeed) / Math.abs(projectedActualSpeed)
-      : Number.POSITIVE_INFINITY;
-  const plausibleSurfaceTravel =
-    sameDirection &&
-    Math.abs(projectedActualSpeed) > 0.05 &&
-    gradeRatio <=
-      Math.tan(FLOW_FEST_EUC_CONFIG.maximumTerrainPitchRadians) + 0.05;
-  const actualSurfaceSpeed =
-    includeVerticalSurfaceTravel || plausibleSurfaceTravel
-    ? Math.hypot(projectedActualSpeed, actualVelocity.y ?? 0)
-    : Math.abs(projectedActualSpeed);
-  const travelRatio =
-    Math.abs(projectedRequestedSpeed) > 1e-6
-      ? clamp(
-          actualSurfaceSpeed / Math.abs(projectedRequestedSpeed),
-          0,
-          1
-        )
-      : 0;
-  const correctedMagnitude = sameDirection
-    ? Math.abs(current.speedMetersPerSecond) * travelRatio
-    : 0;
-  if (correctedMagnitude >= Math.abs(current.speedMetersPerSecond) * 0.985) {
-    return current;
-  }
+  const travel = reconcileFlowFestGroundVehicleTravel(
+    current,
+    actualVelocity,
+    requestedVelocity,
+    {
+      maximumGradeRatio:
+        Math.tan(FLOW_FEST_EUC_CONFIG.maximumTerrainPitchRadians) + 0.05,
+      includeVerticalSurfaceTravel,
+    }
+  );
+  if (!travel.limited) return current;
   return {
     ...current,
-    speedMetersPerSecond:
-      Math.sign(current.speedMetersPerSecond) * correctedMagnitude,
+    speedMetersPerSecond: travel.speedMetersPerSecond,
     pitchRadians: Math.max(
       current.pitchRadians,
       FLOW_FEST_EUC_CONFIG.maximumVisualPitchRadians * 0.7
@@ -523,14 +364,7 @@ export function reconcileFlowFestEucCollision(
   };
 }
 
-export function flowFestEucSpeedKilometresPerHour(
-  speedMetersPerSecond: number
-): number {
-  return Math.abs(speedMetersPerSecond) * 3.6;
-}
-
-export function flowFestEucSpeedMilesPerHour(
-  speedMetersPerSecond: number
-): number {
-  return Math.abs(speedMetersPerSecond) * 2.2369362921;
-}
+export const flowFestEucSpeedKilometresPerHour =
+  flowFestGroundVehicleSpeedKilometresPerHour;
+export const flowFestEucSpeedMilesPerHour =
+  flowFestGroundVehicleSpeedMilesPerHour;

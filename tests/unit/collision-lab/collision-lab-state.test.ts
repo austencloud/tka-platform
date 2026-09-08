@@ -72,9 +72,9 @@ describe("collision-lab-state", () => {
     const { state } = await setup();
     state.stepForward();
     state.stepForward();
-    state.setBluePlaneFilter(Plane.WALL);
+    state.setLeftPlaneFilter(Plane.WALL);
     expect(state.cursorIndex).toBe(0);
-    expect(state.filteredPoses.every((p) => p.blueHand.plane === Plane.WALL)).toBe(true);
+    expect(state.filteredPoses.every((p) => p.leftHand.plane === Plane.WALL)).toBe(true);
     // Blue locked to wall: 1 × 4 × 2 × 3 × 4 × 2 = 192
     expect(state.filteredPoses.length).toBe(192);
   });
@@ -84,20 +84,20 @@ describe("collision-lab-state", () => {
     state.setCrossPlaneOnly(true);
     expect(state.filteredPoses.length).toBe(384); // 576 - 192 same-plane
     expect(
-      state.filteredPoses.every((p) => p.blueHand.plane !== p.redHand.plane)
+      state.filteredPoses.every((p) => p.leftHand.plane !== p.rightHand.plane)
     ).toBe(true);
   });
 
   it("setting both plane filters narrows to a single cross-plane slice", async () => {
     const { state } = await setup();
-    state.setBluePlaneFilter(Plane.WALL);
-    state.setRedPlaneFilter(Plane.WHEEL);
+    state.setLeftPlaneFilter(Plane.WALL);
+    state.setRightPlaneFilter(Plane.WHEEL);
     // 1 × 4 × 2 × 1 × 4 × 2 = 64
     expect(state.filteredPoses.length).toBe(64);
     expect(
       state.filteredPoses.every(
         (p) =>
-          p.blueHand.plane === Plane.WALL && p.redHand.plane === Plane.WHEEL
+          p.leftHand.plane === Plane.WALL && p.rightHand.plane === Plane.WHEEL
       )
     ).toBe(true);
   });
@@ -187,8 +187,8 @@ describe("collision-lab-state", () => {
   it("default stance is always reachable", async () => {
     const { state } = await setup();
     expect(state.currentReachability.reachable).toBe(true);
-    expect(state.currentReachability.blueExcess).toBe(0);
-    expect(state.currentReachability.redExcess).toBe(0);
+    expect(state.currentReachability.leftExcess).toBe(0);
+    expect(state.currentReachability.rightExcess).toBe(0);
   });
 
   it("stepping far from the grid makes the pose unreachable", async () => {

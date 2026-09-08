@@ -11,35 +11,35 @@
 </script>
 
 <div class="path-preview">
-  <div class="hand-preview" class:active={builder.phase === "blue"}>
-    <div class="hand-label blue-label">Blue</div>
+  <div class="hand-preview" class:active={builder.phase === "left"}>
+    <div class="hand-label blue-label">Left</div>
     <div class="path-name">
-      {#if builder.bluePathName}
-        <span class="name-text">{builder.bluePathName}</span>
+      {#if builder.leftPathName}
+        <span class="name-text">{builder.leftPathName}</span>
       {:else}
         <span class="placeholder">tap to start</span>
       {/if}
     </div>
     <div class="location-count">
-      {builder.blueLocations.length} {builder.blueLocations.length === 1 ? "point" : "points"}
+      {builder.leftLocations.length} {builder.leftLocations.length === 1 ? "point" : "points"}
     </div>
   </div>
 
   <div class="divider" aria-hidden="true">→</div>
 
-  <div class="hand-preview" class:active={builder.phase === "red"} class:locked={builder.phase === "blue"}>
-    <div class="hand-label red-label">Red</div>
+  <div class="hand-preview" class:active={builder.phase === "right"} class:locked={builder.phase === "left"}>
+    <div class="hand-label red-label">Right</div>
     <div class="path-name">
-      {#if builder.redPathName}
-        <span class="name-text">{builder.redPathName}</span>
+      {#if builder.rightPathName}
+        <span class="name-text">{builder.rightPathName}</span>
       {:else}
-        <span class="placeholder">{builder.phase === "blue" ? "next" : "tap to start"}</span>
+        <span class="placeholder">{builder.phase === "left" ? "next" : "tap to start"}</span>
       {/if}
     </div>
     <div class="location-count">
-      {builder.redLocations.length} {builder.redLocations.length === 1 ? "point" : "points"}
-      {#if builder.phase === "red" && builder.blueLocations.length > 0}
-        <span class="count-target"> / {builder.blueLocations.length}</span>
+      {builder.rightLocations.length} {builder.rightLocations.length === 1 ? "point" : "points"}
+      {#if builder.phase === "right" && builder.leftLocations.length > 0}
+        <span class="count-target"> / {builder.leftLocations.length}</span>
       {/if}
     </div>
   </div>

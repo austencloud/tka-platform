@@ -28,7 +28,7 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import {
-  MotionColor,
+  HandSide,
   type MotionType as AppMotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter as AppLetter } from "$lib/shared/foundation/domain/models/letter";
@@ -44,7 +44,7 @@ export function motionDataToMotion(md: MotionData): Motion {
     endOrientation: md.endOrientation,
     turns: md.turns,
     ...(md.plane !== undefined && { plane: md.plane }),
-    ...(md.color !== undefined && { color: md.color }),
+    hand: md.hand,
     ...(md.prefloatMotionType !== undefined && {
       prefloatMotionType: md.prefloatMotionType,
     }),
@@ -61,11 +61,11 @@ export function motionDataToMotion(md: MotionData): Motion {
  * instead of silently producing an invalid step.
  */
 export function stepDataToStep(sd: StepData): Step {
-  const blue = sd.motions[MotionColor.BLUE];
-  const red = sd.motions[MotionColor.RED];
-  if (!blue || !red) {
+  const left = sd.motions[HandSide.LEFT];
+  const right = sd.motions[HandSide.RIGHT];
+  if (!left || !right) {
     throw new Error(
-      `stepDataToStep: step ${sd.stepNumber} (${sd.id}) is missing its ${!blue ? "blue" : "red"} motion`
+      `stepDataToStep: step ${sd.stepNumber} (${sd.id}) is missing its ${!left ? "blue" : "red"} motion`
     );
   }
   return createStep({
@@ -73,7 +73,7 @@ export function stepDataToStep(sd: StepData): Step {
     letter: sd.letter ?? null,
     startPosition: sd.startPosition ?? null,
     endPosition: sd.endPosition ?? null,
-    motions: { blue: motionDataToMotion(blue), red: motionDataToMotion(red) },
+    motions: { left: motionDataToMotion(left), right: motionDataToMotion(right) },
     ...(sd.gridMode !== undefined && { gridMode: sd.gridMode }),
     stepNumber: sd.stepNumber,
     duration: sd.duration,
@@ -89,7 +89,7 @@ export function stepDataToStep(sd: StepData): Step {
  * effective propType) — those authored values are LOST here. See the file
  * header: never round-trip a step through this on a render/persist/author path.
  */
-export function motionToMotionData(m: Motion, color: MotionColor): MotionData {
+export function motionToMotionData(m: Motion, color: HandSide): MotionData {
   return createMotionData({
     // tka-types Motion.motionType is broader (it also includes "shift", which the
     // app models separately as HandMotionType). A real app step motion is never
@@ -102,7 +102,7 @@ export function motionToMotionData(m: Motion, color: MotionColor): MotionData {
     startOrientation: m.startOrientation,
     endOrientation: m.endOrientation,
     turns: m.turns,
-    color,
+    hand: color,
     ...(m.plane !== undefined && { plane: m.plane }),
     ...(m.prefloatMotionType !== undefined && {
       prefloatMotionType: m.prefloatMotionType as AppMotionType,
@@ -136,8 +136,8 @@ export function stepToStepData(step: Step): StepData {
     startPosition: step.startPosition,
     endPosition: step.endPosition,
     motions: {
-      [MotionColor.BLUE]: motionToMotionData(step.motions.blue, MotionColor.BLUE),
-      [MotionColor.RED]: motionToMotionData(step.motions.red, MotionColor.RED),
+      [HandSide.LEFT]: motionToMotionData(step.motions.left, HandSide.LEFT),
+      [HandSide.RIGHT]: motionToMotionData(step.motions.right, HandSide.RIGHT),
     },
     ...(step.gridMode !== undefined && { gridMode: step.gridMode }),
     stepNumber: step.stepNumber,

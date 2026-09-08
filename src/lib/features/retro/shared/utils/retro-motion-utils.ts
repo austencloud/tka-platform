@@ -13,7 +13,7 @@ import {
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -28,7 +28,7 @@ import type { RetroHandData } from "../domain/pictograph-types";
  */
 export function motionToRetroHand(motion: MotionData): RetroHandData {
   return {
-    color: motion.color,
+    color: motion.hand,
     location: motion.startLocation,
     orientation: motion.startOrientation,
     motionType: motion.motionType,
@@ -42,7 +42,7 @@ export function motionToRetroHand(motion: MotionData): RetroHandData {
  * Fallback hand data when a motion is missing from a step.
  * Produces a static hand at north with no rotation.
  */
-export function fallbackHand(color: MotionColor): RetroHandData {
+export function fallbackHand(color: HandSide): RetroHandData {
   return {
     color,
     location: GridLocation.NORTH,

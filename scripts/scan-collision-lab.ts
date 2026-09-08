@@ -142,15 +142,15 @@ function handToPropTarget(
 
 function poseToOptimizerInput(pose: PoseDefinition): OptimizerInput {
   return {
-    blue: handToPropTarget(
-      pose.blueHand.plane,
-      pose.blueHand.position,
-      pose.blueHand.orientation
+    left: handToPropTarget(
+      pose.leftHand.plane,
+      pose.leftHand.position,
+      pose.leftHand.orientation
     ),
-    red: handToPropTarget(
-      pose.redHand.plane,
-      pose.redHand.position,
-      pose.redHand.orientation
+    right: handToPropTarget(
+      pose.rightHand.plane,
+      pose.rightHand.position,
+      pose.rightHand.orientation
     ),
   };
 }
@@ -200,11 +200,11 @@ function main() {
   const infeasible: Array<{
     id: string;
     index: number;
-    blueHand: PoseDefinition["blueHand"];
-    redHand: PoseDefinition["redHand"];
+    leftHand: PoseDefinition["leftHand"];
+    rightHand: PoseDefinition["rightHand"];
     loss: number;
     evaluations: number;
-    reachShortfallCm: { blue: number; red: number };
+    reachShortfallCm: { left: number; right: number };
     balanceMarginCm: number;
     stance: {
       footOffsetX: number;
@@ -235,13 +235,13 @@ function main() {
       infeasible.push({
         id: pose.id,
         index: i,
-        blueHand: pose.blueHand,
-        redHand: pose.redHand,
+        leftHand: pose.leftHand,
+        rightHand: pose.rightHand,
         loss: result.loss,
         evaluations: result.evaluations,
         reachShortfallCm: {
-          blue: result.simResult.reachShortfall.blue * 100,
-          red: result.simResult.reachShortfall.red * 100,
+          left: result.simResult.reachShortfall.left * 100,
+          right: result.simResult.reachShortfall.right * 100,
         },
         balanceMarginCm: result.simResult.balanceMargin * 100,
         stance: {
@@ -308,8 +308,8 @@ function main() {
     for (const p of infeasible) {
       console.log(
         `  ${p.id.padEnd(10)} loss ${p.loss.toFixed(1).padStart(6)} | ` +
-          `L reach ${p.reachShortfallCm.blue.toFixed(1).padStart(5)} cm | ` +
-          `R reach ${p.reachShortfallCm.red.toFixed(1).padStart(5)} cm`
+          `L reach ${p.reachShortfallCm.left.toFixed(1).padStart(5)} cm | ` +
+          `R reach ${p.reachShortfallCm.right.toFixed(1).padStart(5)} cm`
       );
     }
   }

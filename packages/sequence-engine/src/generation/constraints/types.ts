@@ -16,8 +16,8 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 
@@ -45,7 +45,7 @@ export interface ConstraintContext {
   level?: number;
 
   /** Turn allocation for this step's motions */
-  turnAllocation?: { blue: number; red: number };
+  turnAllocation?: { left: number; right: number };
 
   /** Grid mode (e.g. "diamond", "box") */
   gridMode?: string;

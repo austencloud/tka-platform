@@ -206,8 +206,12 @@ if (browser && dev) {
 // When the SW serves an old HTML shell that references chunk hashes the server
 // no longer has, dynamic imports fail. A single reload fetches the new manifest.
 if (browser && !dev) {
-  window.addEventListener("vite:preloadError", (event) => {
-    event.preventDefault();
+  window.addEventListener("vite:preloadError", () => {
+    // Vite turns a cancelled preload error into a fulfilled import whose value
+    // is undefined. The page is already leaving, but app startup keeps running
+    // long enough to destructure that missing module and emit a cascade of fake
+    // state/initializer failures. Let the import reject so its caller stops;
+    // the rejection listener below keeps the expected exit quiet.
     // Time-based guard, NOT cleared on boot: the old clear-on-load guard could
     // loop (fail → reload → boot clears guard → fail → reload …) when the SW
     // kept serving the same stale shell — one user logged 74 of these in a row.
@@ -228,14 +232,18 @@ if (browser && !dev) {
     const message = reason?.message || String(reason) || "Unknown rejection";
     const stack = reason?.stack;
 
-    if (
-      message.includes("ResizeObserver loop") ||
+    if (message.includes("ResizeObserver loop")) {
+      return;
+    }
+
+    const isModuleLoadFailure =
       message.includes("Failed to fetch dynamically imported module") ||
       // Safari's phrasing of the same stale-chunk failure the vite:preloadError
       // handler above already recovers from.
       message.includes("Importing a module script failed") ||
-      message.includes("MIME type")
-    ) {
+      message.includes("MIME type");
+    if (isModuleLoadFailure) {
+      event.preventDefault();
       return;
     }
 

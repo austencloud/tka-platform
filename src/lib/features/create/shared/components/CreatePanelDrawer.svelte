@@ -166,12 +166,18 @@
       styles.push(`--measured-panel-width: ${toolPanelWidth}px`);
     }
 
-    // Fill the visible Create workspace without laying controls beneath mobile navigation.
+    // Create's crossfade contains fixed drawers inside the workspace, which
+    // already excludes navigation. Subtracting navigation again clips the
+    // editor header and leaves an empty strip below its controls.
     if (fullHeightOnMobile && !isSideBySideLayout) {
-      styles.push(
-        `--panel-full-height: calc(100dvh - var(--primary-nav-height, 0px))`,
-        `--panel-bottom-offset: var(--primary-nav-height, 0px)`
-      );
+      if (createModuleContext) {
+        styles.push("--panel-full-height: 100%", "--panel-bottom-offset: 0px");
+      } else {
+        styles.push(
+          `--panel-full-height: calc(100dvh - var(--primary-nav-height, 0px))`,
+          `--panel-bottom-offset: var(--primary-nav-height, 0px)`
+        );
+      }
     }
 
     return styles.join("; ");

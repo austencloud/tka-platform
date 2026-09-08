@@ -15,8 +15,8 @@ function record(overrides: Partial<ShortCodeData> = {}): ShortCodeData {
     createdAt: "2026-07-30T00:00:00.000Z",
     createdBy: "test",
     scanCount: 0,
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
     ...overrides,
   };
 }
@@ -34,22 +34,22 @@ describe("prepareScanViewerPayload", () => {
     expect(prepared?.sequence.steps).toHaveLength(10);
     expect(prepared?.sequence.startPosition).toBeTruthy();
     expect(prepared?.propConfig).toEqual({
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
       catDogMode: false,
     });
   });
 
   it("lets URL prop intent override the shortcode record", async () => {
     const prepared = await prepareScanViewerPayload("B2ZM", record(), {
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogMode: true,
     });
 
     expect(prepared?.propConfig).toEqual({
-      bluePropType: PropType.POI,
-      redPropType: PropType.FAN,
+      leftPropType: PropType.POI,
+      rightPropType: PropType.FAN,
       catDogMode: true,
     });
   });

@@ -13,20 +13,20 @@ Dark mode is handled via CSS-first approach (:root.dark class).
 
   let {
     pictographData,
-    blueReversal = false,
-    redReversal = false,
+    leftReversal = false,
+    rightReversal = false,
   } = $props<{
     pictographData: PreparedPictographData;
-    blueReversal?: boolean;
-    redReversal?: boolean;
+    leftReversal?: boolean;
+    rightReversal?: boolean;
   }>();
 </script>
 
 <div class="option-pictograph-cell">
   <OptionPictograph
     pictograph={pictographData}
-    {blueReversal}
-    {redReversal}
+    {leftReversal}
+    {rightReversal}
   />
 </div>
 

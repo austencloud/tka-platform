@@ -27,8 +27,8 @@ export class PostStudioArtControllers {
 
   constructor(sources: {
     getSequence: () => SequenceData;
-    getBluePropType: () => string | undefined;
-    getRedPropType: () => string | undefined;
+    getLeftPropType: () => string | undefined;
+    getRightPropType: () => string | undefined;
     pathPolicy: AnimationVisibilityStateManager;
   }) {
     this.tunnel = new TunnelViewController({
@@ -36,8 +36,8 @@ export class PostStudioArtControllers {
     });
     this.mandala = new MandalaViewerController({
       getSequence: sources.getSequence,
-      getBluePropType: sources.getBluePropType,
-      getRedPropType: sources.getRedPropType,
+      getLeftPropType: sources.getLeftPropType,
+      getRightPropType: sources.getRightPropType,
       pathPolicy: sources.pathPolicy,
     });
   }

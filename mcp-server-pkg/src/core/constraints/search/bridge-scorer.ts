@@ -8,26 +8,30 @@
  * not hardcoded letter lists. This is more accurate and
  * automatically handles variations.
  *
- * Supports per-hand constraints (e.g., "blue hand lots of dashes,
- * red hand minimize dashes") by scoring each hand's motion independently.
+ * Supports per-hand constraints (e.g., "left hand lots of dashes,
+ * right hand minimize dashes") by scoring each hand's motion independently.
  */
 
-import type { ConstraintSet, IVariationConstraint, PictographData } from "../types.js";
+import type {
+  ConstraintSet,
+  IVariationConstraint,
+  PictographData,
+} from "../types.js";
 import type { HandTarget } from "../implementations/per-hand-dash-constraint.js";
 
 function countDashMotions(pictograph: PictographData): number {
   let count = 0;
-  if (pictograph.blueMotion.motionType === "dash") count++;
-  if (pictograph.redMotion.motionType === "dash") count++;
+  if (pictograph.leftMotion.motionType === "dash") count++;
+  if (pictograph.rightMotion.motionType === "dash") count++;
   return count;
 }
 
 function countShiftMotions(pictograph: PictographData): number {
   let count = 0;
-  const blueType = pictograph.blueMotion.motionType;
-  const redType = pictograph.redMotion.motionType;
-  if (blueType === "pro" || blueType === "anti") count++;
-  if (redType === "pro" || redType === "anti") count++;
+  const leftType = pictograph.leftMotion.motionType;
+  const rightType = pictograph.rightMotion.motionType;
+  if (leftType === "pro" || leftType === "anti") count++;
+  if (rightType === "pro" || rightType === "anti") count++;
   return count;
 }
 
@@ -51,7 +55,9 @@ export function getDashScoreFromPictograph(pictograph: PictographData): number {
  * - 1 dash = 0.5
  * - 2 dashes = 0.25
  */
-export function getShiftScoreFromPictograph(pictograph: PictographData): number {
+export function getShiftScoreFromPictograph(
+  pictograph: PictographData
+): number {
   const dashCount = countDashMotions(pictograph);
   const shiftCount = countShiftMotions(pictograph);
 
@@ -65,14 +71,15 @@ export function getShiftScoreFromPictograph(pictograph: PictographData): number 
 }
 
 /**
- * Used for per-hand constraints like "blue hand maximize dashes".
+ * Used for per-hand constraints like "left hand maximize dashes".
  */
 export function getPerHandDashScore(
   pictograph: PictographData,
   hand: HandTarget,
   mode: "maximize" | "minimize"
 ): number {
-  const motion = hand === "blue" ? pictograph.blueMotion : pictograph.redMotion;
+  const motion =
+    hand === "left" ? pictograph.leftMotion : pictograph.rightMotion;
   const isDash = motion.motionType === "dash";
   const isShift = motion.motionType === "pro" || motion.motionType === "anti";
 
@@ -94,16 +101,16 @@ export function getPerHandDashScore(
  */
 export function getCombinedPerHandDashScore(
   pictograph: PictographData,
-  blueMode: "maximize" | "minimize" | null,
-  redMode: "maximize" | "minimize" | null
+  leftMode: "maximize" | "minimize" | null,
+  rightMode: "maximize" | "minimize" | null
 ): number {
   const scores: number[] = [];
 
-  if (blueMode) {
-    scores.push(getPerHandDashScore(pictograph, "blue", blueMode));
+  if (leftMode) {
+    scores.push(getPerHandDashScore(pictograph, "left", leftMode));
   }
-  if (redMode) {
-    scores.push(getPerHandDashScore(pictograph, "red", redMode));
+  if (rightMode) {
+    scores.push(getPerHandDashScore(pictograph, "right", rightMode));
   }
 
   if (scores.length === 0) return 0.5;
@@ -113,10 +120,13 @@ export function getCombinedPerHandDashScore(
 /**
  * Falls back to checking letter name patterns if no pictograph provided.
  */
-export function isDashLetter(letter: string, pictographs?: PictographData[]): boolean {
+export function isDashLetter(
+  letter: string,
+  pictographs?: PictographData[]
+): boolean {
   if (pictographs) {
-    const variations = pictographs.filter(p => p.letter === letter);
-    return variations.some(p => countDashMotions(p) > 0);
+    const variations = pictographs.filter((p) => p.letter === letter);
+    return variations.some((p) => countDashMotions(p) > 0);
   }
   // Fallback: check if letter name suggests dash (Type 3/4/5 patterns)
   return letter.endsWith("-") || ["Φ", "Ψ", "Λ"].includes(letter);
@@ -126,9 +136,12 @@ export function isDashLetter(letter: string, pictographs?: PictographData[]): bo
  * Returns the score of the first variation (most variations of the same
  * letter have the same motion types).
  */
-export function getDashScore(letter: string, pictographs?: PictographData[]): number {
+export function getDashScore(
+  letter: string,
+  pictographs?: PictographData[]
+): number {
   if (pictographs) {
-    const variation = pictographs.find(p => p.letter === letter);
+    const variation = pictographs.find((p) => p.letter === letter);
     if (variation) {
       return getDashScoreFromPictograph(variation);
     }
@@ -157,10 +170,13 @@ export function scoreBridgeOptions(
 
   // Check for per-hand constraints first (higher priority)
   const perHandConstraints = checkForPerHandDashConstraints(constraintSet);
-  const hasPerHandConstraints = perHandConstraints.blue !== null || perHandConstraints.red !== null;
+  const hasPerHandConstraints =
+    perHandConstraints.left !== null || perHandConstraints.right !== null;
 
-  const hasDashPreference = !hasPerHandConstraints && checkForDashPreference(constraintSet);
-  const hasDashAvoidance = !hasPerHandConstraints && checkForDashAvoidance(constraintSet);
+  const hasDashPreference =
+    !hasPerHandConstraints && checkForDashPreference(constraintSet);
+  const hasDashAvoidance =
+    !hasPerHandConstraints && checkForDashAvoidance(constraintSet);
 
   const scored = bridgeOptions.map((letter) => {
     let score = 0.5; // Base score
@@ -172,8 +188,8 @@ export function scoreBridgeOptions(
       // Score based on per-hand constraints
       score = getCombinedPerHandDashScore(
         variation,
-        perHandConstraints.blue,
-        perHandConstraints.red
+        perHandConstraints.left,
+        perHandConstraints.right
       );
     } else if (hasDashPreference) {
       // Score based on actual motion data when available
@@ -228,7 +244,11 @@ export function selectBestBridge(
     return bridgeOptions[0] ?? null;
   }
 
-  const scored = scoreBridgeOptions(bridgeOptions, constraintSet, allPictographs);
+  const scored = scoreBridgeOptions(
+    bridgeOptions,
+    constraintSet,
+    allPictographs
+  );
   return scored[0]?.letter ?? bridgeOptions[0] ?? null;
 }
 
@@ -236,12 +256,15 @@ export function selectBestBridge(
  * Returns an object with the mode for each hand (or null if no constraint).
  */
 function checkForPerHandDashConstraints(constraintSet: ConstraintSet): {
-  blue: "maximize" | "minimize" | null;
-  red: "maximize" | "minimize" | null;
+  left: "maximize" | "minimize" | null;
+  right: "maximize" | "minimize" | null;
 } {
-  const result: { blue: "maximize" | "minimize" | null; red: "maximize" | "minimize" | null } = {
-    blue: null,
-    red: null,
+  const result: {
+    left: "maximize" | "minimize" | null;
+    right: "maximize" | "minimize" | null;
+  } = {
+    left: null,
+    right: null,
   };
 
   const allConstraints = [...constraintSet.hard, ...constraintSet.soft];
@@ -249,27 +272,27 @@ function checkForPerHandDashConstraints(constraintSet: ConstraintSet): {
   for (const constraint of allConstraints) {
     const desc = constraint.description?.toLowerCase() ?? "";
 
-    // Check for blue hand constraint
-    if (desc.includes("blue") && desc.includes("hand")) {
+    // Check for left hand constraint
+    if (desc.includes("left") && desc.includes("hand")) {
       if (desc.includes("maximize") || desc.includes("dash")) {
         if (!desc.includes("minimize") && !desc.includes("no dash")) {
-          result.blue = "maximize";
+          result.left = "maximize";
         }
       }
       if (desc.includes("minimize") || desc.includes("no dash")) {
-        result.blue = "minimize";
+        result.left = "minimize";
       }
     }
 
-    // Check for red hand constraint
-    if (desc.includes("red") && desc.includes("hand")) {
+    // Check for right hand constraint
+    if (desc.includes("right") && desc.includes("hand")) {
       if (desc.includes("maximize") || desc.includes("dash")) {
         if (!desc.includes("minimize") && !desc.includes("no dash")) {
-          result.red = "maximize";
+          result.right = "maximize";
         }
       }
       if (desc.includes("minimize") || desc.includes("no dash")) {
-        result.red = "minimize";
+        result.right = "minimize";
       }
     }
   }

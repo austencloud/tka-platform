@@ -22,8 +22,8 @@ import type { GridPosition, GridMode } from "$lib/shared/pictograph/grid/domain/
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 export interface StepMotions {
-  readonly blue: MotionData;
-  readonly red: MotionData;
+  readonly left: MotionData;
+  readonly right: MotionData;
 }
 
 export interface StepData extends Step {
@@ -38,8 +38,8 @@ export interface StepData extends Step {
   // Beat context properties (app extras; reversals are re-derived on read by
   // processReversals — canonical Step deliberately does not store them)
   readonly duration: number;
-  readonly blueReversal: boolean;
-  readonly redReversal: boolean;
+  readonly leftReversal: boolean;
+  readonly rightReversal: boolean;
   readonly isBlank: boolean;
 
   // Pictograph-level extras formerly inherited from PictographData

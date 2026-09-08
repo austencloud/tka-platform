@@ -1,10 +1,11 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface VariationArrow {
   pictographData: PictographData;
-  arrowColor: "blue" | "red";
+  arrowHand: HandSide;
 }
 
 /** Yields every (pictograph variation, arrow) pair the renderer can draw,
@@ -17,10 +18,10 @@ export async function enumerateVariationArrows(): Promise<VariationArrow[]> {
   const box = await letterQueryHandler.getAllPictographVariations(GridMode.BOX);
   const out: VariationArrow[] = [];
   for (const pictographData of [...diamond, ...box]) {
-    if (pictographData.motions?.blue)
-      out.push({ pictographData, arrowColor: "blue" });
-    if (pictographData.motions?.red)
-      out.push({ pictographData, arrowColor: "red" });
+    if (pictographData.motions?.left)
+      out.push({ pictographData, arrowHand: HandSide.LEFT });
+    if (pictographData.motions?.right)
+      out.push({ pictographData, arrowHand: HandSide.RIGHT });
   }
   return out;
 }

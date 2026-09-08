@@ -10,7 +10,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -31,7 +31,7 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 // anti counter-rotates (CCW, in→out). Hybrid = blue anti + red pro (proof:
 // right pro, left anti).
 type Hand = { type: MotionType; rot: RotationDirection; from: GridLocation; to: GridLocation; eo: Orientation };
-type Cell = { letter: Letter; name: string; blue: Hand; red: Hand };
+type Cell = { letter: Letter; name: string; left: Hand; right: Hand };
 const pro = (from: GridLocation, to: GridLocation): Hand => ({ type: MotionType.PRO, rot: CW, from, to, eo: IN });
 const anti = (from: GridLocation, to: GridLocation): Hand => ({ type: MotionType.ANTI, rot: CCW, from, to, eo: OUT });
 
@@ -41,23 +41,23 @@ const BOXES: Box[] = [
   {
     key: "abc",
     cells: [
-      { letter: Letter.A, name: "A", blue: pro(SO_, W), red: pro(N, E) },
-      { letter: Letter.B, name: "B", blue: anti(SO_, W), red: anti(N, E) },
-      { letter: Letter.C, name: "C", blue: anti(SO_, W), red: pro(N, E) },
+      { letter: Letter.A, name: "A", left: pro(SO_, W), right: pro(N, E) },
+      { letter: Letter.B, name: "B", left: anti(SO_, W), right: anti(N, E) },
+      { letter: Letter.C, name: "C", left: anti(SO_, W), right: pro(N, E) },
     ],
   },
   // G/H/I - β→β Tog-Same: both hands e→s.
   {
     key: "ghi",
     cells: [
-      { letter: Letter.G, name: "G", blue: pro(E, SO_), red: pro(E, SO_) },
-      { letter: Letter.H, name: "H", blue: anti(E, SO_), red: anti(E, SO_) },
-      { letter: Letter.I, name: "I", blue: anti(E, SO_), red: pro(E, SO_) },
+      { letter: Letter.G, name: "G", left: pro(E, SO_), right: pro(E, SO_) },
+      { letter: Letter.H, name: "H", left: anti(E, SO_), right: anti(E, SO_) },
+      { letter: Letter.I, name: "I", left: anti(E, SO_), right: pro(E, SO_) },
     ],
   },
 ];
 
-const hand = (color: MotionColor, h: Hand) =>
+const hand = (color: HandSide, h: Hand) =>
   createMotionData({
     motionType: h.type,
     rotationDirection: h.rot,
@@ -66,7 +66,7 @@ const hand = (color: MotionColor, h: Hand) =>
     startOrientation: IN,
     endOrientation: h.eo,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -76,16 +76,16 @@ const letterStep = (c: Cell, stepNumber: number | null = null): StepData =>
     id: `bl-${c.name}${stepNumber === null ? "" : `-${stepNumber}`}`,
     letter: c.letter,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
-    endPosition: getGridPositionFromLocations(c.blue.to, c.red.to),
+    startPosition: getGridPositionFromLocations(c.left.from, c.right.from),
+    endPosition: getGridPositionFromLocations(c.left.to, c.right.to),
     motions: {
-      blue: hand(MotionColor.BLUE, c.blue),
-      red: hand(MotionColor.RED, c.red),
+      left: hand(HandSide.LEFT, c.left),
+      right: hand(HandSide.RIGHT, c.right),
     },
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
   }) as unknown as StepData;
 

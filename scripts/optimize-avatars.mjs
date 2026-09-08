@@ -13,47 +13,34 @@
  * Output: static/models/avatars/_optimized/chXX.glb
  * Then upload to R2 tka-assets under models/avatars/chXX.glb.
  */
-import { execFileSync } from "node:child_process";
-import { readdirSync, mkdirSync, statSync, rmSync } from "node:fs";
+import { readdirSync, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { optimizeCharacterGlb } from "./lib/optimize-character-glb.mjs";
 
 const SRC_DIR = "static/models/avatars";
 const OUT_DIR = join(SRC_DIR, "_optimized");
-const TMP = "static/models/avatars/_tmp";
+const TMP_ROOT = "static/models/avatars/_tmp";
 
 const AVATARS = readdirSync(SRC_DIR)
   .filter((f) => /^ch\d+\.glb$/.test(f))
   .sort();
 
 mkdirSync(OUT_DIR, { recursive: true });
-mkdirSync(TMP, { recursive: true });
-
-const gt = (args) =>
-  execFileSync("npx", ["gltf-transform", ...args], {
-    stdio: ["ignore", "pipe", "pipe"],
-    shell: true,
-  });
-
 const mb = (p) => (statSync(p).size / 1024 / 1024).toFixed(2);
 
 for (const file of AVATARS) {
   const src = join(SRC_DIR, file);
   const out = join(OUT_DIR, file);
-  const a = join(TMP, "a.glb");
-  const b = join(TMP, "b.glb");
-  const c = join(TMP, "c.glb");
-  const d = join(TMP, "d.glb");
   try {
-    gt(["resize", src, a, "--width", "1024", "--height", "1024"]);
-    gt(["webp", a, b, "--quality", "85"]);
-    gt(["resample", b, c]);
-    gt(["prune", c, d]);
-    gt(["dedup", d, out]);
+    optimizeCharacterGlb({
+      input: src,
+      output: out,
+      temporaryDirectory: join(TMP_ROOT, file.replace(/\.glb$/, "")),
+    });
     console.log(`${file}: ${mb(src)} MB -> ${mb(out)} MB`);
   } catch (err) {
     console.error(`${file}: FAILED`, err.stderr?.toString() ?? err.message);
   }
 }
 
-rmSync(TMP, { recursive: true, force: true });
 console.log("Done. Optimized GLBs in", OUT_DIR);

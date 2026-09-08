@@ -10,6 +10,11 @@ export interface DirectorMoveWindow {
   end: number;
 }
 
+/** Two-decimal display for a user-facing seconds/meters value — strips the
+ * float noise a raw template interpolation would print (e.g. 7.272727...)
+ * without padding a whole number with trailing zeros. */
+const fmt = (n: number): string => String(Number(n.toFixed(2)));
+
 export function allocateMoveWindows(
   moves: readonly { durationSeconds?: number }[],
   durationSeconds: number,
@@ -21,7 +26,7 @@ export function allocateMoveWindows(
   );
   if (explicit > durationSeconds + 1e-6) {
     throw new Error(
-      `${subject} total ${explicit}s but the scene's duration is ${durationSeconds}s.`
+      `${subject} total ${fmt(explicit)}s but the scene's duration is ${fmt(durationSeconds)}s.`
     );
   }
   const openCount = moves.filter(

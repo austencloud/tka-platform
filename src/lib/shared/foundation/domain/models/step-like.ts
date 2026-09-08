@@ -18,8 +18,8 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { MotionWithView } from "$lib/shared/pictograph/shared/domain/models/motion-view";
 
 export interface StepLikeMotions {
-  readonly blue?: MotionWithView;
-  readonly red?: MotionWithView;
+  readonly left?: MotionWithView;
+  readonly right?: MotionWithView;
 }
 
 export interface StepLike {

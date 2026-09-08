@@ -24,15 +24,15 @@ function buildLetterPatterns(): Map<string, Letter> {
   const patterns = new Map<string, Letter>();
 
   patterns.set(
-    "blue:static|red:static|blueStart:south|blueEnd:south|redStart:north|redEnd:north|blueRot:no_rotation|redRot:no_rotation|blueTurns:0|redTurns:0|grid:diamond",
+    "left:static|right:static|leftStart:south|leftEnd:south|rightStart:north|rightEnd:north|leftRot:no_rotation|rightRot:no_rotation|leftTurns:0|rightTurns:0|grid:diamond",
     Letter.ALPHA
   );
   patterns.set(
-    "blue:static|red:static|blueStart:south|blueEnd:south|redStart:south|redEnd:south|blueRot:no_rotation|redRot:no_rotation|blueTurns:0|redTurns:0|grid:diamond",
+    "left:static|right:static|leftStart:south|leftEnd:south|rightStart:south|rightEnd:south|leftRot:no_rotation|rightRot:no_rotation|leftTurns:0|rightTurns:0|grid:diamond",
     Letter.BETA
   );
   patterns.set(
-    "blue:static|red:static|blueStart:south|blueEnd:south|redStart:east|redEnd:east|blueRot:no_rotation|redRot:no_rotation|blueTurns:0|redTurns:0|grid:diamond",
+    "left:static|right:static|leftStart:south|leftEnd:south|rightStart:east|rightEnd:east|leftRot:no_rotation|rightRot:no_rotation|leftTurns:0|rightTurns:0|grid:diamond",
     Letter.GAMMA
   );
 
@@ -40,42 +40,46 @@ function buildLetterPatterns(): Map<string, Letter> {
 }
 
 function createMotionSignature(
-  blueMotion: MotionData,
-  redMotion: MotionData,
+  leftMotion: MotionData,
+  rightMotion: MotionData,
   gridMode: GridMode
 ): string {
   return [
-    `blue:${blueMotion.motionType}`,
-    `red:${redMotion.motionType}`,
-    `blueStart:${blueMotion.startLocation}`,
-    `blueEnd:${blueMotion.endLocation}`,
-    `redStart:${redMotion.startLocation}`,
-    `redEnd:${redMotion.endLocation}`,
-    `blueRot:${blueMotion.rotationDirection}`,
-    `redRot:${redMotion.rotationDirection}`,
-    `blueTurns:${blueMotion.turns}`,
-    `redTurns:${redMotion.turns}`,
+    `left:${leftMotion.motionType}`,
+    `right:${rightMotion.motionType}`,
+    `leftStart:${leftMotion.startLocation}`,
+    `leftEnd:${leftMotion.endLocation}`,
+    `rightStart:${rightMotion.startLocation}`,
+    `rightEnd:${rightMotion.endLocation}`,
+    `leftRot:${leftMotion.rotationDirection}`,
+    `rightRot:${rightMotion.rotationDirection}`,
+    `leftTurns:${leftMotion.turns}`,
+    `rightTurns:${rightMotion.turns}`,
     `grid:${gridMode}`,
   ].join("|");
 }
 
 function isShiftMotion(motionType: MotionType): boolean {
-  const shiftTypes: MotionType[] = [MotionType.PRO, MotionType.ANTI, MotionType.FLOAT];
+  const shiftTypes: MotionType[] = [
+    MotionType.PRO,
+    MotionType.ANTI,
+    MotionType.FLOAT,
+  ];
   return shiftTypes.includes(motionType);
 }
 
 function findPartialMatch(
-  blueMotion: MotionData,
-  redMotion: MotionData
+  leftMotion: MotionData,
+  rightMotion: MotionData
 ): LetterDerivationResult | null {
   const matchedParams: string[] = [];
 
   if (
-    blueMotion.motionType === MotionType.STATIC &&
-    redMotion.motionType === MotionType.STATIC
+    leftMotion.motionType === MotionType.STATIC &&
+    rightMotion.motionType === MotionType.STATIC
   ) {
     matchedParams.push("static_motions");
-    const positionKey = `${blueMotion.startLocation}_${redMotion.startLocation}`;
+    const positionKey = `${leftMotion.startLocation}_${rightMotion.startLocation}`;
     const staticLetterMap: Record<string, Letter> = {
       south_north: Letter.ALPHA,
       south_south: Letter.BETA,
@@ -84,15 +88,22 @@ function findPartialMatch(
     const letter = staticLetterMap[positionKey];
     if (letter) {
       matchedParams.push("position_mapping");
-      return { letter, confidence: "partial", matchedParameters: matchedParams };
+      return {
+        letter,
+        confidence: "partial",
+        matchedParameters: matchedParams,
+      };
     }
   }
 
-  if (isShiftMotion(blueMotion.motionType) && isShiftMotion(redMotion.motionType)) {
+  if (
+    isShiftMotion(leftMotion.motionType) &&
+    isShiftMotion(rightMotion.motionType)
+  ) {
     matchedParams.push("dual_shift");
     if (
-      blueMotion.motionType === MotionType.PRO &&
-      redMotion.motionType === MotionType.PRO
+      leftMotion.motionType === MotionType.PRO &&
+      rightMotion.motionType === MotionType.PRO
     ) {
       return {
         letter: Letter.A,
@@ -106,17 +117,21 @@ function findPartialMatch(
 }
 
 export function deriveLetterFromMotions(
-  blueMotion: MotionData,
-  redMotion: MotionData,
+  leftMotion: MotionData,
+  rightMotion: MotionData,
   gridMode: GridMode = GridMode.DIAMOND
 ): LetterDerivationResult {
-  const signature = createMotionSignature(blueMotion, redMotion, gridMode);
+  const signature = createMotionSignature(leftMotion, rightMotion, gridMode);
   const exactMatch = letterPatterns.get(signature);
   if (exactMatch) {
-    return { letter: exactMatch, confidence: "exact", matchedParameters: ["all"] };
+    return {
+      letter: exactMatch,
+      confidence: "exact",
+      matchedParameters: ["all"],
+    };
   }
 
-  const partialMatch = findPartialMatch(blueMotion, redMotion);
+  const partialMatch = findPartialMatch(leftMotion, rightMotion);
   if (partialMatch) return partialMatch;
 
   return { letter: null, confidence: "none", matchedParameters: [] };
@@ -125,17 +140,20 @@ export function deriveLetterFromMotions(
 export function deriveLetterFromPictograph(
   pictograph: PictographData
 ): LetterDerivationResult {
-  if (!pictograph.motions.blue || !pictograph.motions.red) {
+  if (!pictograph.motions.left || !pictograph.motions.right) {
     return { letter: null, confidence: "none", matchedParameters: [] };
   }
-  return deriveLetterFromMotions(pictograph.motions.blue, pictograph.motions.red);
+  return deriveLetterFromMotions(
+    pictograph.motions.left,
+    pictograph.motions.right
+  );
 }
 
 export function validateLetterMatch(
   letter: Letter,
-  blueMotion: MotionData,
-  redMotion: MotionData
+  leftMotion: MotionData,
+  rightMotion: MotionData
 ): boolean {
-  const result = deriveLetterFromMotions(blueMotion, redMotion);
+  const result = deriveLetterFromMotions(leftMotion, rightMotion);
   return result.letter === letter && result.confidence === "exact";
 }

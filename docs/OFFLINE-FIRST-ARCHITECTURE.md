@@ -29,6 +29,12 @@ Transform Flow Arts Composer into the gold standard for offline-first web apps -
 | Conflict resolution | ✅ Working | `src/lib/shared/offline/services/conflict-resolver.ts` - `_version` tracking wired into `library-repository.ts`. No prompt UI is registered: resolution defaults to server-wins, and the user gets a toast that their offline edit was replaced |
 | Connection quality | ✅ Detected | `src/lib/shared/sync/services/network-status-monitor.ts` - Network Information API |
 
+## Desktop Build (Tauri)
+
+The desktop build bundles every 3D asset, the deck sequences, and the public
+gallery index into the installer and serves them through a local URI scheme,
+so it runs with no network at all. Details: `docs/reference/desktop-offline-bundle.md`.
+
 ## What's Missing
 
 1. **Background Sync API** - `hooks.client.ts:200-204` registers the `tka-sync-queue` tag, but `static/sw.js` has no `sync` listener, so the registration is a no-op. Nothing replays after the tab closes; queued work syncs only while the app is open.

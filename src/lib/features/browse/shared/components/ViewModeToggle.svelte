@@ -3,11 +3,11 @@
 
   Two control groups:
   1. Subject: Props / Hands (what layer to view)
-  2. Left/Right color chips (which motion(s) to show)
+  2. Left/Right hand chips (which motion(s) to show)
 
-  The color chips map to BrowseViewMode's granularity + color fields:
+  The chips map to BrowseViewMode's granularity + hand fields:
   - Both active  -> granularity: "combined"
-  - One active   -> granularity: "solo", color: active chip's color
+  - One active   -> granularity: "solo", hand: active performer hand
   - Last deactivated -> reactivate both (combined)
 -->
 <script lang="ts">
@@ -21,11 +21,11 @@
 
   let { viewMode, onViewModeChange }: Props = $props();
 
-  const showBlue = $derived(
-    viewMode.granularity === "combined" || viewMode.color === "blue"
+  const showLeft = $derived(
+    viewMode.granularity === "combined" || viewMode.hand === "left"
   );
-  const showRed = $derived(
-    viewMode.granularity === "combined" || viewMode.color === "red"
+  const showRight = $derived(
+    viewMode.granularity === "combined" || viewMode.hand === "right"
   );
 
   function setSubject(subject: BrowseViewMode["subject"]): void {
@@ -33,23 +33,23 @@
     onViewModeChange({ ...viewMode, subject });
   }
 
-  function toggleBlue(): void {
-    if (showBlue && showRed) {
-      // Both on → isolate blue (hide red)
-      onViewModeChange({ ...viewMode, granularity: "solo", color: "blue" });
+  function toggleLeft(): void {
+    if (showLeft && showRight) {
+      // Both on → isolate the left hand.
+      onViewModeChange({ ...viewMode, granularity: "solo", hand: "left" });
     } else {
       // Blue is either the solo one or the inactive one → show both
-      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
+      onViewModeChange({ ...viewMode, granularity: "combined", hand: "left" });
     }
   }
 
-  function toggleRed(): void {
-    if (showBlue && showRed) {
-      // Both on → isolate red (hide blue)
-      onViewModeChange({ ...viewMode, granularity: "solo", color: "red" });
+  function toggleRight(): void {
+    if (showLeft && showRight) {
+      // Both on → isolate the right hand.
+      onViewModeChange({ ...viewMode, granularity: "solo", hand: "right" });
     } else {
       // Red is either the solo one or the inactive one → show both
-      onViewModeChange({ ...viewMode, granularity: "combined", color: "blue" });
+      onViewModeChange({ ...viewMode, granularity: "combined", hand: "left" });
     }
   }
 </script>
@@ -79,10 +79,10 @@
 
   <!-- Left/Right color chips -->
   <MotionColorChips
-    {showBlue}
-    {showRed}
-    onToggleBlue={toggleBlue}
-    onToggleRed={toggleRed}
+    {showLeft}
+    {showRight}
+    onToggleLeft={toggleLeft}
+    onToggleRight={toggleRight}
   />
 </div>
 

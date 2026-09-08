@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "earth-root-terrace",
+  "title": "Earth: The Root Terrace",
+  "domainProofRequired": true,
+  "currentGate": 5,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/2026-08-11-museum-exhibit-hallway-architecture-design.md",
+    "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+    "planContract": "src/lib/features/museum/data/earth-root-terrace-terrain.ts",
+    "decisionRecord": "docs/superpowers/specs/earth-root-terrace/2026-09-07-earth-production-decision.md",
+    "museumTrackerItems": [
+      "nJVCzC1ok3pHQ4VvbiyB"
+    ],
+    "note": "The sealed hallway architecture gives Earth the elevated terrace climb above the performers and the terrace-overlook signature move; the Phase 0 canon row gives the verb COMPARE, the barrier ELEVATION and the payoff of three unison figures aligned. Tracker question LweZ97oG (Earth Compression) is unanswered and nothing here depends on it."
+  },
+  "sequences": [
+    {
+      "letter": "G",
+      "performerId": "cave-earth-automaton-g",
+      "sequenceId": "cave-earth-seq-g",
+      "catalogId": "tnd-tog-same-gggg",
+      "propType": "staff"
+    },
+    {
+      "letter": "H",
+      "performerId": "cave-earth-automaton-h",
+      "sequenceId": "cave-earth-seq-h",
+      "catalogId": "tnd-tog-same-hhhh",
+      "propType": "staff"
+    },
+    {
+      "letter": "I",
+      "performerId": "cave-earth-automaton-i",
+      "sequenceId": "cave-earth-seq-i",
+      "catalogId": "tnd-tog-same-iiii",
+      "propType": "staff"
+    }
+  ],
+  "sequenceFingerprints": [],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "The three cases are the TOGETHER-SAME row: G pro/pro, H anti/anti, I blue anti with red pro, bound to the live catalog ids tnd-tog-same-gggg, -hhhh and -iiii.",
+      "evidence": [
+        "src/lib/features/museum/data/earth-root-terrace-terrain.ts",
+        "src/lib/features/museum/data/museum-exhibit-sequences.ts"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "invention",
+      "statement": "The visitor climbs a ramp to a terrace 2.8 m above the door datum and reads all three cases from above, on a rootbed 5.2 m below the terrace, with no way down.",
+      "evidence": [
+        "docs/superpowers/specs/2026-08-11-museum-exhibit-hallway-architecture-design.md",
+        "docs/superpowers/specs/earth-root-terrace/2026-09-07-earth-production-decision.md"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "invention",
+      "statement": "The payoff is a single eye on the landing half a metre from the rail, from which the three unison figures nest away down one axis and read as one shape at three scales.",
+      "evidence": [
+        "docs/superpowers/specs/earth-root-terrace/2026-09-07-earth-production-decision.md",
+        "tests/unit/museum/earth-root-terrace-terrain.test.ts"
+      ]
+    },
+    {
+      "id": "C-004",
+      "class": "literal",
+      "statement": "Elemental associations are never spoken in the wing. The only text on the shell is the class stamp TOGETHER-SAME and the three case letters.",
+      "evidence": [
+        "scripts/build-earth-root-terrace-graybox.py"
+      ]
+    }
+  ],
+  "exemptions": [],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "pending",
+      "evidence": [
+        {
+          "kind": "plan-contract",
+          "path": "src/lib/features/museum/data/earth-root-terrace-terrain.ts",
+          "sha256": "c715bb08294d29370aa62c142fb7305301cf834c586ad44dd479a838a8932229",
+          "note": "The plan and its terrain program, derived from the compiled grid."
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/earth-root-terrace/earth-root-terrace-blender-plan.json",
+          "sha256": "c8773ac37575c77bcec6f4b1dfe902c27e2abb433bfc165cd6c5e8a6f3f38f3d",
+          "note": "Hash-stamped Blender-frame contract. sourceDigest a0e76c90eab4dec850bad5b806d76dd1d8a5671d5f5cadc82d9aa68df2197efb; the production build refuses to run against any other."
+        },
+        {
+          "kind": "blender-contract",
+          "path": "src/lib/features/museum/data/earth-root-terrace-blender-contract.ts",
+          "sha256": "b2a589831877ab63a0f9dccdd2605880fde2a405761d9595d2c76d03ad0590b2",
+          "note": "The Blender frame and the seven QA cameras."
+        },
+        {
+          "kind": "exporter",
+          "path": "scripts/export-earth-root-terrace-blender-plan.ts",
+          "sha256": "8a48f330d6e202cfcfc0fc58541ee400a373289d4df7804f7bd60a5226cc6fa5",
+          "note": "The only writer of the manifest."
+        }
+      ],
+      "checks": [
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "tests/unit/museum/earth-root-terrace-blender-contract.test.ts (6 tests) asserts the manifest digest matches the contract and that the contract is built from the full museum grid rather than the cave rehearsal grid."
+        },
+        {
+          "name": "sequence-binding",
+          "status": "passed",
+          "evidence": "CASE_BINDINGS in earth-root-terrace-terrain.ts binds G, H and I to the live cave-earth-seq-* sequences and tnd-tog-same-* catalog ids; asserted by earth-root-terrace-terrain.test.ts."
+        },
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "The previous graybox in this wing was the Canyon Overlook, which predates the 2026-08-11 sealing. It is deleted rather than dressed. No elemental association is spoken in the shell."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "pending",
+      "evidence": [
+        {
+          "kind": "plan-contract",
+          "path": "src/lib/features/museum/data/earth-root-terrace-terrain.ts",
+          "sha256": "c715bb08294d29370aa62c142fb7305301cf834c586ad44dd479a838a8932229",
+          "note": "Doors, ramps, decks, rail line, three case positions, aven centre and the ensemble sightline all derive from the compiled grid."
+        },
+        {
+          "kind": "room-shell",
+          "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+          "sha256": "22a91e85b3b2a0c292d7d9d3a6a536c373b389ae4b2a91bfbd6107defbcc0d04",
+          "note": "cave-earth renamed to The Root Terrace, performers re-derived from the new station offsets, tile geometry suppressed."
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "tests/unit/museum/earth-root-terrace-traversal.test.ts (7 tests) drives MuseumPhysicsProvider from Fire's east door through the corridor, vestibule, ramp, terrace, corner, landing and second descent to the Air door with no isolated cell."
+        },
+        {
+          "name": "elevation-continuity",
+          "status": "passed",
+          "evidence": "tests/unit/museum/earth-root-terrace-terrain.test.ts (16 tests) asserts every deck seam is answered by the deck side, and that the rootbed and cleft are blocked at their own datums."
+        },
+        {
+          "name": "corridor-seam",
+          "status": "passed",
+          "evidence": "Fire's rock block reaches plan x 91.05 and Earth's block starts at exactly that x; Fire bores its Earth door 0.8 m past its own block face. Confirmed against the full grid, where Fire's east door lands at plan (89.25, z 56.25-58.25) and Earth's corridor arrives at the same wall across the same z span, and empirically by the bridge-driven walk below."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "The ensemble eye stands at plan (124.75, 40.75) at 2.8 m, half a metre from the rail so the bar sits under the sightline. The 84 degree camera holds all three figures, twelve degrees below the horizon at the near case and forty-seven at the far one."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "playable-graybox",
+      "status": "pending",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "scripts/build-earth-root-terrace-graybox.py",
+          "sha256": "f529829f276289c8f6317a0a721ac8226fcb244fb74fb75e676cb3fe1064d116",
+          "note": "Carves the measured shell from one rock mass: 11 carve operands, 753 carved faces, one ET_Shell_Rock. No stacked prisms."
+        },
+        {
+          "kind": "graybox-report",
+          "path": "docs/superpowers/specs/earth-root-terrace/earth-root-terrace-graybox-report.json",
+          "sha256": "60d5db4ca2957a8d1f3a0bbab16adf6aa52264276a5b1f6d9ca84d34a5c3808a",
+          "note": "Written by the build. Records the carve, the block bounds and the Fire block face at x -20.2 in the Blender frame."
+        }
+      ],
+      "checks": [
+        {
+          "name": "shell-continuity",
+          "status": "passed",
+          "evidence": "One carved ET_Shell_Rock. Floor, wall and ceiling share one surface by construction; the void is built from the graybox's two boxes rather than a bounding box, so the outside face of the corridor notch stays rock."
+        },
+        {
+          "name": "collision-parity",
+          "status": "passed",
+          "evidence": "Collision comes from createEarthRootTerraceTerrain over the same layout the carve consumes, and cave-terrain-routing.test.ts (6 tests) asserts the composed cave terrain routes the Earth bay to that program and never blocks a corridor or door tile."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "scripts/build-earth-root-terrace-production.py",
+          "sha256": "9e1db516d03a1d3e50e3d53f8c6327e7c57ae90784d8929031338b90f5cb6676",
+          "note": "Headless production build: remesh and skin the carved void, mound the rootbed through its own vertex group, split the rock into the walked route and the pit, unwrap both, bake a lightmap per piece under daylight and lantern light, denoise, export and optimise."
+        },
+        {
+          "kind": "production-glb",
+          "path": "static/models/museum/cave/earth-root-terrace.glb",
+          "sha256": "fb72d34e215fc0cff79c1d2f0c8f39e21ff8591b738f09fc1e9345043ec90273",
+          "note": "5717544 bytes. Two lightmapped rock pieces at 4096 and four trim pieces at 1024, eight materials, fourteen exported objects, WebP textures, Draco compressed."
+        },
+        {
+          "kind": "build-report",
+          "path": "docs/superpowers/specs/earth-root-terrace/earth-root-terrace-production-report.json",
+          "sha256": "dcc02628b7d94f50216731d263694c5c35b7c602bd3f52ef5d7ad99d9c85997c",
+          "note": "Written by the build: source digest, per-piece triangle counts and lightmap sizes, texture sets, UV metres per unit, export and optimise settings."
+        },
+        {
+          "kind": "runtime-owner",
+          "path": "src/lib/features/museum/components/game/EarthRootTerraceAuthored.svelte",
+          "sha256": "b9d5dd2ee35a108a306131e382974cba7284f5fc0d873f751314839f17b4503c",
+          "note": "Mounts the GLB at the room's plan centre, tunes the two emissive-only materials by name, ray-casts the mounded bed in the shell's own frame, stands four pedestals and four performers, registers four pooled point lights, dev seam window.__earth."
+        },
+        {
+          "kind": "decision-record",
+          "path": "docs/superpowers/specs/earth-root-terrace/2026-09-07-earth-production-decision.md",
+          "sha256": "b7b01cbc01b1b30ccccdb84655605f70ef4fee68155d172628b2f6cacdd2464b",
+          "note": "Seventeen numbered decisions, the verification pass, and what is left open."
+        },
+        {
+          "kind": "bridge-driven-walk",
+          "path": "session transcript 2026-09-07 (be270ac6)",
+          "sha256": null,
+          "note": "Full /museum grid on a task-owned worktree server. Stops at the Fire seam (90.5, 58.0), the corridor, the west door, the vestibule, the ramp, the terrace overlook, the landing ensemble eye and the exit approach, reading window.__earth at each. Zero console errors. The walk found and fixed two defects that no test or QA render could show: the bed ray was cast in the wrong frame and never reached the shell, and the pedestal body was still the Drowned Gallery's slate."
+        }
+      ],
+      "checks": [
+        {
+          "id": "unit-tests",
+          "command": "npx vitest run --config tests/config/vitest.config.ts tests/unit/museum/earth-root-terrace-*.test.ts tests/unit/museum/cave-terrain-routing.test.ts tests/unit/museum/museum-rendering-performance-contract.test.ts",
+          "result": "5 files, 53 tests passed (2026-09-07)"
+        },
+        {
+          "id": "museum-suite",
+          "command": "npx vitest run --config tests/config/vitest.config.ts tests/unit/museum",
+          "result": "494 of 499 passed. The five failures are in drowned-gallery-sightlines (3), earth-canyon-blender-contract (1) and earth-long-terrace-plan (1); all five fail identically on main with this branch absent."
+        },
+        {
+          "id": "bed-measurement",
+          "command": "window.__earth.bedSurface, read in the browser at the terrace",
+          "result": "G -2.478, H -2.477, I -2.534 against a plan datum of -2.400: three distinct measurements of the mound, which is the proof the ray now reaches the shell."
+        },
+        {
+          "id": "light-pool",
+          "command": "window.__earth.lights, read in the browser inside the room",
+          "result": "Four declared slots at intensities 34, 9, 9 and 14. The pool hands the shader the nearest three and the count never changes."
+        },
+        {
+          "id": "qa-renders",
+          "command": "Cycles 128 spp, AgX Medium High Contrast, OPTIX denoise",
+          "result": "Seven views in blender/qa/earth-root-terrace-production/ (not committed; blender/ is gitignored)."
+        }
+      ],
+      "approval": null,
+      "note": "Technical slice complete; awaiting Austen's walk. No approval is recorded here."
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

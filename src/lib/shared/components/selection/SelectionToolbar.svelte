@@ -18,11 +18,13 @@
     secondaryLabel?: string;
     secondaryIcon?: string;
     onSecondaryAction?: () => void;
+    secondaryDisabledWhenEmpty?: boolean;
     dangerLabel?: string;
     dangerIcon?: string;
     onDangerAction?: () => void;
     onSelectAll: () => void;
     onExitSelection: () => void;
+    showExitAction?: boolean;
     onClearSelection?: () => void;
     showClearAction?: boolean;
     primaryBusy?: boolean;
@@ -39,11 +41,13 @@
     secondaryLabel,
     secondaryIcon,
     onSecondaryAction,
+    secondaryDisabledWhenEmpty = true,
     dangerLabel,
     dangerIcon,
     onDangerAction,
     onSelectAll,
     onExitSelection,
+    showExitAction = true,
     onClearSelection,
     showClearAction = true,
     primaryBusy = false,
@@ -64,14 +68,16 @@
   aria-label="Selection actions"
 >
   <div class="toolbar-status">
-    <button
-      type="button"
-      class="toolbar-button icon-button exit-button"
-      onclick={onExitSelection}
-      aria-label="Exit selection mode"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
+    {#if showExitAction}
+      <button
+        type="button"
+        class="toolbar-button icon-button exit-button"
+        onclick={onExitSelection}
+        aria-label="Exit selection mode"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    {/if}
 
     <span class="selected-count" aria-live="polite" aria-atomic="true">
       <span class="count-sizer" aria-hidden="true">{totalCount} selected</span>
@@ -133,7 +139,8 @@
         type="button"
         class="toolbar-button secondary-button"
         onclick={onSecondaryAction}
-        disabled={selectedCount === 0 || actionsDisabled}
+        disabled={(secondaryDisabledWhenEmpty && selectedCount === 0) ||
+          actionsDisabled}
         aria-label={secondaryLabel}
       >
         <i class="fas {secondaryIcon}" aria-hidden="true"></i>
@@ -320,11 +327,7 @@
 
   .selection-toolbar.destructive-primary .danger-button:hover:not(:disabled) {
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 86%, black);
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 86%,
-      black
-    );
+    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 86%, black);
   }
 
   .toolbar-button:active:not(:disabled) {

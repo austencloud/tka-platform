@@ -11,7 +11,7 @@
  * - Better TypeScript organization
  */
 
-import type { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
+import type { HandSide, MotionType } from "../../../../shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
@@ -68,7 +68,7 @@ export class ArrowAdjustmentCalculator {
     motionData: MotionData,
     letter: string,
     location: GridLocation,
-    arrowColor?: string,
+    arrowColor?: HandSide,
     soloMode?: boolean
   ): Promise<Point> {
     try {
@@ -105,7 +105,7 @@ export class ArrowAdjustmentCalculator {
     pictographData: PictographData,
     motionData: MotionData,
     letter: string,
-    arrowColor?: string
+    arrowColor?: HandSide
   ): Promise<Point> {
     try {
       const placementFrame = createCanonicalPlacementContext(
@@ -129,7 +129,7 @@ export class ArrowAdjustmentCalculator {
     motionData: MotionData,
     letter: string,
     location: GridLocation,
-    arrowColor?: string
+    arrowColor?: HandSide
   ): Promise<Point> {
     /**
      * Calculate arrow position adjustment with proper error handling.
@@ -163,7 +163,7 @@ export class ArrowAdjustmentCalculator {
         (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW
       ) {
         console.log(
-          `[ARROW-ADJ] ${arrowColor ?? motionData.color} ${letter}` +
+          `[ARROW-ADJ] ${arrowColor ?? motionData.hand} ${letter}` +
             ` mt=${motionData.motionType} rot=${motionData.rotationDirection} loc=${location}` +
             ` | base=(${baseAdjustment.x},${baseAdjustment.y})` +
             ` final=(${finalAdjustment.x},${finalAdjustment.y})`
@@ -195,7 +195,7 @@ export class ArrowAdjustmentCalculator {
     motionData: MotionData,
     letter: string,
     location: GridLocation,
-    arrowColor?: string
+    arrowColor?: HandSide
   ): Promise<PipelineDiagnostics> {
     const placementFrame = createCanonicalPlacementContext(
       pictographData,
@@ -221,7 +221,7 @@ export class ArrowAdjustmentCalculator {
     motionData: MotionData,
     letter: string,
     location: GridLocation,
-    arrowColor?: string
+    arrowColor?: HandSide
   ): Promise<PipelineDiagnostics> {
     const diagnostics: PipelineDiagnostics = {
       activeTier: "default",
@@ -239,9 +239,9 @@ export class ArrowAdjustmentCalculator {
       try {
         const globalResolver = getGlobalAdjustmentResolver();
         if (globalResolver) {
-          const arrowKey = arrowColor || motionData.color || "blue";
+          const arrowKey = arrowColor || motionData.hand || "left";
           const thisPropType = motionData.propType?.toLowerCase() || "staff";
-          const otherColor = arrowKey === "blue" ? "red" : "blue";
+          const otherColor = arrowKey === "left" ? "right" : "left";
           const otherMotion = pictographData.motions?.[otherColor];
           const otherPropType = otherMotion?.propType?.toLowerCase() || "staff";
 
@@ -249,10 +249,10 @@ export class ArrowAdjustmentCalculator {
           const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
           const gridMode =
             motionData.gridMode ||
-            (pictographData.motions.blue && pictographData.motions.red
+            (pictographData.motions.left && pictographData.motions.right
               ? _deriveGridMode(
-                  pictographData.motions.blue,
-                  pictographData.motions.red
+                  pictographData.motions.left,
+                  pictographData.motions.right
                 )
               : GridMode.DIAMOND);
 
@@ -323,7 +323,7 @@ export class ArrowAdjustmentCalculator {
       const key = computeSpecialOverrideKey(
         pictographData,
         motionData,
-        arrowColor ?? motionData.color
+        arrowColor ?? motionData.hand
       );
       return r.getFullOverride(key)?.suppressed === true;
     })();
@@ -356,10 +356,10 @@ export class ArrowAdjustmentCalculator {
             const oriFolder = extractOriFolderFromPath(jsonResult.filePath);
             const gridMode =
               motionData.gridMode ||
-              (pictographData.motions.blue && pictographData.motions.red
+              (pictographData.motions.left && pictographData.motions.right
                 ? _deriveGridMode(
-                    pictographData.motions.blue,
-                    pictographData.motions.red
+                    pictographData.motions.left,
+                    pictographData.motions.right
                   )
                 : GridMode.DIAMOND);
             const overrideKey = generateSpecialOverrideKey({
@@ -405,10 +405,10 @@ export class ArrowAdjustmentCalculator {
             const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
             const gridMode =
               motionData.gridMode ||
-              (pictographData.motions.blue && pictographData.motions.red
+              (pictographData.motions.left && pictographData.motions.right
                 ? _deriveGridMode(
-                    pictographData.motions.blue,
-                    pictographData.motions.red
+                    pictographData.motions.left,
+                    pictographData.motions.right
                   )
                 : GridMode.DIAMOND);
             const turnsTupleArr = generateTurnsTuple(pictographData);
@@ -552,7 +552,7 @@ export class ArrowAdjustmentCalculator {
     pictographData: PictographData,
     motionData: MotionData,
     letter: string,
-    arrowColor?: string
+    arrowColor?: HandSide
   ): Promise<Point> {
     /**
      * Get base adjustment using streamlined lookup logic.
@@ -626,7 +626,7 @@ export class ArrowAdjustmentCalculator {
       const oriKey = generateOrientationKey(motionData, pictographData);
       const turnsTuple = generateTurnsTuple(pictographData);
 
-      const color = motionData.color;
+      const color = motionData.hand;
       const tempArrow = {
         id: "temp",
         arrowLocation: null,
@@ -652,7 +652,7 @@ export class ArrowAdjustmentCalculator {
   private async lookupSpecialPlacement(
     motionData: MotionData,
     pictographData: PictographData,
-    arrowColor?: string,
+    arrowColor?: HandSide,
     attributeKey?: string
   ): Promise<Point | null> {
     try {
@@ -668,7 +668,7 @@ export class ArrowAdjustmentCalculator {
         const canonicalKey = computeSpecialOverrideKey(
           pictographData,
           motionData,
-          arrowColor ?? motionData.color
+          arrowColor ?? motionData.hand
         );
         if (specialResolver.getFullOverride(canonicalKey)?.suppressed)
           return null;
@@ -679,7 +679,7 @@ export class ArrowAdjustmentCalculator {
           computeSpecialOverrideKey(
             pictographData,
             motionData,
-            arrowColor ?? motionData.color
+            arrowColor ?? motionData.hand
           )
         );
         if (override) return new Point(override.x, override.y);
@@ -699,10 +699,10 @@ export class ArrowAdjustmentCalculator {
           const oriFolder = extractOriFolderFromPath(jsonResult.filePath);
           const gridMode =
             motionData.gridMode ||
-            (pictographData.motions.blue && pictographData.motions.red
+            (pictographData.motions.left && pictographData.motions.right
               ? _deriveGridMode(
-                  pictographData.motions.blue,
-                  pictographData.motions.red
+                  pictographData.motions.left,
+                  pictographData.motions.right
                 )
               : GridMode.DIAMOND);
           const overrideKey = generateSpecialOverrideKey({
@@ -754,7 +754,7 @@ export class ArrowAdjustmentCalculator {
   private lookupPropGeometryAdjustment(
     pictographData: PictographData,
     motionData: MotionData,
-    arrowColor?: string
+    arrowColor?: HandSide
   ): { x: number; y: number } | null {
     const propGeometryResolver = getPropGeometryResolver();
     if (!propGeometryResolver) return null;
@@ -793,10 +793,10 @@ export class ArrowAdjustmentCalculator {
   }> {
     // Use gridMode from motion data if available, otherwise derive from locations
     const displayGridMode = (motionData.gridMode ||
-      (pictographData.motions.blue && pictographData.motions.red
+      (pictographData.motions.left && pictographData.motions.right
         ? _deriveGridMode(
-            pictographData.motions.blue,
-            pictographData.motions.red
+            pictographData.motions.left,
+            pictographData.motions.right
           )
         : GridMode.DIAMOND)) as GridMode;
 

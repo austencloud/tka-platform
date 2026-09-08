@@ -24,7 +24,7 @@ export function validateMotion(motion: MotionData): PoiValidationResult {
       violations.push({
         violation: PoiMotionValidity.INVALID_FLOAT_ORIENTATION,
         message: `FLOAT at ${motion.startLocation} requires ${gravityOrientation} orientation (gravity), found ${motion.startOrientation}`,
-        motionColor: motion.color,
+        motionHand: motion.hand,
       });
     }
   }
@@ -35,7 +35,7 @@ export function validateMotion(motion: MotionData): PoiValidationResult {
       violation: PoiMotionValidity.INVALID_ANTI_ZERO_TURNS,
       message:
         "ANTI with 0 turns is physically impossible with poi (no tramel motion)",
-      motionColor: motion.color,
+      motionHand: motion.hand,
     });
   }
 
@@ -50,7 +50,7 @@ export function validateMotion(motion: MotionData): PoiValidationResult {
       violation: PoiMotionValidity.INVALID_PRO_ZERO_IN,
       message:
         "PRO with 0 turns and IN orientation is not possible with poi (cannot isolate inward-facing swinging prop)",
-      motionColor: motion.color,
+      motionHand: motion.hand,
     });
   }
 
@@ -64,7 +64,7 @@ export function validateMotion(motion: MotionData): PoiValidationResult {
     violations.push({
       violation: PoiMotionValidity.INVALID_DASH_TURNS,
       message: `DASH requires minimum 0.5 turns with poi, found ${motion.turns}`,
-      motionColor: motion.color,
+      motionHand: motion.hand,
     });
   }
 
@@ -95,7 +95,7 @@ export function validateTransition(
       violation: PoiMotionValidity.INVALID_SPIN_REVERSAL,
       message:
         "Cannot instantly reverse spin direction (CW↔CCW) - needs stall or transition beat",
-      motionColor: toMotion.color,
+      motionHand: toMotion.hand,
     });
   }
 

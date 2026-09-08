@@ -4,7 +4,7 @@
  * These maps define transformations for:
  * - MIRRORED: Vertical mirroring of positions and locations
  * - FLIPPED: Horizontal mirroring of positions and locations
- * - SWAPPED: Color swapping position transformations
+ * - SWAPPED: Hand swapping position transformations
  * - INVERTED: Letter inversion mappings
  * - Compound/counterpart letter relationships
  *
@@ -182,7 +182,7 @@ export function reflectLocation(
 }
 
 /**
- * Maps positions to their color-swapped equivalents.
+ * Maps positions to their hand-swapped equivalents.
  * Used by SWAPPED LOOP type.
  *
  * Pattern:
@@ -202,12 +202,12 @@ export const SWAPPED_POSITION_MAP: Record<string, string> = {
   gamma5: "gamma11", gamma6: "gamma12", gamma7: "gamma13", gamma8: "gamma14",
   gamma9: "gamma3", gamma10: "gamma4", gamma11: "gamma5", gamma12: "gamma6",
   gamma13: "gamma7", gamma14: "gamma8", gamma15: "gamma1", gamma16: "gamma2",
-  // Zeta group - swap Blue<->Red locations
+  // Zeta group - swap Left<->Right locations
   zeta1: "zeta14", zeta2: "zeta15", zeta3: "zeta16", zeta4: "zeta9",
   zeta5: "zeta10", zeta6: "zeta11", zeta7: "zeta12", zeta8: "zeta13",
   zeta9: "zeta4", zeta10: "zeta5", zeta11: "zeta6", zeta12: "zeta7",
   zeta13: "zeta8", zeta14: "zeta1", zeta15: "zeta2", zeta16: "zeta3",
-  // Eta group - swap Blue<->Red locations
+  // Eta group - swap Left<->Right locations
   eta1: "eta16", eta2: "eta9", eta3: "eta10", eta4: "eta11",
   eta5: "eta12", eta6: "eta13", eta7: "eta14", eta8: "eta15",
   eta9: "eta2", eta10: "eta3", eta11: "eta4", eta12: "eta5",

@@ -41,6 +41,8 @@ export interface WordHeaderOptions {
   overlayComponents?: Set<LOOPComponent>;
   accentColor?: string;
   accentTintOpacity?: number;
+  /** Keep labels such as "Tog-Opp" as literal text rather than TKA glyphs. */
+  renderAsText?: boolean;
 }
 
 export interface CardFooterOptions {
@@ -241,8 +243,11 @@ export class TextRenderer {
       }
     }
 
-    const glyphImages = this.buildGlyphMap(opts.word ?? "");
-    const segments = opts.word ? compressWord(opts.word) : undefined;
+    const glyphImages = opts.renderAsText
+      ? new Map<string, GlyphImageData>()
+      : this.buildGlyphMap(opts.word ?? "");
+    const segments =
+      opts.word && !opts.renderAsText ? compressWord(opts.word) : undefined;
     const hasCompression = segments?.some(
       (s: CompressedSegment) => s.repeat > 1
     );

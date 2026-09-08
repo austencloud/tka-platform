@@ -17,14 +17,14 @@ export function detectOverlaps(topology: GridTopology, placement: PropPlacement)
   const overlaps: JunctionOverlap[] = [];
 
   for (const junction of topology.junctions) {
-    const blueAtJunction = refMatchesJunction(placement.blue, junction);
-    const redAtJunction = refMatchesJunction(placement.red, junction);
+    const leftAtJunction = refMatchesJunction(placement.left, junction);
+    const rightAtJunction = refMatchesJunction(placement.right, junction);
 
-    if (blueAtJunction && redAtJunction) {
+    if (leftAtJunction && rightAtJunction) {
       overlaps.push({
         junction,
-        blueRef: placement.blue,
-        redRef: placement.red,
+        leftRef: placement.left,
+        rightRef: placement.right,
         distance: 0,
       });
     }

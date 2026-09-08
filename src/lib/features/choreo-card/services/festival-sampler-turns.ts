@@ -236,8 +236,8 @@ function hasCleanFestivalTurnResult(
   turnIntensity: number
 ): boolean {
   const turns = sequence.steps.flatMap((step) => [
-    step.motions?.blue?.turns,
-    step.motions?.red?.turns,
+    step.motions?.left?.turns,
+    step.motions?.right?.turns,
   ]);
   return (
     turns.some((turn) => turn === turnIntensity) &&
@@ -315,20 +315,22 @@ export function applyFestivalSamplerTurnAssignment(
   if (turnIntensity === 0) {
     return updateSequenceData(base, { level: 1 });
   }
+  const frozenTurnIntensity: 1 | 0.5 | null =
+    turnIntensity === 1 ? 1 : turnIntensity === 0.5 ? 0.5 : null;
   const recipe =
-    turnIntensity === 1
+    frozenTurnIntensity === 1
       ? { level: 2 }
-      : turnIntensity === 0.5
+      : frozenTurnIntensity === 0.5
         ? { level: 3 }
         : null;
-  if (!recipe || !card.turnPattern) {
+  if (frozenTurnIntensity === null || !recipe || !card.turnPattern) {
     throw new Error(
       `Festival sampler received an unsupported frozen turn assignment: ${card.turnPattern ?? "none"} at intensity ${turnIntensity} for ${card.name}`
     );
   }
   const unit = parseTurnUnit(card.turnPattern);
   const expectedUnitLength = festivalTurnUnitLength(card, base);
-  const unitTurns = unit.flatMap((entry) => [entry.blue, entry.red]);
+  const unitTurns = unit.flatMap((entry) => [entry.left, entry.right]);
   const frozenPreset = card.turnPatternId
     ? FESTIVAL_TURN_PATTERN_PRESETS.find(
         (preset) => preset.id === card.turnPatternId
@@ -340,7 +342,7 @@ export function applyFestivalSamplerTurnAssignment(
       buildFestivalTurnPattern(
         frozenPreset,
         expectedUnitLength,
-        turnIntensity
+        frozenTurnIntensity
       ) === card.turnPattern
     : true;
   if (

@@ -54,7 +54,7 @@ interface Motionish {
 }
 
 const motionsOf = (step: AnyRec) =>
-  (step.motions ?? {}) as { blue?: Motionish; red?: Motionish };
+  (step.motions ?? {}) as { left?: Motionish; right?: Motionish };
 
 const isFloat = (m?: Motionish) =>
   String(m?.motionType ?? "").toLowerCase() === "float";
@@ -165,8 +165,8 @@ async function main(): Promise<void> {
     const hasPfFloat = embC.some((s) => {
       const m = motionsOf(s);
       return (
-        (isFloat(m.blue) && hasPrefloat(m.blue)) ||
-        (isFloat(m.red) && hasPrefloat(m.red))
+        (isFloat(m.left) && hasPrefloat(m.left)) ||
+        (isFloat(m.right) && hasPrefloat(m.right))
       );
     });
     if (!hasPfFloat) continue;
@@ -184,11 +184,11 @@ async function main(): Promise<void> {
       const em = motionsOf(embC[i]!);
       const dm = motionsOf(decC[i]!);
       const decPrefloatless =
-        (isFloat(dm.blue) && !hasPrefloat(dm.blue)) ||
-        (isFloat(dm.red) && !hasPrefloat(dm.red));
+        (isFloat(dm.left) && !hasPrefloat(dm.left)) ||
+        (isFloat(dm.right) && !hasPrefloat(dm.right));
       const embHasTestimony =
-        (isFloat(em.blue) && hasPrefloat(em.blue)) ||
-        (isFloat(em.red) && hasPrefloat(em.red));
+        (isFloat(em.left) && hasPrefloat(em.left)) ||
+        (isFloat(em.right) && hasPrefloat(em.right));
       if (!decPrefloatless || !embHasTestimony) continue;
 
       // Mint truth: the embedded step's stored letter, else its strict lookup.
@@ -260,8 +260,8 @@ async function main(): Promise<void> {
     for (const i of strict.missingStepIndexes) {
       const m = motionsOf(decC[i] ?? {});
       if (
-        (isFloat(m.blue) && !hasPrefloat(m.blue)) ||
-        (isFloat(m.red) && !hasPrefloat(m.red))
+        (isFloat(m.left) && !hasPrefloat(m.left)) ||
+        (isFloat(m.right) && !hasPrefloat(m.right))
       )
         floatGaps++;
       else otherGaps++;

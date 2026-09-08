@@ -113,7 +113,8 @@ service firebase.storage {
 
     // User avatars - generated profile pictures
     match /avatars/{userId}/{fileName} {
-      // Device photos are normalized to WebP; generated avatars remain PNG.
+      // Device photos prefer WebP and fall back to PNG when Safari cannot
+      // encode WebP; generated avatars remain PNG.
       allow create, update: if request.auth != null && request.auth.uid == userId
         && (request.resource.contentType == 'image/png'
           || request.resource.contentType == 'image/webp')

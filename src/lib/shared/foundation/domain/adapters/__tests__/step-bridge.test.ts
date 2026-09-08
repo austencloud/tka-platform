@@ -6,11 +6,11 @@ import {
 } from "../step-bridge";
 import { createStepData } from "../../factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 describe("motionDataToMotion", () => {
   it("maps structural fields and drops embedded render data", () => {
-    const md = createMotionData({ color: MotionColor.BLUE });
+    const md = createMotionData({ hand: HandSide.LEFT });
     const m = motionDataToMotion(md);
     expect(m.motionType).toBe(md.motionType);
     expect(m.startLocation).toBe(md.startLocation);
@@ -32,14 +32,14 @@ describe("stepDataToStep", () => {
       stepNumber: 1,
       duration: 1,
       motions: {
-        [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE }),
-        [MotionColor.RED]: createMotionData({ color: MotionColor.RED }),
+        [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT }),
+        [HandSide.RIGHT]: createMotionData({ hand: HandSide.RIGHT }),
       },
     });
     const step = stepDataToStep(sd);
     expect(step.stepNumber).toBe(1);
-    expect(step.motions.blue.motionType).toBe(sd.motions.blue!.motionType);
-    expect(step.motions.red.motionType).toBe(sd.motions.red!.motionType);
+    expect(step.motions.left.motionType).toBe(sd.motions.left!.motionType);
+    expect(step.motions.right.motionType).toBe(sd.motions.right!.motionType);
     expect(Object.isFrozen(step)).toBe(true);
     expect(Object.isFrozen(step.motions)).toBe(true);
     // dropped: stored reversal state
@@ -52,17 +52,17 @@ describe("stepDataToStep", () => {
     // no longer sees absent motions from factory-built steps.
     const sd = createStepData({
       stepNumber: 1,
-      motions: { [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE }) },
+      motions: { [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT }) },
     });
-    expect(sd.motions.red.isVisible).toBe(false);
+    expect(sd.motions.right.isVisible).toBe(false);
     const step = stepDataToStep(sd);
-    expect(step.motions.red.motionType).toBe("static");
+    expect(step.motions.right.motionType).toBe("static");
   });
 
   it("still throws for a RAW step (never through the factory) missing a hand", () => {
     const sd = {
       ...createStepData({ stepNumber: 1 }),
-      motions: { [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE }) },
+      motions: { [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT }) },
     } as unknown as Parameters<typeof stepDataToStep>[0];
     expect(() => stepDataToStep(sd)).toThrow(/missing its red motion/);
   });
@@ -74,8 +74,8 @@ describe("stepToStepData (reverse) + round-trip", () => {
       stepNumber: 2,
       duration: 1,
       motions: {
-        [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE, turns: 1 }),
-        [MotionColor.RED]: createMotionData({ color: MotionColor.RED }),
+        [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT, turns: 1 }),
+        [HandSide.RIGHT]: createMotionData({ hand: HandSide.RIGHT }),
       },
     });
     const step = stepDataToStep(original);
@@ -84,20 +84,20 @@ describe("stepToStepData (reverse) + round-trip", () => {
     // structural fields survive the round trip
     expect(back.stepNumber).toBe(2);
     expect(back.duration).toBe(1);
-    expect(back.motions[MotionColor.BLUE]!.motionType).toBe(
-      original.motions.blue!.motionType
+    expect(back.motions[HandSide.LEFT]!.motionType).toBe(
+      original.motions.left!.motionType
     );
-    expect(back.motions[MotionColor.BLUE]!.turns).toBe(1);
-    expect(back.motions[MotionColor.RED]!.startLocation).toBe(
-      original.motions.red!.startLocation
+    expect(back.motions[HandSide.LEFT]!.turns).toBe(1);
+    expect(back.motions[HandSide.RIGHT]!.startLocation).toBe(
+      original.motions.right!.startLocation
     );
 
     // render cache rebuilt with defaults (recomputed downstream), present + valid
-    expect(back.motions[MotionColor.BLUE]!.arrowPlacementData).toBeDefined();
-    expect(back.motions[MotionColor.BLUE]!.propPlacementData).toBeDefined();
+    expect(back.motions[HandSide.LEFT]!.arrowPlacementData).toBeDefined();
+    expect(back.motions[HandSide.LEFT]!.propPlacementData).toBeDefined();
 
     // reversal flags default false (filled by the reversal pipeline)
-    expect(back.blueReversal).toBe(false);
-    expect(back.redReversal).toBe(false);
+    expect(back.leftReversal).toBe(false);
+    expect(back.rightReversal).toBe(false);
   });
 });

@@ -23,6 +23,7 @@ The actual implementation is now in $lib/shared/components/stepper-card
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
+    appearance = "vivid",
   } = $props<{
     title: string;
     currentValue: number;
@@ -40,6 +41,7 @@ The actual implementation is now in $lib/shared/components/stepper-card
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
+    appearance?: "vivid" | "quiet";
   }>();
 </script>
 
@@ -60,4 +62,5 @@ The actual implementation is now in $lib/shared/components/stepper-card
   {gridColumnSpan}
   {cardIndex}
   {headerFontSize}
+  {appearance}
 />

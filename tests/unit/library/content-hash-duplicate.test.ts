@@ -15,7 +15,7 @@ import {
   HASH_VERSION_V1,
   HASH_VERSION_V2,
 } from "../../../src/lib/shared/library/services/sequence-content-hasher";
-import { MotionColor } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // Minimal motion data that satisfies the hasher's extraction
 function makeMotion(overrides: Record<string, unknown> = {}) {
@@ -38,13 +38,13 @@ function makeMotion(overrides: Record<string, unknown> = {}) {
 function makeStep(overrides: Record<string, unknown> = {}) {
   return {
     letter: "A",
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     duration: 1,
     motions: {
-      [MotionColor.BLUE]: makeMotion(),
-      [MotionColor.RED]: makeMotion(),
+      [HandSide.LEFT]: makeMotion(),
+      [HandSide.RIGHT]: makeMotion(),
     },
     gridMode: "diamond",
     ...overrides,
@@ -60,8 +60,8 @@ function makeSequence(overrides: Record<string, unknown> = {}) {
     gridMode: "diamond",
     startPosition: {
       motions: {
-        [MotionColor.BLUE]: makeMotion(),
-        [MotionColor.RED]: makeMotion(),
+        [HandSide.LEFT]: makeMotion(),
+        [HandSide.RIGHT]: makeMotion(),
       },
       gridMode: "diamond",
     },
@@ -106,8 +106,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       steps: [
         makeStep({
           motions: {
-            [MotionColor.BLUE]: makeMotion({ startOrientation: "out" }),
-            [MotionColor.RED]: makeMotion(),
+            [HandSide.LEFT]: makeMotion({ startOrientation: "out" }),
+            [HandSide.RIGHT]: makeMotion(),
           },
         }),
       ],
@@ -125,8 +125,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       steps: [
         makeStep({
           motions: {
-            [MotionColor.BLUE]: makeMotion({ turns: 2 }),
-            [MotionColor.RED]: makeMotion(),
+            [HandSide.LEFT]: makeMotion({ turns: 2 }),
+            [HandSide.RIGHT]: makeMotion(),
           },
         }),
       ],
@@ -144,8 +144,8 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
       steps: [
         makeStep({
           motions: {
-            [MotionColor.BLUE]: makeMotion({ endLocation: "e" }),
-            [MotionColor.RED]: makeMotion(),
+            [HandSide.LEFT]: makeMotion({ endLocation: "e" }),
+            [HandSide.RIGHT]: makeMotion(),
           },
         }),
       ],
@@ -193,7 +193,7 @@ describe("SequenceContentHasher — Duplicate Detection", () => {
   it("reversal flag is V1 identity but excluded from V2 (re-derived on hydrate)", async () => {
     const a = makeSequence();
     const b = makeSequence({
-      steps: [makeStep({ blueReversal: true })],
+      steps: [makeStep({ leftReversal: true })],
     });
 
     // V1: reversal flags contribute to identity.

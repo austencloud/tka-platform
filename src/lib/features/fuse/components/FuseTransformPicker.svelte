@@ -55,8 +55,8 @@
   const driverOptions = $derived(
     (
       [
-        { value: "blue", label: "Blue", tone: "blue" },
-        { value: "red", label: "Red", tone: "red" },
+        { value: "left", label: "Left", tone: "blue" },
+        { value: "right", label: "Right", tone: "red" },
       ] as {
         value: FuseSide;
         label: string;
@@ -129,8 +129,8 @@
     },
   ]);
 
-  const followerLabel = $derived(selectedDriver === "blue" ? "Red" : "Blue");
-  const driverLabel = $derived(selectedDriver === "blue" ? "Blue" : "Red");
+  const followerLabel = $derived(selectedDriver === "left" ? "Right" : "Left");
+  const driverLabel = $derived(selectedDriver === "left" ? "Left" : "Right");
 
   function handleDriver(value: FuseSide): void {
     if (onDriverChange) onDriverChange(value);

@@ -21,8 +21,8 @@ function stepWith(motions: unknown, position?: Record<string, string>): unknown 
   return {
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions,
     ...(position ?? {}),
@@ -34,8 +34,8 @@ describe("detectLevelFeatures", () => {
     const s = seq({
       gridMode: "diamond",
       steps: [stepWith({
-        blue: { startLocation: "n", endLocation: "e", startOrientation: "in", endOrientation: "out", motionType: "pro" },
-        red:  { startLocation: "s", endLocation: "w", startOrientation: "in", endOrientation: "out", motionType: "pro" },
+        left: { startLocation: "n", endLocation: "e", startOrientation: "in", endOrientation: "out", motionType: "pro" },
+        right:  { startLocation: "s", endLocation: "w", startOrientation: "in", endOrientation: "out", motionType: "pro" },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -48,8 +48,8 @@ describe("detectLevelFeatures", () => {
     const s = seq({
       gridMode: "diamond",
       steps: [stepWith({
-        blue: { startLocation: "n", endLocation: "e", startOrientation: "in", endOrientation: "clock", motionType: "pro" },
-        red:  { startLocation: "s", endLocation: "w", startOrientation: "in", endOrientation: "counter", motionType: "anti" },
+        left: { startLocation: "n", endLocation: "e", startOrientation: "in", endOrientation: "clock", motionType: "pro" },
+        right:  { startLocation: "s", endLocation: "w", startOrientation: "in", endOrientation: "counter", motionType: "anti" },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -61,8 +61,8 @@ describe("detectLevelFeatures", () => {
     const s = seq({
       gridMode: "centric",
       steps: [stepWith({
-        blue: { startLocation: "c", endLocation: "n", motionType: "hashOut" },
-        red:  { startLocation: "s", endLocation: "e", motionType: "pro" },
+        left: { startLocation: "c", endLocation: "n", motionType: "hashOut" },
+        right:  { startLocation: "s", endLocation: "e", motionType: "pro" },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -101,8 +101,8 @@ describe("detectLevelFeatures", () => {
   it("flags interradial orientations as L4", () => {
     const s = seq({
       steps: [stepWith({
-        blue: { startOrientation: "in", endOrientation: "clockIn" },
-        red:  { startOrientation: "out", endOrientation: "counterOut" },
+        left: { startOrientation: "in", endOrientation: "clockIn" },
+        right:  { startOrientation: "out", endOrientation: "counterOut" },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -113,7 +113,7 @@ describe("detectLevelFeatures", () => {
   it("flags quarter turns as L4 even without orientations", () => {
     const s = seq({
       steps: [stepWith({
-        blue: { startLocation: "n", endLocation: "e", motionType: "pro", turns: 0.25 },
+        left: { startLocation: "n", endLocation: "e", motionType: "pro", turns: 0.25 },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -126,8 +126,8 @@ describe("detectLevelFeatures", () => {
     const s = seq({
       gridMode: "diamond",
       steps: [stepWith({
-        blue: { startLocation: "n", endLocation: "e", motionType: "pro", turns: 1.5 },
-        red:  { startLocation: "s", endLocation: "w", motionType: "anti", turns: 2 },
+        left: { startLocation: "n", endLocation: "e", motionType: "pro", turns: 1.5 },
+        right:  { startLocation: "s", endLocation: "w", motionType: "anti", turns: 2 },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -139,7 +139,7 @@ describe("detectLevelFeatures", () => {
     const s = seq({
       gridMode: "diamond",
       steps: [stepWith({
-        blue: { startLocation: "n", endLocation: "e", motionType: "float", turns: -1 },
+        left: { startLocation: "n", endLocation: "e", motionType: "float", turns: -1 },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -157,8 +157,8 @@ describe("detectLevelFeatures", () => {
   it("flags plane on motion as L8", () => {
     const s = seq({
       steps: [stepWith({
-        blue: { plane: "wall", startLocation: "n", endLocation: "e" },
-        red:  { plane: "wheel", startLocation: "s", endLocation: "w" },
+        left: { plane: "wall", startLocation: "n", endLocation: "e" },
+        right:  { plane: "wheel", startLocation: "s", endLocation: "w" },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
@@ -171,7 +171,7 @@ describe("detectLevelFeatures", () => {
     const s = seq({
       gridMode: "centric",
       steps: [stepWith({
-        blue: { plane: "wall", startLocation: "c", endLocation: "n" },
+        left: { plane: "wall", startLocation: "c", endLocation: "n" },
       })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);

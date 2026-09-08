@@ -42,11 +42,8 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
-  createHash,
-} from "node:crypto";
-import {
-  existsSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -56,6 +53,8 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { isSvelteKitGeneratedStateIntact } from "./lib/svelte-kit-generated-state.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = join(ROOT, ".svelte-kit");
@@ -113,11 +112,7 @@ function fingerprint() {
  * fingerprint is meaningless — something deleted the output.
  */
 function outputIntact() {
-  return (
-    existsSync(join(OUT_DIR, "tsconfig.json")) &&
-    existsSync(join(OUT_DIR, "types")) &&
-    existsSync(join(OUT_DIR, "ambient.d.ts"))
-  );
+  return isSvelteKitGeneratedStateIntact(OUT_DIR);
 }
 
 function runSync() {

@@ -284,8 +284,8 @@
         record
       );
       await updateSettings({
-        bluePropType: propConfig.bluePropType,
-        redPropType: propConfig.redPropType,
+        leftPropType: propConfig.leftPropType,
+        rightPropType: propConfig.rightPropType,
         catDogMode: propConfig.catDogMode,
       });
       markNativeScanTransitionStage(code, "settings-applied");
@@ -295,6 +295,7 @@
       playbackReleased = !isNativeScanViewerTransitionPending(code);
 
       openSequenceOverlay(hydrated, {
+        analyticsSource: "qr",
         fromUrl: true,
         shortCode: code,
         skipHistoryPush: true,
@@ -389,6 +390,7 @@
         <SequenceViewerOrchestrator
           sequence={overlay.sequence}
           isMobile={isMobileWidth}
+          collectionPropType={overlay.collectionPropType}
           initialBpm={overlay.initialBpm}
           initialPlaybackMode={overlay.initialPlaybackMode}
           initialStep={overlay.initialStep}
@@ -399,11 +401,13 @@
           {playbackReleased}
           onReadyForReveal={handleViewerReady}
           onClose={handleDismiss}
+          shortCode={overlay.activeShortCode}
         >
           {#snippet children(ctx)}
             <SequenceViewerShell
               {ctx}
               sequence={overlay.sequence!}
+              analyticsSource={overlay.analyticsSource}
               isMobile={isMobileWidth}
               onClose={handleDismiss}
               shareOnOpen={overlay.shareOnOpen}

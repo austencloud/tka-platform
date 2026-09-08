@@ -12,7 +12,7 @@ import {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -34,9 +34,9 @@ function pictograph(
   end: GridLocation,
   direction = RotationDirection.CLOCKWISE
 ): PictographData {
-  const createMotion = (color: MotionColor) =>
+  const createMotion = (color: HandSide) =>
     createMotionData({
-      color,
+      hand: color,
       motionType: MotionType.PRO,
       rotationDirection: direction,
       startLocation: start,
@@ -54,8 +54,8 @@ function pictograph(
     startPosition: POSITION_BY_LOCATION[start],
     endPosition: POSITION_BY_LOCATION[end],
     motions: {
-      blue: createMotion(MotionColor.BLUE),
-      red: createMotion(MotionColor.RED),
+      left: createMotion(HandSide.LEFT),
+      right: createMotion(HandSide.RIGHT),
     },
   };
 }

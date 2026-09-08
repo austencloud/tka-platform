@@ -14,7 +14,7 @@
  *   - Fuse types use a NON-ROTATING diagonal oscillation (a2<->a4). A partial
  *     that sweeps a full 360° injects a real rotation into the loop and
  *     confounds the audit; oscillation keeps net rotation at zero.
- *   - Both hands carry OPPOSITE motion types (blue=pro, red=anti) so SWAP is
+ *   - Both hands carry OPPOSITE motion types (left=pro, right=anti) so SWAP is
  *     observable to the motion-type swap detector and MIRROR/FLIP move positions.
  *   - Partials are >= 4 steps so the loop has >= 8 letter steps → the functional
  *     detector's floor(halfLength*0.75) threshold is a real threshold (3), not
@@ -61,8 +61,8 @@ function makeStep(
   n: number,
   startPos: string,
   endPos: string,
-  blue: Partial<MotionData>,
-  red: Partial<MotionData>,
+  left: Partial<MotionData>,
+  right: Partial<MotionData>,
   letter: string | null,
 ): SequenceStep {
   return {
@@ -72,12 +72,12 @@ function makeStep(
     letter,
     startPosition: startPos,
     endPosition: endPos,
-    motions: { blue: makeMotion(blue), red: makeMotion(red) },
+    motions: { left: makeMotion(left), right: makeMotion(right) },
   } as SequenceStep;
 }
 
-const derive = (blueLoc: string, redLoc: string) =>
-  gridPositionDeriver.getGridPositionFromLocations(blueLoc, redLoc);
+const derive = (leftLoc: string, rightLoc: string) =>
+  gridPositionDeriver.getGridPositionFromLocations(leftLoc, rightLoc);
 
 /** A step with positions DERIVED from hand locations (label/location consistent). */
 function step(
@@ -110,7 +110,7 @@ function startStep(bs: string, rs: string): SequenceStep {
 }
 
 // ---------------------------------------------------------------------------
-// Clean fixtures (see header). All are 4 steps, non-axis, blue=pro / red=anti.
+// Clean fixtures (see header). All are 4 steps, non-axis, left=pro / right=anti.
 // ---------------------------------------------------------------------------
 
 /** Non-rotating diagonal oscillation alpha2 <-> alpha4 (fuse types + rewound). */
@@ -135,7 +135,7 @@ function diagRot(): SequenceStep[] {
   ];
 }
 
-/** Same-motion-type variant (blue=red=pro): characterizes the swap/invert alias. */
+/** Same-motion-type variant (left=right=pro): characterizes the swap/invert alias. */
 function diagOscSameType(): SequenceStep[] {
   return [
     startStep("sw", "ne"),
@@ -233,8 +233,8 @@ function funcComponents(steps: SequenceStep[]): string[] {
 
 function classComponents(steps: SequenceStep[]): string[] {
   const r = loopDetectorClass.detectLOOPType(steps);
-  if (!r.spec || !r.spec.blue) return [];
-  return [...r.spec.blue.components.keys()].map(String).sort();
+  if (!r.spec || !r.spec.left) return [];
+  return [...r.spec.left.components.keys()].map(String).sort();
 }
 
 function classLoopType(steps: SequenceStep[]): string {

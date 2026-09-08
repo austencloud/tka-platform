@@ -7,23 +7,18 @@ import { createStepData } from "../domain/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { AuthoredHand } from "../domain/models/authored-hand";
-import type { SoloMotionColor } from "./sequence-motion-profile";
-import { colorForAuthoredHand } from "./sequence-motion-profile";
+import { motionHandForAuthoredHand } from "./sequence-motion-profile";
 import { hashSoloProp } from "./content-hasher";
-
-function motionColor(color: SoloMotionColor): MotionColor {
-  return color === "blue" ? MotionColor.BLUE : MotionColor.RED;
-}
 
 function buildMotion(
   step: SoloPropStepData,
-  color: SoloMotionColor,
+  hand: HandSide,
   gridMode: SoloPropData["impliedGridMode"]
 ) {
   return createMotionData({
@@ -40,14 +35,14 @@ function buildMotion(
     ...(step.prefloatMotionType && {
       prefloatMotionType: step.prefloatMotionType,
     }),
-    color: motionColor(color),
+    hand,
     gridMode,
     arrowLocation: step.startLocation,
     isVisible: true,
   });
 }
 
-function buildStartMotion(soloProp: SoloPropData, color: SoloMotionColor) {
+function buildStartMotion(soloProp: SoloPropData, hand: HandSide) {
   return createMotionData({
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
@@ -56,7 +51,7 @@ function buildStartMotion(soloProp: SoloPropData, color: SoloMotionColor) {
     turns: 0,
     startOrientation: soloProp.startOrientation,
     endOrientation: soloProp.startOrientation,
-    color: motionColor(color),
+    hand,
     gridMode: soloProp.impliedGridMode,
     arrowLocation: soloProp.startLocation,
     isVisible: true,
@@ -68,7 +63,7 @@ export function soloPropToSequence(
   authoredHand: AuthoredHand = soloProp.authoredHand ?? "left",
   options?: { sourceSoloPropId?: string }
 ): SequenceData {
-  const color = colorForAuthoredHand(authoredHand);
+  const hand = motionHandForAuthoredHand(authoredHand);
   const steps = soloProp.steps.map((step, index) =>
     createStepData({
       stepNumber: index + 1,
@@ -76,14 +71,14 @@ export function soloPropToSequence(
       gridMode: soloProp.impliedGridMode,
       letter: null,
       motions: {
-        [color]: buildMotion(step, color, soloProp.impliedGridMode),
+        [hand]: buildMotion(step, hand, soloProp.impliedGridMode),
       },
     })
   );
   const startPosition = createStartPositionData({
     gridPosition: null,
     motions: {
-      [color]: buildStartMotion(soloProp, color),
+      [hand]: buildStartMotion(soloProp, hand),
     },
   });
   const title =
@@ -113,16 +108,16 @@ export function soloPropToSequence(
         sourceSoloPropId: options.sourceSoloPropId,
       }),
     },
-    ...(color === "blue"
+    ...(hand === HandSide.LEFT
       ? {
-          blueSoloProp: soloProp,
-          blueSoloHash: soloProp.contentHash,
-          bluePathHash: soloProp.handPath.contentHash,
+          leftSoloProp: soloProp,
+          leftSoloHash: soloProp.contentHash,
+          leftPathHash: soloProp.handPath.contentHash,
         }
       : {
-          redSoloProp: soloProp,
-          redSoloHash: soloProp.contentHash,
-          redPathHash: soloProp.handPath.contentHash,
+          rightSoloProp: soloProp,
+          rightSoloHash: soloProp.contentHash,
+          rightPathHash: soloProp.handPath.contentHash,
         }),
   });
 }

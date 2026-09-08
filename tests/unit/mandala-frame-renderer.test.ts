@@ -7,8 +7,8 @@ import {
 function spec(overrides: Partial<MandalaFrameSpec> = {}): MandalaFrameSpec {
 	return {
 		steps: [],
-		bluePropType: "staff",
-		redPropType: "staff",
+		leftPropType: "staff",
+		rightPropType: "staff",
 		pathShape: "arc",
 		lineWeight: 2.5,
 		bgColor: "#000000",

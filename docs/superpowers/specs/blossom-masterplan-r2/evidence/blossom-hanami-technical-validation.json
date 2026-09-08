@@ -1,0 +1,64 @@
+{
+  "planId": "blossom-masterplan-r2.1",
+  "phase": 5,
+  "status": "technical-checks-passed",
+  "visualAcceptance": "pending-user-review",
+  "checkedAt": "2026-09-06T00:36:57.376Z",
+  "asset": "static/models/blossom/blossom_environment.glb",
+  "assetSizeMiB": 17,
+  "assetSha256": "b85dbab2636ace25ced5937ae38573f289e3c69342c352d12094f7106b0ca6b4",
+  "renderedTriangles": 3705298,
+  "spatial": {
+    "audienceCapacity": 136,
+    "audienceZoneCount": 4,
+    "wheelchairBays": 4,
+    "connectedPublicNodes": 13,
+    "publicPathCount": 12,
+    "restrictedPathCount": 2,
+    "groveHeroAnchors": 31,
+    "groveBackgroundInstances": 112,
+    "distinctHeroVariants": 6,
+    "bridgeCenterlineOffsetMetres": 0.1,
+    "lanternCount": 8,
+    "fishHabitatCount": 2,
+    "sightlineRayCount": 171,
+    "maximumCameraDistance": 58,
+    "cameraEnvelope": {
+      "minX": -83.7,
+      "maxX": 83.7,
+      "minY": -81.7,
+      "maxY": 93.7
+    }
+  },
+  "terrainEnvelope": {
+    "minX": -96,
+    "maxX": 96,
+    "minY": -92,
+    "maxY": 104
+  },
+  "audience": {
+    "zones": 4,
+    "capacity": 136
+  },
+  "circulation": {
+    "totalPaths": 14,
+    "publicPaths": 12,
+    "servicePaths": 2
+  },
+  "water": {
+    "surfaceWidth": 5.4,
+    "localWidenings": 2,
+    "surfaceElevation": -0.15,
+    "bedDepth": 0.85
+  },
+  "bridgeSlopePercent": 4.5,
+  "lanterns": 8,
+  "decorationNodes": 7,
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_meshopt_compression",
+    "EXT_texture_webp",
+    "KHR_materials_emissive_strength",
+    "KHR_mesh_quantization"
+  ]
+}

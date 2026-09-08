@@ -13,7 +13,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -29,11 +29,11 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
-  const B = MotionColor.BLUE;
-  const R = MotionColor.RED;
+  const B = HandSide.LEFT;
+  const R = HandSide.RIGHT;
 
   const mo = (
-    color: MotionColor,
+    color: HandSide,
     type: MotionType,
     from: GridLocation,
     to: GridLocation,
@@ -54,7 +54,7 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const stat = (color: MotionColor, loc: GridLocation, ori: Orientation) =>
+  const stat = (color: HandSide, loc: GridLocation, ori: Orientation) =>
     mo(color, MotionType.STATIC, loc, loc, NOROT, ori, ori);
 
   type Hand = { type: MotionType; from: GridLocation; to: GridLocation; rot: RotationDirection };
@@ -64,28 +64,28 @@
   function makeStrip(opts: {
     id: string;
     word: string;
-    blue: Hand;
-    red: Hand;
-    blueTurns: number;
-    redTurns: number;
+    left: Hand;
+    right: Hand;
+    leftTurns: number;
+    rightTurns: number;
   }): { frames: TurnStripFrame[]; sequence: SequenceData } {
-    const bEnd = endOri(opts.blue.type, opts.blueTurns);
-    const rEnd = endOri(opts.red.type, opts.redTurns);
-    const bHalf: HalfwayMotion = { type: opts.blue.type, from: opts.blue.from, to: opts.blue.to, rot: opts.blue.rot, startOri: IN, endOri: bEnd, turns: opts.blueTurns };
-    const rHalf: HalfwayMotion = { type: opts.red.type, from: opts.red.from, to: opts.red.to, rot: opts.red.rot, startOri: IN, endOri: rEnd, turns: opts.redTurns };
-    const step = (id: string, blue: ReturnType<typeof mo>, red: ReturnType<typeof mo>) => ({
+    const bEnd = endOri(opts.left.type, opts.leftTurns);
+    const rEnd = endOri(opts.right.type, opts.rightTurns);
+    const bHalf: HalfwayMotion = { type: opts.left.type, from: opts.left.from, to: opts.left.to, rot: opts.left.rot, startOri: IN, endOri: bEnd, turns: opts.leftTurns };
+    const rHalf: HalfwayMotion = { type: opts.right.type, from: opts.right.from, to: opts.right.to, rot: opts.right.rot, startOri: IN, endOri: rEnd, turns: opts.rightTurns };
+    const step = (id: string, left, right) => ({
       id: `l2st-${opts.id}-${id}`,
       letter: null,
       gridMode: GridMode.DIAMOND,
-      motions: { blue, red },
+      motions: { left, right },
     });
-    const startStep = { ...step("start", stat(B, opts.blue.from, IN), stat(R, opts.red.from, IN)), stepNumber: 0 } as unknown as StepData;
-    const endStep = { ...step("end", stat(B, opts.blue.to, bEnd), stat(R, opts.red.to, rEnd)), stepNumber: 0 } as unknown as StepData;
+    const startStep = { ...step("start", stat(B, opts.left.from, IN), stat(R, opts.right.from, IN)), stepNumber: 0 } as unknown as StepData;
+    const endStep = { ...step("end", stat(B, opts.left.to, bEnd), stat(R, opts.right.to, rEnd)), stepNumber: 0 } as unknown as StepData;
     const combinedStep = {
       ...step(
         "full",
-        mo(B, opts.blue.type, opts.blue.from, opts.blue.to, opts.blue.rot, IN, bEnd, opts.blueTurns),
-        mo(R, opts.red.type, opts.red.from, opts.red.to, opts.red.rot, IN, rEnd, opts.redTurns)
+        mo(B, opts.left.type, opts.left.from, opts.left.to, opts.left.rot, IN, bEnd, opts.leftTurns),
+        mo(R, opts.right.type, opts.right.from, opts.right.to, opts.right.rot, IN, rEnd, opts.rightTurns)
       ),
       stepNumber: 1,
     } as unknown as StepData;
@@ -115,10 +115,10 @@
   const T_BLUE: Hand = { type: MotionType.ANTI, from: W, to: SO_, rot: CW };
   const T_RED: Hand = { type: MotionType.ANTI, from: SO_, to: E, rot: CW };
 
-  const { frames: sHighFrames, sequence: sHighSequence } = makeStrip({ id: "s-hi", word: "S-High-One", blue: S_BLUE, red: S_RED, blueTurns: 1, redTurns: 0 });
-  const { frames: sLowFrames, sequence: sLowSequence } = makeStrip({ id: "s-lo", word: "S-Low-One", blue: S_BLUE, red: S_RED, blueTurns: 0, redTurns: 1 });
-  const { frames: tHighFrames, sequence: tHighSequence } = makeStrip({ id: "t-hi", word: "T-High-One", blue: T_BLUE, red: T_RED, blueTurns: 1, redTurns: 0 });
-  const { frames: tLowFrames, sequence: tLowSequence } = makeStrip({ id: "t-lo", word: "T-Low-One", blue: T_BLUE, red: T_RED, blueTurns: 0, redTurns: 1 });
+  const { frames: sHighFrames, sequence: sHighSequence } = makeStrip({ id: "s-hi", word: "S-High-One", left: S_BLUE, right: S_RED, leftTurns: 1, rightTurns: 0 });
+  const { frames: sLowFrames, sequence: sLowSequence } = makeStrip({ id: "s-lo", word: "S-Low-One", left: S_BLUE, right: S_RED, leftTurns: 0, rightTurns: 1 });
+  const { frames: tHighFrames, sequence: tHighSequence } = makeStrip({ id: "t-hi", word: "T-High-One", left: T_BLUE, right: T_RED, leftTurns: 1, rightTurns: 0 });
+  const { frames: tLowFrames, sequence: tLowSequence } = makeStrip({ id: "t-lo", word: "T-Low-One", left: T_BLUE, right: T_RED, leftTurns: 0, rightTurns: 1 });
 </script>
 
 <GuideSection id="s-and-t" title="S and T">

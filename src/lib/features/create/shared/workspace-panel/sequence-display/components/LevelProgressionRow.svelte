@@ -43,7 +43,12 @@
     border-radius: 12px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    transition: all 0.2s ease;
+    /* Named properties, not `all`: `all` tweened layout on every restyle. */
+    transition:
+      opacity var(--duration-fast, 0.2s) ease,
+      background-color var(--duration-fast, 0.2s) ease,
+      border-color var(--duration-fast, 0.2s) ease,
+      transform var(--duration-fast, 0.2s) ease;
   }
 
   .lcard img {

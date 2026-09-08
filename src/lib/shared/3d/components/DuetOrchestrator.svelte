@@ -59,8 +59,8 @@
 
       // Load sequences into first two performers
       const performers = performerManager.performers;
-      performers[0]?.loadSequence(duet.avatar1Sequence);
-      performers[1]?.loadSequence(duet.avatar2Sequence);
+      performers[0]?.loadSequence(duet.performer1Sequence);
+      performers[1]?.loadSequence(duet.performer2Sequence);
 
       // Apply beat offset via sync state
       const syncState = performerManager.syncState;

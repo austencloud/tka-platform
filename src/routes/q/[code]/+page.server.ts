@@ -28,8 +28,8 @@ interface ShortCodeMeta {
   thumbnailUrl: string | null;
   deckId: string | null;
   deckName: string | null;
-  bluePropType: string | null;
-  redPropType: string | null;
+  leftPropType: string | null;
+  rightPropType: string | null;
 }
 
 const EMPTY_META: ShortCodeMeta = {
@@ -40,8 +40,8 @@ const EMPTY_META: ShortCodeMeta = {
   thumbnailUrl: null,
   deckId: null,
   deckName: null,
-  bluePropType: null,
-  redPropType: null,
+  leftPropType: null,
+  rightPropType: null,
 };
 
 function readString(
@@ -78,8 +78,10 @@ function deriveMeta(record: ShortCodeData | null): ShortCodeMeta {
     thumbnailUrl: readString(values, "thumbnailUrl"),
     deckId: readString(values, "deckId"),
     deckName: readString(values, "deckName"),
-    bluePropType: readString(values, "bluePropType"),
-    redPropType: readString(values, "redPropType"),
+    leftPropType:
+      readString(values, "leftPropType") ?? readString(values, "bluePropType"),
+    rightPropType:
+      readString(values, "rightPropType") ?? readString(values, "redPropType"),
   };
 }
 

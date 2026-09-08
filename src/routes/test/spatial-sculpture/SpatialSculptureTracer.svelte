@@ -18,8 +18,8 @@
   } from "./spatial-sculpture-motion";
 
   interface Props {
-    blueCurve: CatmullRomCurve3;
-    redCurve: CatmullRomCurve3;
+    leftCurve: CatmullRomCurve3;
+    rightCurve: CatmullRomCurve3;
     beats: SpatialBeat[];
     activeBeatIndex: number;
     activeHand: PropSide;
@@ -32,8 +32,8 @@
   }
 
   let {
-    blueCurve,
-    redCurve,
+    leftCurve,
+    rightCurve,
     beats,
     activeBeatIndex,
     activeHand,
@@ -63,18 +63,18 @@
     );
     return beats[index]?.plane ?? Plane.WALL;
   });
-  const bluePose = $derived(
+  const leftPose = $derived(
     createTracerPose(
-      blueCurve,
+      leftCurve,
       progress,
       sculptureScale,
       propLength,
       currentPlane
     )
   );
-  const redPose = $derived(
+  const rightPose = $derived(
     createTracerPose(
-      redCurve,
+      rightCurve,
       progress,
       sculptureScale,
       propLength,
@@ -130,38 +130,38 @@
   });
 </script>
 
-<T.Group position={positionTuple(bluePose.center)}>
+<T.Group position={positionTuple(leftPose.center)}>
   <Prop3D
     propType={PropType.STAFF}
-    propState={bluePose.propState}
+    propState={leftPose.propState}
     color="blue"
     length={propLength}
   />
 </T.Group>
-<T.Group position={positionTuple(redPose.center)}>
+<T.Group position={positionTuple(rightPose.center)}>
   <Prop3D
     propType={PropType.STAFF}
-    propState={redPose.propState}
+    propState={rightPose.propState}
     color="red"
     length={propLength}
   />
 </T.Group>
 
-<T.Mesh position={positionTuple(bluePose.tip)} renderOrder={12}>
-  <T.SphereGeometry args={[activeHand === "blue" ? 0.054 : 0.038, 18, 18]} />
+<T.Mesh position={positionTuple(leftPose.tip)} renderOrder={12}>
+  <T.SphereGeometry args={[activeHand === "left" ? 0.054 : 0.038, 18, 18]} />
   <T.MeshBasicMaterial
     color="#8ed0ff"
     transparent
-    opacity={activeHand === "blue" ? 1 : 0.72}
+    opacity={activeHand === "left" ? 1 : 0.72}
     depthWrite={false}
   />
 </T.Mesh>
-<T.Mesh position={positionTuple(redPose.tip)} renderOrder={12}>
-  <T.SphereGeometry args={[activeHand === "red" ? 0.054 : 0.038, 18, 18]} />
+<T.Mesh position={positionTuple(rightPose.tip)} renderOrder={12}>
+  <T.SphereGeometry args={[activeHand === "right" ? 0.054 : 0.038, 18, 18]} />
   <T.MeshBasicMaterial
     color="#ff9aaa"
     transparent
-    opacity={activeHand === "red" ? 1 : 0.72}
+    opacity={activeHand === "right" ? 1 : 0.72}
     depthWrite={false}
   />
 </T.Mesh>

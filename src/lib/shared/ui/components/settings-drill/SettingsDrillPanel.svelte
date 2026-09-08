@@ -207,7 +207,7 @@ named in .claude/rules/crossfade-primitive.md.
 
   /* Content-sized: `flex-shrink: 0` stops a child absorbing its own overflow
      and clipping instead of letting the body scroll; `flex-grow: 0` stops a
-     child that declares `flex: 1` for some other host (StyleExpandPanel does,
+     child that declares `flex: 1` for some other host (GenerationStylePanel does,
      from its accordion days) stretching and centering itself in a tall pane. */
   .layer-body > :global(*) {
     flex: 0 0 auto;

@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("$app/environment", () => ({ browser: true }));
-vi.mock("./posthog", () => ({ captureEvent: vi.fn() }));
+vi.mock("./posthog", () => ({ captureWhenReady: vi.fn() }));
 
-import { captureEvent } from "./posthog";
+import { captureWhenReady } from "./posthog";
 import { logSessionStart } from "./posthog-activity-logger";
 import { SW_UPDATE_RELOAD_MARKER_KEY } from "$lib/shared/offline/services/sw-update-manager";
 
 describe("logSessionStart", () => {
   beforeEach(() => {
-    vi.mocked(captureEvent).mockClear();
+    vi.mocked(captureWhenReady).mockClear();
     sessionStorage.clear();
     vi.spyOn(performance, "getEntriesByType").mockReturnValue([
       { type: "reload" } as PerformanceNavigationTiming,
@@ -21,7 +21,7 @@ describe("logSessionStart", () => {
 
     await logSessionStart();
 
-    expect(captureEvent).toHaveBeenCalledWith(
+    expect(captureWhenReady).toHaveBeenCalledWith(
       "session_start",
       expect.objectContaining({
         category: "session",
@@ -32,10 +32,10 @@ describe("logSessionStart", () => {
     );
     expect(sessionStorage.getItem(SW_UPDATE_RELOAD_MARKER_KEY)).toBeNull();
 
-    vi.mocked(captureEvent).mockClear();
+    vi.mocked(captureWhenReady).mockClear();
     await logSessionStart();
 
-    expect(captureEvent).toHaveBeenCalledWith(
+    expect(captureWhenReady).toHaveBeenCalledWith(
       "session_start",
       expect.objectContaining({
         navigation_type: "reload",

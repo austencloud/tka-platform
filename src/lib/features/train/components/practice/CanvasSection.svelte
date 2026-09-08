@@ -176,8 +176,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
     </div>
   {:else if sequence && pixiReady}
     <AnimatorCanvas
-      blueProp={animationState.bluePropState}
-      redProp={animationState.redPropState}
+      leftProp={animationState.leftPropState}
+      rightProp={animationState.rightPropState}
       gridVisible={true}
       gridMode={animationState.sequenceData?.gridMode ?? null}
       stepData={currentStepData}

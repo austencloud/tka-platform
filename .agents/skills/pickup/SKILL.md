@@ -52,7 +52,7 @@ footnote.
 ## 3. Continue
 
 Start at the first loose end or next step, honoring the handoff's recorded
-decisions (they were Austen's). Route domain work per
-`.claude/rules/expert-routing.md`, commit with explicit pathspec per
+decisions (they were Austen's). Route domain work to the appropriate expert
+agent, commit with explicit pathspec per
 `commit-only-your-own-changes.md`, and when the session winds down with work
 still open, write the counterpart doc via the `handoff` skill.

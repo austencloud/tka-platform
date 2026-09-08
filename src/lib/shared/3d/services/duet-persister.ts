@@ -15,13 +15,27 @@ import type {
 import { createDuetSequence } from "../domain/duet-sequence";
 
 const STORAGE_KEY = "tka-3d-duets";
+const DUET_STORAGE_VERSION = 2 as const;
 
 /**
  * Stored format for duets (dates serialized)
  */
 interface StoredDuet extends Omit<DuetSequence, "createdAt"> {
+  version: typeof DUET_STORAGE_VERSION;
   createdAt: string;
 }
+
+interface LegacyStoredDuet
+  extends Omit<
+    StoredDuet,
+    "version" | "performer1SequenceId" | "performer2SequenceId"
+  > {
+  version?: 1;
+  avatar1SequenceId: string;
+  avatar2SequenceId: string;
+}
+
+type StoredDuetRecord = StoredDuet | LegacyStoredDuet;
 
 export class DuetPersister {
   private sequenceCache: Map<string, SequenceData> | null = null;
@@ -81,26 +95,26 @@ export class DuetPersister {
   ): Promise<DuetSequenceWithData | null> {
     await this.ensureSequenceCache();
 
-    const seq1 = this.sequenceCache?.get(duet.avatar1SequenceId);
-    const seq2 = this.sequenceCache?.get(duet.avatar2SequenceId);
+    const seq1 = this.sequenceCache?.get(duet.performer1SequenceId);
+    const seq2 = this.sequenceCache?.get(duet.performer2SequenceId);
 
     if (!seq1 || !seq2) {
       console.warn("[DuetPersister] Could not resolve sequences:", {
-        avatar1Found: !!seq1,
-        avatar2Found: !!seq2,
+        performer1Found: !!seq1,
+        performer2Found: !!seq2,
       });
       return null;
     }
 
     return {
       ...duet,
-      avatar1Sequence: seq1,
-      avatar2Sequence: seq2,
+      performer1Sequence: seq1,
+      performer2Sequence: seq2,
     };
   }
 
 
-  private loadFromStorage(): StoredDuet[] {
+  private loadFromStorage(): StoredDuetRecord[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return [];
@@ -111,7 +125,7 @@ export class DuetPersister {
     }
   }
 
-  private saveToStorage(duets: StoredDuet[]): void {
+  private saveToStorage(duets: StoredDuetRecord[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(duets));
     } catch (e) {
@@ -122,13 +136,31 @@ export class DuetPersister {
   private serializeDuet(duet: DuetSequence): StoredDuet {
     return {
       ...duet,
+      version: DUET_STORAGE_VERSION,
       createdAt: duet.createdAt.toISOString(),
     };
   }
 
-  private deserializeDuet(stored: StoredDuet): DuetSequence {
+  private deserializeDuet(stored: StoredDuetRecord): DuetSequence {
+    const performer1SequenceId =
+      "performer1SequenceId" in stored
+        ? stored.performer1SequenceId
+        : stored.avatar1SequenceId;
+    const performer2SequenceId =
+      "performer2SequenceId" in stored
+        ? stored.performer2SequenceId
+        : stored.avatar2SequenceId;
+    const {
+      version: _version,
+      avatar1SequenceId: _legacyPerformer1,
+      avatar2SequenceId: _legacyPerformer2,
+      ...shared
+    } = stored as LegacyStoredDuet & Partial<StoredDuet>;
+
     return {
-      ...stored,
+      ...shared,
+      performer1SequenceId,
+      performer2SequenceId,
       createdAt: new Date(stored.createdAt),
     };
   }

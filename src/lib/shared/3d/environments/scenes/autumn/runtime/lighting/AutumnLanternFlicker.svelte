@@ -9,9 +9,10 @@
 
   interface Props {
     scene: Object3D | null;
+    active?: boolean;
   }
 
-  let { scene }: Props = $props();
+  let { scene, active = true }: Props = $props();
 
   const activeMaterials = new Map<MeshStandardMaterial, number>();
 
@@ -46,11 +47,20 @@
   const motionScale = $derived(resolveMotionScale(reducedMotion));
   let localTime = 0;
 
-  useTask((delta) => {
-    localTime += delta * motionScale;
-    const flicker = reducedMotion ? 1 : sampleAutumnLanternFlicker(localTime);
-    for (const [material, baseIntensity] of activeMaterials) {
-      material.emissiveIntensity = baseIntensity * flicker;
-    }
+  const flickerTask = useTask(
+    (delta) => {
+      localTime += delta * motionScale;
+      const flicker = reducedMotion ? 1 : sampleAutumnLanternFlicker(localTime);
+      for (const [material, baseIntensity] of activeMaterials) {
+        material.emissiveIntensity = baseIntensity * flicker;
+      }
+    },
+    { autoStart: false }
+  );
+
+  $effect(() => {
+    if (active) flickerTask.start();
+    else flickerTask.stop();
+    return () => flickerTask.stop();
   });
 </script>

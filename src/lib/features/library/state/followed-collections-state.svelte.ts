@@ -8,6 +8,7 @@ import {
 	unfollowCollection,
 	type FollowedCollectionRef,
 } from "$lib/shared/library/services/followed-collections";
+import type { CollectionFollowSource } from "$lib/shared/analytics/social-events";
 import { getPublicCollection } from "$lib/features/library/services/public-collection-loader";
 import { getUserDisplayNames } from "$lib/shared/community/services/user-repository";
 import {
@@ -94,26 +95,34 @@ class FollowedCollectionsState {
 		);
 	}
 
-	async follow(ownerId: string, collectionId: string): Promise<void> {
+	async follow(
+		ownerId: string,
+		collectionId: string,
+		source: CollectionFollowSource,
+	): Promise<void> {
 		if (isPreviewReadOnly()) {
 			toast.warning("This library is read-only while previewing another user.");
 			return;
 		}
 		try {
-			await followCollection(ownerId, collectionId);
+			await followCollection(ownerId, collectionId, source);
 		} catch (err) {
 			console.error("[followed-collections] follow failed:", err);
 			toast.error("Couldn't follow that collection. Try again.");
 		}
 	}
 
-	async unfollow(ownerId: string, collectionId: string): Promise<void> {
+	async unfollow(
+		ownerId: string,
+		collectionId: string,
+		source: CollectionFollowSource,
+	): Promise<void> {
 		if (isPreviewReadOnly()) {
 			toast.warning("This library is read-only while previewing another user.");
 			return;
 		}
 		try {
-			await unfollowCollection(ownerId, collectionId);
+			await unfollowCollection(ownerId, collectionId, source);
 		} catch (err) {
 			console.error("[followed-collections] unfollow failed:", err);
 			toast.error("Couldn't unfollow that collection. Try again.");

@@ -7,25 +7,36 @@
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
   import SequenceShowcase from "../../../level-1/_components/SequenceShowcase.svelte";
-  import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
-  import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import TurnStrip, {
+    type TurnStripFrame,
+  } from "../../_components/TurnStrip.svelte";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { bakeReversals, stripToSequence } from "../../../level-1/_data/guide-sequence-adapter";
+  import {
+    bakeReversals,
+    stripToSequence,
+  } from "../../../level-1/_data/guide-sequence-adapter";
 
   const { EAST: E } = GridLocation;
   const { IN } = Orientation;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  const redStaff = (
+  const rightStaff = (
     id: string,
     type: MotionType,
     from: GridLocation,
@@ -39,7 +50,7 @@
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      red: createMotionData({
+      right: createMotionData({
         motionType: type,
         rotationDirection: rot,
         startLocation: from,
@@ -47,15 +58,23 @@
         startOrientation: startOri,
         endOrientation: endOri,
         turns,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
     },
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
-    redStaff(id, MotionType.STATIC, loc, loc, ori, ori, RotationDirection.NO_ROTATION);
-  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]) => ({
+    rightStaff(
+      id,
+      MotionType.STATIC,
+      loc,
+      loc,
+      ori,
+      ori,
+      RotationDirection.NO_ROTATION
+    );
+  const toHM = (m: ReturnType<typeof rightStaff>["motions"]["right"]) => ({
     type: m.motionType,
     from: m.startLocation,
     to: m.endLocation,
@@ -67,42 +86,77 @@
 
   // ── Motion data (verbatim from TwoTurnsDashStaticPage.svelte) ────────────
   // Static: E→E IN→IN CCW turns=2 - a 360° turn in place (in → out → in).
-  const staticCombined = redStaff("static-full", MotionType.STATIC, E, E, IN, IN, CCW, 2);
+  const staticCombined = rightStaff(
+    "static-full",
+    MotionType.STATIC,
+    E,
+    E,
+    IN,
+    IN,
+    CCW,
+    2
+  );
 
   const ANIM = {
-    "l2a-tst-static": { data: staticCombined, word: "Static with 2 turns", startLoc: E },
+    "l2a-tst-static": {
+      data: staticCombined,
+      word: "Static with 2 turns",
+      startLoc: E,
+    },
   } as const;
-  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number, startLoc: GridLocation): StepData =>
+  const animStep = (
+    data: ReturnType<typeof rightStaff>,
+    stepNumber: number,
+    startLoc: GridLocation
+  ): StepData =>
     ({
       ...data,
       id: `${data.id}-anim-${stepNumber}`,
       stepNumber,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: startLoc, orientation: IN }),
-        red: data.motions.red,
+        left: createPlaceholderMotion(HandSide.LEFT, {
+          location: startLoc,
+          orientation: IN,
+        }),
+        right: data.motions.right,
       },
     }) as unknown as StepData;
   const rowSteps = (key: keyof typeof ANIM): StepData[] => {
     const cfg = ANIM[key];
-    const start = animStep(stat(`${key}-start`, cfg.startLoc, IN), 0, cfg.startLoc);
+    const start = animStep(
+      stat(`${key}-start`, cfg.startLoc, IN),
+      0,
+      cfg.startLoc
+    );
     const combined = animStep(cfg.data, 1, cfg.startLoc);
     return [start, ...bakeReversals([combined])];
   };
-  const halfOf = (combined: ReturnType<typeof redStaff>, startLoc: GridLocation) =>
-    buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
+  const halfOf = (
+    combined: ReturnType<typeof rightStaff>,
+    startLoc: GridLocation
+  ) => buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
 
   const staticFrames: TurnStripFrame[] = [
-    { kind: "start", step: animStep(stat("start", E, IN), 0, E), frameLabel: "start", thumbLabel: "in" },
+    {
+      kind: "start",
+      step: animStep(stat("start", E, IN), 0, E),
+      frameLabel: "start",
+      thumbLabel: "in",
+    },
     {
       kind: "half",
       step: halfOf(staticCombined, E),
-      fallbackMotion: toHM(staticCombined.motions.red),
+      fallbackMotion: toHM(staticCombined.motions.right),
       frameLabel: "halfway",
       thumbLabel: "out",
     },
     {
       kind: "end",
-      step: animStep(stat("end", E, staticCombined.motions.red.endOrientation), 0, E),
+      step: animStep(
+        stat("end", E, staticCombined.motions.right.endOrientation),
+        0,
+        E
+      ),
       frameLabel: "end",
       thumbLabel: "in",
     },
@@ -123,21 +177,33 @@
 <GuideSection id="double-turn-static" title="Static">
   <div class="section-body">
     <p>
-      A static motion with 2 turns is simply a 360° turn in place. It's necessary to use negative space or a turn to achieve this.
+      A static motion with 2 turns is simply a 360° turn in place. It's
+      necessary to use negative space or a turn to achieve this.
     </p>
   </div>
 
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={staticSequence} items={[]} bpm={60}>
+    <SequenceShowcase
+      variant="compact"
+      render={{ propType: PropType.STAFF }}
+      sequence={staticSequence}
+      items={[]}
+      bpm={60}
+    >
       {#snippet strip(t)}
-        <TurnStrip frames={staticFrames} activeT={t} caption="The staff completes a full extra rotation in place at east before settling back to out" />
+        <TurnStrip
+          frames={staticFrames}
+          activeT={t}
+          caption="The staff completes a full extra rotation in place at east before settling back to out"
+        />
       {/snippet}
     </SequenceShowcase>
   </div>
 
   <div class="section-body">
     <p>
-      A static motion has 0 thumb switches, therefore a static motion with 2 turns has 2 thumb switches (in → out → in)
+      A static motion has 0 thumb switches, therefore a static motion with 2
+      turns has 2 thumb switches (in → out → in)
     </p>
   </div>
 </GuideSection>

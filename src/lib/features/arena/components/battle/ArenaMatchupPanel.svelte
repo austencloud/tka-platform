@@ -63,7 +63,7 @@
 >
   <div class="animation-container">
     {#if entry.kind === "sequence"}
-      <InlineAnimationPlayer sequence={data} autoPlay={true} showControls={false} bluePropType={propType} redPropType={propType} externalBpm={bpm} />
+      <InlineAnimationPlayer sequence={data} autoPlay={true} showControls={false} leftPropType={propType} rightPropType={propType} externalBpm={bpm} />
     {/if}
   </div>
 

@@ -131,8 +131,8 @@ export function computeFrontRegions(stepCount: number): Record<string, Rect> {
     rows,
     includeStartPosition: true,
     showQRCode: true,
-    blueVisible: true,
-    redVisible: true,
+    leftVisible: true,
+    rightVisible: true,
     mandalaEnabled: true,
     startPositionLayout: policy,
   });

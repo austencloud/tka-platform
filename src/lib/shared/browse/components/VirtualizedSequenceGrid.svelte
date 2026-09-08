@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
@@ -36,14 +37,15 @@
   }
 
   const {
+    collectionPropType,
     sequences = [],
     thumbnailService,
     onAction,
     pinchColumnOverride,
     onGridReady,
     handPathMode = false,
-    showBlueMotion = true,
-    showRedMotion = true,
+    showLeftMotion = true,
+    showRightMotion = true,
     addWord,
     addDifficultyLevel,
     allowQR = true,
@@ -54,6 +56,7 @@
     onSelectionToggle,
     variationSource,
   } = $props<{
+    collectionPropType?: PropType | null;
     sequences: SequenceData[];
     thumbnailService: BrowseThumbnailProvider | null;
     onAction?: (
@@ -65,9 +68,9 @@
     onGridReady?: (api: VirtualGridApi) => void;
     handPathMode?: boolean;
     /** Show blue motion (prop + arrow) in thumbnails. Default: true */
-    showBlueMotion?: boolean;
+    showLeftMotion?: boolean;
     /** Show red motion (prop + arrow) in thumbnails. Default: true */
-    showRedMotion?: boolean;
+    showRightMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
     /** Allow a baked-in QR (signed-in only, gated by the showQRCode setting +
@@ -106,15 +109,15 @@
   }
 
   const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
+    leftPropType: settingsService.settings.leftPropType,
+    rightPropType: settingsService.settings.rightPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
 
   const isCatDog = $derived(
     isCatDogMode(
-      propSettings.bluePropType,
-      propSettings.redPropType,
+      propSettings.leftPropType,
+      propSettings.rightPropType,
       propSettings.catDogMode
     )
   );
@@ -456,6 +459,7 @@
           {@const seqVariations = getVariationsForSequence(sequence)}
           <div role="gridcell" aria-colindex={colIndex + 1}>
             <ChoreoCardThumbnail
+              {collectionPropType}
               {sequence}
               variations={seqVariations}
               onPrimaryAction={onAction
@@ -463,13 +467,13 @@
                     handleSequenceAction("view-detail", seq, seqVariations)
                 : undefined}
               onHover={handleSequenceHover}
-              bluePropType={propSettings.bluePropType}
-              redPropType={propSettings.redPropType}
+              leftPropType={propSettings.leftPropType}
+              rightPropType={propSettings.rightPropType}
               catDogModeEnabled={isCatDog}
               {lightMode}
               {handPathMode}
-              {showBlueMotion}
-              {showRedMotion}
+              {showLeftMotion}
+              {showRightMotion}
               {addWord}
               {addDifficultyLevel}
               {allowQR}

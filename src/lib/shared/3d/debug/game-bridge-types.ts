@@ -72,7 +72,7 @@ export interface PlaybackState {
 
 /**
  * Minimal performer interface for what game-bridge needs.
- * The actual AvatarInstanceState has more properties, but we only access these.
+ * The actual CharacterInstanceState has more properties, but we only access these.
  */
 export interface PerformerLike {
   position: { x: number; y: number; z: number };

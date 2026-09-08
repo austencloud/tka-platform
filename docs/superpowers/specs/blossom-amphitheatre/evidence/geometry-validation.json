@@ -1,0 +1,13 @@
+{
+  "valid": true,
+  "failures": [],
+  "testedMeshes": 107,
+  "deckTop": 0.550000011920929,
+  "maximumRouteGradePercent": {
+    "arrival": 4.699997594255812,
+    "service": 4.699272906886058
+  },
+  "pathHeadroomMetres": 2.4,
+  "samplingAllowanceMetres": 0.05,
+  "scope": "Evaluated mesh vertices; path checks exclude objects below 0.25m above the walking grade."
+}

@@ -7,6 +7,7 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import StepCell from "./StepCell.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   let {
     startPosition,
@@ -19,10 +20,10 @@
     onDelete,
     animationEpoch = 0,
     isTimelineMode = false,
-    bluePropTypeOverride = undefined,
-    redPropTypeOverride = undefined,
-    blueColorOverride = undefined,
-    redColorOverride = undefined,
+    leftPropTypeOverride = undefined,
+    rightPropTypeOverride = undefined,
+    leftColorOverride = undefined,
+    rightColorOverride = undefined,
     onContentReady = undefined,
   } = $props<{
     startPosition: StartPositionData | StepData;
@@ -37,15 +38,17 @@
     isTimelineMode?: boolean;
     /** Prop type overrides for demo/preview rendering (bypasses global
      *  settings) — same convention as StepCell/PictographContainer. */
-    bluePropTypeOverride?: PropType;
-    redPropTypeOverride?: PropType;
-    blueColorOverride?: string;
-    redColorOverride?: string;
+    leftPropTypeOverride?: PropType;
+    rightPropTypeOverride?: PropType;
+    leftColorOverride?: string;
+    rightColorOverride?: string;
     /** Forwarded from the inner cell — see StepCell's onContentReady. */
     onContentReady?: () => void;
   }>();
 
   const hapticService: HapticFeedback | null = getHapticFeedback();
+  const leftColor = $derived(leftColorOverride ?? getSettings().primaryPropColors?.left ?? "var(--dm-motion-blue)");
+  const rightColor = $derived(rightColorOverride ?? getSettings().primaryPropColors?.right ?? "var(--dm-motion-red)");
 
   function handleStartClick() {
     hapticService?.trigger("selection");
@@ -85,15 +88,45 @@
     onDelete={() => onDelete?.(0)}
     {isTimelineMode}
     {animationEpoch}
-    {bluePropTypeOverride}
-    {redPropTypeOverride}
-    {blueColorOverride}
-    {redColorOverride}
+    {leftPropTypeOverride}
+    {rightPropTypeOverride}
+    {leftColorOverride}
+    {rightColorOverride}
     {onContentReady}
   />
+  <span class="hand-colors" aria-label="Left and right prop colors">
+    <span title="Left hand"><i style:background={leftColor}></i>L</span>
+    <span title="Right hand"><i style:background={rightColor}></i>R</span>
+  </span>
 </div>
 
 <style>
+  .hand-colors {
+    position: absolute;
+    bottom: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    pointer-events: none;
+    color: var(--dm-text-color, var(--theme-text));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+  }
+
+  .hand-colors > span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .hand-colors i {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--theme-stroke);
+  }
+
   .start-tile {
     margin: 0;
     position: relative;

@@ -62,23 +62,23 @@ async function synthesizeFoliageAlpha(input, output, asset) {
       }`;
       const bin = bins.get(key) ?? {
         count: 0,
-        red: 0,
+        right: 0,
         green: 0,
-        blue: 0,
+        left: 0,
       };
       bin.count += 1;
-      bin.red += data[offset];
+      bin.right += data[offset];
       bin.green += data[offset + 1];
-      bin.blue += data[offset + 2];
+      bin.left += data[offset + 2];
       bins.set(key, bin);
     }
     const dominant = [...bins.values()].sort(
       (left, right) => right.count - left.count
     )[0];
     return [
-      dominant.red / dominant.count,
+      dominant.right / dominant.count,
       dominant.green / dominant.count,
-      dominant.blue / dominant.count,
+      dominant.left / dominant.count,
     ];
   }
 
@@ -148,44 +148,44 @@ async function synthesizeFoliageAlpha(input, output, asset) {
       : null;
     const rgba = Buffer.alloc(info.width * info.height * 4);
     for (let source = 0, target = 0; source < data.length; source += 3) {
-      const red = data[source];
+      const right = data[source];
       const green = data[source + 1];
-      const blue = data[source + 2];
+      const left = data[source + 2];
       let alpha;
       if (authoredAlpha) {
         alpha = authoredAlpha.data[source / 3];
-        rgba[target] = red;
+        rgba[target] = right;
         rgba[target + 1] = green;
-        rgba[target + 2] = blue;
+        rgba[target + 2] = left;
       } else if (embeddedAlpha) {
         alpha = embeddedAlpha[(source / 3) * 4 + 3];
-        rgba[target] = red;
+        rgba[target] = right;
         rgba[target + 1] = green;
-        rgba[target + 2] = blue;
+        rgba[target + 2] = left;
       } else if (usesBlackBackground) {
-        const signal = Math.max(red, green, blue);
+        const signal = Math.max(right, green, left);
         alpha = Math.max(0, Math.min(255, ((signal - 8) / 24) * 255));
         const coverage = Math.max(alpha / 255, 0.25);
-        rgba[target] = Math.min(255, Math.round(red / coverage));
+        rgba[target] = Math.min(255, Math.round(right / coverage));
         rgba[target + 1] = Math.min(255, Math.round(green / coverage));
-        rgba[target + 2] = Math.min(255, Math.round(blue / coverage));
+        rgba[target + 2] = Math.min(255, Math.round(left / coverage));
       } else {
         const normalOffset = (source / 3) * normal.info.channels;
-        const redDelta = normal.data[normalOffset] - neutralNormal[0];
+        const rightDelta = normal.data[normalOffset] - neutralNormal[0];
         const greenDelta = normal.data[normalOffset + 1] - neutralNormal[1];
-        const blueDelta = normal.data[normalOffset + 2] - neutralNormal[2];
+        const leftDelta = normal.data[normalOffset + 2] - neutralNormal[2];
         const normalDistance = Math.sqrt(
-          redDelta * redDelta +
+          rightDelta * rightDelta +
             greenDelta * greenDelta +
-            blueDelta * blueDelta
+            leftDelta * leftDelta
         );
         alpha = Math.max(
           0,
           Math.min(255, ((normalDistance - 18) / 32) * 255)
         );
-        rgba[target] = red;
+        rgba[target] = right;
         rgba[target + 1] = green;
-        rgba[target + 2] = blue;
+        rgba[target + 2] = left;
       }
       rgba[target + 3] = Math.round(alpha);
       target += 4;

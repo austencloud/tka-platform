@@ -17,15 +17,15 @@ import type {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 
 /**
  * Which hand a trace belongs to.
  *
- * Deliberately an alias of the canonical `MotionColor` rather than a fresh
- * `"blue" | "red"` union: these values are used to index `step.motions[hand]`
+ * Deliberately an alias of the canonical `HandSide` rather than a fresh
+ * string union: these values are used to index `step.motions[hand]`
  * and `startPosition.motions[hand]`, so tying them to the domain enum means a
  * rename over there breaks compilation here instead of silently missing a key.
  *
@@ -33,12 +33,12 @@ import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-pat
  * shell always pairs the color with a shape or a label. This type is just the
  * data key.
  */
-export type TraceHand = MotionColor;
+export type TraceHand = HandSide;
 
-/** Iteration order for the two hands. Blue first, everywhere, always. */
+/** Iteration order for the two hands. Left first, everywhere, always. */
 export const TRACE_HANDS: readonly TraceHand[] = [
-  MotionColor.BLUE,
-  MotionColor.RED,
+  HandSide.LEFT,
+  HandSide.RIGHT,
 ];
 
 /**

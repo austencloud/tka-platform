@@ -19,6 +19,13 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
   Stable `?place=1.x` routes select official knowledge-graph nodes and compose
   the real lesson, Guide, Letter Atlas, and Composer owners where evidence
   exists. Unmapped and partial places say so instead of inventing coverage.
+- The public Atlas landing now renders that same official Level 1 concept map.
+  The arbitrary six-region glossary board and its hand-written decorative SVGs
+  were removed. Search temporarily yields the canvas to matching terms, then
+  restores the selected concept place when cleared. Live verification covered
+  the required compact, tablet, desktop, 4K, and 200% layouts with no page-width
+  overflow. Selection, reload, Back/Forward, the Letter Atlas handoff, and the
+  `type1-abc-ghi` lesson handoff all preserve the canonical `?place=1.5` state.
 - Focused verification is green: six test files, 49 tests, plus
   `svelte-check` with 0 errors and 0 warnings. Source-copy tests also guard
   against reintroducing game-local Level labels.
@@ -89,6 +96,18 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
   the root stayed 16px, and the console reported no errors. The broader landing
   morph suite still has its pre-existing `/glossary` participant failure on
   both the task branch and the baseline `main` checkout.
+- The standalone Grid Guide topic was recomposed as a compact overview in
+  `d4ce6a0b4b`, `0b30889e9e`, `e01a38f084`, and `0894d8d9a2`. The topic no
+  longer asks readers to choose Page versus Reflow: it uses the semantic reflow
+  content directly, keeps the print/book sheet as the separate print owner, and
+  places the contextual Grid lesson link in the title row instead of a dedicated
+  vertical band. The authored explanation now pairs its opening and point
+  definitions with the real hand pictograph, then compares Diamond, Box, and the
+  combined 8-point grid in one row on wide layouts. At 1440x900 the teaching
+  content ends at 826px instead of producing the previous 2967px document.
+  Focused Guide contracts passed 14/14, both changed Svelte components compiled
+  with 0 warnings, the root stayed 16px through 3840x2160, and every checked
+  viewport had zero page-width overflow.
 
 ## Believed done - unverified
 
@@ -148,8 +167,8 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
 - Historical persisted game fields such as `levelNumber`, `starsByLevel`, and
   `levelsUnlocked` are migration inputs only. New UI and state use challenge
   vocabulary.
-- The public Atlas currently groups glossary categories and must not be treated
-  as curriculum truth.
+- The public Atlas landing uses the official Level 1 concept graph. Glossary
+  categories remain search and reference metadata, not curriculum structure.
 - Only seven lesson experiences are registered today. `docs/learn/concept-status.md`
   is the status authority, and `CONFIRMED` requires human interaction.
 - The public Learn route pulls a large client graph on a cold Vite start. The

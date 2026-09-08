@@ -32,6 +32,7 @@ function afterViewTransitionSettles(
 }
 
 import type { ModuleId } from "../navigation/domain/types";
+import { normalizeSectionId } from "../navigation/config/module-definitions";
 import {
   MODULE_DEFINITIONS,
   ENABLED_MODULE_DEFINITIONS,
@@ -62,6 +63,7 @@ import {
   normalizeBrowsePrimary,
   resolveBrowsePathname,
 } from "../browse/navigation/browse-route-resolver";
+import { captureEvent } from "../analytics/services/posthog";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";
@@ -259,6 +261,16 @@ const MODULE_ORDER = [
   "settings",
 ];
 
+function historySectionFor(
+  moduleId: ModuleId,
+  requestedSection?: string
+): string | undefined {
+  if (navigationState.isModuleHomeOpen(moduleId)) {
+    return undefined;
+  }
+  return requestedSection ?? navigationState.activeTab;
+}
+
 // Module change handler with View Transitions
 // targetTab: Optional tab to navigate to (used when clicking a section in a different module)
 // options.forceViewTransition: Force View Transition even when leaving Dashboard (for keyboard shortcuts)
@@ -283,9 +295,13 @@ export async function handleModuleChange(
 
   // Skip transition logic if same module
   if (moduleId === currentMod) {
-    navigationState.setCurrentModule(moduleId, targetTab);
+    navigationState.setCurrentModule(
+      moduleId,
+      targetTab,
+      options?.initiatedByHistory ? "history" : "navigation"
+    );
     if (!shouldSkipHistory) {
-      pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+      pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
     }
     return;
   }
@@ -319,14 +335,18 @@ export async function handleModuleChange(
       document.documentElement.classList.add("settings-portal-enter");
 
       const transition = doc.startViewTransition(async () => {
-        navigationState.setCurrentModule(moduleId, targetTab);
+        navigationState.setCurrentModule(
+          moduleId,
+          targetTab,
+          options?.initiatedByHistory ? "history" : "navigation"
+        );
         await switchModule(moduleId);
       });
 
       const finishSettingsEntry = (): void => {
         document.documentElement.classList.remove("settings-portal-enter");
         if (!shouldSkipHistory) {
-          pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+          pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
         }
       };
       afterViewTransitionSettles(transition, finishSettingsEntry);
@@ -337,7 +357,11 @@ export async function handleModuleChange(
       document.documentElement.classList.add("settings-portal-exit");
 
       const transition = doc.startViewTransition(async () => {
-        navigationState.setCurrentModule(moduleId, targetTab);
+        navigationState.setCurrentModule(
+          moduleId,
+          targetTab,
+          options?.initiatedByHistory ? "history" : "navigation"
+        );
         await switchModule(moduleId);
       });
 
@@ -346,7 +370,7 @@ export async function handleModuleChange(
         navigationCoordinator.previousModuleBeforeSettings = null;
         savePreviousModule(null);
         if (!shouldSkipHistory) {
-          pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+          pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
         }
       };
       afterViewTransitionSettles(transition, finishSettingsExit);
@@ -361,7 +385,11 @@ export async function handleModuleChange(
       );
 
       const transition = doc.startViewTransition(async () => {
-        navigationState.setCurrentModule(moduleId, targetTab);
+        navigationState.setCurrentModule(
+          moduleId,
+          targetTab,
+          options?.initiatedByHistory ? "history" : "navigation"
+        );
         await switchModule(moduleId);
       });
 
@@ -371,17 +399,21 @@ export async function handleModuleChange(
           "module-slide-right"
         );
         if (!shouldSkipHistory) {
-          pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+          pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
         }
       };
       afterViewTransitionSettles(transition, finishModuleSlide);
     }
   } else {
     // Fallback for browsers without View Transitions
-    navigationState.setCurrentModule(moduleId, targetTab);
+    navigationState.setCurrentModule(
+      moduleId,
+      targetTab,
+      options?.initiatedByHistory ? "history" : "navigation"
+    );
     await switchModule(moduleId);
     if (!shouldSkipHistory) {
-      pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
+      pushHistoryState(moduleId, historySectionFor(moduleId, targetTab));
     }
   }
 }
@@ -412,7 +444,9 @@ const TAB_ORDERS: Record<string, string[]> = {
     "notifications",
     "props",
     "theme",
-    "visibility",
+    "preferences",
+    "keyboard",
+    "language",
   ],
 };
 
@@ -463,8 +497,13 @@ export function handleSectionChange(
     return;
   }
 
-  // Don't switch if same section
-  if (sectionId === currentSectionId) {
+  // Selecting the backing method from the Create home still changes the
+  // visible surface and URL, even when the remembered tab ID already matches.
+  const entersCreateWorkspace =
+    module === "create" && navigationState.isCreateFrontDoorOpen;
+
+  // Don't switch if same section and no surface transition is required.
+  if (sectionId === currentSectionId && !entersCreateWorkspace) {
     navDebug("SKIPPED: Already on this section");
     return;
   }
@@ -490,7 +529,7 @@ export function handleSectionChange(
   };
 
   // Use View Transitions if available
-  if (typeof doc.startViewTransition === "function") {
+  if (typeof doc.startViewTransition === "function" && !entersCreateWorkspace) {
     // Add direction class for CSS to target
     document.documentElement.classList.remove(
       "tab-slide-left",
@@ -521,6 +560,53 @@ export function handleSectionChange(
       pushHistoryState(module as ModuleId, sectionId);
     }
   }
+}
+
+export function handleModuleHome(
+  moduleId: ModuleId,
+  source: "navigation" | "workspace" | "history" = "workspace",
+  options?: { skipHistory?: boolean }
+): void {
+  if (!navigationState.getModuleDefinition(moduleId)?.home) return;
+  const previousSection = navigationState.activeTab;
+  const previousModule = navigationState.currentModule;
+
+  if (previousModule !== moduleId) {
+    captureEvent("module_home_selected", {
+      module_id: moduleId,
+      previous_module: previousModule,
+      previous_section: previousSection,
+      source,
+    });
+    void handleModuleChange(moduleId, undefined, {
+      skipHistory: options?.skipHistory,
+      initiatedByHistory: source === "history",
+    });
+    return;
+  }
+
+  navigationState.openModuleHome(moduleId, source);
+  captureEvent("module_home_selected", {
+    module_id: moduleId,
+    previous_section: previousSection,
+    source,
+  });
+  if (moduleId === "create") {
+    captureEvent("create_front_door_returned", {
+      method: previousSection,
+      source,
+    });
+  }
+  if (options?.skipHistory !== true) {
+    pushHistoryState(moduleId, undefined);
+  }
+}
+
+export function handleCreateFrontDoor(
+  source: "navigation" | "workspace" | "history" = "workspace",
+  options?: { skipHistory?: boolean }
+): void {
+  handleModuleHome("create", source, options);
 }
 
 // Export as a getter function that reads feature flags reactively
@@ -619,12 +705,14 @@ const RETIRED_DEFAULT_SECTIONS: ReadonlyMap<string, string> = new Map([
 ]);
 
 function buildPath(moduleId: ModuleId, sectionId?: string) {
+  const normalizedSectionId = normalizeSectionId(moduleId, sectionId);
+
   // Browse's outer navigation only knows Explore and You, but those buttons
   // still need to land on a complete inner route. Writing the alias here races
   // Browse's own resolver at the end of the View Transition and used to leave
   // the address bar at /browse/you after the content had already changed.
   if (moduleId === "browse") {
-    return normalizeBrowsePrimary(sectionId) === "you"
+    return normalizeBrowsePrimary(normalizedSectionId) === "you"
       ? "/browse/you/sequences"
       : "/browse/explore/sequences";
   }
@@ -634,23 +722,29 @@ function buildPath(moduleId: ModuleId, sectionId?: string) {
     const moduleDef = getModuleDefinitions().find((m) => m.id === moduleId);
     const defaultSection =
       moduleDef?.sections?.[0]?.id ?? RETIRED_DEFAULT_SECTIONS.get(moduleId);
-    if (!sectionId || sectionId === defaultSection) {
+    if (!normalizedSectionId || normalizedSectionId === defaultSection) {
       return `/${moduleId}`;
     }
   }
-  return sectionId ? `/${moduleId}/${sectionId}` : `/${moduleId}`;
+  return normalizedSectionId
+    ? `/${moduleId}/${normalizedSectionId}`
+    : `/${moduleId}`;
 }
 
 function recordNavigationVisit(moduleId: ModuleId, sectionId?: string): void {
   getNavigationVisitPersister().recordVisit(
-    buildNavigationDestinationId(moduleId, sectionId)
+    buildNavigationDestinationId(
+      moduleId,
+      normalizeSectionId(moduleId, sectionId)
+    )
   );
 }
 
 function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   if (typeof window === "undefined") return;
+  const normalizedSectionId = normalizeSectionId(moduleId, sectionId);
   const url = new URL(window.location.href);
-  const canonical = buildPath(moduleId, sectionId);
+  const canonical = buildPath(moduleId, normalizedSectionId);
   // Deep links carry more path than the canonical /module/tab —
   // /browse/library/{id}?scan=1 (the phone scan handoff) or
   // /creators/{userId}. This runs at boot BEFORE the lazy-loaded
@@ -658,7 +752,7 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   // eat those segments and strand the deep link on the tab's list view.
   // Keep the longer pathname whenever it sits under the canonical path.
   const browsePrimary =
-    moduleId === "browse" ? normalizeBrowsePrimary(sectionId) : null;
+    moduleId === "browse" ? normalizeBrowsePrimary(normalizedSectionId) : null;
   const preservesBrowseInnerRoute =
     browsePrimary !== null &&
     (url.pathname === `/browse/${browsePrimary}` ||
@@ -668,21 +762,22 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   }
   url.hash = "";
   pruneRouteScopedParams(url, url.pathname);
-  writeUrl(url, { state: { moduleId, sectionId } });
-  recordNavigationVisit(moduleId, sectionId);
+  writeUrl(url, { state: { moduleId, sectionId: normalizedSectionId } });
+  recordNavigationVisit(moduleId, normalizedSectionId);
 }
 
 function pushHistoryState(moduleId: ModuleId, sectionId?: string) {
   if (typeof window === "undefined") return;
+  const normalizedSectionId = normalizeSectionId(moduleId, sectionId);
   const url = new URL(window.location.href);
-  url.pathname = buildPath(moduleId, sectionId);
+  url.pathname = buildPath(moduleId, normalizedSectionId);
   url.hash = "";
   pruneParamsForNavigation(url, url.pathname);
   writeUrl(url, {
     mode: "push",
-    state: { moduleId, sectionId },
+    state: { moduleId, sectionId: normalizedSectionId },
   });
-  recordNavigationVisit(moduleId, sectionId);
+  recordNavigationVisit(moduleId, normalizedSectionId);
 }
 
 let historyInitialized = false;
@@ -751,6 +846,7 @@ function parsePathNavigation(): {
     // Validate module exists
     const moduleDefinition = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
     if (moduleDefinition) {
+      sectionId = normalizeSectionId(moduleId, sectionId);
       // If section is provided, validate it exists for this module
       if (sectionId) {
         const validSection = moduleDefinition.sections.some(
@@ -772,7 +868,7 @@ function parsePathNavigation(): {
   if (hash && hash !== "#") {
     const parts = hash.substring(1).split("/");
     let moduleId = parts[0] as ModuleId;
-    const sectionId = parts[1];
+    let sectionId = parts[1];
 
     // Redirect legacy hash URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy hash URLs)
@@ -785,6 +881,7 @@ function parsePathNavigation(): {
 
     const moduleDefinition = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
     if (moduleDefinition) {
+      sectionId = normalizeSectionId(moduleId, sectionId);
       if (sectionId) {
         const validSection = moduleDefinition.sections.some(
           (s) => s.id === sectionId
@@ -862,7 +959,10 @@ export function initializeNavigationHistory() {
   }
 
   // Seed initial state so back/forward has a valid entry
-  replaceHistoryState(navigationState.currentModule, navigationState.activeTab);
+  replaceHistoryState(
+    navigationState.currentModule,
+    historySectionFor(navigationState.currentModule)
+  );
 
   window.addEventListener("popstate", async (event: PopStateEvent) => {
     const state = readHistoryState(event.state);
@@ -896,6 +996,15 @@ export function initializeNavigationHistory() {
       needsHistoryUpdate = true;
     }
 
+    const normalizedTargetSection = normalizeSectionId(
+      targetModule,
+      targetSection
+    );
+    if (normalizedTargetSection !== targetSection) {
+      targetSection = normalizedTargetSection;
+      needsHistoryUpdate = true;
+    }
+
     if (needsHistoryUpdate) {
       // Update URL to new path
       replaceHistoryState(targetModule, targetSection);
@@ -906,11 +1015,22 @@ export function initializeNavigationHistory() {
         skipHistory: true,
         initiatedByHistory: true,
       });
-    } else if (targetSection && targetSection !== navigationState.activeTab) {
+    } else if (
+      targetSection &&
+      (targetSection !== navigationState.activeTab ||
+        (targetModule === "create" && navigationState.isCreateFrontDoorOpen))
+    ) {
       handleSectionChange(targetSection, {
         skipHistory: true,
         initiatedByHistory: true,
       });
+    } else if (
+      !targetSection &&
+      MODULE_DEFINITIONS.some(
+        (definition) => definition.id === targetModule && definition.home
+      )
+    ) {
+      handleModuleHome(targetModule, "history", { skipHistory: true });
     } else if (!targetSection && navigationState.activeTab) {
       // Module with no stored tab; clear any lingering tab state
       navigationState.setActiveTab("");

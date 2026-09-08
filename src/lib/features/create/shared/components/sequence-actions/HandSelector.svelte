@@ -1,9 +1,9 @@
 <!--
   HandSelector.svelte
 
-  Hand/color selector shared by Sequence Actions and the mandala viewer.
+  Hand selector shared by Sequence Actions and the mandala viewer.
   Defaults to Left / Both / Right; callers can supply labels for the same
-  blue / blue-and-red / red visual states.
+  left / both / right states.
 
   Thin domain wrapper around the shared SegmentedControl. Prop tones live in
   that primitive, so every Left/Blue and Right/Red option follows the same
@@ -26,7 +26,7 @@
     onChange,
     sectionLabel = "Apply To",
     labelId = "apply-to-label",
-    labels = { blue: "Left", both: "Both", red: "Right" },
+    labels = { left: "Left", both: "Both", right: "Right" },
   }: Props = $props();
 
   const options = $derived.by(
@@ -35,9 +35,9 @@
       label: string;
       tone: "blue" | "red" | "both";
     }[] => [
-      { value: "blue", label: labels.blue, tone: "blue" },
+      { value: "left", label: labels.left, tone: "blue" },
       { value: "both", label: labels.both, tone: "both" },
-      { value: "red", label: labels.red, tone: "red" },
+      { value: "right", label: labels.right, tone: "red" },
     ]
   );
 </script>

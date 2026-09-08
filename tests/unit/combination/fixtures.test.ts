@@ -10,7 +10,7 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { deriveMotionType } from "$lib/shared/render/core/calculations/orientation";
@@ -32,7 +32,7 @@ import {
 } from "./fixtures";
 import { loadPictographDatasetForTests } from "./pictograph-dataset";
 
-const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+const COLORS = [HandSide.LEFT, HandSide.RIGHT] as const;
 
 function assertClosedLoop(seq: SequenceData): void {
   for (let i = 1; i < seq.steps.length; i++) {
@@ -50,12 +50,12 @@ function rowKey(
   letter: Letter | null,
   startPosition: string | null,
   endPosition: string | null,
-  blue: MotionData,
-  red: MotionData
+  left: MotionData,
+  right: MotionData
 ): string {
   const hand = (m: MotionData) =>
     [m.motionType, m.rotationDirection, m.startLocation, m.endLocation].join("/");
-  return [letter, startPosition, endPosition, hand(blue), hand(red)].join(" | ");
+  return [letter, startPosition, endPosition, hand(left), hand(right)].join(" | ");
 }
 
 describe("combination fixtures", () => {
@@ -141,17 +141,17 @@ describe("combination fixtures", () => {
     // locations — otherwise the label is the bug, not the function.
     expect(ALL_FIXTURE_STEPS.length).toBe(32);
     for (const { name, step } of ALL_FIXTURE_STEPS) {
-      const { blue, red } = step.motions;
+      const { left, right } = step.motions;
       expect(`${name} start=${step.startPosition}`).toBe(
         `${name} start=${getGridPositionFromLocations(
-          blue.startLocation,
-          red.startLocation
+          left.startLocation,
+          right.startLocation
         )}`
       );
       expect(`${name} end=${step.endPosition}`).toBe(
         `${name} end=${getGridPositionFromLocations(
-          blue.endLocation,
-          red.endLocation
+          left.endLocation,
+          right.endLocation
         )}`
       );
     }
@@ -216,13 +216,13 @@ describe("combination fixtures", () => {
     // A dash's arrow location depends on the OTHER hand, so a per-motion
     // calculation gets it wrong. These are the values production's
     // ArrowLocationCalculator produces.
-    expect(PSI_STEP.motions.blue.arrowLocation).toBe("n"); // static -> start
-    expect(PSI_STEP.motions.red.arrowLocation).toBe("w"); // dash s->n
-    expect(PHI_STEP.motions.blue.arrowLocation).toBe("w"); // dash s->n
-    expect(PHI_STEP.motions.red.arrowLocation).toBe("s"); // static -> start
+    expect(PSI_STEP.motions.left.arrowLocation).toBe("n"); // static -> start
+    expect(PSI_STEP.motions.right.arrowLocation).toBe("w"); // dash s->n
+    expect(PHI_STEP.motions.left.arrowLocation).toBe("w"); // dash s->n
+    expect(PHI_STEP.motions.right.arrowLocation).toBe("s"); // static -> start
     // Shifts land on the intercardinal between their endpoints.
-    expect(GGGG_CW.steps[0]!.motions.blue.arrowLocation).toBe("ne"); // n->e
-    expect(FALG.steps[0]!.motions.blue.arrowLocation).toBe("sw"); // s->w
+    expect(GGGG_CW.steps[0]!.motions.left.arrowLocation).toBe("ne"); // n->e
+    expect(FALG.steps[0]!.motions.left.arrowLocation).toBe("sw"); // s->w
     for (const { name, step } of ALL_FIXTURE_STEPS) {
       for (const color of COLORS) {
         expect(
@@ -236,10 +236,10 @@ describe("combination fixtures", () => {
   it("Ψ and Φ steps carry dash/static motions", () => {
     expect(PSI_STEP.letter).toBe("Ψ");
     expect(PHI_STEP.letter).toBe("Φ");
-    expect(PSI_STEP.motions.blue.motionType).toBe("static");
-    expect(PSI_STEP.motions.red.motionType).toBe("dash");
-    expect(PHI_STEP.motions.blue.motionType).toBe("dash");
-    expect(PHI_STEP.motions.red.motionType).toBe("static");
+    expect(PSI_STEP.motions.left.motionType).toBe("static");
+    expect(PSI_STEP.motions.right.motionType).toBe("dash");
+    expect(PHI_STEP.motions.left.motionType).toBe("dash");
+    expect(PHI_STEP.motions.right.motionType).toBe("static");
   });
 
   it("Ψ and Φ bridge the alpha and beta worlds the fixtures live in", () => {
@@ -278,8 +278,8 @@ describe("combination fixtures vs the diamond dataframe", () => {
               v.letter ?? null,
               v.startPosition ?? null,
               v.endPosition ?? null,
-              v.motions.blue!,
-              v.motions.red!
+              v.motions.left!,
+              v.motions.right!
             )
           )
         )
@@ -295,8 +295,8 @@ describe("combination fixtures vs the diamond dataframe", () => {
     const first = GGGG_CW.steps[0]!;
     expect(
       await motionQueryHandler.findLetterByMotionConfiguration(
-        first.motions.blue,
-        first.motions.red,
+        first.motions.left,
+        first.motions.right,
         GridMode.DIAMOND
       )
     ).toBe("G");
@@ -336,8 +336,8 @@ describe("combination fixtures vs the diamond dataframe", () => {
         step.letter,
         step.startPosition,
         step.endPosition,
-        step.motions.blue,
-        step.motions.red
+        step.motions.left,
+        step.motions.right
       );
       const rows = rowsByLetter.get(step.letter as Letter);
       expect(
@@ -362,8 +362,8 @@ describe("combination fixtures vs the diamond dataframe", () => {
             step.letter,
             step.startPosition,
             step.endPosition,
-            step.motions.blue,
-            step.motions.red
+            step.motions.left,
+            step.motions.right
           )
         ),
         `${step.letter} ${step.startPosition}>${step.endPosition}`

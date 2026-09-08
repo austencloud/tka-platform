@@ -93,18 +93,19 @@
   const presentation = createTunnelPresentationState({
     initialSnapshot: input?.snapshot ?? restoredDraft?.presentation ?? null,
     initialFormation:
-      input?.snapshot?.tunnel.config ??
+      input?.composition?.formation ??
+      restoredDraft?.composition?.formation ??
       input?.formation ??
-      restoredDraft?.composition?.formation,
+      input?.snapshot?.tunnel.config,
     effects,
     visibility,
     animationSettings: localAnimationSettings,
-    initialBluePropType: settingsService.settings.bluePropType ?? "staff",
-    initialRedPropType: settingsService.settings.redPropType ?? "staff",
-    initialBlueBuugengFlipped:
-      settingsService.settings.blueBuugengFlipped ?? false,
-    initialRedBuugengFlipped:
-      settingsService.settings.redBuugengFlipped ?? false,
+    initialLeftPropType: settingsService.settings.leftPropType ?? "staff",
+    initialRightPropType: settingsService.settings.rightPropType ?? "staff",
+    initialLeftBuugengFlipped:
+      settingsService.settings.leftBuugengFlipped ?? false,
+    initialRightBuugengFlipped:
+      settingsService.settings.rightBuugengFlipped ?? false,
   });
 
   const creator = createTunnelCreatorState({
@@ -123,6 +124,7 @@
       stageTunnelSnapshotForViewer(snapshot);
       persistViewerMode("tunnel");
       openSequenceOverlay(lead.source.sequence, {
+        analyticsSource: "create_workspace",
         returnLabel: "Back to Tunnel Creator",
         initialViewerMode: "tunnel",
         initialViewMode: "animation",

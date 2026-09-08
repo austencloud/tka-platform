@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Live verification harness for Moonlit Winter Hollow. */
+  /** Live verification harness for Blue Hour Lodge. */
   import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
   import { onMount } from "svelte";
@@ -11,6 +11,8 @@
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
+  import SceneProbe from "../rainbow-scene/SceneProbe.svelte";
+  let sceneSample = $state("");
   import HarnessToneMapping from "./HarnessToneMapping.svelte";
   import WinterCompositionPlan from "./WinterCompositionPlan.svelte";
   import WinterFireCourtGraybox from "$lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtGraybox.svelte";
@@ -23,9 +25,9 @@
 
   const VIEW_PRESETS = {
     hero: {
-      position: [7, 5.2, 30],
-      target: [-13, 1.8, -9],
-      fov: 44,
+      position: [22, 9, 29],
+      target: [-3, 2.6, -9],
+      fov: 52,
     },
     pond: {
       position: [8, 4.8, -2],
@@ -35,7 +37,7 @@
     trees: {
       position: [8, 6, 24],
       target: [18, 6, -10],
-      fov: 44,
+      fov: 52,
     },
     props: {
       position: [2, 3.6, 4],
@@ -43,8 +45,8 @@
       fov: 45,
     },
     reverse: {
-      position: [-12, 10, -28],
-      target: [0, 2, 0],
+      position: [-32, 18, -42],
+      target: [-3, 2, -6],
       fov: 48,
     },
     walk: {
@@ -68,13 +70,13 @@
       fov: 42,
     },
     lodge: {
-      position: [-18, 6, -25],
-      target: [-24, 4.5, -38],
+      position: [7, 5, -3],
+      target: [-6, 4, -19],
       fov: 48,
     },
     hearth: {
-      position: [-30, 5.2, -25.5],
-      target: [-34, 3.35, -30],
+      position: [-18, 2.8, 4],
+      target: [-13, 1, -4],
       fov: 52,
     },
     world: {
@@ -84,8 +86,8 @@
     },
   } as const;
   const PHONE_HERO_PRESET = {
-    position: [10, 7, 28],
-    target: [-7, 2, -7],
+    position: [30, 16, 52],
+    target: [-3, 2, -9],
     fov: 70,
   } as const;
 
@@ -151,13 +153,17 @@
 <svelte:window bind:innerWidth={viewportWidth} />
 
 <svelte:head>
-  <title>Moonlit Winter Hollow verification</title>
+  <title>Blue Hour Lodge — Winter scene</title>
 </svelte:head>
 
-{#if showCompositionPlan}
+{#if page.url.searchParams.has("performers")}
+  {#await import("./PerformerReview.svelte") then { default: PerformerReview }}
+    <PerformerReview worker={page.url.searchParams.has("worker")} />
+  {/await}
+{:else if showCompositionPlan}
   <WinterCompositionPlan />
 {:else}
-  <div class="page">
+  <div class="page" data-scene={sceneSample}>
     <Canvas
       createRenderer={(canvas) =>
         new WebGLRenderer({
@@ -168,6 +174,10 @@
         })}
     >
       <HarnessToneMapping />
+      <SceneProbe
+        worldName="winter-environment-world"
+        onSample={(value) => (sceneSample = value)}
+      />
       {#key view}
         <EnvironmentReviewCamera
           destinationId="winter-scene-review"

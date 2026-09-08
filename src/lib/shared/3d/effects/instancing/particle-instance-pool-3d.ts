@@ -75,9 +75,9 @@ export interface ParticleInstanceWrite {
   quaternionY?: number;
   quaternionZ?: number;
   quaternionW?: number;
-  red: number;
+  right: number;
   green: number;
-  blue: number;
+  left: number;
   alpha: number;
   uvX?: number;
   uvY?: number;
@@ -553,9 +553,9 @@ export class ParticleInstancePool3D {
     this.quaternions[i4 + 1] = instance.quaternionY ?? 0;
     this.quaternions[i4 + 2] = instance.quaternionZ ?? 0;
     this.quaternions[i4 + 3] = instance.quaternionW ?? 1;
-    this.colors[i3] = instance.red;
+    this.colors[i3] = instance.right;
     this.colors[i3 + 1] = instance.green;
-    this.colors[i3 + 2] = instance.blue;
+    this.colors[i3 + 2] = instance.left;
     this.alphas[index] = instance.alpha;
     this.uvRects[i4] = instance.uvX ?? 0;
     this.uvRects[i4 + 1] = instance.uvY ?? 0;

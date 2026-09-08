@@ -60,21 +60,21 @@ const parked = (): MotionLite => motion("static", "s", "s", "noRotation");
 
 function step(
   num: number,
-  blue: MotionLite,
-  red: MotionLite,
+  left: MotionLite,
+  right: MotionLite,
   isBlank = false
 ): StepData {
   return {
     id: `beat-${num}`,
     stepNumber: num,
     duration: 1.0,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank,
     letter: null,
     startPosition: null,
     endPosition: null,
-    motions: { blue: blue as never, red: red as never },
+    motions: { left: left as never, right: right as never },
   } as unknown as StepData;
 }
 
@@ -108,8 +108,8 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
         step(2, motion("anti", "n", "w", "cw"), parked()),
       ])
     );
-    expect(result.steps[1]!.blueReversal).toBe(false);
-    expect(result.steps[1]!.redReversal).toBe(false);
+    expect(result.steps[1]!.leftReversal).toBe(false);
+    expect(result.steps[1]!.rightReversal).toBe(false);
   });
 
   it("PROP reversal (hand continues, prop reverses) → dot", () => {
@@ -119,8 +119,8 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
         step(2, motion("anti", "n", "e", "ccw"), parked()),
       ])
     );
-    expect(result.steps[1]!.blueReversal).toBe(true);
-    expect(result.steps[1]!.redReversal).toBe(false);
+    expect(result.steps[1]!.leftReversal).toBe(true);
+    expect(result.steps[1]!.rightReversal).toBe(false);
   });
 
   it("FULL reversal (both retrace — prop direction flips too) → dot", () => {
@@ -130,7 +130,7 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
         step(2, motion("pro", "n", "w", "ccw"), parked()),
       ])
     );
-    expect(result.steps[1]!.blueReversal).toBe(true);
+    expect(result.steps[1]!.leftReversal).toBe(true);
   });
 
   it("natural continuation → no dot", () => {
@@ -140,8 +140,8 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
         step(2, motion("pro", "n", "e", "cw"), parked()),
       ])
     );
-    expect(result.steps[1]!.blueReversal).toBe(false);
-    expect(result.steps[1]!.redReversal).toBe(false);
+    expect(result.steps[1]!.leftReversal).toBe(false);
+    expect(result.steps[1]!.rightReversal).toBe(false);
   });
 
   it("FLOAT hand-arc flip via authored handPath → NO dot (no prop-direction flip)", () => {
@@ -151,7 +151,7 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
         step(2, motion("float", "n", "w", "noRotation", "ccw"), parked()),
       ])
     );
-    expect(result.steps[1]!.blueReversal).toBe(false);
+    expect(result.steps[1]!.leftReversal).toBe(false);
   });
 
   it("loop wrap applies to the DOT channel (alternating prop spin dots every step)", () => {
@@ -162,7 +162,7 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
       step(4, motion("anti", "s", "w", "ccw"), parked()),
     ];
     const looped = processReversals(seq(steps, "rotated"));
-    expect(looped.steps.map((s) => s.blueReversal)).toEqual([
+    expect(looped.steps.map((s) => s.leftReversal)).toEqual([
       true,
       true,
       true,
@@ -170,7 +170,7 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
     ]);
 
     const linear = processReversals(seq(steps));
-    expect(linear.steps.map((s) => s.blueReversal)).toEqual([
+    expect(linear.steps.map((s) => s.leftReversal)).toEqual([
       false,
       true,
       true,
@@ -184,7 +184,7 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
       step(2, motion("anti", "n", "w", "cw"), parked()),
     ];
     const looped = processReversals(seq(steps, "rotated"));
-    expect(looped.steps.map((s) => s.blueReversal)).toEqual([false, false]);
+    expect(looped.steps.map((s) => s.leftReversal)).toEqual([false, false]);
   });
 
   it("blanks stay transparent for the dot chain (production semantics preserved)", () => {
@@ -195,8 +195,8 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
         step(3, motion("anti", "n", "e", "ccw"), parked()), // prop reversal across the blank
       ])
     );
-    expect(result.steps[1]!.blueReversal).toBe(false);
-    expect(result.steps[2]!.blueReversal).toBe(true);
+    expect(result.steps[1]!.leftReversal).toBe(false);
+    expect(result.steps[2]!.leftReversal).toBe(true);
   });
 });
 
@@ -207,8 +207,8 @@ describe("canonical engine API — handReversal signal channel retained (non-dis
       step(2, motion("anti", "n", "w", "cw"), parked()),
     ];
     const signals = deriveReversals(steps);
-    expect(signals[1]!.blue.handReversal).toBe(true);
-    expect(signals[1]!.blue.propReversal).toBe(false); // and the dot channel stays quiet
+    expect(signals[1]!.left.handReversal).toBe(true);
+    expect(signals[1]!.left.propReversal).toBe(false); // and the dot channel stays quiet
   });
 
   it("reports both channels on a FULL reversal", () => {
@@ -217,7 +217,7 @@ describe("canonical engine API — handReversal signal channel retained (non-dis
       step(2, motion("pro", "n", "w", "ccw"), parked()),
     ];
     const signals = deriveReversals(steps);
-    expect(signals[1]!.blue).toEqual({
+    expect(signals[1]!.left).toEqual({
       propReversal: true,
       handReversal: true,
     });
@@ -229,7 +229,7 @@ describe("canonical engine API — handReversal signal channel retained (non-dis
       step(2, motion("float", "n", "w", "noRotation", "ccw"), parked()),
     ];
     const signals = deriveReversals(steps);
-    expect(signals[1]!.blue).toEqual({
+    expect(signals[1]!.left).toEqual({
       propReversal: false,
       handReversal: true,
     });
@@ -242,65 +242,65 @@ describe("option previews — dot channel only (prop-direction flip)", () => {
   it("does NOT flag a hand-reversal option (prop direction unchanged)", () => {
     const option = {
       motions: {
-        blue: motion("anti", "n", "w", "cw"), // hand retraces, prop continues
-        red: parked(),
+        left: motion("anti", "n", "w", "cw"), // hand retraces, prop continues
+        right: parked(),
       },
     } as unknown as PictographData;
     expect(detectReversalForOption(currentSequence, option)).toEqual({
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
     });
   });
 
   it("flags a prop-reversal option", () => {
     const option = {
       motions: {
-        blue: motion("anti", "n", "e", "ccw"),
-        red: parked(),
+        left: motion("anti", "n", "e", "ccw"),
+        right: parked(),
       },
     } as unknown as PictographData;
     expect(detectReversalForOption(currentSequence, option)).toEqual({
-      blueReversal: true,
-      redReversal: false,
+      leftReversal: true,
+      rightReversal: false,
     });
   });
 
   it("dots a float from its preserved pre-float prop direction", () => {
     const option = {
       motions: {
-        blue: {
+        left: {
           ...motion("float", "n", "e", "noRotation"),
           prefloatRotationDirection: "ccw",
         },
-        red: parked(),
+        right: parked(),
       },
     } as unknown as PictographData;
 
     expect(detectReversalForOption(currentSequence, option)).toEqual({
-      blueReversal: true,
-      redReversal: false,
+      leftReversal: true,
+      rightReversal: false,
     });
   });
 
   it("detectReversalsForOptions dots prop/full options, not hand-reversal or continuation options", () => {
     const sequencePictographs = [
-      { motions: { blue: proOpener(), red: parked() } },
+      { motions: { left: proOpener(), right: parked() } },
     ] as unknown as PictographData[];
     const options = [
-      { motions: { blue: motion("anti", "n", "w", "cw"), red: parked() } }, // hand reversal → no dot
-      { motions: { blue: motion("anti", "n", "e", "ccw"), red: parked() } }, // prop reversal → dot
-      { motions: { blue: motion("pro", "n", "w", "ccw"), red: parked() } }, // full reversal → dot
-      { motions: { blue: motion("pro", "n", "e", "cw"), red: parked() } }, // continuation → no dot
+      { motions: { left: motion("anti", "n", "w", "cw"), right: parked() } }, // hand reversal → no dot
+      { motions: { left: motion("anti", "n", "e", "ccw"), right: parked() } }, // prop reversal → dot
+      { motions: { left: motion("pro", "n", "w", "ccw"), right: parked() } }, // full reversal → dot
+      { motions: { left: motion("pro", "n", "e", "cw"), right: parked() } }, // continuation → no dot
     ] as unknown as PictographData[];
 
     const annotated = detectReversalsForOptions(sequencePictographs, options);
-    expect(annotated.map((o) => o.blueReversal)).toEqual([
+    expect(annotated.map((o) => o.leftReversal)).toEqual([
       false,
       true,
       true,
       false,
     ]);
-    expect(annotated.map((o) => o.redReversal)).toEqual([
+    expect(annotated.map((o) => o.rightReversal)).toEqual([
       false,
       false,
       false,
@@ -310,8 +310,8 @@ describe("option previews — dot channel only (prop-direction flip)", () => {
 
   it("returns all-false for an empty sequence", () => {
     const options = [
-      { motions: { blue: motion("pro", "n", "e", "cw"), red: parked() } },
+      { motions: { left: motion("pro", "n", "e", "cw"), right: parked() } },
     ] as unknown as PictographData[];
-    expect(detectReversalsForOptions([], options)[0]!.blueReversal).toBe(false);
+    expect(detectReversalsForOptions([], options)[0]!.leftReversal).toBe(false);
   });
 });

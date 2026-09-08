@@ -3,6 +3,11 @@
   import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
   import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
   import type { AxisFilter, MatrixFilters } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
+  import type { TurnValue } from "$lib/shared/create/services/level-turn-values";
+  import {
+    HandSide,
+    type HandSide as HandSideValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     filters: MatrixFilters;
@@ -27,10 +32,10 @@
   ];
 
 
-  function setAxis(which: "blue" | "red", patch: Partial<AxisFilter>) {
+  function setAxis(which: HandSideValue, patch: Partial<AxisFilter>) {
     onchange({ ...filters, [which]: { ...filters[which], ...patch } });
   }
-  function toggleTurn(which: "blue" | "red", t: number) {
+  function toggleTurn(which: HandSideValue, t: TurnValue) {
     const turns = new Set(filters[which].turns);
     if (turns.has(t)) turns.delete(t);
     else turns.add(t);
@@ -38,7 +43,7 @@
   }
 </script>
 
-{#snippet axisRow(which: "blue" | "red", color: "blue" | "red")}
+{#snippet axisRow(which: HandSideValue, color: "blue" | "red")}
   {@const f = filters[which]}
   <div class="group" class:blue={color === "blue"} class:red={color === "red"} role="group" aria-label={`${which} flower filters`}>
     <span class="axis">{which}</span>
@@ -67,8 +72,8 @@
 
 <div class="filters">
   <div class="inner">
-    {@render axisRow("blue", "blue")}
-    {@render axisRow("red", "red")}
+    {@render axisRow(HandSide.LEFT, "blue")}
+    {@render axisRow(HandSide.RIGHT, "red")}
     <button
       type="button"
       class="collapse"

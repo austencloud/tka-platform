@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { collectionPropSettings } from "$lib/shared/library/domain/collection-prop";
   import { onDestroy } from "svelte";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import VirtualizedSequenceGrid, {
@@ -20,6 +22,7 @@
   import type { BrowseEngine } from "../engine/types";
 
   interface Props {
+    collectionPropType?: PropType | null;
     engine: BrowseEngine;
     thumbnailService: BrowseThumbnailProvider | null;
     onAction?: (
@@ -68,6 +71,7 @@
     onSectionGridReady,
     onActiveSectionChange,
     collectionContext,
+    collectionPropType,
   }: Props = $props();
 
   // Derived state from engine — sections take priority over virtualization
@@ -111,14 +115,14 @@
   const handPathMode = $derived(engine.viewMode.subject === "hands");
   const isSoloMode = $derived(engine.viewMode.granularity === "solo");
 
-  // Motion visibility: in "combined" mode show both, in "solo" mode show only the selected color
-  const showBlueMotion = $derived(
+  // Motion visibility: combined shows both; solo shows the selected hand.
+  const showLeftMotion = $derived(
     engine.viewMode.granularity === "combined" ||
-      engine.viewMode.color === "blue"
+      engine.viewMode.hand === "left"
   );
-  const showRedMotion = $derived(
+  const showRightMotion = $derived(
     engine.viewMode.granularity === "combined" ||
-      engine.viewMode.color === "red"
+      engine.viewMode.hand === "right"
   );
 
   // Word/difficulty only meaningful with both props visible
@@ -126,16 +130,23 @@
   const addDifficultyLevel = $derived(!handPathMode && !isSoloMode);
 
   // Prop settings
-  const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
-    catDogMode: settingsService.settings.catDogMode,
-  });
+  const propSettings = $derived(
+    collectionPropSettings(
+      {
+        leftPropType: settingsService.settings.leftPropType,
+        rightPropType: settingsService.settings.rightPropType,
+        catDogMode: settingsService.settings.catDogMode,
+      },
+      settingsService.settings.propViewingMode === "as-saved"
+        ? collectionPropType
+        : null
+    )
+  );
 
   const isCatDog = $derived(
     isCatDogMode(
-      propSettings.bluePropType,
-      propSettings.redPropType,
+      propSettings.leftPropType,
+      propSettings.rightPropType,
       propSettings.catDogMode
     )
   );
@@ -171,6 +182,7 @@
 {#if useVirtualization}
   <!-- Virtualized: large flat list with 50+ items -->
   <VirtualizedSequenceGrid
+    {collectionPropType}
     sequences={dedupeByWord(engine.sequences as SequenceData[])}
     variationSource={engine.sequences as SequenceData[]}
     {thumbnailService}
@@ -178,8 +190,8 @@
     pinchColumnOverride={engine.columnCount}
     {onGridReady}
     {handPathMode}
-    {showBlueMotion}
-    {showRedMotion}
+    {showLeftMotion}
+    {showRightMotion}
     {addWord}
     {addDifficultyLevel}
     {selectedIds}
@@ -191,14 +203,15 @@
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: virtualized (level banners + letter headers + word rows) -->
   <SectionedVirtualGrid
+    {collectionPropType}
     {engine}
     {thumbnailService}
     {scrollElement}
     {onAction}
     {eager}
     {handPathMode}
-    {showBlueMotion}
-    {showRedMotion}
+    {showLeftMotion}
+    {showRightMotion}
     {addWord}
     {addDifficultyLevel}
     {selectedIds}
@@ -219,20 +232,21 @@
     {#each dedupeByWord(engine.sequences as SequenceData[]) as sequence (sequence.id)}
       {@const seqVariations = getVariationsForSequence(sequence)}
       <ChoreoCardThumbnail
+        {collectionPropType}
         {sequence}
         variations={seqVariations}
         onPrimaryAction={onAction
           ? (seq) => handleSequenceAction("view-detail", seq, seqVariations)
           : undefined}
         onHover={handleSequenceHover}
-        bluePropType={propSettings.bluePropType}
-        redPropType={propSettings.redPropType}
+        leftPropType={propSettings.leftPropType}
+        rightPropType={propSettings.rightPropType}
         catDogModeEnabled={isCatDog}
         {lightMode}
         {eager}
         {handPathMode}
-        {showBlueMotion}
-        {showRedMotion}
+        {showLeftMotion}
+        {showRightMotion}
         {selectedIds}
         {selectionMode}
         {onSelectionStart}

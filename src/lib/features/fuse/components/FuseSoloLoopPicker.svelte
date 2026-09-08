@@ -32,13 +32,13 @@
     void loadSoloLibrarySequences({
       subject: "props",
       granularity: "solo",
-      color: side,
+      hand: side,
     })
       .then((loaded) => {
         if (!active) return;
         sequences = loaded.filter((sequence) => {
           const solo =
-            side === "blue" ? sequence.blueSoloProp : sequence.redSoloProp;
+            side === "left" ? sequence.leftSoloProp : sequence.rightSoloProp;
           return !!solo && solo.length === length && isStructuredSoloLoop(solo);
         });
       })
@@ -59,7 +59,13 @@
   }
 </script>
 
-<BaseModal bind:open onclose={onClose} size="xl" labelledBy="solo-loop-title">
+<BaseModal
+  bind:open
+  onclose={onClose}
+  size="xl"
+  class="fuse-solo-loop-picker"
+  labelledBy="solo-loop-title"
+>
   {#snippet header()}
     <div class="picker-header">
       <div>
@@ -96,7 +102,7 @@
               browseViewMode={{
                 subject: "props",
                 granularity: "solo",
-                color: side,
+                hand: side,
               }}
               columnCount={Math.min(4, length)}
               includeStartPosition={false}
@@ -118,6 +124,12 @@
 </BaseModal>
 
 <style>
+  :global(dialog.base-modal.fuse-solo-loop-picker) {
+    background:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      color-mix(in srgb, var(--theme-text) 8%, black);
+  }
+
   .picker-header {
     display: flex;
     align-items: flex-start;

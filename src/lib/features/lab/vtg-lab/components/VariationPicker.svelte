@@ -80,8 +80,8 @@
     };
   });
 
-  const blueTurns = $derived(turnPattern.split("|")[0]);
-  const redTurns = $derived(turnPattern.split("|")[1]);
+  const leftTurns = $derived(turnPattern.split("|")[0]);
+  const rightTurns = $derived(turnPattern.split("|")[1]);
 
   // Balanced columns off the full variation count (stable as bakes stream in) —
   // one row when they fit (≤8), otherwise split into even rows, never a lonely
@@ -121,7 +121,7 @@
       onkeydown={(e) => e.key === "Escape" && onClose()}
     >
       <header>
-        <span class="turns">Blue {blueTurns} · Red {redTurns} turns</span>
+        <span class="turns">Blue {leftTurns} · Red {rightTurns} turns</span>
         <button class="x" onclick={onClose} aria-label="Close"><i class="fas fa-xmark"></i></button>
       </header>
 

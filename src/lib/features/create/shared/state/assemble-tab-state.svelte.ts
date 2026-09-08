@@ -36,7 +36,7 @@ import {
   sequenceToBuilderHydration,
   withCalculatedArrowLocations,
 } from "$lib/features/assemble-lab/services/builder-step-converter";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -145,38 +145,38 @@ export function createAssembleTabState(
   ): StepData {
     if (!existing) return generated;
 
-    const blue = mergeBuilderMotion(
-      generated.motions.blue,
-      existing.motions.blue
+    const left = mergeBuilderMotion(
+      generated.motions.left,
+      existing.motions.left
     );
-    const red = mergeBuilderMotion(generated.motions.red, existing.motions.red);
+    const right = mergeBuilderMotion(generated.motions.right, existing.motions.right);
 
     return {
       ...generated,
       ...existing,
       stepNumber: index + 1,
       gridMode: builderState.gridMode,
-      motions: { blue, red },
+      motions: { left, right },
     };
   }
 
   function syncBuilderToSequence(change?: AssembleDocumentChange): void {
     if (!sequenceState || isApplyingBuilderChange || isDestroyed) return;
 
-    const blueSteps = builderState.blueSteps;
-    const redSteps = builderState.redSteps;
+    const leftSteps = builderState.leftSteps;
+    const rightSteps = builderState.rightSteps;
     const gridMode = builderState.gridMode;
     const startPicto = convertToStartPosition(
       builderState.startPoses,
-      blueSteps,
-      redSteps,
+      leftSteps,
+      rightSteps,
       gridMode
     );
     const current = sequenceState.currentSequence;
     const metadataSteps = remapMetadataSteps(current?.steps ?? [], change);
     const generatedSteps = convertToPictographs(
-      blueSteps,
-      redSteps,
+      leftSteps,
+      rightSteps,
       gridMode
     ).map((pictograph, index) => {
       const letter = metadataSteps[index]?.letter ?? null;
@@ -268,17 +268,17 @@ export function createAssembleTabState(
   }
 
   function builderPairKey(index: number): string | null {
-    const blue = builderState.blueSteps[index];
-    const red = builderState.redSteps[index];
-    if (!blue || !red) return null;
-    return JSON.stringify([builderState.gridMode, blue, red]);
+    const left = builderState.leftSteps[index];
+    const right = builderState.rightSteps[index];
+    if (!left || !right) return null;
+    return JSON.stringify([builderState.gridMode, left, right]);
   }
 
   function scheduleLetterLookups(): void {
     if (!sequenceState || isDestroyed) return;
     const paired = Math.min(
-      builderState.blueSteps.length,
-      builderState.redSteps.length
+      builderState.leftSteps.length,
+      builderState.rightSteps.length
     );
 
     for (let index = 0; index < paired; index += 1) {
@@ -291,18 +291,18 @@ export function createAssembleTabState(
         continue;
       }
 
-      const blueMotion = stepToMotion(
-        builderState.blueSteps[index]!,
-        MotionColor.BLUE,
+      const leftMotion = stepToMotion(
+        builderState.leftSteps[index]!,
+        HandSide.LEFT,
         builderState.gridMode
       );
-      const redMotion = stepToMotion(
-        builderState.redSteps[index]!,
-        MotionColor.RED,
+      const rightMotion = stepToMotion(
+        builderState.rightSteps[index]!,
+        HandSide.RIGHT,
         builderState.gridMode
       );
       letterCache.set(key, null);
-      void lookupLetter(blueMotion, redMotion, builderState.gridMode)
+      void lookupLetter(leftMotion, rightMotion, builderState.gridMode)
         .then((letter) => {
           letterCache.set(key, letter);
           applyResolvedLetter(index, key, letter);
@@ -358,8 +358,8 @@ export function createAssembleTabState(
 
     lastSynchronizedDocument = null;
     builderState.hydrateFromSequence({
-      blueSteps: [],
-      redSteps: [],
+      leftSteps: [],
+      rightSteps: [],
       gridMode: builderState.gridMode,
       startPoses: {},
     });

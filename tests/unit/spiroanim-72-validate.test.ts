@@ -25,10 +25,45 @@ type Hand = {
   startOrientation: string;
   endOrientation: string;
 };
-type Step = { letter: string; startPos: string; endPos: string; blue: Hand; red: Hand };
+type Step = {
+  letter: string;
+  startPos: string;
+  endPos: string;
+  blue: Hand;
+  red: Hand;
+};
 type Cell = { reference: string; word: string; steps: Step[] };
 
-const cells: Cell[] = JSON.parse(readFileSync(DATA("eightstep-72-base.json"), "utf8"));
+const WALL_PLANE_FLAGGED_CELLS = new Set([
+  "1-AE",
+  "1-AI",
+  "2-AE",
+  "2-AI",
+  "3-EE",
+  "3-EI",
+  "3-IE",
+  "3-II",
+  "4-EE",
+  "4-EI",
+  "4-IE",
+  "4-II",
+  "5-EE",
+  "5-EI",
+  "5-IE",
+  "5-II",
+  "6-EE",
+  "6-EI",
+  "6-IE",
+  "6-II",
+  "7-AE",
+  "7-AI",
+  "8-AE",
+  "8-AI",
+]);
+
+const cells: Cell[] = JSON.parse(
+  readFileSync(DATA("eightstep-72-base.json"), "utf8")
+);
 
 describe("SpiroAnim Eight Step base cells", () => {
   it("agrees with TKA's orientation engine on every motion", () => {
@@ -57,7 +92,9 @@ describe("SpiroAnim Eight Step base cells", () => {
         }
       }
     }
-    console.log(`orientation checks: ${checked}, mismatches: ${mismatches.length}`);
+    console.log(
+      `orientation checks: ${checked}, mismatches: ${mismatches.length}`
+    );
     if (mismatches.length) console.log(mismatches.slice(0, 20).join("\n"));
     expect(mismatches).toEqual([]);
   });
@@ -70,9 +107,13 @@ describe("SpiroAnim Eight Step base cells", () => {
           const prev = cell.steps[i - 1]![color];
           const cur = cell.steps[i]![color];
           if (prev.endOrientation !== cur.startOrientation)
-            open.push(`${cell.reference} ${color} step${i}->${i + 1} orientation break`);
+            open.push(
+              `${cell.reference} ${color} step${i}->${i + 1} orientation break`
+            );
           if (prev.endLoc !== cur.startLoc)
-            open.push(`${cell.reference} ${color} step${i}->${i + 1} location break`);
+            open.push(
+              `${cell.reference} ${color} step${i}->${i + 1} location break`
+            );
         }
         const first = cell.steps[0]![color];
         const last = cell.steps.at(-1)![color];
@@ -93,14 +134,24 @@ describe("SpiroAnim Eight Step base cells", () => {
       metadata: {
         source: "spiroanim-eight-step",
         cell: cell.reference,
-        attribution: "8-Step Concepts by Gage DeMello; generated geometry by Ryan Girard (spiroanim)",
+        attribution:
+          "8-Step Concepts and handpaths by Gage DeMello; transcribed from Mentive's SpiroAnim (@rbgirard)",
+        ...(WALL_PLANE_FLAGGED_CELLS.has(cell.reference) && {
+          wallPlaneSourceAssessment: {
+            status: "flagged-difficult-or-impossible",
+            source: "Mentive's SpiroAnim 8-Step wall-plane warning",
+            sourceRepository: "https://github.com/rbgirard/spiroanim",
+            sourceCommit: "6bd56cde61c82bd9a047727ceff70d22428113d3",
+            note: "SpiroAnim marks this cell as potentially difficult or impossible in Wall Plane without significant modification.",
+          },
+        }),
       },
       startPosition: {
         letter: null,
         gridPosition: cell.steps[0]!.startPos,
         motions: {
-          blue: motionBlob(cell.steps[0]!.blue, "blue", true),
-          red: motionBlob(cell.steps[0]!.red, "red", true),
+          left: motionBlob(cell.steps[0]!.blue, "left", true),
+          right: motionBlob(cell.steps[0]!.red, "right", true),
         },
       },
       steps: cell.steps.map((s, i) => ({
@@ -109,18 +160,29 @@ describe("SpiroAnim Eight Step base cells", () => {
         startPosition: s.startPos,
         endPosition: s.endPos,
         duration: 1,
-        motions: { blue: motionBlob(s.blue, "blue"), red: motionBlob(s.red, "red") },
+        motions: {
+          left: motionBlob(s.blue, "left"),
+          right: motionBlob(s.red, "right"),
+        },
       })),
     }));
-    writeFileSync(DATA("eightstep-72-sequences.json"), JSON.stringify(blobs, null, 1));
-    console.log(`wrote ${blobs.length} sequence blobs; sample word ${blobs[0]!.word}`);
+    writeFileSync(
+      DATA("eightstep-72-sequences.json"),
+      JSON.stringify(blobs, null, 1)
+    );
+    console.log(
+      `wrote ${blobs.length} sequence blobs; sample word ${blobs[0]!.word}`
+    );
     expect(blobs).toHaveLength(72);
+    expect(
+      blobs.filter((blob) => blob.metadata.wallPlaneSourceAssessment)
+    ).toHaveLength(24);
   });
 });
 
-function motionBlob(m: Hand, color: "blue" | "red", asStart = false) {
+function motionBlob(m: Hand, hand: "left" | "right", asStart = false) {
   return {
-    color,
+    hand,
     motionType: asStart ? "static" : m.motionType,
     rotationDirection: asStart ? "no_rot" : m.rotationDirection,
     startLocation: m.startLoc,

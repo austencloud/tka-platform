@@ -7,6 +7,7 @@
 
 import type { Timestamp } from "firebase/firestore";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
 import {
   generateAdjustmentKeyString,
   parseAdjustmentKeyString,
@@ -184,7 +185,7 @@ export class GlobalArrowAdjustmentRepository {
 
     // Build key with optional prop types
     const key: GlobalAdjustmentKey = {
-      placementFrame: input.placementFrame,
+      placementFrame: normalizePlacementFrame(input.placementFrame),
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
@@ -209,7 +210,7 @@ export class GlobalArrowAdjustmentRepository {
     } as unknown as Timestamp;
 
     const adjustment: GlobalArrowAdjustment = {
-      placementFrame: input.placementFrame,
+      placementFrame: normalizePlacementFrame(input.placementFrame),
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
@@ -243,7 +244,7 @@ export class GlobalArrowAdjustmentRepository {
 
     // Build key with optional prop types
     const key: GlobalAdjustmentKey = {
-      placementFrame: input.placementFrame,
+      placementFrame: normalizePlacementFrame(input.placementFrame),
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,

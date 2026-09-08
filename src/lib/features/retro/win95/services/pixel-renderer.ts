@@ -24,6 +24,7 @@ import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/mo
 import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DrawableImage } from '$lib/shared/render/services/svg-image-cache';
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 
 interface PaletteColor {
@@ -235,7 +236,7 @@ export class PixelRenderer extends EraRendererBase {
 		prepared: PreparedRenderData,
 		scale: number,
 	): Promise<void> {
-		for (const color of ["blue", "red"] as const) {
+		for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
 			const position = prepared.propPositions[color];
 			const assets   = prepared.propAssets[color];
 			if (!position || !assets?.imageSrc) continue;
@@ -249,7 +250,7 @@ export class PixelRenderer extends EraRendererBase {
 				const cacheKey = `pixel_prop_${color}_${wrapped.svg.length}`;
 				const img      = await this.loadSvgImage(wrapped.svg, cacheKey);
 
-				const eraColor = color === "blue" ? BLUE_COLOR : RED_COLOR;
+				const eraColor = color === HandSide.LEFT ? BLUE_COLOR : RED_COLOR;
 
 				const drawParams = {
 					x:            position.x * scale,
@@ -288,7 +289,7 @@ export class PixelRenderer extends EraRendererBase {
 		prepared: PreparedRenderData,
 		scale: number,
 	): Promise<void> {
-		for (const color of ["blue", "red"] as const) {
+		for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
 			const position    = prepared.arrowPositions[color];
 			const assets      = prepared.arrowAssets[color];
 			const shouldMirror = prepared.arrowMirroring[color] ?? false;
@@ -325,7 +326,7 @@ export class PixelRenderer extends EraRendererBase {
 				const adjustedCenterY =
 					(assets.center?.y ?? viewBoxHeight / 2) - viewBoxMinY + wrapped.offsetY;
 
-				const eraColor = color === "blue" ? BLUE_COLOR : RED_COLOR;
+				const eraColor = color === "left" ? BLUE_COLOR : RED_COLOR;
 
 				const drawParams = {
 					x:            position.x * scale,

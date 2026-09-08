@@ -54,8 +54,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
   let loadedSequenceId = $state<string | null>(null);
 
   // Prop states for rendering
-  let bluePropState = $state<PropState | null>(null);
-  let redPropState = $state<PropState | null>(null);
+  let leftPropState = $state<PropState | null>(null);
+  let rightPropState = $state<PropState | null>(null);
 
   // Derived values
   // totalSteps = number of motion steps (NOT including start position)
@@ -145,8 +145,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     if (!initialized || !animationOrchestrator || !sequence) {
       untrack(() => {
         loadedSequenceId = null;
-        bluePropState = null;
-        redPropState = null;
+        leftPropState = null;
+        rightPropState = null;
         currentStep = 0;
         stopPlayback();
       });
@@ -174,8 +174,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     untrack(() => {
       animationOrchestrator!.calculateState(playbackPosition);
       const propStates = animationOrchestrator!.getCurrentPropStates();
-      bluePropState = propStates.blue;
-      redPropState = propStates.red;
+      leftPropState = propStates.left;
+      rightPropState = propStates.right;
     });
   });
 
@@ -190,8 +190,8 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
 
       animationOrchestrator.calculateState(0);
       const propStates = animationOrchestrator.getCurrentPropStates();
-      bluePropState = propStates.blue;
-      redPropState = propStates.red;
+      leftPropState = propStates.left;
+      rightPropState = propStates.right;
     } catch (err) {
       console.error("SourcePreview: animation init failed:", err);
     }
@@ -299,11 +299,11 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         <span>{error}</span>
       </div>
-    {:else if sequence && bluePropState && redPropState}
+    {:else if sequence && leftPropState && rightPropState}
       <div class="canvas-container">
         <AnimatorCanvas
-          blueProp={bluePropState}
-          redProp={redPropState}
+          leftProp={leftPropState}
+          rightProp={rightPropState}
           gridVisible={true}
           gridMode={sequence.gridMode ?? null}
           letter={currentLetter}

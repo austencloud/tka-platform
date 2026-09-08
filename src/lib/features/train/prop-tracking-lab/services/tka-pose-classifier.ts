@@ -25,19 +25,23 @@
  * hypotheses (see validation/scorecard.ts mirrorBeatNotation); resolve it
  * against the first real ground-truth clip, not by assumption.
  */
-import { Vector3 } from 'three';
-import type { GridLocation } from '../domain/models';
-import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
+import { Vector3 } from "three";
+import type { GridLocation } from "../domain/models";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   Orientation,
   MotionType,
   RotationDirection,
-} from '$lib/shared/pictograph/shared/domain/enums/pictograph-enums';
-import type { StaffColor, StaffPose3D, StaffMotionNotation } from '../domain/notation-3d';
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type {
+  StaffHand,
+  StaffPose3D,
+  StaffMotionNotation,
+} from "../domain/notation-3d";
 
 /** 8 grid locations ordered clockwise from North at 45deg steps. */
-const LOCATIONS: GridLocation[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
-const CARDINALS = new Set<GridLocation>(['n', 'e', 's', 'w']);
+const LOCATIONS: GridLocation[] = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
+const CARDINALS = new Set<GridLocation>(["n", "e", "s", "w"]);
 
 export interface ClassifierConfig {
   /** Round turns to this increment. 0.5 = half-turn (L3); 0.25 = quarter (L4). */
@@ -65,7 +69,8 @@ export class TkaPoseClassifier {
 
   /** Diamond when at least one end is cardinal; box when both intercardinal. */
   gridModeFor(a: GridLocation, b: GridLocation): GridMode {
-    const cardinalCount = (CARDINALS.has(a) ? 1 : 0) + (CARDINALS.has(b) ? 1 : 0);
+    const cardinalCount =
+      (CARDINALS.has(a) ? 1 : 0) + (CARDINALS.has(b) ? 1 : 0);
     return cardinalCount >= 1 ? GridMode.DIAMOND : GridMode.BOX;
   }
 
@@ -100,11 +105,14 @@ export class TkaPoseClassifier {
   }
 
   /** Hand-path family: same->static, opposite(4 steps)->dash, else->shift. */
-  classifyHandMotion(start: GridLocation, end: GridLocation): 'static' | 'shift' | 'dash' {
+  classifyHandMotion(
+    start: GridLocation,
+    end: GridLocation
+  ): "static" | "shift" | "dash" {
     const step = this.locStep(start, end);
-    if (step === 0) return 'static';
-    if (step === 4) return 'dash';
-    return 'shift';
+    if (step === 0) return "static";
+    if (step === 4) return "dash";
+    return "shift";
   }
 
   /**
@@ -145,23 +153,24 @@ export class TkaPoseClassifier {
    * @param confidence lowest per-frame tracking confidence over the span
    */
   classifyMotion(
-    staff: StaffColor,
+    hand: StaffHand,
     start: StaffPose3D,
     end: StaffPose3D,
     arcAngle: number,
     propNetRotation: number,
-    confidence: number,
+    confidence: number
   ): StaffMotionNotation {
     const startLocation = this.classifyLocation(start.gripPos);
     const endLocation = this.classifyLocation(end.gripPos);
     const handMotion = this.classifyHandMotion(startLocation, endLocation);
 
     let motionType: MotionType;
-    if (handMotion === 'static') motionType = MotionType.STATIC;
-    else if (handMotion === 'dash') motionType = MotionType.DASH;
+    if (handMotion === "static") motionType = MotionType.STATIC;
+    else if (handMotion === "dash") motionType = MotionType.DASH;
     else motionType = this.classifyShiftType(arcAngle, propNetRotation);
 
-    const additional = propNetRotation - this.baseRotation(motionType, arcAngle);
+    const additional =
+      propNetRotation - this.baseRotation(motionType, arcAngle);
     const turns =
       motionType === MotionType.FLOAT
         ? 0 // float has no turn count
@@ -172,11 +181,13 @@ export class TkaPoseClassifier {
       rotationDirection = RotationDirection.NO_ROTATION;
     } else {
       rotationDirection =
-        additional >= 0 ? RotationDirection.COUNTER_CLOCKWISE : RotationDirection.CLOCKWISE;
+        additional >= 0
+          ? RotationDirection.COUNTER_CLOCKWISE
+          : RotationDirection.CLOCKWISE;
     }
 
     return {
-      staff,
+      hand,
       startLocation,
       endLocation,
       handMotion,

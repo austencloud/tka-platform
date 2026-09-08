@@ -60,8 +60,8 @@
 		{#if useCompactSidebar}
 			<SettingsTogglePanel
 				propType={null}
-				bluePropType={null}
-				redPropType={null}
+				leftPropType={null}
+				rightPropType={null}
 				{bpm}
 				{playbackMode}
 				stepPlaybackStepSize={stepSize}
@@ -85,7 +85,7 @@
 				/>
 			</div>
 			<div class="sidebar-section">
-				<VisualPane propType={null} bluePropType={null} redPropType={null} />
+				<VisualPane propType={null} leftPropType={null} rightPropType={null} />
 			</div>
 		{/if}
 	{:else}
@@ -94,7 +94,7 @@
 			<TempoControl {bpm} {onBpmChange} showPractice={false} />
 		</div>
 		<div class="sidebar-section">
-			<VisualPane propType={null} bluePropType={null} redPropType={null} />
+			<VisualPane propType={null} leftPropType={null} rightPropType={null} />
 		</div>
 	{/if}
 </div>

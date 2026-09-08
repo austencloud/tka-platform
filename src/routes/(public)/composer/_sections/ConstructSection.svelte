@@ -15,11 +15,11 @@
   for the visit. Reduced motion: no act, no ghost, plain interactive.
 
   Prop policy: this surface pins its own prop via the canonical-five PropPicker
-  (staff default) and passes bluePropTypeOverride/redPropTypeOverride down the
+  (staff default) and passes leftPropTypeOverride/rightPropTypeOverride down the
   whole chain — the user's global prop setting (which may be poi) never reaches
   this demo. Poi is deliberately impossible here. Turns policy is the same
-  move: the demo pins its available turn values via per-hand pickers (blue/red) and
-  passes blueTurnsOverride/redTurnsOverride, so the user's sticky Create-tab
+  move: the demo pins its available turn values via per-hand pickers (left/right) and
+  passes leftTurnsOverride/rightTurnsOverride, so the user's sticky Create-tab
   turns (localStorage) never leak in. Every visible demo value stays at or
   below 1.5 turns, so the public examples do not imply a higher ceiling.
 
@@ -46,6 +46,7 @@
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
   import ViewSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ViewSequenceButton.svelte";
+  import HorizontalTransportRow from "$lib/shared/sequence-viewer/components/HorizontalTransportRow.svelte";
   import ClearSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ClearSequenceButton.svelte";
   import UndoGlyph from "$lib/features/create/shared/workspace-panel/shared/components/buttons/UndoGlyph.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -69,18 +70,21 @@
     createConstructAttractAct,
     type ConstructAttractAct,
   } from "./construct-attract-act.svelte";
+  import { isVisitorOwnedConstructSequence } from "../_components/composer-sequence-ownership";
 
-  type ConstructPresentationMode = "full" | "guided-build";
+  type ConstructPresentationMode = "full" | "guided-build" | "continuous";
 
   let {
     presentationMode = "full",
-    onComposed,
+    onVisitorComposed,
   }: {
     presentationMode?: ConstructPresentationMode;
-    onComposed?: (sequence: SequenceData) => void;
+    onVisitorComposed?: (sequence: SequenceData) => void;
   } = $props();
 
   const isGuidedBuild = $derived(presentationMode === "guided-build");
+  const isContinuous = $derived(presentationMode === "continuous");
+  const usesFocusedLayout = $derived(isGuidedBuild || isContinuous);
 
   // Visitors can click up to 8 steps (a full 8-count); the attract act builds
   // a quicker 4 so cycles stay snappy. Steps flow 4 per row beside the start
@@ -106,6 +110,7 @@
   let steps = $state<PictographData[]>([]);
   let playing = $state(false);
   let playingStepNumber = $state<number | null>(null);
+  let editingStepNumber = $state<number | null>(null);
 
   // The demo's pinned prop — canonical five only, staves first. Never poi, and
   // never the user's global setting.
@@ -114,10 +119,10 @@
   // The demo's pinned turns — one picker PER HAND (blue/red), overriding the
   // picker's sticky localStorage turns (same leak-proofing as the prop
   // override).
-  let blueTurnsValue = $state<string>("0");
-  let redTurnsValue = $state<string>("0");
-  const blueTurns = $derived(Number(blueTurnsValue));
-  const redTurns = $derived(Number(redTurnsValue));
+  let leftTurnsValue = $state<string>("0");
+  let rightTurnsValue = $state<string>("0");
+  const leftTurns = $derived(Number(leftTurnsValue));
+  const rightTurns = $derived(Number(rightTurnsValue));
 
   // The player's playback-toggle fn (via onTogglePlaybackRef). The attract act
   // calls it to demonstrate tap-to-pause/tap-to-play on the canvas — the real
@@ -129,7 +134,7 @@
   // viewer-parity seek affordances: click a workspace cell to snap the
   // animation to that step, click the start cell to restart.
   let playerController: AnimationPlaybackController | null = null;
-  let playerIsPlaying = false;
+  let playerIsPlaying = $state(false);
   let startHoldTimer: ReturnType<typeof setTimeout> | null = null;
   let compactPane = $state<CompactPane>("build");
   const compactDemoQuery =
@@ -148,6 +153,7 @@
   let bandEl = $state<HTMLElement | null>(null);
   let act: ConstructAttractAct | null = $state(null);
   let tookOver = $state(false);
+  let visitorOwnsBuild = $state(false);
   let io: IntersectionObserver | null = null;
 
   onMount(() => {
@@ -159,6 +165,8 @@
           gridMode = startPositionState.currentGridMode;
           steps = [];
           playing = false;
+          editingStepNumber = null;
+          dropPlayerRefs();
         }
       }
     );
@@ -167,7 +175,7 @@
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    if (!reduced && !isCompactDemo && bandEl) {
+    if (!reduced && !isCompactDemo && !isContinuous && bandEl) {
       act = createConstructAttractAct({
         getRoot: () => bandEl,
         resetBoard: reset,
@@ -211,6 +219,7 @@
   // resume button lives inside the section and would otherwise re-pause).
   function takeover(e?: Event) {
     if ((e?.target as HTMLElement | null)?.closest?.(".ghost")) return;
+    visitorOwnsBuild = true;
     if (act && !act.dead && !act.paused) {
       act.pause();
       tookOver = true;
@@ -222,6 +231,7 @@
     if (act && !act.dead) {
       act.resume();
       tookOver = false;
+      visitorOwnsBuild = false;
     }
   }
 
@@ -229,13 +239,18 @@
   const currentSequence = $derived<PictographData[]>(
     startPosition ? [startPosition, ...steps] : []
   );
+  const pickerSequence = $derived<PictographData[]>(
+    isContinuous && editingStepNumber
+      ? currentSequence.slice(0, editingStepNumber)
+      : currentSequence
+  );
 
   // Three phases, derived straight from state. Hitting the 8-step cap plays
   // automatically; before that, the Play button flips `playing`.
   const phase = $derived<"pick-start" | "add-step" | "play">(
     !startPosition
       ? "pick-start"
-      : playing || steps.length >= MAX_STEPS
+      : !isContinuous && (playing || steps.length >= MAX_STEPS)
         ? "play"
         : "add-step"
   );
@@ -299,9 +314,9 @@
     }))
   );
 
-  // The public story carries exactly what the visitor has built into the
-  // demonstrations below it. Keeping this sequence live also gives StepGrid
-  // the complete frame it needs to animate a picked pictograph into place.
+  // StepGrid needs the complete live frame for its arrival animation. The
+  // attract act may update that local frame, but only visitor-owned work is
+  // allowed to leave this panel and replace the examples below it.
   const composedSequence = $derived<SequenceData | null>(
     startStepData && stepData.length > 0
       ? createSequenceData({
@@ -316,12 +331,15 @@
       : null
   );
 
-  let lastComposedSequenceId = "";
+  let lastObservedSequenceId = "";
   $effect(() => {
-    if (!composedSequence || composedSequence.id === lastComposedSequenceId)
+    if (!composedSequence || composedSequence.id === lastObservedSequenceId) {
       return;
-    lastComposedSequenceId = composedSequence.id;
-    onComposed?.(composedSequence);
+    }
+    lastObservedSequenceId = composedSequence.id;
+    if (!isVisitorOwnedConstructSequence(visitorOwnsBuild, composedSequence))
+      return;
+    onVisitorComposed?.(composedSequence);
   });
 
   let wsW = $state(0);
@@ -345,6 +363,13 @@
   });
 
   function handleOptionSelected(option: PictographData) {
+    if (isContinuous && editingStepNumber) {
+      recordHistory();
+      steps = [...steps.slice(0, editingStepNumber - 1), option];
+      editingStepNumber = null;
+      playingStepNumber = null;
+      return;
+    }
     if (steps.length >= MAX_STEPS) return;
     recordHistory();
     steps = [...steps, option];
@@ -396,7 +421,10 @@
     steps = [...target.steps];
     playing = false;
     playingStepNumber = null;
-    dropPlayerRefs();
+    editingStepNumber = null;
+    if (!isContinuous || !target.startPosition || target.steps.length === 0) {
+      dropPlayerRefs();
+    }
     compactPane = "build";
     // Put the restored pick back in the picker. setSelectedPosition notifies
     // with source "sync", which our listener ignores, so this cannot recurse
@@ -424,7 +452,7 @@
   // Steps carry full motion data (the option pipeline bakes it in), so the
   // player runs standalone with no gallery lookup.
   const playSequence = $derived<SequenceData | null>(
-    phase === "play" ? composedSequence : null
+    isContinuous || phase === "play" ? composedSequence : null
   );
 
   // The player reports the playing step (0-indexed; null = start position) and
@@ -442,6 +470,7 @@
   // sequence viewer's left rail (playback-controller.svelte.ts handleStepClick).
   function handleWorkspaceStepClick(stepNumber: number) {
     clearStartHold();
+    if (isContinuous) editingStepNumber = stepNumber;
     playerController?.seekToStep(stepNumber);
   }
 
@@ -457,6 +486,13 @@
       if (playerController && !playerIsPlaying)
         playerController.togglePlayback();
     }, 700);
+  }
+
+  function seekRelative(delta: number) {
+    const current = playingStepNumber ?? 0;
+    playerController?.seekToStep(
+      Math.max(0, Math.min(steps.length, current + delta))
+    );
   }
 
   function clearStartHold() {
@@ -481,6 +517,7 @@
     startPosition = null;
     playing = false;
     playingStepNumber = null;
+    editingStepNumber = null;
     dropPlayerRefs();
     startPositionState.clearSelectedPosition();
     compactPane = "build";
@@ -522,17 +559,45 @@
   </div>
 {/snippet}
 
+{#snippet player(sequence: SequenceData)}
+  {#await import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte") then mod}
+    <div class="play-pane">
+      <div class="player-frame" data-demo-stage>
+        <mod.default
+          {sequence}
+          autoPlay={!isContinuous}
+          showControls={false}
+          hideWordHeader={!isCompactDemo}
+          tapToToggle
+          progressLine
+          progressLineSeekable
+          hoverHint="badge"
+          leftPropType={demoProp}
+          rightPropType={demoProp}
+          trailSettingsOverride={HERO_TRAIL_PRESET}
+          tipEffectMap={HERO_TIP_EFFECT_MAP}
+          onStepChange={handlePlayerStepChange}
+          onTogglePlaybackRef={(fn: () => void) => (playerToggle = fn)}
+          onControllerReady={(ctrl: AnimationPlaybackController) =>
+            (playerController = ctrl)}
+        />
+      </div>
+    </div>
+  {/await}
+{/snippet}
+
 <section
   class="construct-demo"
   class:compact-demo={isCompactDemo}
   class:play-phase={phase === "play"}
   class:guided-build={isGuidedBuild}
+  class:continuous-workspace={isContinuous}
   bind:this={bandEl}
   onpointerdowncapture={takeover}
   onfocusincapture={takeover}
 >
   <div class="demo-shell">
-    {#if isCompactDemo && !isGuidedBuild}
+    {#if isCompactDemo && !usesFocusedLayout}
       <div class="compact-view-switch">
         <SegmentedControl
           options={compactPaneOptions}
@@ -555,21 +620,38 @@
     <div class="demo-columns" class:compact-layout={isCompactDemo}>
       <div
         class="demo-col sequence-column"
-        id={isCompactDemo && !isGuidedBuild
+        id={isCompactDemo && !usesFocusedLayout
           ? "construct-sequence-panel"
           : undefined}
-        role={isCompactDemo && !isGuidedBuild ? "tabpanel" : undefined}
-        aria-labelledby={isCompactDemo && !isGuidedBuild
+        role={isCompactDemo && !usesFocusedLayout ? "tabpanel" : undefined}
+        aria-labelledby={isCompactDemo && !usesFocusedLayout
           ? "construct-sequence-tab"
           : undefined}
-        hidden={isCompactDemo && !isGuidedBuild && compactPane !== "sequence"}
+        hidden={isCompactDemo &&
+          !usesFocusedLayout &&
+          compactPane !== "sequence"}
       >
         {#if !isCompactDemo && !isGuidedBuild}
           {@render propControl()}
         {/if}
 
+        {#if isContinuous}
+          <div
+            class="continuous-preview"
+            class:has-motion={!!playSequence}
+            role="region"
+            aria-label="Live motion preview"
+          >
+            {#if playSequence}
+              {@render player(playSequence)}
+            {:else}
+              <p>Motion preview begins after the first step.</p>
+            {/if}
+          </div>
+        {/if}
+
         <!-- WORKSPACE: the real WorkspaceGrid — start column + step columns. -->
-        <div class="workspace">
+        <div class="workspace" class:has-sequence={!!startStepData}>
           <!-- Canonical word display: the same WordLabel the real workspace shows
            top-center (TKA glyphs, click-to-copy, letter highlighting during
            playback). No step counter — the app doesn't count steps at you. -->
@@ -577,24 +659,28 @@
             class="demo-status word-label-area"
             aria-live={tookOver ? "polite" : "off"}
           >
-            {#if rawWord}
-              <WordLabel
-                word={rawWord}
-                activeStepNumber={phase === "play" && playingStepNumber
-                  ? playingStepNumber
-                  : null}
-              />
-            {:else}
-              <p class="hint">
-                {#if phase === "pick-start" && act && !tookOver}
-                  Watch it build. Tap anything to take over.
-                {:else if phase === "pick-start"}
-                  Pick a starting position to begin.
-                {:else}
-                  Tap a pictograph to add it.
-                {/if}
-              </p>
-            {/if}
+            <span class="region-label">Your sequence</span>
+            <div class="status-content">
+              {#if rawWord}
+                <WordLabel
+                  word={rawWord}
+                  activeStepNumber={(phase === "play" || isContinuous) &&
+                  playingStepNumber
+                    ? playingStepNumber
+                    : null}
+                />
+              {:else}
+                <p class="hint">
+                  {#if phase === "pick-start" && act && !tookOver}
+                    Watch it build. Tap anything to take over.
+                  {:else if phase === "pick-start"}
+                    Pick a starting position to begin.
+                  {:else}
+                    Tap a pictograph to add it.
+                  {/if}
+                </p>
+              {/if}
+            </div>
           </header>
 
           <div class="ws-frame" bind:clientWidth={wsW} bind:clientHeight={wsH}>
@@ -603,20 +689,23 @@
                 <StepGrid
                   steps={stepData}
                   startPosition={startStepData}
-                  selectedStepNumber={phase === "play"
-                    ? playingStepNumber
-                    : null}
-                  onStepClick={phase === "play"
+                  selectedStepNumber={isContinuous
+                    ? (editingStepNumber ?? playingStepNumber)
+                    : phase === "play"
+                      ? playingStepNumber
+                      : null}
+                  onStepClick={phase === "play" || isContinuous
                     ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
                     : undefined}
-                  onStartClick={phase === "play"
+                  onStartClick={phase === "play" || isContinuous
                     ? handleWorkspaceStartClick
                     : undefined}
                   activeMode="construct"
                   manualColumnCount={STEP_COLUMNS}
+                  allowFewStepOverflowOnNarrow={false}
                   arrivalSequence={composedSequence}
-                  bluePropTypeOverride={demoProp}
-                  redPropTypeOverride={demoProp}
+                  leftPropTypeOverride={demoProp}
+                  rightPropTypeOverride={demoProp}
                   sequenceWord={rawWord}
                 />
               {:else}
@@ -626,19 +715,21 @@
                   {gridLayout}
                   displayState={workspaceDisplayState}
                   scrollState={workspaceScrollState}
-                  selectedStepNumber={phase === "play"
-                    ? playingStepNumber
-                    : null}
-                  onStepClick={phase === "play"
+                  selectedStepNumber={isContinuous
+                    ? (editingStepNumber ?? playingStepNumber)
+                    : phase === "play"
+                      ? playingStepNumber
+                      : null}
+                  onStepClick={phase === "play" || isContinuous
                     ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
                     : undefined}
-                  onStartClick={phase === "play"
+                  onStartClick={phase === "play" || isContinuous
                     ? handleWorkspaceStartClick
                     : undefined}
                   getStepKey={(beat, index) => beat.id ?? `demo-key-${index}`}
                   getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
-                  bluePropTypeOverride={demoProp}
-                  redPropTypeOverride={demoProp}
+                  leftPropTypeOverride={demoProp}
+                  rightPropTypeOverride={demoProp}
                   sequenceWord={rawWord}
                 />
               {/if}
@@ -662,26 +753,47 @@
                 <ClearSequenceButton onclick={reset} />
               {/if}
             </div>
-            <Crossfade key={phase} duration={DURATION.normal}>
-              {#if phase === "add-step"}
-                <span
-                  data-demo-play
-                  style:visibility={steps.length > 0 ? "visible" : "hidden"}
-                >
-                  <ViewSequenceButton
-                    purpose="play"
-                    onclick={() => {
-                      playing = true;
-                      compactPane = "build";
-                    }}
-                  />
-                </span>
-              {:else if phase === "play"}
-                {#if !isCompactDemo}
-                  {@render playPhaseActions()}
-                {/if}
-              {/if}
-            </Crossfade>
+            <div class="action-swap">
+              <Crossfade key={phase} duration={DURATION.normal} mode="swap">
+                <div class="action-swap-state">
+                  {#if phase === "add-step"}
+                    {#if isContinuous}
+                      <span
+                        style:visibility={steps.length > 0
+                          ? "visible"
+                          : "hidden"}
+                      >
+                        <HorizontalTransportRow
+                          isPlaying={playerIsPlaying}
+                          onPlaybackToggle={() => playerToggle?.()}
+                          onRestartToStart={() =>
+                            playerController?.seekToStep(0)}
+                          onStepFullFwd={() => seekRelative(1)}
+                          onStepFullBack={() => seekRelative(-1)}
+                        />
+                      </span>
+                    {:else}
+                      <span
+                        data-demo-play
+                        style:visibility={steps.length > 0
+                          ? "visible"
+                          : "hidden"}
+                      >
+                        <ViewSequenceButton
+                          purpose="play"
+                          onclick={() => {
+                            playing = true;
+                            compactPane = "build";
+                          }}
+                        />
+                      </span>
+                    {/if}
+                  {:else if phase === "play" && !isCompactDemo}
+                    {@render playPhaseActions()}
+                  {/if}
+                </div>
+              </Crossfade>
+            </div>
             <!-- Right zone: step-by-step history. Always mounted and merely
              disabled when a direction is empty — the app's own undo button does
              the same, and a slot that appeared on the first pick would shove
@@ -718,67 +830,79 @@
 
       <div
         class="demo-col build-column"
-        id={isCompactDemo && !isGuidedBuild
+        id={isCompactDemo && !usesFocusedLayout
           ? "construct-build-panel"
           : undefined}
-        role={isCompactDemo && !isGuidedBuild ? "tabpanel" : undefined}
-        aria-labelledby={isCompactDemo && !isGuidedBuild
+        role={isCompactDemo && !usesFocusedLayout ? "tabpanel" : undefined}
+        aria-labelledby={isCompactDemo && !usesFocusedLayout
           ? "construct-build-tab"
           : undefined}
-        hidden={isCompactDemo && !isGuidedBuild && compactPane !== "build"}
+        hidden={isCompactDemo && !usesFocusedLayout && compactPane !== "build"}
       >
-        {#if isCompactDemo && phase !== "play" && !isGuidedBuild}
+        {#if isCompactDemo && phase !== "play" && !isGuidedBuild && !isContinuous}
           {@render propControl()}
         {/if}
 
         <!-- Turns imply "you can change the playing sequence's turns" — not true
          during playback, so they slide away for the play phase (freeing their
          strip for the player) and return on Keep building / Build another. -->
-        {#if phase !== "play" && !isGuidedBuild}
+        {#if phase !== "play" && !isGuidedBuild && (!isContinuous || !isCompactDemo)}
           <div
             class="turns-pair"
             transition:slide={{ duration: motionDuration(DURATION.normal) }}
           >
             <div class="tool-group turns-group blue">
               <span class="tool-label"
-                ><span class="hand-dot blue" aria-hidden="true"></span>Blue
+                ><span class="hand-dot blue" aria-hidden="true"></span>Left
                 turns</span
               >
               <SegmentedControl
                 options={TURN_OPTIONS}
-                value={blueTurnsValue}
-                onchange={(v) => (blueTurnsValue = v)}
+                value={leftTurnsValue}
+                onchange={(v) => (leftTurnsValue = v)}
                 color="blue"
               />
             </div>
             <div class="tool-group turns-group red">
               <span class="tool-label"
-                ><span class="hand-dot red" aria-hidden="true"></span>Red turns</span
+                ><span class="hand-dot red" aria-hidden="true"></span>Right
+                turns</span
               >
               <SegmentedControl
                 options={TURN_OPTIONS}
-                value={redTurnsValue}
-                onchange={(v) => (redTurnsValue = v)}
+                value={rightTurnsValue}
+                onchange={(v) => (rightTurnsValue = v)}
                 color="red"
               />
             </div>
           </div>
         {/if}
 
-        {#if isGuidedBuild}
+        {#if isGuidedBuild || isContinuous}
           <!-- One line, not two. This carried a tracked-out uppercase eyebrow
                ("NEXT STEP") above the instruction it introduced ("Choose step
                2") — the same thing said twice, in two typographic voices. -->
           <div
             class="guided-build-status"
-            aria-live={tookOver ? "polite" : "off"}
+            aria-live={isContinuous || tookOver ? "polite" : "off"}
           >
+            <span class="region-label">
+              {isContinuous && editingStepNumber
+                ? "Replace beat"
+                : phase === "play"
+                  ? "Playback"
+                  : "Next move"}
+            </span>
             <strong>
-              {phase === "pick-start"
-                ? "Choose where the props begin"
-                : phase === "add-step"
-                  ? `Choose step ${steps.length + 1}`
-                  : `${steps.length} steps playing`}
+              {isContinuous && editingStepNumber
+                ? `Choose a new step ${editingStepNumber}`
+                : phase === "pick-start"
+                  ? "Choose where the props begin"
+                  : phase === "add-step"
+                    ? steps.length >= MAX_STEPS
+                      ? "Eight-count ready to play"
+                      : `Choose step ${steps.length + 1}`
+                    : `${steps.length} steps playing`}
             </strong>
           </div>
         {/if}
@@ -790,8 +914,8 @@
               <mod.default
                 {startPositionState}
                 embedded
-                bluePropTypeOverride={demoProp}
-                redPropTypeOverride={demoProp}
+                leftPropTypeOverride={demoProp}
+                rightPropTypeOverride={demoProp}
               />
             {/await}
           {:else if phase === "add-step"}
@@ -801,48 +925,39 @@
                All/Continuous filter pill. The old Type-1-only training wheels
                are off — this is the real construct experience in miniature. -->
               <mod.default
-                {currentSequence}
+                currentSequence={pickerSequence}
                 currentGridMode={gridMode}
                 onOptionSelected={handleOptionSelected}
                 hideFilters={isGuidedBuild}
-                bluePropTypeOverride={demoProp}
-                redPropTypeOverride={demoProp}
-                blueTurnsOverride={blueTurns}
-                redTurnsOverride={redTurns}
+                leftPropTypeOverride={demoProp}
+                rightPropTypeOverride={demoProp}
+                leftTurnsOverride={leftTurns}
+                rightTurnsOverride={rightTurns}
               />
             {/await}
           {:else if playSequence}
-            {#await import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte") then mod}
-              <div class="play-pane">
-                <!-- No transport chrome: tap the canvas to pause/play (hoverHint
-                 teaches it on mouse, the act demonstrates it live). The thin
-                 progress line doubles as a scrubber, and the workspace cells
-                 seek on click — the viewer's two scrub affordances, both here. -->
-                <div class="player-frame" data-demo-stage>
-                  <mod.default
-                    sequence={playSequence}
-                    autoPlay
-                    showControls={false}
-                    hideWordHeader={!isCompactDemo}
-                    tapToToggle
-                    progressLine
-                    progressLineSeekable
-                    hoverHint="badge"
-                    bluePropType={demoProp}
-                    redPropType={demoProp}
-                    trailSettingsOverride={HERO_TRAIL_PRESET}
-                    tipEffectMap={HERO_TIP_EFFECT_MAP}
-                    onStepChange={handlePlayerStepChange}
-                    onTogglePlaybackRef={(fn: () => void) =>
-                      (playerToggle = fn)}
-                    onControllerReady={(ctrl: AnimationPlaybackController) =>
-                      (playerController = ctrl)}
-                  />
-                </div>
-              </div>
-            {/await}
+            {@render player(playSequence)}
           {/if}
         </div>
+
+        {#if isContinuous && isCompactDemo && phase !== "play"}
+          <details class="continuous-settings">
+            <summary>Prop and turn settings</summary>
+            <div class="continuous-settings-content">
+              {@render propControl()}
+              <div class="turns-pair">
+                <div class="tool-group turns-group blue">
+                  <span class="tool-label"><span class="hand-dot blue" aria-hidden="true"></span>Left turns</span>
+                  <SegmentedControl options={TURN_OPTIONS} value={leftTurnsValue} onchange={(v) => (leftTurnsValue = v)} color="blue" />
+                </div>
+                <div class="tool-group turns-group red">
+                  <span class="tool-label"><span class="hand-dot red" aria-hidden="true"></span>Right turns</span>
+                  <SegmentedControl options={TURN_OPTIONS} value={rightTurnsValue} onchange={(v) => (rightTurnsValue = v)} color="red" />
+                </div>
+              </div>
+            </div>
+          </details>
+        {/if}
       </div>
     </div>
 
@@ -874,23 +989,17 @@
     color: var(--theme-text, #fff);
   }
 
-  /* The toy box: one framed panel holds the whole demo, so toolbar, workspace
-     and picker read as a single self-contained unit instead of controls
-     floating in the section void. */
-  /* Sizes here are rem so browser zoom and user font preferences carry through
-     the whole demo. Viewport width changes its composition, not its root size. */
+  /* One presentation stage holds the real Composer surfaces. Internal regions
+     separate through hierarchy and spacing instead of each becoming another
+     bordered card. */
   .demo-shell {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    /* Contained toy, not a full-bleed slab: on ultrawide viewports the panel
-       caps out and centers, so the controls never drift apart into voids.
-       4K-native cap per the shell standard (min(1720px, 92vw)) — 1360 left
-       the toy inset from its own heading at 2560 CSS. */
     width: 100%;
     max-width: var(--shell-w, min(1720px, 92vw));
     margin-inline: auto;
-    padding: clamp(1rem, 2.2cqw, 1.75rem);
+    padding: clamp(1rem, 1.8cqw, 1.5rem);
     border-radius: 1.5rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: color-mix(
@@ -899,6 +1008,14 @@
       transparent
     );
     box-sizing: border-box;
+  }
+
+  /* The public page already owns the composition band. Applying its shell cap
+     again here created a second inset at laptop widths, so the two examples
+     missed each other's edge even though they belong to the same story. */
+  .guided-build .demo-shell,
+  .continuous-workspace .demo-shell {
+    max-width: none;
   }
 
   /* ===== Column stacks =====
@@ -986,12 +1103,14 @@
   /* The focused story has only two ideas left: the growing sequence and its
      next choices. On a phone they stay stacked in one scroll instead of being
      separated by tabs, so every pick still has a visible destination. */
-  .guided-build .demo-columns.compact-layout {
+  .guided-build .demo-columns.compact-layout,
+  .continuous-workspace .demo-columns.compact-layout {
     display: flex;
     min-height: 0;
   }
 
-  .guided-build .compact-layout .demo-col {
+  .guided-build .compact-layout .demo-col,
+  .continuous-workspace .compact-layout .demo-col {
     min-height: 0;
   }
 
@@ -1002,6 +1121,79 @@
   .guided-build .compact-layout .build-column .picker-pane,
   .guided-build.compact-demo.play-phase .build-column .picker-pane {
     min-height: clamp(18rem, 46svh, 22rem);
+  }
+
+  .continuous-workspace .compact-layout .sequence-column .workspace {
+    min-height: 7rem;
+  }
+
+  .continuous-workspace
+    .compact-layout
+    .sequence-column
+    .workspace.has-sequence {
+    min-height: 13rem;
+  }
+
+  .continuous-workspace.compact-demo .continuous-preview {
+    flex-basis: 4.5rem;
+    min-height: 4.5rem;
+  }
+
+  .continuous-workspace.compact-demo .continuous-preview.has-motion {
+    flex-basis: 11rem;
+    min-height: 11rem;
+  }
+
+  .continuous-workspace .compact-layout .sequence-column .ws-frame {
+    height: 5rem;
+  }
+
+  .continuous-workspace
+    .compact-layout
+    .sequence-column
+    .workspace.has-sequence
+    .ws-frame {
+    height: 8rem;
+  }
+
+  .continuous-workspace .compact-layout .build-column .picker-pane {
+    min-height: clamp(27rem, 70svh, 32rem);
+  }
+
+  .continuous-workspace.compact-demo .action-slot {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 0.35rem;
+  }
+
+  .continuous-workspace.compact-demo .action-swap {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .continuous-workspace.compact-demo .slot-side {
+    grid-row: 2;
+  }
+
+  .continuous-workspace.compact-demo .continuous-settings {
+    margin-top: 0.5rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg, rgba(10, 10, 18, 0.72));
+  }
+
+  .continuous-settings summary {
+    min-height: var(--min-touch-target, 44px);
+    line-height: 1.5rem;
+    padding: 0.75rem 1rem;
+    color: var(--theme-text, #fff);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .continuous-settings-content {
+    display: grid;
+    gap: 1rem;
+    padding: 0 1rem 1rem;
   }
 
   .compact-play-actions {
@@ -1049,10 +1241,11 @@
   /* Height stays reserved so the picker below it never moves as the wording
      changes between phases. */
   .guided-build-status {
-    min-height: 2.75rem;
+    min-height: 3.25rem;
     display: flex;
     align-items: center;
-    padding-inline: 0.25rem;
+    justify-content: space-between;
+    gap: 1rem;
     font-size: clamp(1rem, 0.96rem + 0.14vw, 1.15rem);
   }
 
@@ -1060,6 +1253,16 @@
     color: var(--theme-text, #fff);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .region-label {
+    flex: 0 0 auto;
+    min-width: 6rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.56));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 650;
+    letter-spacing: 0.01em;
   }
 
   .hand-dot {
@@ -1165,14 +1368,25 @@
   @container (min-width: 1100px) {
     .demo-columns {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      gap: 0 clamp(1.5rem, 3cqw, 3rem);
+      grid-template-columns: minmax(0, 1.25fr) minmax(28rem, 1fr);
+      gap: 0;
       align-items: stretch;
       min-height: calc(clamp(18.75rem, 38vh, 33.75rem) + 6.75rem);
     }
+
+    .sequence-column {
+      padding-right: clamp(1.25rem, 2cqw, 2rem);
+    }
+
+    .build-column {
+      padding-left: clamp(1.25rem, 2cqw, 2rem);
+      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
     .workspace {
       flex: 1;
     }
+
     .picker-pane {
       /* flex-basis 0: the pane fills whatever the row gives it but its
          CONTENT never drives the row height — the start picker's intrinsic
@@ -1185,15 +1399,12 @@
     }
   }
 
-  /* Both halves are framed sub-panels — defined edges instead of controls
-     floating in the shell. Symmetric margins INSIDE a visible frame read as a
-     stage; the same pixels outside one read as accidental void. */
   .workspace,
   .picker-pane {
-    border-radius: 1.125rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    background: rgba(255, 255, 255, 0.025);
-    padding: 0.75rem 1rem 0.875rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
     box-sizing: border-box;
   }
 
@@ -1210,9 +1421,22 @@
   .demo-status {
     min-height: 3.25rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     --text-color: var(--theme-text, #fff);
+  }
+
+  .status-content {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .status-content :global(.word-label-container) {
+    justify-content: flex-end;
   }
 
   .hint {
@@ -1230,10 +1454,37 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 
     /* Clear, play, and history share the global touch-target floor. The rem
        side lets browser zoom enlarge the controls with their labels. */
     --min-touch-target: max(44px, 2.75rem);
+  }
+
+  /* Play and the wider playback actions are one control state, not two boxes.
+     Reserving their shared width keeps the outgoing Play button centered while
+     the replacement arrives; swap mode then prevents two actionable labels
+     from becoming readable at the same time. */
+  .action-swap {
+    min-inline-size: var(--min-touch-target);
+  }
+
+  .action-swap-state {
+    min-block-size: var(--min-touch-target);
+    display: grid;
+    place-items: center;
+  }
+
+  .action-swap-state [data-demo-play] {
+    display: grid;
+    place-items: center;
+  }
+
+  @container (min-width: 1100px) {
+    .action-swap {
+      inline-size: 21rem;
+    }
   }
 
   .slot-side {
@@ -1380,17 +1631,9 @@
     .ws-frame {
       flex: 0 0 auto;
       height: clamp(18rem, 19.5cqw, 32rem);
-    }
-  }
-
-  /* Each column is its own height now rather than one stretching to match the
-     other, and whichever is shorter centers against its neighbour. Which one
-     that is changes with the phase — the workspace is taller while picking,
-     the player taller during play — so balanced space reads as breathing room
-     either way, where top-aligning banked it all under one column. */
-  @container (min-width: 1100px) {
-    .demo-columns {
-      align-items: center;
+      /* The real workspace centers its grid between the title and button panel.
+         Split the spare height around this fixed frame to match it. */
+      margin-block: auto;
     }
   }
 
@@ -1448,6 +1691,33 @@
     align-items: center;
   }
 
+  .continuous-preview {
+    display: flex;
+    flex: 0 0 clamp(10rem, 22vh, 17rem);
+    min-height: 10rem;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg, rgba(10, 10, 18, 0.72));
+  }
+
+  .continuous-preview .play-pane,
+  .continuous-preview .player-frame {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .continuous-preview > p {
+    max-width: 24rem;
+    margin: 0;
+    padding: 1rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-min, 0.875rem);
+    text-align: center;
+  }
+
   .player-frame {
     flex: 1;
     width: 100%;
@@ -1478,8 +1748,8 @@
     font-weight: 600;
     cursor: pointer;
     transition:
-      background 0.16s ease,
-      transform 0.16s ease;
+      background var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   .cta-btn:hover {

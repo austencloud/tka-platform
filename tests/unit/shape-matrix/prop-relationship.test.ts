@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { derivePropRelationship } from "$lib/shared/shape-matrix/domain/prop-relationship";
+import {
+  derivePropElementalType,
+  derivePropRelationship,
+} from "$lib/shared/shape-matrix/domain/prop-relationship";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
@@ -15,23 +18,25 @@ function flower(turns: number, style: "pro" | "anti" = "pro"): Flower {
 }
 
 function sequence(
-  blueDirection: "cw" | "ccw" | "noRotation",
-  redDirection: "cw" | "ccw" | "noRotation",
+  leftDirection: "cw" | "ccw" | "noRotation",
+  rightDirection: "cw" | "ccw" | "noRotation",
   redOrientation: "in" | "out" = "in"
 ): SequenceData {
   return {
     steps: [
       {
         motions: {
-          blue: {
+          left: {
             startLocation: "s",
             startOrientation: "in",
-            rotationDirection: blueDirection,
+            rotationDirection: leftDirection,
+            turns: 0,
           },
-          red: {
+          right: {
             startLocation: "n",
             startOrientation: redOrientation,
-            rotationDirection: redDirection,
+            rotationDirection: rightDirection,
+            turns: 0,
           },
         },
       },
@@ -43,8 +48,8 @@ describe("prop relationship", () => {
   it("keeps direction but withholds timing when turn amounts differ", () => {
     expect(
       derivePropRelationship(sequence("cw", "cw"), {
-        blue: flower(1),
-        red: flower(1.5),
+        left: flower(1),
+        right: flower(1.5),
       })
     ).toEqual({
       kind: "direction-only",
@@ -56,11 +61,15 @@ describe("prop relationship", () => {
 
   it("classifies equal-rate rotating props with their own element", () => {
     const result = derivePropRelationship(sequence("cw", "cw"), {
-      blue: flower(1),
-      red: flower(1),
+      left: flower(1),
+      right: flower(1),
     });
     expect(result.kind).toBe("full");
     if (result.kind === "full") expect(result.element.element).toBe("water");
+  });
+
+  it("adapts a sequence directly for ordinary viewer annotations", () => {
+    expect(derivePropElementalType(sequence("cw", "cw"))).toBe("water");
   });
 
   it("does not invent direction or timing for float", () => {
@@ -73,8 +82,8 @@ describe("prop relationship", () => {
     };
     expect(
       derivePropRelationship(sequence("noRotation", "noRotation"), {
-        blue: float,
-        red: float,
+        left: float,
+        right: float,
       })
     ).toEqual({ kind: "float", direction: null, timing: null, element: null });
   });

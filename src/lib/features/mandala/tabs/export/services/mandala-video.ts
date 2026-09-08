@@ -44,8 +44,8 @@ const VIDEO_DEFAULTS = {
 export interface MandalaVideoSource {
   name: string;
   steps: StepLike[];
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   variant?: MandalaRenderOptions["show"];
   pathShape?: MandalaPathShape;
 }
@@ -58,8 +58,8 @@ export function buildMandalaVideoSpec(
   const plainSteps = JSON.parse(JSON.stringify(source.steps));
   return {
     steps: plainSteps,
-    bluePropType: source.bluePropType,
-    redPropType: source.redPropType,
+    leftPropType: source.leftPropType,
+    rightPropType: source.rightPropType,
     show: source.variant ?? "both",
     pathShape: source.pathShape ?? VIDEO_DEFAULTS.pathShape,
     lineWeight: VIDEO_DEFAULTS.lineWeight,

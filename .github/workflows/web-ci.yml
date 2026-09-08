@@ -32,17 +32,37 @@ jobs:
           node-version: "24"
           cache: "pnpm"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      # Before `pnpm install`, not after: `postinstall` runs
+      # `svelte-kit sync`, which is what generates the `$env/static/public`
+      # declarations. Sync with no `.env` present emits a module with no
+      # members, and `svelte-kit-sync-if-needed.mjs` then correctly skips the
+      # re-sync -- its fingerprint covers route shape, `svelte.config.js` and
+      # the Kit version, none of which moved. Every `$env/static/public` import
+      # in a `.ts` file then fails `check:tsc`, which is a production outage
+      # because the deploy is gated on this workflow.
       - name: Create .env from .env.example
         run: cp .env.example .env
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build workspace packages
         run: pnpm run build:packages
 
       - name: Type check (svelte-check)
         run: pnpm run check
+
+      # svelte-check is not a substitute for the compiler: it goes through the
+      # Svelte language service and has been observed finishing in ~2 s with
+      # "0 errors" on this repo in CI, which is not a program it actually
+      # checked. A plain tsc pass over the same tsconfig costs about a minute
+      # and is what keeps the type backlog in src/ and tests/ from regrowing.
+      # The gate reports every diagnostic and fails only on files this
+      # tsconfig owns; dependencies and sibling workspace packages resolve to
+      # raw .ts under `moduleResolution: Bundler` and are gated by
+      # `build:packages` instead.
+      - name: Type check (plain tsc)
+        run: pnpm run check:tsc
 
       - name: Unit tests (Vitest)
         run: pnpm run test -- --run

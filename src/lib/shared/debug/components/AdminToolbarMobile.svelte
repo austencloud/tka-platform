@@ -206,7 +206,7 @@
         {/if}
       </button>
 
-      <a href="/admin/generate-thumbnails" class="action-card">
+      <a href="/tools/warm-thumbnails" class="action-card">
         <i class="fas fa-sliders" aria-hidden="true"></i>
         <span>Warm Gallery (full)…</span>
       </a>

@@ -2,7 +2,7 @@
 
 Status: accepted (2026-07-06). Supersedes the named-look catalog (same date,
 morning) and, before it, the `fold` + `mirror` config. Spec:
-`docs/superpowers/specs/2026-07-06-tunnel-primitives-design.md`.
+`docs/superpowers/specs/shipped/2026-07-06-tunnel-primitives-design.md`.
 
 ## Context
 

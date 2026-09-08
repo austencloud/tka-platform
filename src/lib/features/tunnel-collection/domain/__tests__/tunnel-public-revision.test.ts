@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SNAPSHOT_VERSION } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import {
   TunnelCompositionSchema,
@@ -18,26 +20,30 @@ import {
 } from "../tunnel-public-revision";
 import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
 
-const snapshot = {
+const snapshot: CollectedTunnel["snapshot"] = {
   version: SNAPSHOT_VERSION,
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    },
     section: "tunnel",
+    presetRecipe: null,
   },
-  effects: { activeEffect: "none" },
+  effects: DEFAULT_EFFECTS_CONFIG,
   effort: "linear",
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
-  trailRender: { mode: "none" },
-} as CollectedTunnel["snapshot"];
+  props: { leftPropType: "staff", rightPropType: "staff" },
+  trailRender: DEFAULT_TRAIL_SETTINGS,
+};
 
 function tunnelFixture(
   overrides: Partial<CollectedTunnel> = {}
@@ -94,6 +100,7 @@ describe("sanitizeTunnelComposition", () => {
   it("whitelists independent sources to positional placeholders", () => {
     const sanitized = sanitizeTunnelComposition(compositionFixture());
     const lead = sanitized.performers[0];
+    if (!lead) throw new Error("sanitizing dropped the lead performer");
     expect(lead.source.kind).toBe("independent");
     if (lead.source.kind !== "independent") return;
     expect(lead.source.sequence).toEqual({
@@ -117,9 +124,13 @@ describe("sanitizeTunnelComposition", () => {
   it("preserves the derivation graph verbatim", () => {
     const composition = compositionFixture();
     const sanitized = sanitizeTunnelComposition(composition);
-    expect(sanitized.performers[1].source).toEqual(
-      composition.performers[1].source
-    );
+    const sanitizedEcho = sanitized.performers[1];
+    const authoredEcho = composition.performers[1];
+    if (!sanitizedEcho || !authoredEcho) {
+      throw new Error("the fixture should carry a derived second performer");
+    }
+    expect(sanitizedEcho.source).toEqual(authoredEcho.source);
+    expect(sanitized.stage).toEqual(composition.stage);
     expect(sanitized.formation).toEqual(composition.formation);
   });
 
@@ -174,6 +185,14 @@ describe("tunnelPublicPayload", () => {
     expect(payload.snapshot.tunnel.config).toEqual(DEFAULT_CONFIG);
     expect(payload.snapshot.tunnel.presetRecipe).toBeNull();
     expect(JSON.stringify(payload)).not.toContain("personal-recipe-42");
+  });
+
+  it("preserves the normalized exact pair in public copies", () => {
+    const payload = tunnelPublicPayload(tunnelFixture());
+    expect(payload.snapshot.tunnel.colors).toEqual({
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    });
   });
 });
 

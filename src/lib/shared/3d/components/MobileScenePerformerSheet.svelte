@@ -39,4 +39,20 @@
     flex: none;
     min-width: 0;
   }
+
+  /* A short landscape has horizontal room but almost no vertical room. Put
+     cast selection beside the detail workspace so Character, Prop, Effort and
+     Effects keep a real scrolling region instead of collapsing to one line. */
+  @media (min-width: 48rem) and (max-height: 34rem) {
+    .performer-sheet {
+      display: grid;
+      grid-template-columns: minmax(17rem, 19rem) minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+
+    .scope-row {
+      padding-right: 0.75rem;
+      border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    }
+  }
 </style>

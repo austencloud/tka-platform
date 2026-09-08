@@ -51,10 +51,15 @@
       "import": "./dist/plane.js",
       "default": "./dist/plane.js"
     },
-    "./prop-color": {
-      "types": "./src/prop-color.ts",
-      "import": "./dist/prop-color.js",
-      "default": "./dist/prop-color.js"
+    "./hand-side": {
+      "types": "./src/hand-side.ts",
+      "import": "./dist/hand-side.js",
+      "default": "./dist/hand-side.js"
+    },
+    "./legacy-hand-identity": {
+      "types": "./src/legacy-hand-identity.ts",
+      "import": "./dist/legacy-hand-identity.js",
+      "default": "./dist/legacy-hand-identity.js"
     },
     "./builders": {
       "types": "./src/builders.ts",

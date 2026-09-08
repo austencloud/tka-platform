@@ -32,7 +32,7 @@ import type {
   CompoundPattern,
 } from "$lib/shared/create/services/ILOOPDetector";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { loopDetectorClass } from "@tka/sequence-engine/loop";
 
@@ -45,8 +45,8 @@ interface EngineStepInput {
   startPosition: string;
   endPosition: string;
   motions: {
-    blue: EngineMotionInput;
-    red: EngineMotionInput;
+    left: EngineMotionInput;
+    right: EngineMotionInput;
   };
 }
 
@@ -157,8 +157,8 @@ export class LOOPDetector implements ILOOPDetector {
       startPosition: String(s.startPosition ?? ""),
       endPosition: String(s.endPosition ?? ""),
       motions: {
-        blue: this.toEngineMotion(s, MotionColor.BLUE),
-        red: this.toEngineMotion(s, MotionColor.RED),
+        left: this.toEngineMotion(s, HandSide.LEFT),
+        right: this.toEngineMotion(s, HandSide.RIGHT),
       },
     }));
 
@@ -171,15 +171,15 @@ export class LOOPDetector implements ILOOPDetector {
       startPosition: first?.startPosition ?? "",
       endPosition: first?.startPosition ?? "",
       motions: {
-        blue: { motionType: "static", startLocation: "", endLocation: "", rotationDirection: "noRotation" },
-        red: { motionType: "static", startLocation: "", endLocation: "", rotationDirection: "noRotation" },
+        left: { motionType: "static", startLocation: "", endLocation: "", rotationDirection: "noRotation" },
+        right: { motionType: "static", startLocation: "", endLocation: "", rotationDirection: "noRotation" },
       },
     };
 
     return [startMarker, ...letterSteps];
   }
 
-  private toEngineMotion(step: StepLike, color: MotionColor): EngineMotionInput {
+  private toEngineMotion(step: StepLike, color: HandSide): EngineMotionInput {
     const motion = step.motions?.[color];
     if (!isVisibleMotion(motion)) {
       return { motionType: "", startLocation: "", endLocation: "", rotationDirection: "" };

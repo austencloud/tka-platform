@@ -29,6 +29,18 @@
   let latestCanonical = null;
   let latestMeta = null;
 
+  // The standalone era pages predate the performer-relative field names. Keep
+  // their legacy aliases contained at this iframe boundary so the application
+  // and postMessage contract remain canonical left/right.
+  function withLegacyHandAliases(data) {
+    if (!data || data.blueHand || !data.leftHand) return data;
+    return {
+      ...data,
+      blueHand: data.leftHand,
+      redHand: data.rightHand,
+    };
+  }
+
   function onPictograph(fn) {
     handler = fn;
     // If we already received data before the handler was set, render now.
@@ -39,11 +51,12 @@
     const msg = event.data;
     if (!msg || typeof msg !== "object") return;
     if (msg.type === "pictograph" && msg.data) {
-      latestData = msg.data;
+      latestData = withLegacyHandAliases(msg.data);
       latestCanonical = msg.canonical || null;
-      latestMeta = typeof msg.canonicalSize === "number"
-        ? { canonicalSize: msg.canonicalSize }
-        : null;
+      latestMeta =
+        typeof msg.canonicalSize === "number"
+          ? { canonicalSize: msg.canonicalSize }
+          : null;
       if (handler) handler(latestData, latestCanonical, latestMeta);
     }
   });

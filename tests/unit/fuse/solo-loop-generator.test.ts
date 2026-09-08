@@ -5,7 +5,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -25,7 +25,7 @@ import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
 const templates = [
   createMotionData({
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
     gridMode: GridMode.DIAMOND,
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -36,7 +36,7 @@ const templates = [
     turns: 1,
   }),
   createMotionData({
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     gridMode: GridMode.DIAMOND,
     motionType: MotionType.ANTI,
     rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -51,7 +51,7 @@ const templates = [
 const ringTemplates = [
   ...templates,
   createMotionData({
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
     gridMode: GridMode.DIAMOND,
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -62,7 +62,7 @@ const ringTemplates = [
     turns: 0,
   }),
   createMotionData({
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     gridMode: GridMode.DIAMOND,
     motionType: MotionType.ANTI,
     rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -76,7 +76,7 @@ const ringTemplates = [
 
 const boxRingTemplates = [
   createMotionData({
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
     gridMode: GridMode.BOX,
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -87,7 +87,7 @@ const boxRingTemplates = [
     turns: 0,
   }),
   createMotionData({
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     gridMode: GridMode.BOX,
     motionType: MotionType.ANTI,
     rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -98,7 +98,7 @@ const boxRingTemplates = [
     turns: 0,
   }),
   createMotionData({
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
     gridMode: GridMode.BOX,
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -109,7 +109,7 @@ const boxRingTemplates = [
     turns: 0,
   }),
   createMotionData({
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     gridMode: GridMode.BOX,
     motionType: MotionType.ANTI,
     rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
@@ -366,7 +366,7 @@ describe("Fuse solo LOOP generator", () => {
 
   it("uses dash frequency as a real motion-selection constraint", () => {
     const dash = createMotionData({
-      color: MotionColor.BLUE,
+      hand: HandSide.LEFT,
       gridMode: GridMode.DIAMOND,
       motionType: MotionType.DASH,
       rotationDirection: RotationDirection.NO_ROTATION,

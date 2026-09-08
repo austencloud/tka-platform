@@ -11,20 +11,20 @@ import {
  * Detect pure swap and invert transformations.
  */
 export function checkRepeated(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData
 ): TransformationCheckResult {
   const transformations: string[] = [];
 
   const isRepeated =
-    b1Blue.startLoc === b2Blue.startLoc &&
-    b1Blue.endLoc === b2Blue.endLoc &&
-    b1Blue.motionType === b2Blue.motionType &&
-    b1Red.startLoc === b2Red.startLoc &&
-    b1Red.endLoc === b2Red.endLoc &&
-    b1Red.motionType === b2Red.motionType;
+    b1Left.startLoc === b2Left.startLoc &&
+    b1Left.endLoc === b2Left.endLoc &&
+    b1Left.motionType === b2Left.motionType &&
+    b1Right.startLoc === b2Right.startLoc &&
+    b1Right.endLoc === b2Right.endLoc &&
+    b1Right.motionType === b2Right.motionType;
 
   if (isRepeated) {
     transformations.push("repeated");
@@ -34,55 +34,55 @@ export function checkRepeated(
 }
 
 export function checkSwapInvert(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData
 ): TransformationCheckResult {
   const transformations: string[] = [];
 
   // Pure swap check (colors swapped, no position change)
   const colorsSwapped =
-    b1Blue.startLoc === b2Red.startLoc &&
-    b1Blue.endLoc === b2Red.endLoc &&
-    b1Red.startLoc === b2Blue.startLoc &&
-    b1Red.endLoc === b2Blue.endLoc;
+    b1Left.startLoc === b2Right.startLoc &&
+    b1Left.endLoc === b2Right.endLoc &&
+    b1Right.startLoc === b2Left.startLoc &&
+    b1Right.endLoc === b2Left.endLoc;
 
   // Same positions check (for pure inversion)
   const positionsSame =
-    b1Blue.startLoc === b2Blue.startLoc &&
-    b1Blue.endLoc === b2Blue.endLoc &&
-    b1Red.startLoc === b2Red.startLoc &&
-    b1Red.endLoc === b2Red.endLoc;
+    b1Left.startLoc === b2Left.startLoc &&
+    b1Left.endLoc === b2Left.endLoc &&
+    b1Right.startLoc === b2Right.startLoc &&
+    b1Right.endLoc === b2Right.endLoc;
 
   // Rotation direction checks
   const canDetermineRotForSwap = hasRotationData(
-    b1Red.propRotDir,
-    b1Blue.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir,
-    b1Red.motionType,
-    b1Blue.motionType,
-    b2Blue.motionType,
-    b2Red.motionType
+    b1Right.propRotDir,
+    b1Left.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir,
+    b1Right.motionType,
+    b1Left.motionType,
+    b2Left.motionType,
+    b2Right.motionType
   );
 
   const rotDirSameSwapped =
-    b1Red.propRotDir === b2Blue.propRotDir &&
-    b1Blue.propRotDir === b2Red.propRotDir;
+    b1Right.propRotDir === b2Left.propRotDir &&
+    b1Left.propRotDir === b2Right.propRotDir;
 
   const rotDirInvertedSwappedForRotation = areRotDirsInvertedForRotation(
-    b1Red.propRotDir,
-    b1Blue.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir
+    b1Right.propRotDir,
+    b1Left.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir
   );
 
   const rotDirInvertedForRotation = areRotDirsInvertedForRotation(
-    b1Blue.propRotDir,
-    b1Red.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir
+    b1Left.propRotDir,
+    b1Right.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir
   );
 
   // Pure swap (no position change, just colors swapped)

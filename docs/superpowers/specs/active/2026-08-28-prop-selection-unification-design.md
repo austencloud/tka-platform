@@ -19,12 +19,22 @@ with the base Double Staff.
   helpers when its step or Hoop choices change the layout.
 - Preserve the profile catalog, persistence model, premium gating, family
   selection behavior, and Buugeng chirality controls.
+- Replace the 3D viewer's private prop-card grid and family selector with the
+  canonical `BentoPropGrid`. `ScenePropPicker` remains as a narrow adapter for
+  the scene-supported catalog, mixed All-Performers state, Bare Hands, and the
+  fan/finish controls that exist only in 3D.
+- Carry the canonical Buugeng chirality setting through `Viewer3DScene` into
+  `PerformerRig`, so choosing A or B in the viewer changes the prop shown in
+  the scene as well as the shared application preference.
 
 ## Ownership
 
 `PropSelectionButton` owns the visual selection-card contract.
 `PropTypeButton` remains the registry adapter for a concrete `PropType`.
 `BentoPropGrid` owns family disclosure and Buugeng chirality.
+`ScenePropPicker` composes those owners with scene-only build controls; it does
+not own another prop grid or family picker.
+`PerformerRig` owns the final per-hand mirror transform in the 3D scene.
 The profile catalog remains the source of truth for profile skill taxonomy.
 
 ## Risks
@@ -35,6 +45,14 @@ The profile catalog remains the source of truth for profile skill taxonomy.
   project minimum.
 - Showing exact family art must not change the base family used to open style
   choices.
+- All-Performers mode may have no single selected prop. The canonical grid must
+  represent that mixed state without inventing a selected tile.
+- The performer inspector owns vertical scrolling. Embedding the grid must not
+  create a clipped nested scroller or trap the family popover inside the panel.
+- Short landscape sheets must give that inspector a usable content viewport;
+  the sheet chrome cannot consume the entire height above the mobile controls.
+- Chirality must be gated to Buugeng-family props before the 3D mirror reaches
+  `PerformerRig`; a saved Buugeng preference must not mirror unrelated props.
 
 ## Verification
 
@@ -44,3 +62,7 @@ The profile catalog remains the source of truth for profile skill taxonomy.
 - Exercise the main prop drawer and both profile editor steps at the required
   desktop, tablet, mobile, 4K, and 200% content-scale viewports. Verify focus,
   selection state, outside-click/close behavior, and a clean browser console.
+- Exercise the 3D performer Prop tab at the same reachable viewport families.
+  Verify a family popover, exact sub-prop selection, All-Performers mixed state,
+  Bare Hands, Buugeng A/B controls, visible 3D mirroring, short-landscape
+  scrolling, and a clean console.

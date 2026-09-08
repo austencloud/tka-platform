@@ -51,20 +51,11 @@
     gap: var(--workspace-action-gap, 0);
     padding-inline: var(--workspace-action-padding-inline, 0);
     border: 1px solid
-      color-mix(
-        in srgb,
-        var(--semantic-success, var(--semantic-success)) 30%,
-        transparent
-      );
+      color-mix(in srgb, var(--semantic-success, #22c55e) 72%, white);
     background: linear-gradient(
       135deg,
-      var(--semantic-success, var(--semantic-success)) 0%,
-      color-mix(
-          in srgb,
-          var(--semantic-success, var(--semantic-success)) 85%,
-          #16a34a
-        )
-        100%
+      color-mix(in srgb, var(--semantic-success, #22c55e) 84%, white) 0%,
+      color-mix(in srgb, var(--semantic-success, #22c55e) 74%, #065f46) 100%
     );
     border-radius: var(--workspace-action-radius, 50%);
     color: var(--theme-text);
@@ -74,12 +65,10 @@
       background var(--duration-fast) ease,
       border-color var(--duration-fast) ease,
       box-shadow var(--duration-fast) ease;
-    box-shadow: 0 4px 12px
-      color-mix(
-        in srgb,
-        var(--semantic-success, var(--semantic-success)) 40%,
-        transparent
-      );
+    box-shadow:
+      0 5px 14px
+        color-mix(in srgb, var(--semantic-success, #22c55e) 52%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
   }
 
   .workspace-action-label {
@@ -93,26 +82,12 @@
   .sequence-actions-button:hover {
     background: linear-gradient(
       135deg,
-      color-mix(
-          in srgb,
-          var(--semantic-success, var(--semantic-success)) 85%,
-          #16a34a
-        )
-        0%,
-      color-mix(
-          in srgb,
-          var(--semantic-success, var(--semantic-success)) 70%,
-          #16a34a
-        )
-        100%
+      color-mix(in srgb, var(--semantic-success, #22c55e) 76%, white) 0%,
+      color-mix(in srgb, var(--semantic-success, #22c55e) 68%, #065f46) 100%
     );
     transform: scale(1.05);
     box-shadow: 0 6px 16px
-      color-mix(
-        in srgb,
-        var(--semantic-success, var(--semantic-success)) 60%,
-        transparent
-      );
+      color-mix(in srgb, var(--semantic-success, #22c55e) 64%, transparent);
   }
 
   .sequence-actions-button:active {
@@ -173,6 +148,7 @@
     .sequence-actions-button {
       background: var(--theme-card-hover-bg);
       border: 2px solid var(--theme-stroke-strong);
+      color: var(--theme-text);
     }
   }
 

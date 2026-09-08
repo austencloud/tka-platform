@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   onGuestSaveSucceeded: vi.fn(),
   hasMatchingContent: vi.fn(async () => false),
   getSequence: vi.fn(async () => null),
+  updateSequence: vi.fn(async () => undefined),
   computeHash: vi.fn(async () => "content-hash-1"),
   authState: { user: { uid: "viewer-test-user" } },
 }));
@@ -21,6 +22,7 @@ vi.mock("$lib/shared/library/get-library-repository", () => ({
   getLibraryRepository: () => ({
     hasMatchingContent: mocks.hasMatchingContent,
     getSequence: mocks.getSequence,
+    updateSequence: mocks.updateSequence,
     publishSequence: vi.fn(async () => undefined),
     unpublishSequence: vi.fn(async () => undefined),
     deleteSequence: vi.fn(async () => undefined),
@@ -56,7 +58,7 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
 }));
 
 vi.mock("$lib/shared/pictograph/prop/domain/enums/prop-type", () => ({
-  PropType: { STAFF: "staff" },
+  PropType: { STAFF: "staff", FAN: "fan" },
 }));
 
 vi.mock(
@@ -80,12 +82,12 @@ const sequence = {
   metadata: {},
 };
 
-function makeHandler() {
+function makeHandler(isOwned = true) {
   const handler = createLibraryActionHandler({
     getSequence: () => sequence as never,
-    getIsOwned: () => true,
-    getBluePropType: () => undefined,
-    getRedPropType: () => undefined,
+    getIsOwned: () => isOwned,
+    getLeftPropType: () => undefined,
+    getRightPropType: () => undefined,
     getCatDogModeEnabled: () => false,
     getHapticService: () => ({ trigger: vi.fn() }) as never,
     onDeleteSuccess: vi.fn(),
@@ -102,6 +104,7 @@ describe("sequence viewer library action feedback", () => {
     mocks.showToast.mockReset().mockReturnValue("pending-toast");
     mocks.hasMatchingContent.mockReset().mockResolvedValue(false);
     mocks.getSequence.mockReset().mockResolvedValue(null);
+    mocks.updateSequence.mockReset().mockResolvedValue(undefined);
     mocks.computeHash.mockReset().mockResolvedValue("content-hash-1");
 
     // 8f74d8edd9 moved the pending toast, duplicate handling and in-flight
@@ -115,6 +118,40 @@ describe("sequence viewer library action feedback", () => {
       async () =>
         new VisualSequenceSaveCoordinator({ saveSequence: mocks.saveSequence })
     );
+  });
+
+  it("persists the chosen pair while leaving the source unchanged", async () => {
+    mocks.saveSequence.mockResolvedValue({
+      persisted: true,
+      sequenceId: "copy",
+    });
+    const handler = makeHandler(false);
+    const pending = handler.handleSave();
+    handler.saveProps = {
+      leftPropType: "fan",
+      rightPropType: "staff",
+      catDogMode: true,
+    } as never;
+    handler.finishPropChoice(true);
+    await pending;
+    const stored = mocks.saveSequence.mock.calls[0]?.[0];
+    expect(stored.creatorIntent.propConfig).toEqual({
+      leftPropType: "fan",
+      rightPropType: "staff",
+      catDogMode: true,
+    });
+    expect(sequence).not.toHaveProperty("creatorIntent");
+  });
+
+  it("cancelling the prop choice never writes a library record", async () => {
+    const handler = makeHandler();
+    const pending = handler.handleSave();
+    expect(handler.saveProps).not.toBeNull();
+    handler.finishPropChoice(false);
+    await pending;
+    expect(mocks.saveSequence).not.toHaveBeenCalled();
+    expect(handler.saveProps).toBeNull();
+    expect(handler.isSaving).toBe(false);
   });
 
   it("shows pending feedback immediately and settles as saved once persistence resolves", async () => {
@@ -131,11 +168,9 @@ describe("sequence viewer library action feedback", () => {
     const handler = makeHandler();
 
     const save = handler.handleSave();
-
-    // Save flips to its in-flight state on the same tick the user clicks, so
-    // the button never sits there looking untouched while the coordinator is
-    // resolved and the content hashed.
-    expect(handler.isSaving).toBe(true);
+    expect(mocks.saveSequence).not.toHaveBeenCalled();
+    handler.finishPropChoice(true);
+    await vi.waitFor(() => expect(handler.isSaving).toBe(true));
     expect(handler.isSaved).toBe(false);
 
     await vi.waitFor(() => expect(mocks.saveSequence).toHaveBeenCalledOnce());
@@ -175,7 +210,9 @@ describe("sequence viewer library action feedback", () => {
       .mockImplementation(() => {});
     const handler = makeHandler();
 
-    await handler.handleSave();
+    const pending = handler.handleSave();
+    handler.finishPropChoice(true);
+    await pending;
 
     expect(handler.isSaving).toBe(false);
     expect(handler.isSaved).toBe(false);
@@ -199,7 +236,9 @@ describe("sequence viewer library action feedback", () => {
     );
     const handler = makeHandler();
 
-    await handler.handleSave();
+    const pending = handler.handleSave();
+    handler.finishPropChoice(true);
+    await pending;
 
     expect(handler.isSaving).toBe(false);
     expect(handler.isSaved).toBe(true);
@@ -230,5 +269,41 @@ describe("sequence viewer library action feedback", () => {
 
     expect(mocks.getSequence).toHaveBeenCalledWith("sequence-1");
     expect(handler.isSaved).toBe(true);
+  });
+
+  it("patches only cardPresentation on an owned saved record", async () => {
+    mocks.getSequence.mockResolvedValue({
+      ...sequence,
+      ownerId: "viewer-test-user",
+      contentHash: "content-hash-1",
+    });
+    const handler = makeHandler();
+    await vi.waitFor(() => expect(handler.isOwnedLibraryRecord).toBe(true));
+
+    await expect(
+      handler.saveCardPresentation({
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Shared from First Fire" },
+      })
+    ).resolves.toBe(true);
+
+    expect(mocks.updateSequence).toHaveBeenCalledWith("sequence-1", {
+      cardPresentation: {
+        schemaVersion: 1,
+        footer: { mode: "custom", text: "Shared from First Fire" },
+      },
+    });
+  });
+
+  it("refuses card presentation writes for records the viewer does not own", async () => {
+    const handler = makeHandler(false);
+
+    await expect(
+      handler.saveCardPresentation({
+        schemaVersion: 1,
+        footer: { mode: "credit" },
+      })
+    ).resolves.toBe(false);
+    expect(mocks.updateSequence).not.toHaveBeenCalled();
   });
 });

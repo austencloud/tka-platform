@@ -14,7 +14,7 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -42,19 +42,19 @@ const hydratedSteps = [
     startPosition: "gamma13",
     endPosition: "gamma7",
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         startLocation: GridLocation.WEST,
         endLocation: GridLocation.SOUTH,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
         startLocation: GridLocation.SOUTH,
         endLocation: GridLocation.WEST,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
       }),
     },
   },
@@ -76,7 +76,10 @@ function savedTunnel(
       tunnel: {
         config,
         gridVisible: false,
-        spectrum: true,
+        colors: {
+          mode: "spectrum",
+          custom: { left: "#2e8bf0", right: "#ed1c24" },
+        },
         section: "tunnel",
       },
       effects: { activeEffect: "none" },
@@ -84,11 +87,11 @@ function savedTunnel(
       paths: {
         pathShape: "arc",
         motionAwarePaths: false,
-        bluePathLines: false,
-        redPathLines: false,
+        leftPathLines: false,
+        rightPathLines: false,
       },
       playback: { bpm: 60, playbackMode: "continuous" },
-      props: { bluePropType: "staff", redPropType: "staff" },
+      props: { leftPropType: "staff", rightPropType: "staff" },
       trailRender: { mode: "none" },
     },
     ...overrides,
@@ -117,12 +120,12 @@ describe("collectedTunnelSequence", () => {
     expect(start).toBeDefined();
     // Static props at the first step's start locations, not the first step's
     // own motion — and labelled by position, never by the step's letter.
-    expect(start?.motions?.[MotionColor.BLUE]).toMatchObject({
+    expect(start?.motions?.[HandSide.LEFT]).toMatchObject({
       motionType: MotionType.STATIC,
       startLocation: GridLocation.WEST,
       endLocation: GridLocation.WEST,
     });
-    expect(start?.motions?.[MotionColor.RED]).toMatchObject({
+    expect(start?.motions?.[HandSide.RIGHT]).toMatchObject({
       motionType: MotionType.STATIC,
       startLocation: GridLocation.SOUTH,
       endLocation: GridLocation.SOUTH,
@@ -215,7 +218,7 @@ describe("collectedTunnelComposition", () => {
     const formation = tunnel.snapshot.tunnel.config;
     const solo = createTunnelComposition(
       [createIndependentTunnelPerformer(collectedTunnelSequence(tunnel), 0)],
-      { formation }
+      { formation, legacyGeneratedStage: true }
     );
 
     const before = resolveTunnelLayerPlans(solo);
@@ -249,7 +252,19 @@ describe("collectedTunnelViewerSequence", () => {
     expect(collectedTunnelViewerSequence(tunnel)).toEqual(authoredSequence);
   });
 
-  it("keeps the legacy step projection for records without a composition", () => {
-    expect(collectedTunnelViewerSequence(savedTunnel()).id).toBe("tunnel-42");
+  it("rebuilds the legacy start pose so the saved loop keeps its orientation", () => {
+    const sequence = collectedTunnelViewerSequence(
+      savedTunnel(undefined, { steps: hydratedSteps })
+    );
+
+    expect(sequence.id).toBe("tunnel-42");
+    expect(sequence.startPosition?.motions?.[HandSide.LEFT]).toMatchObject({
+      startLocation: GridLocation.WEST,
+      endLocation: GridLocation.WEST,
+    });
+    expect(sequence.startPosition?.motions?.[HandSide.RIGHT]).toMatchObject({
+      startLocation: GridLocation.SOUTH,
+      endLocation: GridLocation.SOUTH,
+    });
   });
 });

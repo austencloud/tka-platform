@@ -67,13 +67,13 @@
   // Prop angles are recomputed whenever the step, its progress, or the
   // interpolator changes. We hold a local copy in $state so AnimatorCanvas
   // sees stable PropState objects rather than re-deriving on every access.
-  let blueProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
-  let redProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
+  let leftProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
+  let rightProp = $state<PropState>({ ...DEFAULT_PROP_STATE });
 
   $effect(() => {
     if (!servicesReady || !currentStepData) {
-      blueProp = { ...DEFAULT_PROP_STATE };
-      redProp = { ...DEFAULT_PROP_STATE };
+      leftProp = { ...DEFAULT_PROP_STATE };
+      rightProp = { ...DEFAULT_PROP_STATE };
       return;
     }
 
@@ -82,8 +82,8 @@
       stepProgress,
     );
     if (result.isValid) {
-      blueProp = result.blueAngles ?? { ...DEFAULT_PROP_STATE };
-      redProp = result.redAngles ?? { ...DEFAULT_PROP_STATE };
+      leftProp = result.leftAngles ?? { ...DEFAULT_PROP_STATE };
+      rightProp = result.rightAngles ?? { ...DEFAULT_PROP_STATE };
     }
   });
 
@@ -98,8 +98,8 @@
 {#if sequence && stepCount > 0}
   <div class="pov-animator-preview">
     <AnimatorCanvas
-      {blueProp}
-      {redProp}
+      {leftProp}
+      {rightProp}
       {gridMode}
       letter={currentLetter}
       stepData={currentStepData}

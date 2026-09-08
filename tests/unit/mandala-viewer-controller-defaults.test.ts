@@ -22,8 +22,8 @@ describe("MandalaViewerController view overrides", () => {
       depth: 80,
       colorMode: "flow",
       preset: "custom",
-      customBlue: "#123456",
-      customRed: "#654321",
+      customLeft: "#123456",
+      customRight: "#654321",
       lineWeight: 4,
     };
     const legacySavedView = { ...savedView, pathShape: "arc" as const };
@@ -45,16 +45,16 @@ describe("MandalaViewerController view overrides", () => {
       controller = new MandalaViewerController(
         {
           getSequence: () => ({ steps: [] }) as SequenceData,
-          getBluePropType: () => "staff",
-          getRedPropType: () => "staff",
+          getLeftPropType: () => "staff",
+          getRightPropType: () => "staff",
           pathPolicy,
         },
         {
           viewOverrides: {
             colorMode: "solid",
             preset: "custom",
-            customBlue: "#0000ff",
-            customRed: "#ff0000",
+            customLeft: "#0000ff",
+            customRight: "#ff0000",
           },
           persistViewState: false,
         }
@@ -63,14 +63,14 @@ describe("MandalaViewerController view overrides", () => {
 
     expect(controller.colorMode).toBe("solid");
     expect(controller.show).toBe("both");
-    expect(controller.customBlue).toBe("#0000ff");
-    expect(controller.customRed).toBe("#ff0000");
+    expect(controller.customLeft).toBe("#0000ff");
+    expect(controller.customRight).toBe("#ff0000");
     expect(controller.pathShape).toBe("concave");
 
-    controller.customBlue = "#00ffff";
-    controller.show = "blue";
+    controller.customLeft = "#00ffff";
+    controller.show = "left";
     flushSync();
-    expect(controller.show).toBe("blue");
+    expect(controller.show).toBe("left");
     expect(JSON.parse(storage.get(VIEW_STORAGE_KEY)!)).toEqual(legacySavedView);
 
     cleanup();
@@ -87,8 +87,8 @@ describe("MandalaViewerController view overrides", () => {
     const cleanup = effect_root(() => {
       controller = new MandalaViewerController({
         getSequence: () => ({ steps: [] }) as SequenceData,
-        getBluePropType: () => "staff",
-        getRedPropType: () => "staff",
+        getLeftPropType: () => "staff",
+        getRightPropType: () => "staff",
         pathPolicy,
       });
     });
@@ -111,8 +111,8 @@ describe("MandalaViewerController view overrides", () => {
     const cleanup = effect_root(() => {
       controller = new MandalaViewerController({
         getSequence: () => ({ steps: [] }) as SequenceData,
-        getBluePropType: () => "staff",
-        getRedPropType: () => "staff",
+        getLeftPropType: () => "staff",
+        getRightPropType: () => "staff",
         pathPolicy,
       });
     });

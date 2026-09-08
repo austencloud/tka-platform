@@ -16,58 +16,58 @@ import {
  * Detect reflection transformations (mirror and flip) between beat pairs.
  */
 export function checkReflections(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData
 ): TransformationCheckResult {
   const transformations: string[] = [];
 
-  checkSameColorReflections(b1Blue, b1Red, b2Blue, b2Red, transformations);
-  checkSwappedColorReflections(b1Blue, b1Red, b2Blue, b2Red, transformations);
+  checkSameColorReflections(b1Left, b1Right, b2Left, b2Right, transformations);
+  checkSwappedColorReflections(b1Left, b1Right, b2Left, b2Right, transformations);
 
   return { transformations };
 }
 
 function checkSameColorReflections(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData,
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData,
   transformations: string[]
 ): void {
   // Mirror (same colors)
   const positionsMirrored =
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Red.endLoc;
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Left.endLoc &&
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Right.endLoc;
 
   // Flip (same colors)
   const positionsFlipped =
-    FLIP_HORIZONTAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    FLIP_HORIZONTAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    FLIP_HORIZONTAL[b1Red.startLoc] === b2Red.startLoc &&
-    FLIP_HORIZONTAL[b1Red.endLoc] === b2Red.endLoc;
+    FLIP_HORIZONTAL[b1Left.startLoc] === b2Left.startLoc &&
+    FLIP_HORIZONTAL[b1Left.endLoc] === b2Left.endLoc &&
+    FLIP_HORIZONTAL[b1Right.startLoc] === b2Right.startLoc &&
+    FLIP_HORIZONTAL[b1Right.endLoc] === b2Right.endLoc;
 
   const canDetermineInversion = hasRotationData(
-    b1Blue.propRotDir,
-    b1Red.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir,
-    b1Blue.motionType,
-    b1Red.motionType,
-    b2Blue.motionType,
-    b2Red.motionType
+    b1Left.propRotDir,
+    b1Right.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir,
+    b1Left.motionType,
+    b1Right.motionType,
+    b2Left.motionType,
+    b2Right.motionType
   );
 
   // For MIRROR/FLIP: rotation direction naturally FLIPS due to reflection.
   // "Inverted" means rot dir stayed SAME (someone counteracted the natural flip)
   const rotDirInvertedForMirrorFlip = areRotDirsInvertedForMirrorFlip(
-    b1Blue.propRotDir,
-    b1Red.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir
+    b1Left.propRotDir,
+    b1Right.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir
   );
 
   if (positionsMirrored) {
@@ -94,49 +94,49 @@ function checkSameColorReflections(
 }
 
 function checkSwappedColorReflections(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData,
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData,
   transformations: string[]
 ): void {
   // Mirrored + swapped
   const positionsMirroredSwapped =
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Blue.endLoc &&
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Red.endLoc;
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Left.endLoc &&
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Right.endLoc;
 
   // Flipped + swapped
   const positionsFlippedSwapped =
-    FLIP_HORIZONTAL[b1Red.startLoc] === b2Blue.startLoc &&
-    FLIP_HORIZONTAL[b1Red.endLoc] === b2Blue.endLoc &&
-    FLIP_HORIZONTAL[b1Blue.startLoc] === b2Red.startLoc &&
-    FLIP_HORIZONTAL[b1Blue.endLoc] === b2Red.endLoc;
+    FLIP_HORIZONTAL[b1Right.startLoc] === b2Left.startLoc &&
+    FLIP_HORIZONTAL[b1Right.endLoc] === b2Left.endLoc &&
+    FLIP_HORIZONTAL[b1Left.startLoc] === b2Right.startLoc &&
+    FLIP_HORIZONTAL[b1Left.endLoc] === b2Right.endLoc;
 
   // Motion type checks for swapped colors
   const motionTypesSameSwapped =
-    b1Red.motionType === b2Blue.motionType &&
-    b1Blue.motionType === b2Red.motionType;
+    b1Right.motionType === b2Left.motionType &&
+    b1Left.motionType === b2Right.motionType;
 
   // Check if motion types are actually invertible (pro/anti only)
   const hasInvertibleMotionTypes =
-    (b1Red.motionType === "pro" || b1Red.motionType === "anti") &&
-    (b1Blue.motionType === "pro" || b1Blue.motionType === "anti") &&
-    (b2Blue.motionType === "pro" || b2Blue.motionType === "anti") &&
-    (b2Red.motionType === "pro" || b2Red.motionType === "anti");
+    (b1Right.motionType === "pro" || b1Right.motionType === "anti") &&
+    (b1Left.motionType === "pro" || b1Left.motionType === "anti") &&
+    (b2Left.motionType === "pro" || b2Left.motionType === "anti") &&
+    (b2Right.motionType === "pro" || b2Right.motionType === "anti");
 
   const motionTypesInvertedSwapped =
     hasInvertibleMotionTypes &&
-    invertMotionType(b1Red.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Blue.motionType) === b2Red.motionType;
+    invertMotionType(b1Right.motionType) === b2Left.motionType &&
+    invertMotionType(b1Left.motionType) === b2Right.motionType;
 
   if (positionsMirroredSwapped) {
     processSwappedReflection(
-      b1Blue,
-      b1Red,
-      b2Blue,
-      b2Red,
+      b1Left,
+      b1Right,
+      b2Left,
+      b2Right,
       motionTypesSameSwapped,
       motionTypesInvertedSwapped,
       hasInvertibleMotionTypes,
@@ -147,10 +147,10 @@ function checkSwappedColorReflections(
 
   if (positionsFlippedSwapped) {
     processSwappedReflection(
-      b1Blue,
-      b1Red,
-      b2Blue,
-      b2Red,
+      b1Left,
+      b1Right,
+      b2Left,
+      b2Right,
       motionTypesSameSwapped,
       motionTypesInvertedSwapped,
       hasInvertibleMotionTypes,
@@ -161,10 +161,10 @@ function checkSwappedColorReflections(
 }
 
 function processSwappedReflection(
-  b1Blue: ColorData,
-  b1Red: ColorData,
-  b2Blue: ColorData,
-  b2Red: ColorData,
+  b1Left: ColorData,
+  b1Right: ColorData,
+  b2Left: ColorData,
+  b2Right: ColorData,
   motionTypesSameSwapped: boolean,
   motionTypesInvertedSwapped: boolean,
   hasInvertibleMotionTypes: boolean,
@@ -172,23 +172,23 @@ function processSwappedReflection(
   transformations: string[]
 ): void {
   const canDetermineRotInversion = hasRotationData(
-    b1Red.propRotDir,
-    b1Blue.propRotDir,
-    b2Blue.propRotDir,
-    b2Red.propRotDir,
-    b1Red.motionType,
-    b1Blue.motionType,
-    b2Blue.motionType,
-    b2Red.motionType
+    b1Right.propRotDir,
+    b1Left.propRotDir,
+    b2Left.propRotDir,
+    b2Right.propRotDir,
+    b1Right.motionType,
+    b1Left.motionType,
+    b2Left.motionType,
+    b2Right.motionType
   );
 
   const rotDirInvertedForSwap =
     canDetermineRotInversion &&
     areRotDirsInvertedForMirrorFlip(
-      b1Red.propRotDir,
-      b1Blue.propRotDir,
-      b2Blue.propRotDir,
-      b2Red.propRotDir
+      b1Right.propRotDir,
+      b1Left.propRotDir,
+      b2Left.propRotDir,
+      b2Right.propRotDir
     );
 
   if (motionTypesInvertedSwapped) {
@@ -204,8 +204,8 @@ function processSwappedReflection(
     }
   } else if (
     !hasInvertibleMotionTypes &&
-    b1Red.motionType === b2Blue.motionType &&
-    b1Blue.motionType === b2Red.motionType
+    b1Right.motionType === b2Left.motionType &&
+    b1Left.motionType === b2Right.motionType
   ) {
     if (!canDetermineRotInversion) {
       transformations.push(`${baseName}_swapped`);

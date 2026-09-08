@@ -62,17 +62,25 @@ Displays:
     height: 8px;
     border-radius: 50%;
     background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    transition: all var(--duration-emphasis) ease;
+    transition:
+      background var(--duration-emphasis) var(--ease-out),
+      box-shadow var(--duration-emphasis) var(--ease-out),
+      transform var(--duration-emphasis) var(--ease-out);
   }
 
   .progress-dot.active {
     background: var(--semantic-success, #50c878);
     transform: scale(1.25);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
+    box-shadow: 0 0 8px
+      color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
   }
 
   .progress-dot.completed {
-    background: color-mix(in srgb, var(--semantic-success, #50c878) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #50c878) 50%,
+      transparent
+    );
   }
 
   .progress-text {
@@ -85,6 +93,26 @@ Displays:
   @media (prefers-reduced-motion: reduce) {
     .progress-dot {
       transition: none;
+    }
+  }
+
+  @media (min-width: 2400px) and (min-height: 1300px) {
+    .progress-indicator {
+      gap: 0.9rem;
+      padding: 0.65rem 1.25rem;
+    }
+
+    .progress-dots {
+      gap: 0.6rem;
+    }
+
+    .progress-dot {
+      width: 10px;
+      height: 10px;
+    }
+
+    .progress-text {
+      font-size: 0.9rem;
     }
   }
 </style>

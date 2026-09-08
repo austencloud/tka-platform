@@ -1,94 +1,28 @@
-# Sequence Viewer Shell — ENFORCED
+---
+paths:
+  - "src/lib/shared/sequence-viewer/**/*"
+  - "src/routes/sequence/**/*"
+  - "src/routes/q/**/*"
+---
 
-## The Problem This Solves
+# Sequence Viewer Shell Contract
 
-The /q scan page and the in-app sequence-viewer drawer drifted apart for days:
-hand-rolled headers, a hardcoded navy palette shadowing the theme pipeline, a
-forked mobile breakpoint (960 vs 768), and export tabs running different layout
-rules. Austen (2026-07-02): _"didn't I just tell you that I want all of the same
-things that exist in the actual sequence viewer drawer to exist in the QR page?
-... you're still making this hand rolled header and you're absolutely refusing
-to fix the other variation so it does look exactly the same."_
+`src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte` owns
+viewer chrome, navigation, menus, rail, split layout, export panels, practice
+controls, delete dialog, breakpoints, and shell styling.
 
-The fix was structural: ALL viewer chrome now lives in one shared component,
-rendered by both viewer destinations, so the surfaces are identical by construction. This rule
-keeps it that way — the same playbook that stopped chip and crossfade drift
-(`chip-primitives.md`, `crossfade-primitive.md`).
+Viewer hosts remain thin. They may own their wrapper, data bootstrap, close/back
+routing, and host-specific funnels. They must not:
 
-## The Canonical Component
+- rebuild shell chrome or import its internal presentation components;
+- declare host-local `--theme-*` or `--semantic-*` values that shadow the theme;
+- fork responsive or export-layout behavior;
+- mount a second viewer on the `/q` ingress route.
 
-`src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte`
+Add a shell prop or fix the shell owner when a host needs new shared behavior.
+`src/routes/q/[code]/QScanPage.svelte` may resolve a code, record physical-scan
+attribution, cache a handoff, and route to `/sequence/[code]`; it does not render
+the viewer.
 
-Owns EVERYTHING between the host wrapper and the sequence: header, word menu,
-overflow menu, rail, split pane, export panels (video + card), practice
-workstation, delete dialog, all layout/breakpoint math, and all chrome CSS.
-
-Host deltas go through the prop seam, never through forked markup:
-
-| Prop                     | Purpose                                                        |
-| ------------------------ | -------------------------------------------------------------- |
-| `onClose`                | Host-specific dismiss (drawer close vs `goto`)                 |
-| `onRemix`                | Override remix routing when a host needs it                    |
-| `openAppHref`            | "Open TKA" target for standalone hosts                         |
-| `onAccountSignIn`        | Guest sign-in / full-account avatar entry for standalone hosts |
-| `startInCardThenSplit`   | Boot a scan-origin viewer on its card before split view        |
-| `exportOverrides`        | Host-owned export funnels (such as scan download gating)       |
-| `navigation`             | Standalone-route back action in the shared header              |
-| `contextContent`         | Host context rendered between the header and viewer body       |
-| `showFullscreenControls` | Enables route-owned fullscreen affordances in the shell        |
-
-## The Host Contract
-
-A host (today: `SequenceViewerDrawerHost.svelte` and
-`src/routes/sequence/[id]/SequenceViewerPage.svelte`) is THIN. It owns only: its wrapper (Drawer / route page), data
-resolution/bootstrap, open/close routing, and host-specific funnels (scan
-logging, gated export). Hosts MUST NOT:
-
-1. **Rebuild chrome.** No host-side header, rail, export panel, or practice bar.
-   No importing chrome internals (`ViewerHeader`, `ViewerSplitPane`,
-   `ViewerOverflowMenu`, `ExportImagePanel`, `VideoPreviewPanel`, `PracticeBar`,
-   `PracticeSetupBar`, `DeleteConfirmDialog`, `viewer-actions`) — those compose
-   only inside the shell.
-2. **Declare calculator-owned CSS vars.** No `--theme-*` / `--semantic-*`
-   declarations in host styles — they shadow the `:root` values set by
-   `applyThemeForBackground()` for the whole subtree and re-create the
-   color-mismatch bug. Consuming them via `var()` is fine. Standalone hosts run
-   the theme pipeline instead.
-3. **Fork behavior.** Mobile breakpoint is `width < 768` everywhere. Layout and
-   export-narrow rules live in the shell only.
-
-Need something the shell doesn't expose? **Add a prop to the shell** (as
-`exportOverrides` was added). If the shell's own behavior is wrong, fix it in
-the shell — both surfaces get the fix.
-
-### Scan ingress contract
-
-`src/routes/q/[code]/QScanPage.svelte` is not a viewer host. It may resolve a
-short code, record physical-scan attribution, cache a route handoff, and
-replace the URL with `/sequence/[code]`. It must not import the orchestrator or
-shell, render viewer chrome, or own an alternate export/practice layout. Only
-this ingress may call `recordCardScan`.
-
-## Enforcement
-
-`tests/unit/sequence-viewer-shell-contract.test.ts` statically asserts the
-contract (shell rendered by both viewer hosts, no chrome imports, no theme-var
-declarations, shared breakpoint, and no shell on `/q`) and runs in the `web-ci` unit-test job. If it
-fails, fix the host — do not loosen the test.
-
-## Forbidden
-
-- A new viewer surface that renders viewer chrome without going through the shell.
-- Host-side `--theme-*` / `--semantic-*` declarations.
-- A second breakpoint or export-layout rule outside the shell.
-- Loosening the contract test to make a host change pass.
-- A full viewer mounted on `/q`; physical scans hand off to `/sequence`.
-
-## Related
-
-- ADR: `docs/architecture/sequence-viewer-shell.md`
-- Spec: `docs/superpowers/specs/2026-07-05-viewer-shell-anti-drift-design.md`
-- Header identity spec:
-  `docs/superpowers/specs/active/2026-08-08-sequence-viewer-header-identity-design.md`
-- `never-hand-roll.md` (master), `chip-primitives.md`, `crossfade-primitive.md`,
-  `no-layout-shift.md`
+Keep `tests/unit/sequence-viewer-shell-contract.test.ts` aligned with behavior,
+not exact instruction prose. Do not loosen it to permit a forked host.

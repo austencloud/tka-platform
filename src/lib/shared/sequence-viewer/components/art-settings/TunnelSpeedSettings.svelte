@@ -16,10 +16,16 @@
   interface Props {
     controller: TunnelViewController;
     dense: boolean;
+    stageAware?: boolean;
     onArtSettingChange?: ArtSettingChangeHandler;
   }
 
-  let { controller, dense, onArtSettingChange }: Props = $props();
+  let {
+    controller,
+    dense,
+    stageAware = false,
+    onArtSettingChange,
+  }: Props = $props();
 
   function changeSetting(
     group: string,
@@ -120,8 +126,8 @@
               )}
           >
             <span class="perf-swatch">
-              <span style="background:{perf.blueHex}"></span>
-              <span style="background:{perf.redHex}"></span>
+              <span style="background:{perf.leftHex}"></span>
+              <span style="background:{perf.rightHex}"></span>
             </span>
             <span class="perf-lbl">{perf.label}</span>
           </button>
@@ -152,7 +158,9 @@
     {/if}
   {:else if !dense}
     <p class="section-hint">
-      Add copies (Copies ×N, Mirror, Flip) to set speed per performer.
+      {stageAware
+        ? "Add another stage appearance to set different speeds."
+        : "Add copies (Copies ×N, Mirror, Flip) to set speed per performer."}
     </p>
   {/if}
 </div>

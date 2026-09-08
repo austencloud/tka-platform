@@ -1,23 +1,18 @@
 <script lang="ts">
   import { DropdownMenu } from "bits-ui";
   import type { HTMLButtonAttributes } from "svelte/elements";
-  import { getPropTypeDisplayInfo } from "$lib/shared/settings/components/tabs/prop-type/prop-type-registry";
 
   import { getShapeMatrixAppContext } from "../context/shape-matrix-app-context";
-
-  const ORIGINAL_MATRIX_URL =
-    "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/";
+  import {
+    KINETIC_SHAPE_ENGINE_NAME,
+    ORIGINAL_SHAPE_MATRIX_URL,
+  } from "../shape-engine-identity";
 
   const appState = getShapeMatrixAppContext();
-  const selectedProp = $derived(getPropTypeDisplayInfo(appState.propType));
   let open = $state(false);
 
   function asButtonAttributes(props: unknown): HTMLButtonAttributes {
     return props as HTMLButtonAttributes;
-  }
-
-  function chooseProp(): void {
-    appState.openPropPicker();
   }
 
   function openAbout(): void {
@@ -26,7 +21,7 @@
 
   function openOriginal(): void {
     const original = window.open(
-      ORIGINAL_MATRIX_URL,
+      ORIGINAL_SHAPE_MATRIX_URL,
       "_blank",
       "noopener,noreferrer"
     );
@@ -42,7 +37,7 @@
         {...triggerProps}
         type="button"
         class="overflow-trigger"
-        aria-label="More Shape Matrix options"
+        aria-label="More Shape Engine options"
       >
         <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
       </button>
@@ -56,35 +51,26 @@
       sideOffset={8}
       collisionPadding={12}
       class="shape-matrix-overflow"
-      aria-label="Shape Matrix options"
+      aria-label="Shape Engine options"
     >
+      <!-- No prop entry here: the Props control under the animation canvas
+           owns that choice, where the prop is visible against the shape it
+           traces. -->
       <DropdownMenu.Item
         class="shape-matrix-overflow-item"
-        textValue={`Choose prop. Current prop: ${selectedProp.label}`}
-        onSelect={chooseProp}
-      >
-        <img class="prop-icon" src={selectedProp.image} alt="" />
-        <span class="item-copy">
-          <span>Choose prop</span>
-          <small>{selectedProp.label}</small>
-        </span>
-      </DropdownMenu.Item>
-      <DropdownMenu.Separator class="shape-matrix-overflow-divider" />
-      <DropdownMenu.Item
-        class="shape-matrix-overflow-item"
-        textValue="View Lorq Nichols' original Shape Matrix"
+        textValue="View Lorq Nichols' original 144 Shape Matrix"
         onSelect={openOriginal}
       >
         <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-        <span>Original Shape Matrix</span>
+        <span>Lorq Nichols’ original 144 Shape Matrix</span>
       </DropdownMenu.Item>
       <DropdownMenu.Item
         class="shape-matrix-overflow-item"
-        textValue="About Shape Matrix Explorer"
+        textValue={`About ${KINETIC_SHAPE_ENGINE_NAME}`}
         onSelect={openAbout}
       >
         <i class="fas fa-circle-info" aria-hidden="true"></i>
-        <span>About this explorer</span>
+        <span>About Shape Engine</span>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Portal>
@@ -116,7 +102,7 @@
   }
 
   .overflow-trigger:focus-visible {
-    outline: 2px solid #f59e0b;
+    outline: 2px solid var(--theme-accent, #f59e0b);
     outline-offset: 2px;
   }
 
@@ -131,13 +117,13 @@
       var(--theme-panel-bg, #101721),
       var(--theme-panel-bg, #101721)
     );
-    box-shadow: 0 16px 42px rgb(0 0 0 / 0.42);
+    box-shadow: 0 16px 42px var(--theme-shadow, rgb(0 0 0 / 0.42));
     outline: none;
     transform-origin: var(--bits-dropdown-menu-content-transform-origin);
   }
 
   :global(.shape-matrix-overflow[data-state="open"]) {
-    animation: menu-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: menu-in var(--duration-fast) var(--ease-out) both;
   }
 
   :global(.shape-matrix-overflow-item) {
@@ -161,38 +147,11 @@
     color: var(--theme-text, #fff);
   }
 
-  :global(.shape-matrix-overflow-item > i),
-  :global(.shape-matrix-overflow-item > .prop-icon) {
-    width: 1.4rem;
-    height: 1.4rem;
-    flex: 0 0 1.4rem;
-    object-fit: contain;
-    text-align: center;
-  }
-
   :global(.shape-matrix-overflow-item > i) {
-    height: auto;
-    color: #f4b54c;
-  }
-
-  :global(.shape-matrix-overflow-item .item-copy) {
-    display: grid;
-    min-width: 0;
-    gap: 0.05rem;
-  }
-
-  :global(.shape-matrix-overflow-item .item-copy small) {
-    overflow: hidden;
-    color: var(--theme-text-dim, rgb(255 255 255 / 0.58));
-    font-size: var(--font-size-compact, 12px);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  :global(.shape-matrix-overflow-divider) {
-    height: 1px;
-    margin: 4px 8px;
-    background: var(--theme-stroke, rgb(255 255 255 / 0.1));
+    width: 1.4rem;
+    flex: 0 0 1.4rem;
+    color: var(--theme-accent, #f59e0b);
+    text-align: center;
   }
 
   @keyframes menu-in {

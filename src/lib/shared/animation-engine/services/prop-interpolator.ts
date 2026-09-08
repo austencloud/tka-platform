@@ -55,51 +55,51 @@ export function interpolatePropAngles(
   // A hand that is "not really there" is an invisible placeholder under the
   // both-required Step shape — treat it exactly like the old absent hand
   // (solo/mandala animations and blank beats rely on this skip).
-  const blueMotion = isVisibleMotion(currentStepData.motions?.blue)
-    ? currentStepData.motions.blue
+  const leftMotion = isVisibleMotion(currentStepData.motions?.left)
+    ? currentStepData.motions.left
     : undefined;
-  const redMotion = isVisibleMotion(currentStepData.motions?.red)
-    ? currentStepData.motions.red
+  const rightMotion = isVisibleMotion(currentStepData.motions?.right)
+    ? currentStepData.motions.right
     : undefined;
 
   // Both hands missing = truly invalid
-  if (!blueMotion && !redMotion) {
+  if (!leftMotion && !rightMotion) {
     return {
-      blueAngles: null,
-      redAngles: null,
+      leftAngles: null,
+      rightAngles: null,
       isValid: false,
     };
   }
 
-  // Interpolate blue prop (null if not present)
-  let blueAngles: InterpolationResult["blueAngles"] = null;
-  if (blueMotion) {
-    const blueEndpoints = calculateMotionEndpoints(blueMotion);
-    blueAngles = interpolateMotion(
-      blueEndpoints,
-      blueMotion.motionType,
+  // Interpolate the left prop (null if not present)
+  let leftAngles: InterpolationResult["leftAngles"] = null;
+  if (leftMotion) {
+    const leftEndpoints = calculateMotionEndpoints(leftMotion);
+    leftAngles = interpolateMotion(
+      leftEndpoints,
+      leftMotion.motionType,
       stepProgress,
-      blueMotion.pathShape,
+      leftMotion.pathShape,
       vm
     );
   }
 
-  // Interpolate red prop (null if not present)
-  let redAngles: InterpolationResult["redAngles"] = null;
-  if (redMotion) {
-    const redEndpoints = calculateMotionEndpoints(redMotion);
-    redAngles = interpolateMotion(
-      redEndpoints,
-      redMotion.motionType,
+  // Interpolate the right prop (null if not present)
+  let rightAngles: InterpolationResult["rightAngles"] = null;
+  if (rightMotion) {
+    const rightEndpoints = calculateMotionEndpoints(rightMotion);
+    rightAngles = interpolateMotion(
+      rightEndpoints,
+      rightMotion.motionType,
       stepProgress,
-      redMotion.pathShape,
+      rightMotion.pathShape,
       vm
     );
   }
 
   return {
-    blueAngles,
-    redAngles,
+    leftAngles,
+    rightAngles,
     isValid: true,
   };
 }
@@ -224,44 +224,44 @@ function interpolateConcaveMotion(
 export function calculateInitialAngles(firstStep: StepData): InterpolationResult {
   // Get motion data directly from domain beat (PURE DOMAIN!)
   // Invisible placeholders count as "not there" (see interpolatePropAngles).
-  const blueStartMotion = isVisibleMotion(firstStep.motions?.blue)
-    ? firstStep.motions.blue
+  const leftStartMotion = isVisibleMotion(firstStep.motions?.left)
+    ? firstStep.motions.left
     : undefined;
-  const redStartMotion = isVisibleMotion(firstStep.motions?.red)
-    ? firstStep.motions.red
+  const rightStartMotion = isVisibleMotion(firstStep.motions?.right)
+    ? firstStep.motions.right
     : undefined;
 
   // Both hands missing = truly invalid
-  if (!blueStartMotion && !redStartMotion) {
+  if (!leftStartMotion && !rightStartMotion) {
     return {
-      blueAngles: null,
-      redAngles: null,
+      leftAngles: null,
+      rightAngles: null,
       isValid: false,
     };
   }
 
   // Calculate angles for whichever hand is present (null for missing hand)
-  let blueAngles: InterpolationResult["blueAngles"] = null;
-  if (blueStartMotion) {
-    const blueStartEndpoints = calculateMotionEndpoints(blueStartMotion);
-    blueAngles = {
-      centerPathAngle: blueStartEndpoints.startCenterAngle,
-      staffRotationAngle: blueStartEndpoints.startStaffAngle,
+  let leftAngles: InterpolationResult["leftAngles"] = null;
+  if (leftStartMotion) {
+    const leftStartEndpoints = calculateMotionEndpoints(leftStartMotion);
+    leftAngles = {
+      centerPathAngle: leftStartEndpoints.startCenterAngle,
+      staffRotationAngle: leftStartEndpoints.startStaffAngle,
     };
   }
 
-  let redAngles: InterpolationResult["redAngles"] = null;
-  if (redStartMotion) {
-    const redStartEndpoints = calculateMotionEndpoints(redStartMotion);
-    redAngles = {
-      centerPathAngle: redStartEndpoints.startCenterAngle,
-      staffRotationAngle: redStartEndpoints.startStaffAngle,
+  let rightAngles: InterpolationResult["rightAngles"] = null;
+  if (rightStartMotion) {
+    const rightStartEndpoints = calculateMotionEndpoints(rightStartMotion);
+    rightAngles = {
+      centerPathAngle: rightStartEndpoints.startCenterAngle,
+      staffRotationAngle: rightStartEndpoints.startStaffAngle,
     };
   }
 
   return {
-    blueAngles,
-    redAngles,
+    leftAngles,
+    rightAngles,
     isValid: true,
   };
 }
@@ -270,12 +270,12 @@ export function calculateInitialAngles(firstStep: StepData): InterpolationResult
  * Get motion data for debugging (supports single-hand beats)
  */
 export function getMotionData(stepData: StepData): {
-  blue: MotionData | null;
-  red: MotionData | null;
+  left: MotionData | null;
+  right: MotionData | null;
 } {
   return {
-    blue: stepData.motions?.blue ?? null,
-    red: stepData.motions?.red ?? null,
+    left: stepData.motions?.left ?? null,
+    right: stepData.motions?.right ?? null,
   };
 }
 
@@ -283,16 +283,16 @@ export function getMotionData(stepData: StepData): {
  * Calculate endpoints for debugging (supports single-hand beats)
  */
 export function getEndpoints(stepData: StepData): {
-  blue: MotionEndpoints | null;
-  red: MotionEndpoints | null;
+  left: MotionEndpoints | null;
+  right: MotionEndpoints | null;
 } {
   const motionData = getMotionData(stepData);
   return {
-    blue: motionData.blue
-      ? calculateMotionEndpoints(motionData.blue)
+    left: motionData.left
+      ? calculateMotionEndpoints(motionData.left)
       : null,
-    red: motionData.red
-      ? calculateMotionEndpoints(motionData.red)
+    right: motionData.right
+      ? calculateMotionEndpoints(motionData.right)
       : null,
   };
 }

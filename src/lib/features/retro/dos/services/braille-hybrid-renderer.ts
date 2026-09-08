@@ -24,7 +24,7 @@ import {
 	GridLocation,
 	GridMode,
 	MotionType,
-	MotionColor,
+	HandSide,
 	Orientation,
 	RotationDirection,
 } from "../../shared/domain/pictograph-types";
@@ -123,32 +123,32 @@ interface BetaOffset {
 }
 
 interface BetaOffsetPair {
-	readonly blue: BetaOffset;
-	readonly red: BetaOffset;
+	readonly left: BetaOffset;
+	readonly right: BetaOffset;
 }
 
 const DIAMOND_BETA: Partial<Record<GridLocation, BetaOffsetPair>> = {
-	[GridLocation.NORTH]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
-	[GridLocation.EAST]: { blue: { dcol: 0, drow: -1 }, red: { dcol: 0, drow: 1 } },
-	[GridLocation.SOUTH]: { blue: { dcol: 2, drow: 0 }, red: { dcol: -2, drow: 0 } },
-	[GridLocation.WEST]: { blue: { dcol: 0, drow: 1 }, red: { dcol: 0, drow: -1 } },
-	[GridLocation.NORTHEAST]: { blue: { dcol: -2, drow: -1 }, red: { dcol: 2, drow: 1 } },
-	[GridLocation.SOUTHEAST]: { blue: { dcol: 2, drow: -1 }, red: { dcol: -2, drow: 1 } },
-	[GridLocation.SOUTHWEST]: { blue: { dcol: 2, drow: 1 }, red: { dcol: -2, drow: -1 } },
-	[GridLocation.NORTHWEST]: { blue: { dcol: -2, drow: 1 }, red: { dcol: 2, drow: -1 } },
-	[GridLocation.CENTER]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
+	[GridLocation.NORTH]: { left: { dcol: -2, drow: 0 }, right: { dcol: 2, drow: 0 } },
+	[GridLocation.EAST]: { left: { dcol: 0, drow: -1 }, right: { dcol: 0, drow: 1 } },
+	[GridLocation.SOUTH]: { left: { dcol: 2, drow: 0 }, right: { dcol: -2, drow: 0 } },
+	[GridLocation.WEST]: { left: { dcol: 0, drow: 1 }, right: { dcol: 0, drow: -1 } },
+	[GridLocation.NORTHEAST]: { left: { dcol: -2, drow: -1 }, right: { dcol: 2, drow: 1 } },
+	[GridLocation.SOUTHEAST]: { left: { dcol: 2, drow: -1 }, right: { dcol: -2, drow: 1 } },
+	[GridLocation.SOUTHWEST]: { left: { dcol: 2, drow: 1 }, right: { dcol: -2, drow: -1 } },
+	[GridLocation.NORTHWEST]: { left: { dcol: -2, drow: 1 }, right: { dcol: 2, drow: -1 } },
+	[GridLocation.CENTER]: { left: { dcol: -2, drow: 0 }, right: { dcol: 2, drow: 0 } },
 };
 
 const BOX_BETA: Partial<Record<GridLocation, BetaOffsetPair>> = {
-	[GridLocation.NORTHEAST]: { blue: { dcol: -2, drow: -1 }, red: { dcol: 2, drow: 1 } },
-	[GridLocation.SOUTHEAST]: { blue: { dcol: -2, drow: 1 }, red: { dcol: 2, drow: -1 } },
-	[GridLocation.SOUTHWEST]: { blue: { dcol: 2, drow: 1 }, red: { dcol: -2, drow: -1 } },
-	[GridLocation.NORTHWEST]: { blue: { dcol: 2, drow: -1 }, red: { dcol: -2, drow: 1 } },
-	[GridLocation.NORTH]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
-	[GridLocation.EAST]: { blue: { dcol: 0, drow: -1 }, red: { dcol: 0, drow: 1 } },
-	[GridLocation.SOUTH]: { blue: { dcol: 2, drow: 0 }, red: { dcol: -2, drow: 0 } },
-	[GridLocation.WEST]: { blue: { dcol: 0, drow: 1 }, red: { dcol: 0, drow: -1 } },
-	[GridLocation.CENTER]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
+	[GridLocation.NORTHEAST]: { left: { dcol: -2, drow: -1 }, right: { dcol: 2, drow: 1 } },
+	[GridLocation.SOUTHEAST]: { left: { dcol: -2, drow: 1 }, right: { dcol: 2, drow: -1 } },
+	[GridLocation.SOUTHWEST]: { left: { dcol: 2, drow: 1 }, right: { dcol: -2, drow: -1 } },
+	[GridLocation.NORTHWEST]: { left: { dcol: 2, drow: -1 }, right: { dcol: -2, drow: 1 } },
+	[GridLocation.NORTH]: { left: { dcol: -2, drow: 0 }, right: { dcol: 2, drow: 0 } },
+	[GridLocation.EAST]: { left: { dcol: 0, drow: -1 }, right: { dcol: 0, drow: 1 } },
+	[GridLocation.SOUTH]: { left: { dcol: 2, drow: 0 }, right: { dcol: -2, drow: 0 } },
+	[GridLocation.WEST]: { left: { dcol: 0, drow: 1 }, right: { dcol: 0, drow: -1 } },
+	[GridLocation.CENTER]: { left: { dcol: -2, drow: 0 }, right: { dcol: 2, drow: 0 } },
 };
 
 
@@ -279,8 +279,8 @@ class BrailleLayer {
 	/** Encode a single character cell from its 2x4 pixel block */
 	getCell(cx: number, cy: number): BrailleCell {
 		let code = 0;
-		let blueCount = 0;
-		let redCount = 0;
+		let leftCount = 0;
+		let rightCount = 0;
 
 		for (let py = 0; py < 4; py++) {
 			for (let px = 0; px < 2; px++) {
@@ -289,16 +289,16 @@ class BrailleLayer {
 				if (ix < this.pw && iy < this.ph && this.pixels[iy * this.pw + ix]) {
 					code |= PIXEL_MAP[py]![px]!;
 					const c = this.colors[iy * this.pw + ix];
-					if (c === BRAILLE_BLUE) blueCount++;
-					else if (c === BRAILLE_RED) redCount++;
+					if (c === BRAILLE_BLUE) leftCount++;
+					else if (c === BRAILLE_RED) rightCount++;
 				}
 			}
 		}
 
 		const char = String.fromCharCode(BRAILLE_OFFSET + code);
 		let color: string | null = null;
-		if (blueCount > 0 || redCount > 0) {
-			color = blueCount >= redCount ? COLOR_BLUE : COLOR_RED;
+		if (leftCount > 0 || rightCount > 0) {
+			color = leftCount >= rightCount ? COLOR_BLUE : COLOR_RED;
 		}
 		return { char, color, hasContent: code > 0 };
 	}
@@ -425,27 +425,27 @@ export class BrailleHybridRenderer implements IAsciiRenderer {
 
 		// Step 2: Orientation staves
 		if (layers?.staves !== false) {
-			const isBeta = data.blueHand.endLocation === data.redHand.endLocation;
+			const isBeta = data.leftHand.endLocation === data.rightHand.endLocation;
 			if (isBeta) {
 				const betaMap = isBox ? BOX_BETA : DIAMOND_BETA;
-				const offsets = betaMap[data.blueHand.endLocation];
-				const blueOffset = offsets?.blue ?? { dcol: -2, drow: 0 };
-				const redOffset = offsets?.red ?? { dcol: 2, drow: 0 };
-				this.drawStave(ascii, data.blueHand, handCoords, blueOffset);
-				this.drawStave(ascii, data.redHand, handCoords, redOffset);
+				const offsets = betaMap[data.leftHand.endLocation];
+				const leftOffset = offsets?.left ?? { dcol: -2, drow: 0 };
+				const rightOffset = offsets?.right ?? { dcol: 2, drow: 0 };
+				this.drawStave(ascii, data.leftHand, handCoords, leftOffset);
+				this.drawStave(ascii, data.rightHand, handCoords, rightOffset);
 			} else {
-				this.drawStave(ascii, data.blueHand, handCoords);
-				this.drawStave(ascii, data.redHand, handCoords);
+				this.drawStave(ascii, data.leftHand, handCoords);
+				this.drawStave(ascii, data.rightHand, handCoords);
 			}
 		}
 
 		// Step 3: Motion arrows (Braille layer, respecting ASCII)
 		if (layers?.arrows !== false) {
-			if (data.blueHand.motionType !== MotionType.STATIC) {
-				this.drawArrow(braille, ascii, data.blueHand, outerCoords, center, BRAILLE_BLUE);
+			if (data.leftHand.motionType !== MotionType.STATIC) {
+				this.drawArrow(braille, ascii, data.leftHand, outerCoords, center, BRAILLE_BLUE);
 			}
-			if (data.redHand.motionType !== MotionType.STATIC) {
-				this.drawArrow(braille, ascii, data.redHand, outerCoords, center, BRAILLE_RED);
+			if (data.rightHand.motionType !== MotionType.STATIC) {
+				this.drawArrow(braille, ascii, data.rightHand, outerCoords, center, BRAILLE_RED);
 			}
 		}
 
@@ -468,22 +468,22 @@ export class BrailleHybridRenderer implements IAsciiRenderer {
 	}
 
 	renderCompact(data: RetroPictographData): string {
-		const blue = data.blueHand;
-		const red = data.redHand;
+		const left = data.leftHand;
+		const right = data.rightHand;
 
-		const bLoc = LOCATION_LABELS[blue.location];
-		const bEnd = LOCATION_LABELS[blue.endLocation];
-		const bMot = MOTION_LABELS[blue.motionType];
+		const bLoc = LOCATION_LABELS[left.location];
+		const bEnd = LOCATION_LABELS[left.endLocation];
+		const bMot = MOTION_LABELS[left.motionType];
 
-		const rLoc = LOCATION_LABELS[red.location];
-		const rEnd = LOCATION_LABELS[red.endLocation];
-		const rMot = MOTION_LABELS[red.motionType];
+		const rLoc = LOCATION_LABELS[right.location];
+		const rEnd = LOCATION_LABELS[right.endLocation];
+		const rMot = MOTION_LABELS[right.motionType];
 
-		const bPart = blue.motionType === MotionType.STATIC
+		const bPart = left.motionType === MotionType.STATIC
 			? `<span class="${COLOR_BLUE}">B:${bLoc} ${bMot}</span>`
 			: `<span class="${COLOR_BLUE}">B:${bLoc}>${bEnd} ${bMot}</span>`;
 
-		const rPart = red.motionType === MotionType.STATIC
+		const rPart = right.motionType === MotionType.STATIC
 			? `<span class="${COLOR_RED}">R:${rLoc} ${rMot}</span>`
 			: `<span class="${COLOR_RED}">R:${rLoc}>${rEnd} ${rMot}</span>`;
 
@@ -571,7 +571,7 @@ export class BrailleHybridRenderer implements IAsciiRenderer {
 
 		const angle = getOrientationAngle(hand.orientation, hand.endLocation);
 		const lineChar = angleToLineChar(angle);
-		const color = hand.color === MotionColor.BLUE ? COLOR_BLUE : COLOR_RED;
+		const color = hand.color === HandSide.LEFT ? COLOR_BLUE : COLOR_RED;
 		const step = getStaffStep(lineChar);
 		const maxReach = getMaxReach(lineChar);
 

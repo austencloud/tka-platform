@@ -42,8 +42,8 @@ function makeCtx() {
 
 function makeParams(overrides: Partial<Ghost2DParams> = {}): Ghost2DParams {
   return {
-    blueColor: "#3b82f6",
-    redColor: "#ef4444",
+    leftColor: "#3b82f6",
+    rightColor: "#ef4444",
     intensity: 1,
     decay: 8,
     interval: 0.5,

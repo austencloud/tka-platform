@@ -20,8 +20,8 @@ export function createPropTypeSyncEffect(
   const { getStepOperator, getCreateModuleState, isServicesInitialized } =
     config;
 
-  let previousBluePropType: string | undefined = undefined;
-  let previousRedPropType: string | undefined = undefined;
+  let previousLeftPropType: string | undefined = undefined;
+  let previousRightPropType: string | undefined = undefined;
 
   const cleanup = $effect.root(() => {
     $effect(() => {
@@ -32,29 +32,29 @@ export function createPropTypeSyncEffect(
       if (!StepOperator || !createModuleState) return;
 
       const settings = getSettings();
-      const newBluePropType = settings.bluePropType;
-      const newRedPropType = settings.redPropType;
+      const newLeftPropType = settings.leftPropType;
+      const newRightPropType = settings.rightPropType;
 
       // Sync on initial load AND when prop type changes
       // Removed `previousPropType !== undefined` check - we need to sync on mount
       // to ensure start positions (created with default STAFF) match user settings
-      if (newBluePropType && newBluePropType !== previousBluePropType) {
+      if (newLeftPropType && newLeftPropType !== previousLeftPropType) {
         StepOperator.bulkUpdatePropType(
           "blue",
-          newBluePropType,
+          newLeftPropType,
           createModuleState
         );
       }
-      previousBluePropType = newBluePropType;
+      previousLeftPropType = newLeftPropType;
 
-      if (newRedPropType && newRedPropType !== previousRedPropType) {
+      if (newRightPropType && newRightPropType !== previousRightPropType) {
         StepOperator.bulkUpdatePropType(
           "red",
-          newRedPropType,
+          newRightPropType,
           createModuleState
         );
       }
-      previousRedPropType = newRedPropType;
+      previousRightPropType = newRightPropType;
     });
   });
 

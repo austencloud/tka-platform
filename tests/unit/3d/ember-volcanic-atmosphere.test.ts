@@ -232,8 +232,13 @@ interface EmberSliceGltf {
 }
 
 function readEmberSlice(): EmberSliceGltf {
+  // The fissure decals are authored in the R10 living-caldera world. The
+  // shipping ember-production-slice.glb is now the R5 mid-flank bake, which
+  // carries midflank-geology and midflank-lava roles instead, so this contract
+  // follows the asset that owns the decals -- the same split the R10
+  // production-slice contract test makes.
   const buffer = readFileSync(
-    resolve("static/models/ember/ember-production-slice.glb")
+    resolve("static/models/ember/ember-production-slice-r10.glb")
   );
   expect(buffer.readUInt32LE(0)).toBe(0x46546c67);
   const jsonLength = buffer.readUInt32LE(12);
@@ -255,7 +260,7 @@ function dequantize(
   return value;
 }
 
-describe("ember production-slice fissure decals", () => {
+describe("ember R10 production-slice fissure decals", () => {
   const gltf = readEmberSlice();
 
   function worldHeightRange(nodeIndex: number): { low: number; high: number } {
@@ -303,9 +308,13 @@ describe("ember production-slice fissure decals", () => {
     }
   });
 
-  it("keeps the buried decal roles hidden by the scene", () => {
+  it("keeps the buried decal roles hidden by the shared world", () => {
+    // The hiding pass moved out of EmberScene.svelte when the Ember world was
+    // shared with the worker renderer, so the contract follows its owner.
     const source = readFileSync(
-      resolve("src/lib/shared/3d/environments/scenes/EmberScene.svelte"),
+      resolve(
+        "src/lib/shared/3d/environments/worlds/ember/ember-authored-surface.ts"
+      ),
       "utf8"
     );
     expect(source).toContain("BURIED_FISSURE_DECAL_ROLES");

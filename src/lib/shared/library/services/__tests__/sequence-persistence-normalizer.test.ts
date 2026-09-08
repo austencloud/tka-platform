@@ -29,11 +29,11 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   computeHash,
   CONTENT_HASH_VERSION,
-  HASH_VERSION_V2,
+  HASH_VERSION_V3,
 } from "../sequence-content-hasher";
 import { IncompleteWordError } from "$lib/shared/foundation/services/word-deriver";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -51,7 +51,7 @@ const CYCLE: readonly GridLocation[] = [
   GridLocation.WEST,
 ];
 
-function motionAt(from: GridLocation, to: GridLocation, color: MotionColor) {
+function motionAt(from: GridLocation, to: GridLocation, color: HandSide) {
   return createMotionData({
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -61,22 +61,22 @@ function motionAt(from: GridLocation, to: GridLocation, color: MotionColor) {
     endOrientation: Orientation.IN,
     turns: 0,
     propType: PropType.STAFF,
-    color,
+    hand: color,
   });
 }
 
 function makeStep(index: number, letter: string | null): StepData {
-  const blueFrom = CYCLE[index % 4] as GridLocation;
-  const blueTo = CYCLE[(index + 1) % 4] as GridLocation;
-  const redFrom = CYCLE[(index + 2) % 4] as GridLocation;
-  const redTo = CYCLE[(index + 3) % 4] as GridLocation;
+  const leftFrom = CYCLE[index % 4] as GridLocation;
+  const leftTo = CYCLE[(index + 1) % 4] as GridLocation;
+  const rightFrom = CYCLE[(index + 2) % 4] as GridLocation;
+  const rightTo = CYCLE[(index + 3) % 4] as GridLocation;
 
   return {
     id: `step-${index + 1}`,
     stepNumber: index + 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     // `letter: null` models a beat whose lookup never resolved. The cast lets a
     // fixture spell arbitrary glyph strings without importing the Letter union.
@@ -84,8 +84,8 @@ function makeStep(index: number, letter: string | null): StepData {
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: motionAt(blueFrom, blueTo, MotionColor.BLUE),
-      red: motionAt(redFrom, redTo, MotionColor.RED),
+      left: motionAt(leftFrom, leftTo, HandSide.LEFT),
+      right: motionAt(rightFrom, rightTo, HandSide.RIGHT),
     },
   };
 }
@@ -101,15 +101,15 @@ function makeStartEntry(): StepData {
     id: "start-0",
     stepNumber: 0,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null as StepData["letter"],
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: motionAt(GridLocation.NORTH, GridLocation.NORTH, MotionColor.BLUE),
-      red: motionAt(GridLocation.SOUTH, GridLocation.SOUTH, MotionColor.RED),
+      left: motionAt(GridLocation.NORTH, GridLocation.NORTH, HandSide.LEFT),
+      right: motionAt(GridLocation.SOUTH, GridLocation.SOUTH, HandSide.RIGHT),
     },
   };
 }
@@ -148,7 +148,8 @@ function buildCompositionOnlySequence(
  */
 function withoutGeneratedIds(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(withoutGeneratedIds);
-  if (value === null || typeof value !== "object" || value instanceof Date) return value;
+  if (value === null || typeof value !== "object" || value instanceof Date)
+    return value;
   const out: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
     if (key === "id") continue;
@@ -162,7 +163,7 @@ function withoutGeneratedIds(value: unknown): unknown {
 // ---------------------------------------------------------------------------
 
 describe("normalizeSequenceForPersistence — composition-only source", () => {
-  it("hydrates to the exact word, canonical length, composition, and V2 hash", async () => {
+  it("hydrates to the exact word, canonical length, composition, and active hash", async () => {
     const source = buildCompositionOnlySequence("ABCD");
     expect(source.steps).toHaveLength(0);
 
@@ -178,24 +179,24 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
     // prop paths, and all four cross-tier hashes.
     expect(result.hydrated.steps).toHaveLength(4);
     expect(result.ownerData.stepPairings).toHaveLength(4);
-    expect(result.ownerData.blueSoloProp).toBeTruthy();
-    expect(result.ownerData.redSoloProp).toBeTruthy();
-    expect(result.ownerData.bluePathHash).toBeTruthy();
-    expect(result.ownerData.redPathHash).toBeTruthy();
-    expect(result.ownerData.blueSoloHash).toBeTruthy();
-    expect(result.ownerData.redSoloHash).toBeTruthy();
+    expect(result.ownerData.leftSoloProp).toBeTruthy();
+    expect(result.ownerData.rightSoloProp).toBeTruthy();
+    expect(result.ownerData.leftPathHash).toBeTruthy();
+    expect(result.ownerData.rightPathHash).toBeTruthy();
+    expect(result.ownerData.leftSoloHash).toBeTruthy();
+    expect(result.ownerData.rightSoloHash).toBeTruthy();
     // The start cell survives — it is not derivable from the compositional
     // fields, so losing it is what emptied start cells in the 2026-06 corpus.
     expect(result.ownerData.startPosition).toBeTruthy();
 
     expect(result.contentHashVersion).toBe(CONTENT_HASH_VERSION);
-    expect(result.contentHashVersion).toBe(HASH_VERSION_V2);
+    expect(result.contentHashVersion).toBe(HASH_VERSION_V3);
     expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
     // The hash describes the data actually being stored, not the pre-hydration
     // input: recomputing over the returned hydrated sequence reproduces it.
     expect(result.contentHash).toBe(await computeHash(result.hydrated));
     expect(result.ownerData.contentHash).toBe(result.contentHash);
-    expect(result.ownerData.contentHashVersion).toBe(HASH_VERSION_V2);
+    expect(result.ownerData.contentHashVersion).toBe(HASH_VERSION_V3);
   });
 
   it("gives a composition-only document the same identity as its steps-based twin", async () => {
@@ -205,7 +206,8 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
     const compositionOnly = buildCompositionOnlySequence("ABCD");
 
     const fromSteps = await normalizeSequenceForPersistence(stepsBased);
-    const fromComposition = await normalizeSequenceForPersistence(compositionOnly);
+    const fromComposition =
+      await normalizeSequenceForPersistence(compositionOnly);
 
     expect(fromComposition.contentHash).toBe(fromSteps.contentHash);
     expect(fromComposition.exactWord).toBe(fromSteps.exactWord);
@@ -219,11 +221,32 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
     expect("steps" in result.ownerData).toBe(false);
   });
 
+  it("persists explicit card presentation with the private owner record", async () => {
+    const result = await normalizeSequenceForPersistence(
+      buildCompositionOnlySequence("ABCD", {
+        notes: "private rehearsal note",
+        cardPresentation: {
+          schemaVersion: 1,
+          footer: { mode: "custom", text: "Shared from First Fire" },
+        },
+      })
+    );
+
+    expect(result.ownerData.cardPresentation).toEqual({
+      schemaVersion: 1,
+      footer: { mode: "custom", text: "Shared from First Fire" },
+    });
+    expect(result.ownerData.notes).toBe("private rehearsal note");
+  });
+
   it("drops legacy aliases and Dexie-local sync bookkeeping from the payload", async () => {
     const source = {
       ...buildCompositionOnlySequence("ABCD"),
       syncStatus: "pending" as const,
-      pendingSyncMetadata: { visibility: "public" as const, notes: "local only" },
+      pendingSyncMetadata: {
+        visibility: "public" as const,
+        notes: "local only",
+      },
     };
 
     const result = await normalizeSequenceForPersistence(source);
@@ -245,12 +268,15 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
         undefinedPaths.push(path);
         return;
       }
-      if (value === null || typeof value !== "object" || value instanceof Date) return;
+      if (value === null || typeof value !== "object" || value instanceof Date)
+        return;
       if (Array.isArray(value)) {
         value.forEach((item, i) => walk(item, `${path}[${i}]`));
         return;
       }
-      for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      for (const [key, child] of Object.entries(
+        value as Record<string, unknown>
+      )) {
         walk(child, `${path}.${key}`);
       }
     };
@@ -296,12 +322,14 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
 
 describe("normalizeSequenceForPersistence — word derivation", () => {
   it("throws IncompleteWordError when a single beat resolved no token", async () => {
-    const steps = "ABCD".split("").map((l, i) => makeStep(i, i === 2 ? null : l));
+    const steps = "ABCD"
+      .split("")
+      .map((l, i) => makeStep(i, i === 2 ? null : l));
     const source = createSequenceData({ id: "seq-1", steps });
 
-    await expect(normalizeSequenceForPersistence(source)).rejects.toBeInstanceOf(
-      IncompleteWordError
-    );
+    await expect(
+      normalizeSequenceForPersistence(source)
+    ).rejects.toBeInstanceOf(IncompleteWordError);
 
     // "writes nothing" at this layer means: no payload is produced at all, so
     // there is nothing a caller could accidentally persist.
@@ -309,7 +337,9 @@ describe("normalizeSequenceForPersistence — word derivation", () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) throw new Error("expected refusal");
     expect(outcome.code).toBe("INCOMPLETE_WORD");
-    expect((outcome.error as IncompleteWordError).status.missingStepIndexes).toEqual([2]);
+    expect(
+      (outcome.error as IncompleteWordError).status.missingStepIndexes
+    ).toEqual([2]);
     expect((outcome.error as IncompleteWordError).status.tokenCount).toBe(3);
     expect((outcome.error as IncompleteWordError).status.stepCount).toBe(4);
     expect(outcome).not.toHaveProperty("value");
@@ -420,7 +450,9 @@ describe("normalizeSequenceForPersistence — canonical sequence length", () => 
   });
 
   it("keeps the legacy metadata.length key in step with the canonical count", async () => {
-    const source = buildCompositionOnlySequence("ABCD", { metadata: { length: 99 } });
+    const source = buildCompositionOnlySequence("ABCD", {
+      metadata: { length: 99 },
+    });
     const result = await normalizeSequenceForPersistence(source);
     expect((result.ownerData.metadata as { length?: number }).length).toBe(4);
   });
@@ -476,7 +508,10 @@ describe("normalizeSequenceForPersistence — legacy stepNumber-0 start entries"
     // on pairing 0 — a locked document.
     const source = createSequenceData({
       id: "seq-1",
-      steps: [makeStartEntry(), ..."ABC".split("").map((l, i) => makeStep(i, l))],
+      steps: [
+        makeStartEntry(),
+        ..."ABC".split("").map((l, i) => makeStep(i, l)),
+      ],
     });
 
     const result = await normalizeSequenceForPersistence(source);
@@ -486,9 +521,9 @@ describe("normalizeSequenceForPersistence — legacy stepNumber-0 start entries"
     expect(result.ownerData.sequenceLength).toBe(3);
     expect(result.ownerData.stepPairings).toHaveLength(3);
     expect(result.hydrated.steps).toHaveLength(3);
-    expect(
-      result.hydrated.steps.every((step) => step.stepNumber !== 0)
-    ).toBe(true);
+    expect(result.hydrated.steps.every((step) => step.stepNumber !== 0)).toBe(
+      true
+    );
     // Every persisted pairing owes a token — no letterless leading pairing.
     expect(
       result.ownerData.stepPairings?.every((pairing) => pairing.letter !== null)
@@ -506,7 +541,10 @@ describe("normalizeSequenceForPersistence — legacy stepNumber-0 start entries"
     // the V1→V2 flip did.
     const legacy = createSequenceData({
       id: "seq-1",
-      steps: [makeStartEntry(), ..."ABC".split("").map((l, i) => makeStep(i, l))],
+      steps: [
+        makeStartEntry(),
+        ..."ABC".split("").map((l, i) => makeStep(i, l)),
+      ],
     });
     const modern = createSequenceData({
       id: "seq-1",
@@ -545,14 +583,18 @@ describe("normalizeSequenceForPersistence — blank (isBlank) steps", () => {
     // V2 identity hash moves. Refusing loudly beats corrupting silently.
     const steps: StepData[] = [
       makeStep(0, "A"),
-      { ...makeStep(1, "B"), isBlank: true, letter: null as StepData["letter"] },
+      {
+        ...makeStep(1, "B"),
+        isBlank: true,
+        letter: null as StepData["letter"],
+      },
       makeStep(2, "C"),
     ];
     const source = createSequenceData({ id: "seq-1", steps });
 
-    await expect(normalizeSequenceForPersistence(source)).rejects.toBeInstanceOf(
-      SequenceNormalizationError
-    );
+    await expect(
+      normalizeSequenceForPersistence(source)
+    ).rejects.toBeInstanceOf(SequenceNormalizationError);
 
     const outcome = await trySequenceNormalization(source);
     expect(outcome.ok).toBe(false);
@@ -566,7 +608,11 @@ describe("normalizeSequenceForPersistence — blank (isBlank) steps", () => {
     // broken, not merely unpersistable in its current encoding.
     const steps: StepData[] = [
       makeStep(0, "A"),
-      { ...makeStep(1, "B"), isBlank: true, letter: null as StepData["letter"] },
+      {
+        ...makeStep(1, "B"),
+        isBlank: true,
+        letter: null as StepData["letter"],
+      },
       makeStep(2, null),
     ];
 
@@ -597,7 +643,9 @@ describe("normalizeSequenceForPersistence — refusals", () => {
     if (outcome.ok) throw new Error("expected refusal");
     expect(outcome.code).toBe("EMPTY_SEQUENCE");
     expect((outcome.error as SequenceNormalizationError).stepCount).toBe(0);
-    expect((outcome.error as SequenceNormalizationError).persistedStepCount).toBe(0);
+    expect(
+      (outcome.error as SequenceNormalizationError).persistedStepCount
+    ).toBe(0);
   });
 
   it("rejects an explicitly empty pairing list with no steps", async () => {
@@ -635,8 +683,8 @@ describe("normalizeSequenceForPersistence — refusals", () => {
     const source = {
       ...composed,
       steps: [],
-      blueSoloProp: undefined,
-      redSoloProp: undefined,
+      leftSoloProp: undefined,
+      rightSoloProp: undefined,
     } as SequenceData;
 
     const outcome = await trySequenceNormalization(source);
@@ -644,7 +692,9 @@ describe("normalizeSequenceForPersistence — refusals", () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) throw new Error("expected refusal");
     expect(outcome.code).toBe("UNHYDRATABLE_SEQUENCE");
-    expect((outcome.error as SequenceNormalizationError).persistedStepCount).toBe(4);
+    expect(
+      (outcome.error as SequenceNormalizationError).persistedStepCount
+    ).toBe(4);
     expect((outcome.error as SequenceNormalizationError).stepCount).toBe(0);
   });
 
@@ -681,10 +731,10 @@ describe("normalizeSequenceForPersistence — idempotence", () => {
     expect(second.contentHash).toBe(first.contentHash);
     expect(second.contentHashVersion).toBe(first.contentHashVersion);
     // Every cross-tier hash is content-derived and must not move either.
-    expect(second.ownerData.blueSoloHash).toBe(first.ownerData.blueSoloHash);
-    expect(second.ownerData.redSoloHash).toBe(first.ownerData.redSoloHash);
-    expect(second.ownerData.bluePathHash).toBe(first.ownerData.bluePathHash);
-    expect(second.ownerData.redPathHash).toBe(first.ownerData.redPathHash);
+    expect(second.ownerData.leftSoloHash).toBe(first.ownerData.leftSoloHash);
+    expect(second.ownerData.rightSoloHash).toBe(first.ownerData.rightSoloHash);
+    expect(second.ownerData.leftPathHash).toBe(first.ownerData.leftPathHash);
+    expect(second.ownerData.rightPathHash).toBe(first.ownerData.rightPathHash);
     // The document id is stable; only the nested factory-minted ids are not.
     expect(second.ownerData.id).toBe(first.ownerData.id);
     expect(withoutGeneratedIds(second.ownerData)).toEqual(
@@ -718,11 +768,11 @@ describe("normalizeSequenceForPersistence — idempotence", () => {
     );
     const second = await normalizeSequenceForPersistence(first.hydrated);
 
-    expect(second.ownerData.blueSoloProp?.id).not.toBe(
-      first.ownerData.blueSoloProp?.id
+    expect(second.ownerData.leftSoloProp?.id).not.toBe(
+      first.ownerData.leftSoloProp?.id
     );
-    expect(second.ownerData.blueSoloProp?.contentHash).toBe(
-      first.ownerData.blueSoloProp?.contentHash
+    expect(second.ownerData.leftSoloProp?.contentHash).toBe(
+      first.ownerData.leftSoloProp?.contentHash
     );
   });
 
@@ -732,7 +782,10 @@ describe("normalizeSequenceForPersistence — idempotence", () => {
     const first = await normalizeSequenceForPersistence(
       buildCompositionOnlySequence("ABCD")
     );
-    const storedShape = { ...first.ownerData, steps: [] } as unknown as SequenceData;
+    const storedShape = {
+      ...first.ownerData,
+      steps: [],
+    } as unknown as SequenceData;
 
     const second = await normalizeSequenceForPersistence(storedShape);
 

@@ -1,0 +1,1333 @@
+{
+  "generator": "scripts/geospatial/build_flow_fest_eztree_species.ts",
+  "library": "@dgreenheck/ez-tree",
+  "textureSize": 512,
+  "families": [
+    {
+      "familyId": "eztree-sugar-maple-stand-a",
+      "speciesId": "sugar-maple",
+      "formId": "sugar-maple-stand",
+      "role": "stand",
+      "seed": 247839,
+      "seedAttempt": 1,
+      "file": "eztree-sugar-maple-stand-a.glb",
+      "bytes": 1029140,
+      "sourceHeight": 63.7518,
+      "target": {
+        "crownRadiusRatio": 0.2548,
+        "trunkHeightRatio": 0.2992
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.28,
+        "trunkHeightRatio": 0.34
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2552,
+        "trunkHeightRatio": 0.2988
+      },
+      "trunkRadiusRatio": 0.0414,
+      "triangles": {
+        "wood": 16888,
+        "leaf": 11520
+      },
+      "toleranceRatio": 0.019,
+      "solved": {
+        "crownSpread": 0.4488,
+        "boleFraction": 0.0313,
+        "generations": 167
+      }
+    },
+    {
+      "familyId": "eztree-sugar-maple-stand-b",
+      "speciesId": "sugar-maple",
+      "formId": "sugar-maple-stand",
+      "role": "stand",
+      "seed": 781721,
+      "seedAttempt": 0,
+      "file": "eztree-sugar-maple-stand-b.glb",
+      "bytes": 1023580,
+      "sourceHeight": 56.4953,
+      "target": {
+        "crownRadiusRatio": 0.2716,
+        "trunkHeightRatio": 0.3264
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.28,
+        "trunkHeightRatio": 0.34
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2717,
+        "trunkHeightRatio": 0.3253
+      },
+      "trunkRadiusRatio": 0.0467,
+      "triangles": {
+        "wood": 16888,
+        "leaf": 11520
+      },
+      "toleranceRatio": 0.055,
+      "solved": {
+        "crownSpread": 0.1794,
+        "boleFraction": 0.3184,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-sugar-maple-stand-c",
+      "speciesId": "sugar-maple",
+      "formId": "sugar-maple-stand",
+      "role": "stand",
+      "seed": 448864,
+      "seedAttempt": 0,
+      "file": "eztree-sugar-maple-stand-c.glb",
+      "bytes": 1026848,
+      "sourceHeight": 76.7442,
+      "target": {
+        "crownRadiusRatio": 0.2884,
+        "trunkHeightRatio": 0.3536
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.28,
+        "trunkHeightRatio": 0.34
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2876,
+        "trunkHeightRatio": 0.3528
+      },
+      "trunkRadiusRatio": 0.0345,
+      "triangles": {
+        "wood": 16888,
+        "leaf": 11520
+      },
+      "toleranceRatio": 0.039,
+      "solved": {
+        "crownSpread": 0.72,
+        "boleFraction": 0.4156,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-sugar-maple-stand-d",
+      "speciesId": "sugar-maple",
+      "formId": "sugar-maple-stand",
+      "role": "stand",
+      "seed": 226483,
+      "seedAttempt": 0,
+      "file": "eztree-sugar-maple-stand-d.glb",
+      "bytes": 1028648,
+      "sourceHeight": 71.5268,
+      "target": {
+        "crownRadiusRatio": 0.3052,
+        "trunkHeightRatio": 0.3808
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.28,
+        "trunkHeightRatio": 0.34
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3046,
+        "trunkHeightRatio": 0.3806
+      },
+      "trunkRadiusRatio": 0.0369,
+      "triangles": {
+        "wood": 16888,
+        "leaf": 11520
+      },
+      "toleranceRatio": 0.031,
+      "solved": {
+        "crownSpread": 0.66,
+        "boleFraction": 0.4406,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-american-beech-stand-a",
+      "speciesId": "american-beech",
+      "formId": "american-beech-stand",
+      "role": "stand",
+      "seed": 730006,
+      "seedAttempt": 0,
+      "file": "eztree-american-beech-stand-a.glb",
+      "bytes": 1079608,
+      "sourceHeight": 64.9275,
+      "target": {
+        "crownRadiusRatio": 0.273,
+        "trunkHeightRatio": 0.264
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.3,
+        "trunkHeightRatio": 0.3
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2727,
+        "trunkHeightRatio": 0.2634
+      },
+      "trunkRadiusRatio": 0.0365,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 13104
+      },
+      "toleranceRatio": 0.032,
+      "solved": {
+        "crownSpread": 0.5162,
+        "boleFraction": 0.3269,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-american-beech-stand-b",
+      "speciesId": "american-beech",
+      "formId": "american-beech-stand",
+      "role": "stand",
+      "seed": 507625,
+      "seedAttempt": 0,
+      "file": "eztree-american-beech-stand-b.glb",
+      "bytes": 1078988,
+      "sourceHeight": 70.1162,
+      "target": {
+        "crownRadiusRatio": 0.3,
+        "trunkHeightRatio": 0.3
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.3,
+        "trunkHeightRatio": 0.3
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2998,
+        "trunkHeightRatio": 0.2993
+      },
+      "trunkRadiusRatio": 0.0338,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 13104
+      },
+      "toleranceRatio": 0.033,
+      "solved": {
+        "crownSpread": 0.59,
+        "boleFraction": 0.3438,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-american-beech-stand-c",
+      "speciesId": "american-beech",
+      "formId": "american-beech-stand",
+      "role": "stand",
+      "seed": 174768,
+      "seedAttempt": 0,
+      "file": "eztree-american-beech-stand-c.glb",
+      "bytes": 1075980,
+      "sourceHeight": 79.1919,
+      "target": {
+        "crownRadiusRatio": 0.327,
+        "trunkHeightRatio": 0.336
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.3,
+        "trunkHeightRatio": 0.3
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3272,
+        "trunkHeightRatio": 0.3361
+      },
+      "trunkRadiusRatio": 0.0292,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 13104
+      },
+      "toleranceRatio": 0.009,
+      "solved": {
+        "crownSpread": 0.735,
+        "boleFraction": 0.4313,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-white-oak-stand-a",
+      "speciesId": "white-oak",
+      "formId": "white-oak-stand",
+      "role": "stand",
+      "seed": 217701,
+      "seedAttempt": 0,
+      "file": "eztree-white-oak-stand-a.glb",
+      "bytes": 1011748,
+      "sourceHeight": 61.9106,
+      "target": {
+        "crownRadiusRatio": 0.2457,
+        "trunkHeightRatio": 0.2816
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.27,
+        "trunkHeightRatio": 0.32
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2457,
+        "trunkHeightRatio": 0.2813
+      },
+      "trunkRadiusRatio": 0.0456,
+      "triangles": {
+        "wood": 16888,
+        "leaf": 10560
+      },
+      "toleranceRatio": 0.014,
+      "solved": {
+        "crownSpread": 0.35,
+        "boleFraction": 0.0997,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-white-oak-stand-b",
+      "speciesId": "white-oak",
+      "formId": "white-oak-stand",
+      "role": "stand",
+      "seed": 440082,
+      "seedAttempt": 0,
+      "file": "eztree-white-oak-stand-b.glb",
+      "bytes": 1011212,
+      "sourceHeight": 74.8158,
+      "target": {
+        "crownRadiusRatio": 0.27,
+        "trunkHeightRatio": 0.32
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.27,
+        "trunkHeightRatio": 0.32
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2705,
+        "trunkHeightRatio": 0.3193
+      },
+      "trunkRadiusRatio": 0.0379,
+      "triangles": {
+        "wood": 16888,
+        "leaf": 10560
+      },
+      "toleranceRatio": 0.033,
+      "solved": {
+        "crownSpread": 0.69,
+        "boleFraction": 0.3381,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-white-oak-stand-c",
+      "speciesId": "white-oak",
+      "formId": "white-oak-stand",
+      "role": "stand",
+      "seed": 662463,
+      "seedAttempt": 0,
+      "file": "eztree-white-oak-stand-c.glb",
+      "bytes": 1010456,
+      "sourceHeight": 68.8666,
+      "target": {
+        "crownRadiusRatio": 0.2943,
+        "trunkHeightRatio": 0.3584
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.27,
+        "trunkHeightRatio": 0.32
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2945,
+        "trunkHeightRatio": 0.3587
+      },
+      "trunkRadiusRatio": 0.041,
+      "triangles": {
+        "wood": 16888,
+        "leaf": 10560
+      },
+      "toleranceRatio": 0.017,
+      "solved": {
+        "crownSpread": 0.625,
+        "boleFraction": 0.3972,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-white-oak-open-a",
+      "speciesId": "white-oak",
+      "formId": "white-oak-open",
+      "role": "open",
+      "seed": 930263,
+      "seedAttempt": 0,
+      "file": "eztree-white-oak-open-a.glb",
+      "bytes": 1047472,
+      "sourceHeight": 53.2445,
+      "target": {
+        "crownRadiusRatio": 0.364,
+        "trunkHeightRatio": 0.1936
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.4,
+        "trunkHeightRatio": 0.22
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3639,
+        "trunkHeightRatio": 0.1937
+      },
+      "trunkRadiusRatio": 0.0601,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 12096
+      },
+      "toleranceRatio": 0.006,
+      "solved": {
+        "crownSpread": 0.2934,
+        "boleFraction": 0.0706,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-white-oak-open-b",
+      "speciesId": "white-oak",
+      "formId": "white-oak-open",
+      "role": "open",
+      "seed": 152644,
+      "seedAttempt": 0,
+      "file": "eztree-white-oak-open-b.glb",
+      "bytes": 1047456,
+      "sourceHeight": 48.4196,
+      "target": {
+        "crownRadiusRatio": 0.436,
+        "trunkHeightRatio": 0.2464
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.4,
+        "trunkHeightRatio": 0.22
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.4357,
+        "trunkHeightRatio": 0.2654
+      },
+      "trunkRadiusRatio": 0.0656,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 12096
+      },
+      "toleranceRatio": 0.95,
+      "solved": {
+        "crownSpread": 0.2225,
+        "boleFraction": 0.02,
+        "generations": 81
+      }
+    },
+    {
+      "familyId": "eztree-black-walnut-stand-a",
+      "speciesId": "black-walnut",
+      "formId": "black-walnut-stand",
+      "role": "stand",
+      "seed": 305791,
+      "seedAttempt": 0,
+      "file": "eztree-black-walnut-stand-a.glb",
+      "bytes": 726636,
+      "sourceHeight": 60.0903,
+      "target": {
+        "crownRadiusRatio": 0.2366,
+        "trunkHeightRatio": 0.3344
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.26,
+        "trunkHeightRatio": 0.38
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2366,
+        "trunkHeightRatio": 0.3348
+      },
+      "trunkRadiusRatio": 0.0409,
+      "triangles": {
+        "wood": 11704,
+        "leaf": 6400
+      },
+      "toleranceRatio": 0.021,
+      "solved": {
+        "crownSpread": 0.2038,
+        "boleFraction": 0.0219,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-black-walnut-stand-b",
+      "speciesId": "black-walnut",
+      "formId": "black-walnut-stand",
+      "role": "stand",
+      "seed": 528172,
+      "seedAttempt": 0,
+      "file": "eztree-black-walnut-stand-b.glb",
+      "bytes": 728460,
+      "sourceHeight": 73.1118,
+      "target": {
+        "crownRadiusRatio": 0.26,
+        "trunkHeightRatio": 0.38
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.26,
+        "trunkHeightRatio": 0.38
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2597,
+        "trunkHeightRatio": 0.3794
+      },
+      "trunkRadiusRatio": 0.0336,
+      "triangles": {
+        "wood": 11704,
+        "leaf": 6400
+      },
+      "toleranceRatio": 0.031,
+      "solved": {
+        "crownSpread": 0.5856,
+        "boleFraction": 0.4406,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-black-walnut-stand-c",
+      "speciesId": "black-walnut",
+      "formId": "black-walnut-stand",
+      "role": "stand",
+      "seed": 861029,
+      "seedAttempt": 0,
+      "file": "eztree-black-walnut-stand-c.glb",
+      "bytes": 726416,
+      "sourceHeight": 76.079,
+      "target": {
+        "crownRadiusRatio": 0.2834,
+        "trunkHeightRatio": 0.4256
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.26,
+        "trunkHeightRatio": 0.38
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2832,
+        "trunkHeightRatio": 0.4262
+      },
+      "trunkRadiusRatio": 0.0323,
+      "triangles": {
+        "wood": 11704,
+        "leaf": 6400
+      },
+      "toleranceRatio": 0.027,
+      "solved": {
+        "crownSpread": 0.665,
+        "boleFraction": 0.4063,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-black-walnut-open-a",
+      "speciesId": "black-walnut",
+      "formId": "black-walnut-open",
+      "role": "open",
+      "seed": 732172,
+      "seedAttempt": 1,
+      "file": "eztree-black-walnut-open-a.glb",
+      "bytes": 844984,
+      "sourceHeight": 64.9834,
+      "target": {
+        "crownRadiusRatio": 0.3276,
+        "trunkHeightRatio": 0.2288
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.36,
+        "trunkHeightRatio": 0.26
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3277,
+        "trunkHeightRatio": 0.229
+      },
+      "trunkRadiusRatio": 0.0419,
+      "triangles": {
+        "wood": 13592,
+        "leaf": 8448
+      },
+      "toleranceRatio": 0.008,
+      "solved": {
+        "crownSpread": 0.5856,
+        "boleFraction": 0.2175,
+        "generations": 167
+      }
+    },
+    {
+      "familyId": "eztree-black-walnut-open-b",
+      "speciesId": "black-walnut",
+      "formId": "black-walnut-open",
+      "role": "open",
+      "seed": 543770,
+      "seedAttempt": 0,
+      "file": "eztree-black-walnut-open-b.glb",
+      "bytes": 843580,
+      "sourceHeight": 66.2363,
+      "target": {
+        "crownRadiusRatio": 0.3924,
+        "trunkHeightRatio": 0.2912
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.36,
+        "trunkHeightRatio": 0.26
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3917,
+        "trunkHeightRatio": 0.2906
+      },
+      "trunkRadiusRatio": 0.0411,
+      "triangles": {
+        "wood": 13592,
+        "leaf": 8448
+      },
+      "toleranceRatio": 0.034,
+      "solved": {
+        "crownSpread": 0.71,
+        "boleFraction": 0.4313,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-shagbark-hickory-stand-a",
+      "speciesId": "shagbark-hickory",
+      "formId": "shagbark-hickory-stand",
+      "role": "stand",
+      "seed": 135965,
+      "seedAttempt": 0,
+      "file": "eztree-shagbark-hickory-stand-a.glb",
+      "bytes": 778744,
+      "sourceHeight": 76.7754,
+      "target": {
+        "crownRadiusRatio": 0.2093,
+        "trunkHeightRatio": 0.3344
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.23,
+        "trunkHeightRatio": 0.38
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2089,
+        "trunkHeightRatio": 0.3349
+      },
+      "trunkRadiusRatio": 0.0296,
+      "triangles": {
+        "wood": 13116,
+        "leaf": 7920
+      },
+      "toleranceRatio": 0.027,
+      "solved": {
+        "crownSpread": 0.6425,
+        "boleFraction": 0.285,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-shagbark-hickory-stand-b",
+      "speciesId": "shagbark-hickory",
+      "formId": "shagbark-hickory-stand",
+      "role": "stand",
+      "seed": 358346,
+      "seedAttempt": 0,
+      "file": "eztree-shagbark-hickory-stand-b.glb",
+      "bytes": 777360,
+      "sourceHeight": 77.6314,
+      "target": {
+        "crownRadiusRatio": 0.23,
+        "trunkHeightRatio": 0.38
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.23,
+        "trunkHeightRatio": 0.38
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2304,
+        "trunkHeightRatio": 0.3801
+      },
+      "trunkRadiusRatio": 0.0292,
+      "triangles": {
+        "wood": 13116,
+        "leaf": 7920
+      },
+      "toleranceRatio": 0.022,
+      "solved": {
+        "crownSpread": 0.695,
+        "boleFraction": 0.3578,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-shagbark-hickory-stand-c",
+      "speciesId": "shagbark-hickory",
+      "formId": "shagbark-hickory-stand",
+      "role": "stand",
+      "seed": 580727,
+      "seedAttempt": 0,
+      "file": "eztree-shagbark-hickory-stand-c.glb",
+      "bytes": 776596,
+      "sourceHeight": 83.4875,
+      "target": {
+        "crownRadiusRatio": 0.2507,
+        "trunkHeightRatio": 0.4256
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.23,
+        "trunkHeightRatio": 0.38
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.251,
+        "trunkHeightRatio": 0.4248
+      },
+      "trunkRadiusRatio": 0.0272,
+      "triangles": {
+        "wood": 13116,
+        "leaf": 7920
+      },
+      "toleranceRatio": 0.037,
+      "solved": {
+        "crownSpread": 0.8987,
+        "boleFraction": 0.4656,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-eastern-redcedar-open-a",
+      "speciesId": "eastern-redcedar",
+      "formId": "eastern-redcedar-open",
+      "role": "open",
+      "seed": 25189,
+      "seedAttempt": 0,
+      "file": "eztree-eastern-redcedar-open-a.glb",
+      "bytes": 757056,
+      "sourceHeight": 50.7164,
+      "target": {
+        "crownRadiusRatio": 0.1547,
+        "trunkHeightRatio": 0.0528
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.17,
+        "trunkHeightRatio": 0.06
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.1548,
+        "trunkHeightRatio": 0.0523
+      },
+      "trunkRadiusRatio": 0.0854,
+      "triangles": {
+        "wood": 4324,
+        "leaf": 8944
+      },
+      "toleranceRatio": 0.027,
+      "solved": {
+        "crownSpread": 1.3641,
+        "boleFraction": 0.0481,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-eastern-redcedar-open-b",
+      "speciesId": "eastern-redcedar",
+      "formId": "eastern-redcedar-open",
+      "role": "open",
+      "seed": 247570,
+      "seedAttempt": 0,
+      "file": "eztree-eastern-redcedar-open-b.glb",
+      "bytes": 757120,
+      "sourceHeight": 50.6813,
+      "target": {
+        "crownRadiusRatio": 0.17,
+        "trunkHeightRatio": 0.06
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.17,
+        "trunkHeightRatio": 0.06
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.17,
+        "trunkHeightRatio": 0.0607
+      },
+      "trunkRadiusRatio": 0.0834,
+      "triangles": {
+        "wood": 4324,
+        "leaf": 8944
+      },
+      "toleranceRatio": 0.033,
+      "solved": {
+        "crownSpread": 1.4109,
+        "boleFraction": 0.0388,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-eastern-redcedar-open-c",
+      "speciesId": "eastern-redcedar",
+      "formId": "eastern-redcedar-open",
+      "role": "open",
+      "seed": 469951,
+      "seedAttempt": 0,
+      "file": "eztree-eastern-redcedar-open-c.glb",
+      "bytes": 757668,
+      "sourceHeight": 52.0147,
+      "target": {
+        "crownRadiusRatio": 0.1853,
+        "trunkHeightRatio": 0.0672
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.17,
+        "trunkHeightRatio": 0.06
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.1855,
+        "trunkHeightRatio": 0.0667
+      },
+      "trunkRadiusRatio": 0.0954,
+      "triangles": {
+        "wood": 4324,
+        "leaf": 8944
+      },
+      "toleranceRatio": 0.025,
+      "solved": {
+        "crownSpread": 1.525,
+        "boleFraction": 0.0275,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-boxelder-understory-a",
+      "speciesId": "boxelder",
+      "formId": "boxelder-understory",
+      "role": "understory",
+      "seed": 45562,
+      "seedAttempt": 4,
+      "file": "eztree-boxelder-understory-a.glb",
+      "bytes": 738728,
+      "sourceHeight": 20.8239,
+      "target": {
+        "crownRadiusRatio": 0.4186,
+        "trunkHeightRatio": 0.1232
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.46,
+        "trunkHeightRatio": 0.14
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.4207,
+        "trunkHeightRatio": 0.1572
+      },
+      "trunkRadiusRatio": 0.0691,
+      "triangles": {
+        "wood": 11336,
+        "leaf": 6480
+      },
+      "toleranceRatio": 1.7,
+      "solved": {
+        "crownSpread": 0.1388,
+        "boleFraction": 0.02,
+        "generations": 385
+      }
+    },
+    {
+      "familyId": "eztree-boxelder-understory-b",
+      "speciesId": "boxelder",
+      "formId": "boxelder-understory",
+      "role": "understory",
+      "seed": 444687,
+      "seedAttempt": 2,
+      "file": "eztree-boxelder-understory-b.glb",
+      "bytes": 736384,
+      "sourceHeight": 89.6116,
+      "target": {
+        "crownRadiusRatio": 0.4462,
+        "trunkHeightRatio": 0.1344
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.46,
+        "trunkHeightRatio": 0.14
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.4466,
+        "trunkHeightRatio": 0.1255
+      },
+      "trunkRadiusRatio": 0.0304,
+      "triangles": {
+        "wood": 11336,
+        "leaf": 6480
+      },
+      "toleranceRatio": 0.443,
+      "solved": {
+        "crownSpread": 1.3875,
+        "boleFraction": 0.5,
+        "generations": 228
+      }
+    },
+    {
+      "familyId": "eztree-boxelder-understory-c",
+      "speciesId": "boxelder",
+      "formId": "boxelder-understory",
+      "role": "understory",
+      "seed": 843642,
+      "seedAttempt": 0,
+      "file": "eztree-boxelder-understory-c.glb",
+      "bytes": 736572,
+      "sourceHeight": 33.5033,
+      "target": {
+        "crownRadiusRatio": 0.4738,
+        "trunkHeightRatio": 0.1456
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.46,
+        "trunkHeightRatio": 0.14
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.4733,
+        "trunkHeightRatio": 0.1471
+      },
+      "trunkRadiusRatio": 0.0528,
+      "triangles": {
+        "wood": 11336,
+        "leaf": 6480
+      },
+      "toleranceRatio": 0.077,
+      "solved": {
+        "crownSpread": 0.46,
+        "boleFraction": 0.23,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-boxelder-understory-d",
+      "speciesId": "boxelder",
+      "formId": "boxelder-understory",
+      "role": "understory",
+      "seed": 537829,
+      "seedAttempt": 2,
+      "file": "eztree-boxelder-understory-d.glb",
+      "bytes": 738200,
+      "sourceHeight": 29.3038,
+      "target": {
+        "crownRadiusRatio": 0.5014,
+        "trunkHeightRatio": 0.1568
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.46,
+        "trunkHeightRatio": 0.14
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.5016,
+        "trunkHeightRatio": 0.159
+      },
+      "trunkRadiusRatio": 0.0514,
+      "triangles": {
+        "wood": 11336,
+        "leaf": 6480
+      },
+      "toleranceRatio": 0.108,
+      "solved": {
+        "crownSpread": 0.3875,
+        "boleFraction": 0.23,
+        "generations": 238
+      }
+    },
+    {
+      "familyId": "eztree-hophornbeam-understory-a",
+      "speciesId": "hophornbeam",
+      "formId": "hophornbeam-understory",
+      "role": "understory",
+      "seed": 360596,
+      "seedAttempt": 0,
+      "file": "eztree-hophornbeam-understory-a.glb",
+      "bytes": 672856,
+      "sourceHeight": 25.9848,
+      "target": {
+        "crownRadiusRatio": 0.2639,
+        "trunkHeightRatio": 0.1936
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.29,
+        "trunkHeightRatio": 0.22
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2639,
+        "trunkHeightRatio": 0.1936
+      },
+      "trunkRadiusRatio": 0.0548,
+      "triangles": {
+        "wood": 10292,
+        "leaf": 5600
+      },
+      "toleranceRatio": 0.001,
+      "solved": {
+        "crownSpread": 0.1869,
+        "boleFraction": 0.1347,
+        "generations": 86
+      }
+    },
+    {
+      "familyId": "eztree-hophornbeam-understory-b",
+      "speciesId": "hophornbeam",
+      "formId": "hophornbeam-understory",
+      "role": "understory",
+      "seed": 138215,
+      "seedAttempt": 0,
+      "file": "eztree-hophornbeam-understory-b.glb",
+      "bytes": 673996,
+      "sourceHeight": 34.1317,
+      "target": {
+        "crownRadiusRatio": 0.2813,
+        "trunkHeightRatio": 0.2112
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.29,
+        "trunkHeightRatio": 0.22
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2812,
+        "trunkHeightRatio": 0.2262
+      },
+      "trunkRadiusRatio": 0.0371,
+      "triangles": {
+        "wood": 10292,
+        "leaf": 5600
+      },
+      "toleranceRatio": 0.752,
+      "solved": {
+        "crownSpread": 0.5244,
+        "boleFraction": 0.02,
+        "generations": 81
+      }
+    },
+    {
+      "familyId": "eztree-hophornbeam-understory-c",
+      "speciesId": "hophornbeam",
+      "formId": "hophornbeam-understory",
+      "role": "understory",
+      "seed": 915834,
+      "seedAttempt": 0,
+      "file": "eztree-hophornbeam-understory-c.glb",
+      "bytes": 670580,
+      "sourceHeight": 25.7849,
+      "target": {
+        "crownRadiusRatio": 0.2987,
+        "trunkHeightRatio": 0.2288
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.29,
+        "trunkHeightRatio": 0.22
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2984,
+        "trunkHeightRatio": 0.2289
+      },
+      "trunkRadiusRatio": 0.0551,
+      "triangles": {
+        "wood": 10292,
+        "leaf": 5600
+      },
+      "toleranceRatio": 0.013,
+      "solved": {
+        "crownSpread": 0.1944,
+        "boleFraction": 0.0519,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-hophornbeam-understory-d",
+      "speciesId": "hophornbeam",
+      "formId": "hophornbeam-understory",
+      "role": "understory",
+      "seed": 693453,
+      "seedAttempt": 0,
+      "file": "eztree-hophornbeam-understory-d.glb",
+      "bytes": 672964,
+      "sourceHeight": 31.2503,
+      "target": {
+        "crownRadiusRatio": 0.3161,
+        "trunkHeightRatio": 0.2464
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.29,
+        "trunkHeightRatio": 0.22
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.316,
+        "trunkHeightRatio": 0.2459
+      },
+      "trunkRadiusRatio": 0.0399,
+      "triangles": {
+        "wood": 10292,
+        "leaf": 5600
+      },
+      "toleranceRatio": 0.027,
+      "solved": {
+        "crownSpread": 0.4825,
+        "boleFraction": 0.2075,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-american-sycamore-damp-a",
+      "speciesId": "american-sycamore",
+      "formId": "american-sycamore-damp",
+      "role": "damp",
+      "seed": 184515,
+      "seedAttempt": 1,
+      "file": "eztree-american-sycamore-damp-a.glb",
+      "bytes": 846348,
+      "sourceHeight": 61.1331,
+      "target": {
+        "crownRadiusRatio": 0.3003,
+        "trunkHeightRatio": 0.2464
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.33,
+        "trunkHeightRatio": 0.28
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3003,
+        "trunkHeightRatio": 0.2463
+      },
+      "trunkRadiusRatio": 0.0494,
+      "triangles": {
+        "wood": 13592,
+        "leaf": 8448
+      },
+      "toleranceRatio": 0.004,
+      "solved": {
+        "crownSpread": 0.375,
+        "boleFraction": 0.02,
+        "generations": 157
+      }
+    },
+    {
+      "familyId": "eztree-american-sycamore-damp-b",
+      "speciesId": "american-sycamore",
+      "formId": "american-sycamore-damp",
+      "role": "damp",
+      "seed": 616621,
+      "seedAttempt": 0,
+      "file": "eztree-american-sycamore-damp-b.glb",
+      "bytes": 847752,
+      "sourceHeight": 74.6058,
+      "target": {
+        "crownRadiusRatio": 0.33,
+        "trunkHeightRatio": 0.28
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.33,
+        "trunkHeightRatio": 0.28
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3297,
+        "trunkHeightRatio": 0.2797
+      },
+      "trunkRadiusRatio": 0.0348,
+      "triangles": {
+        "wood": 13592,
+        "leaf": 8448
+      },
+      "toleranceRatio": 0.016,
+      "solved": {
+        "crownSpread": 0.665,
+        "boleFraction": 0.3128,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-american-sycamore-damp-c",
+      "speciesId": "american-sycamore",
+      "formId": "american-sycamore-damp",
+      "role": "damp",
+      "seed": 283764,
+      "seedAttempt": 0,
+      "file": "eztree-american-sycamore-damp-c.glb",
+      "bytes": 844624,
+      "sourceHeight": 77.8478,
+      "target": {
+        "crownRadiusRatio": 0.3597,
+        "trunkHeightRatio": 0.3136
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.33,
+        "trunkHeightRatio": 0.28
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3601,
+        "trunkHeightRatio": 0.3143
+      },
+      "trunkRadiusRatio": 0.0358,
+      "triangles": {
+        "wood": 13592,
+        "leaf": 8448
+      },
+      "toleranceRatio": 0.034,
+      "solved": {
+        "crownSpread": 0.81,
+        "boleFraction": 0.475,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-silver-maple-damp-a",
+      "speciesId": "silver-maple",
+      "formId": "silver-maple-damp",
+      "role": "damp",
+      "seed": 693318,
+      "seedAttempt": 1,
+      "file": "eztree-silver-maple-damp-a.glb",
+      "bytes": 1052064,
+      "sourceHeight": 49.6734,
+      "target": {
+        "crownRadiusRatio": 0.3458,
+        "trunkHeightRatio": 0.2112
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.38,
+        "trunkHeightRatio": 0.24
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3458,
+        "trunkHeightRatio": 0.2115
+      },
+      "trunkRadiusRatio": 0.0551,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 12096
+      },
+      "toleranceRatio": 0.013,
+      "solved": {
+        "crownSpread": 0.2169,
+        "boleFraction": 0.185,
+        "generations": 172
+      }
+    },
+    {
+      "familyId": "eztree-silver-maple-damp-b",
+      "speciesId": "silver-maple",
+      "formId": "silver-maple-damp",
+      "role": "damp",
+      "seed": 812584,
+      "seedAttempt": 0,
+      "file": "eztree-silver-maple-damp-b.glb",
+      "bytes": 1049368,
+      "sourceHeight": 71.3124,
+      "target": {
+        "crownRadiusRatio": 0.38,
+        "trunkHeightRatio": 0.24
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.38,
+        "trunkHeightRatio": 0.24
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3806,
+        "trunkHeightRatio": 0.2408
+      },
+      "trunkRadiusRatio": 0.0342,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 12096
+      },
+      "toleranceRatio": 0.038,
+      "solved": {
+        "crownSpread": 0.765,
+        "boleFraction": 0.4969,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-silver-maple-damp-c",
+      "speciesId": "silver-maple",
+      "formId": "silver-maple-damp",
+      "role": "damp",
+      "seed": 145441,
+      "seedAttempt": 0,
+      "file": "eztree-silver-maple-damp-c.glb",
+      "bytes": 1047472,
+      "sourceHeight": 76.1739,
+      "target": {
+        "crownRadiusRatio": 0.4142,
+        "trunkHeightRatio": 0.2688
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.38,
+        "trunkHeightRatio": 0.24
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.4143,
+        "trunkHeightRatio": 0.2687
+      },
+      "trunkRadiusRatio": 0.0341,
+      "triangles": {
+        "wood": 17364,
+        "leaf": 12096
+      },
+      "toleranceRatio": 0.007,
+      "solved": {
+        "crownSpread": 0.81,
+        "boleFraction": 0.4219,
+        "generations": 91
+      }
+    },
+    {
+      "familyId": "eztree-standing-snag-a",
+      "speciesId": "standing-snag",
+      "formId": "standing-snag",
+      "role": "snag",
+      "seed": 457883,
+      "seedAttempt": 0,
+      "file": "eztree-standing-snag-a.glb",
+      "bytes": 194432,
+      "sourceHeight": 53.2394,
+      "target": {
+        "crownRadiusRatio": 0.273,
+        "trunkHeightRatio": 0
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.3,
+        "trunkHeightRatio": 0
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.2725,
+        "trunkHeightRatio": 0
+      },
+      "trunkRadiusRatio": 0.0448,
+      "triangles": {
+        "wood": 1920,
+        "leaf": 0
+      },
+      "toleranceRatio": 0.025,
+      "solved": {
+        "crownSpread": 0.8481,
+        "boleFraction": 0.55,
+        "generations": 41
+      }
+    },
+    {
+      "familyId": "eztree-standing-snag-b",
+      "speciesId": "standing-snag",
+      "formId": "standing-snag",
+      "role": "snag",
+      "seed": 680264,
+      "seedAttempt": 0,
+      "file": "eztree-standing-snag-b.glb",
+      "bytes": 194772,
+      "sourceHeight": 63.897,
+      "target": {
+        "crownRadiusRatio": 0.327,
+        "trunkHeightRatio": 0
+      },
+      "formTarget": {
+        "crownRadiusRatio": 0.3,
+        "trunkHeightRatio": 0
+      },
+      "achieved": {
+        "crownRadiusRatio": 0.3276,
+        "trunkHeightRatio": 0
+      },
+      "trunkRadiusRatio": 0.0375,
+      "triangles": {
+        "wood": 1920,
+        "leaf": 0
+      },
+      "toleranceRatio": 0.028,
+      "solved": {
+        "crownSpread": 1.2547,
+        "boleFraction": 0.55,
+        "generations": 41
+      }
+    }
+  ]
+}

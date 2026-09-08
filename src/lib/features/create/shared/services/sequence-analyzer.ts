@@ -2,7 +2,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { BetaDetector } from "$lib/shared/pictograph/prop/services/beta-detector";
 
@@ -577,7 +577,7 @@ export class SequenceAnalyzer {
         endPosition: startPos, // Start position ends where it starts
         letter: null,
         motions: (startPosData as unknown as {
-          motions?: Partial<Record<MotionColor, MotionData | undefined>>;
+          motions?: Partial<Record<HandSide, MotionData | undefined>>;
         }).motions,
         duration: 1,
         isBlank: false,

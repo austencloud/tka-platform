@@ -102,6 +102,24 @@ export type ParticleType =
   | "steam";
 
 /**
+ * How a particle field behaves with range. Left unset, an emitter renders
+ * exactly as it always has.
+ *
+ * A point whose projected size falls below the driver's one-pixel floor is
+ * still rasterised a full pixel wide, so a distant mote draws many times the
+ * coverage it earns. Under additive blending that is what turns a warm ember
+ * field into hot white specks parked on the sky.
+ */
+export interface ParticleRangeFalloff {
+  /** Scale a sub-pixel point's alpha down to the coverage it actually earns. */
+  subPixel?: boolean;
+  /** Metres [start, end] across which a particle fades out entirely. */
+  fade?: [number, number];
+  /** Colour a far particle settles on, and the metres it takes to get there. */
+  tint?: { color: string; start: number; end: number };
+}
+
+/**
  * Falling particles configuration
  */
 export interface FallingParticlesConfig {
@@ -112,6 +130,13 @@ export interface FallingParticlesConfig {
   colors: string[];
   sizeRange: [number, number];
   spin?: boolean;
+  /**
+   * Born at the floor of the area and accelerating upward for the whole climb.
+   * Left off, a rising type keeps the legacy profile — born at the ceiling,
+   * decelerating — which the other scenes are tuned against.
+   */
+  buoyant?: boolean;
+  rangeFalloff?: ParticleRangeFalloff;
 }
 
 /**

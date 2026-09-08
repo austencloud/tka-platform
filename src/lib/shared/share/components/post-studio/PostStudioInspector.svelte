@@ -11,6 +11,7 @@
     LayoutRegion,
   } from "$lib/shared/media-composition/domain/media-layout-schema";
   import PostStudioSourceSettings from "./PostStudioSourceSettings.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
 
   let {
     sequence,
@@ -27,6 +28,11 @@
   } = $props();
 
   const composition = getMediaCompositionContext();
+  const shared = getViewerStudioSurfaces();
+  const sharedAnimation = $derived(
+    shared?.inspectorAvailable &&
+      selectedBinding?.renderMode === "sequence-animation"
+  );
 
   const selectedBinding = $derived(composition.selectedBinding);
   // Everything the studio draws itself has a Look to edit; the exceptions are
@@ -68,11 +74,11 @@
   const changed = $derived(
     Boolean(
       transform &&
-        (transform.scale !== 1 ||
-          transform.translateX !== 0 ||
-          transform.translateY !== 0 ||
-          transform.flipHorizontal ||
-          opacity !== 1)
+      (transform.scale !== 1 ||
+        transform.translateX !== 0 ||
+        transform.translateY !== 0 ||
+        transform.flipHorizontal ||
+        opacity !== 1)
     )
   );
 
@@ -106,31 +112,37 @@
 <section
   class="inspector"
   class:source-open={hasSourceSettings}
-  aria-labelledby="post-studio-inspector"
+  class:shared-animation={sharedAnimation}
+  aria-labelledby={sharedAnimation ? undefined : "post-studio-inspector"}
+  aria-label={sharedAnimation ? "Animation settings" : undefined}
 >
   <!-- One row, not three. "SELECTED LAYER" above the name said the same thing
        twice, and the Look/Fit switcher below it took a third band — ~105px
        before a single control appeared, in a rail whose whole job is the
        controls. The switcher is gone entirely: a layer has a Look or a Fit,
        never both, so there was never anything to switch between. -->
-  <div class="inspector-heading">
-    <h3 id="post-studio-inspector">
-      {selectedBinding?.label ?? composition.selectedRegion?.label ?? "Canvas"}
-    </h3>
+  {#if !sharedAnimation}
+    <div class="inspector-heading">
+      <h3 id="post-studio-inspector">
+        {selectedBinding?.label ??
+          composition.selectedRegion?.label ??
+          "Canvas"}
+      </h3>
 
-    {#if isFootage && composition.selectedRegion && transform}
-      <button
-        type="button"
-        class="reset-button"
-        disabled={!changed}
-        aria-label="Reset how the selected layer fills its slot"
-        onclick={composition.resetSelectedAppearance}
-      >
-        <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>
-        Reset
-      </button>
-    {/if}
-  </div>
+      {#if isFootage && composition.selectedRegion && transform}
+        <button
+          type="button"
+          class="reset-button"
+          disabled={!changed}
+          aria-label="Reset how the selected layer fills its slot"
+          onclick={composition.resetSelectedAppearance}
+        >
+          <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>
+          Reset
+        </button>
+      {/if}
+    </div>
+  {/if}
 
   {#if composition.selectedRegion && transform}
     {#if hasSourceSettings}
@@ -313,6 +325,10 @@
     height: 100%;
     align-content: stretch;
   }
+  .inspector.shared-animation {
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+  }
 
   /* SegmentedControl is width:100% by design, so a full-width parent stretches
      two short words across the whole rail — 359px per tab at 1920, 507px at
@@ -325,10 +341,7 @@
   .switch-row,
   .switch-row.wide {
     flex: 0 0 auto;
-    width: min(
-      100%,
-      max(calc(var(--studio-control-height, 2.75rem) * 8), 56%)
-    );
+    width: min(100%, max(calc(var(--studio-control-height, 2.75rem) * 8), 56%));
   }
 
   .inspector-heading,
@@ -433,7 +446,11 @@
 
   .mirror-button.on {
     border-color: var(--theme-accent);
-    background: color-mix(in srgb, var(--theme-accent) 22%, var(--theme-card-bg));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 22%,
+      var(--theme-card-bg)
+    );
   }
 
   .mirror-button:disabled {

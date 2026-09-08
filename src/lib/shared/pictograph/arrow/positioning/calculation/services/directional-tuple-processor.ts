@@ -378,7 +378,7 @@ export class DirectionalTupleProcessor {
         (globalThis as { __DBG_ARROW?: boolean }).__DBG_ARROW
       ) {
         console.log(
-          `[TUPLE] ${motion.color} mt=${String(motion.motionType).toLowerCase()}` +
+          `[TUPLE] ${motion.hand} mt=${String(motion.motionType).toLowerCase()}` +
             ` rot=${String(motion.rotationDirection).toLowerCase()} loc=${location} qi=${quadrantIndex}` +
             ` | base=(${baseAdjustment.x},${baseAdjustment.y})` +
             ` → out=(${selectedTuple[0]},${selectedTuple[1]})`,

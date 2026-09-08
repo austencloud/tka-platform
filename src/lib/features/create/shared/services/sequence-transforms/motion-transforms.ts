@@ -2,7 +2,7 @@ export {
   mirrorMotion,
   flipMotion,
   rotateMotion,
-  swapMotionColor,
+  reassignMotionHand,
   invertMotion,
   rewindMotion,
 } from "$lib/shared/create/services/motion-transforms";

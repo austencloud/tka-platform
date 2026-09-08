@@ -21,18 +21,13 @@ even when Svelte recreates the component instance.
   import { onDestroy } from "svelte";
   import {
     Orientation,
-    MotionColor,
+    HandSide,
     RotationDirection,
   } from "../../shared/domain/enums/pictograph-enums";
   import { PropType } from "../domain/enums/prop-type";
   import type { MotionData } from "../../shared/domain/models/motion-data";
   import type { PropAssets } from "../domain/models/prop-assets";
   import type { PropPosition } from "../domain/models/prop-position";
-  import {
-    applyEditorTorchPalette,
-    needsEditorContrast,
-    type PropRenderContext,
-  } from "../domain/prop-render-context";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import {
@@ -107,8 +102,6 @@ even when Svelte recreates the component instance.
     // Per-frame motion renderers already supply interpolation. Bypass the cache
     // and CSS transition layer so these coordinates paint on the same frame.
     directPositioning = false,
-    propRenderContext = "standard",
-    darkMode = false,
     colorOverride = undefined,
   } = $props<{
     motionData: MotionData;
@@ -124,10 +117,6 @@ even when Svelte recreates the component instance.
     transitionKey?: string | null;
     /** Apply supplied coordinates directly without cache or CSS interpolation. */
     directPositioning?: boolean;
-    /** Editor grids opt in to a surface-aware torch palette. */
-    propRenderContext?: PropRenderContext;
-    /** The actual pictograph surface, used to choose the opposing shaft color. */
-    darkMode?: boolean;
     /** Optional display-only color. The motion remains blue/red semantically. */
     colorOverride?: string;
   }>();
@@ -144,17 +133,7 @@ even when Svelte recreates the component instance.
         })
       : propAssets.imageSrc
   );
-  const showEditorContrast = $derived(
-    needsEditorContrast(propRenderContext, renderedPropType)
-  );
-  const renderedArtwork = $derived(
-    applyEditorTorchPalette(
-      colorizedArtwork,
-      propRenderContext,
-      renderedPropType,
-      darkMode
-    )
-  );
+  const renderedArtwork = $derived(colorizedArtwork);
 
   type MotionSnapshot = {
     startOrientation?: Orientation;
@@ -206,7 +185,7 @@ even when Svelte recreates the component instance.
     if (directPositioning) return target;
     const cacheIdentity = transitionKey ?? cellIndex;
     if (cacheIdentity === null) return target;
-    return positionCache.get(`${cacheIdentity}-${motionData.color}`) ?? target;
+    return positionCache.get(`${cacheIdentity}-${motionData.hand}`) ?? target;
   }
 
   const firstFrame = initialPosition();
@@ -241,10 +220,10 @@ even when Svelte recreates the component instance.
     // Determine the actual prop type being rendered.
     // Settings prop type takes precedence — it's what the user chose to display.
     const settingsPropType =
-      motionData.color === MotionColor.BLUE
-        ? settings.bluePropType
-        : motionData.color === MotionColor.RED
-          ? settings.redPropType
+      motionData.hand === HandSide.LEFT
+        ? settings.leftPropType
+        : motionData.hand === HandSide.RIGHT
+          ? settings.rightPropType
           : undefined;
     const actualPropType: PropType | string | undefined =
       settingsPropType ?? motionData.propType;
@@ -252,10 +231,10 @@ even when Svelte recreates the component instance.
     // Red hand is always mirrored (left/right hands are anatomically mirrored).
     // Also check the prepared motion's own prop type: a per-pictograph override
     // (export, guide pages) forces HAND onto the motion via the preparer, but the
-    // user's global settings.redPropType would otherwise mask it through
+    // user's global settings.rightPropType would otherwise mask it through
     // `actualPropType` and leave the red hand looking like an un-mirrored left hand.
     if (
-      motionData.color === MotionColor.RED &&
+      motionData.hand === HandSide.RIGHT &&
       (actualPropType === PropType.HAND ||
         motionData.propType === PropType.HAND)
     ) {
@@ -264,10 +243,10 @@ even when Svelte recreates the component instance.
 
     // Check buugeng flip preference based on hand color
     if (BUUGENG_FAMILY.has(actualPropType as PropType)) {
-      if (motionData.color === MotionColor.BLUE) {
-        return settings.blueBuugengFlipped ?? false;
-      } else if (motionData.color === MotionColor.RED) {
-        return settings.redBuugengFlipped ?? false;
+      if (motionData.hand === HandSide.LEFT) {
+        return settings.leftBuugengFlipped ?? false;
+      } else if (motionData.hand === HandSide.RIGHT) {
+        return settings.rightBuugengFlipped ?? false;
       }
     }
 
@@ -299,7 +278,7 @@ even when Svelte recreates the component instance.
       displayedY = targetY;
       const cacheIdentity = transitionKey ?? cellIndex;
       if (cacheIdentity !== null) {
-        const key = `${cacheIdentity}-${motionData.color}`;
+        const key = `${cacheIdentity}-${motionData.hand}`;
         positionCache.set(key, { x: targetX, y: targetY });
       }
       return;
@@ -315,7 +294,7 @@ even when Svelte recreates the component instance.
     }
 
     // Build cache key from cell index and motion color
-    const key = `${cacheIdentity}-${motionData.color}`;
+    const key = `${cacheIdentity}-${motionData.hand}`;
     const cached = positionCache.get(key);
 
     if (cached && (cached.x !== targetX || cached.y !== targetY)) {
@@ -528,24 +507,14 @@ even when Svelte recreates the component instance.
 </script>
 
 {#snippet propArtwork()}
-  {#if showEditorContrast}
-    <g
-      class="editor-torch-artwork"
-      data-editor-prop-contrast
-      data-editor-torch-palette={darkMode ? "dark" : "light"}
-    >
-      {@html renderedArtwork}
-    </g>
-  {:else}
-    {@html renderedArtwork}
-  {/if}
+  {@html renderedArtwork}
 {/snippet}
 
 {#if showProp}
   {#if isClickable && onPropClick}
     <!-- Interactive prop - clickable button -->
     <g
-      class="prop-svg {motionData.color}-prop-svg clickable"
+      class="prop-svg {motionData.hand}-prop-svg clickable"
       class:selected={isSelected}
       class:no-transition={isTransforming || directPositioning}
       class:prop-fading={propFading}
@@ -579,7 +548,7 @@ even when Svelte recreates the component instance.
   {:else}
     <!-- Non-interactive prop - display only -->
     <g
-      class="prop-svg {motionData.color}-prop-svg"
+      class="prop-svg {motionData.hand}-prop-svg"
       class:selected={isSelected}
       class:no-transition={isTransforming || directPositioning}
       class:prop-fading={propFading}
@@ -624,6 +593,12 @@ even when Svelte recreates the component instance.
     transition: none;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .prop-svg {
+      transition: none;
+    }
+  }
+
   .prop-svg.clickable {
     pointer-events: auto;
     cursor: pointer;
@@ -638,9 +613,9 @@ even when Svelte recreates the component instance.
   }
 
   @media (forced-colors: active) {
-    .editor-torch-artwork :global([data-torch-shaft]),
-    .editor-torch-artwork :global([data-torch-metal]),
-    .editor-torch-artwork :global([data-torch-flame-part]) {
+    .prop-svg :global([data-torch-shaft]),
+    .prop-svg :global([data-torch-metal]),
+    .prop-svg :global([data-torch-flame-part]) {
       fill: CanvasText !important;
       stroke: CanvasText !important;
     }

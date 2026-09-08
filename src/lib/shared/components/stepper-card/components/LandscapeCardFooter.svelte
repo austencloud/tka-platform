@@ -29,7 +29,7 @@ LandscapeCardFooter.svelte - Absolutely positioned subtitle and description for 
     left: clamp(4px, 1cqw, 8px);
     right: clamp(4px, 1cqw, 8px);
 
-    font-size: clamp(9px, 2cqh, 12px);
+    font-size: var(--card-subtitle-size, clamp(9px, 2cqh, 12px));
     font-weight: 500;
     color: color-mix(in srgb, var(--text-color) 80%, transparent);
     text-align: center;
@@ -51,12 +51,12 @@ LandscapeCardFooter.svelte - Absolutely positioned subtitle and description for 
     left: clamp(4px, 1cqw, 8px);
     right: clamp(4px, 1cqw, 8px);
 
-    font-size: clamp(9px, 2.2cqh, 11px);
+    font-size: var(--card-description-size, clamp(9px, 2.2cqh, 11px));
     font-weight: 500;
     color: color-mix(in srgb, var(--text-color) 75%, transparent);
     text-align: center;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
+    letter-spacing: var(--card-description-letter-spacing, 0.3px);
+    text-transform: var(--card-description-transform, uppercase);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

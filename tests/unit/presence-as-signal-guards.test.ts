@@ -26,7 +26,7 @@ import { createSequenceData } from "$lib/shared/foundation/domain/models/sequenc
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -84,7 +84,7 @@ function oneHandStep(overrides: Partial<StepData> = {}): StepData {
   return createStepData({
     letter: Letter.A,
     stepNumber: 1,
-    motions: { [MotionColor.BLUE]: motion() },
+    motions: { [HandSide.LEFT]: motion() },
     ...overrides,
   });
 }
@@ -94,9 +94,9 @@ function bothHandStep(overrides: Partial<StepData> = {}): StepData {
     letter: Letter.A,
     stepNumber: 1,
     motions: {
-      [MotionColor.BLUE]: motion(),
-      [MotionColor.RED]: motion({
-        color: MotionColor.RED,
+      [HandSide.LEFT]: motion(),
+      [HandSide.RIGHT]: motion({
+        color: HandSide.RIGHT,
         startLocation: GridLocation.SOUTH,
         endLocation: GridLocation.WEST,
       }),
@@ -167,7 +167,7 @@ describe("isSeamlesslyLoopable — absent hand passes vacuously; both absent = n
   it("one-hand sequence is loopable when the present hand closes (red vacuously passes)", () => {
     const step = createStepData({
       stepNumber: 1,
-      motions: { [MotionColor.BLUE]: circularBlue },
+      motions: { [HandSide.LEFT]: circularBlue },
     });
     expect(isSeamlesslyLoopable(seq([step]))).toBe(true);
   });
@@ -179,7 +179,7 @@ describe("isSeamlesslyLoopable — absent hand passes vacuously; both absent = n
     });
     const step = createStepData({
       stepNumber: 1,
-      motions: { [MotionColor.BLUE]: open },
+      motions: { [HandSide.LEFT]: open },
     });
     expect(isSeamlesslyLoopable(seq([step]))).toBe(false);
   });
@@ -193,17 +193,17 @@ describe("isSeamlesslyLoopable — absent hand passes vacuously; both absent = n
 // ── content-hasher.ts:113 ───────────────────────────────────────────────────
 describe('hashSequenceContent — absent motion hashes as the "-" sentinel', () => {
   it("one-hand and both-hand versions of the same step hash differently", () => {
-    const blue = motion();
+    const left = motion();
     const oneHand = createStepData({
       stepNumber: 1,
-      motions: { [MotionColor.BLUE]: blue },
+      motions: { [HandSide.LEFT]: left },
     });
     const bothHands = createStepData({
       id: oneHand.id,
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: blue,
-        [MotionColor.RED]: motion({ color: MotionColor.RED }),
+        [HandSide.LEFT]: left,
+        [HandSide.RIGHT]: motion({ color: HandSide.RIGHT }),
       },
     });
     const h1 = hashSequenceContent({
@@ -271,8 +271,8 @@ describe("interpolatePropAngles — absent hand animates NOTHING (solo path)", (
   it("one-hand step: present hand gets angles, absent hand stays null, frame valid", () => {
     const out = interpolatePropAngles(oneHandStep(), 0.5);
     expect(out.isValid).toBe(true);
-    expect(out.blueAngles).not.toBeNull();
-    expect(out.redAngles).toBeNull(); // mandala club solo animation depends on this
+    expect(out.leftAngles).not.toBeNull();
+    expect(out.rightAngles).toBeNull(); // mandala club solo animation depends on this
   });
 
   it("zero-hand step: frame is invalid (blank beat, nothing animates)", () => {
@@ -281,8 +281,8 @@ describe("interpolatePropAngles — absent hand animates NOTHING (solo path)", (
       0.5
     );
     expect(out.isValid).toBe(false);
-    expect(out.blueAngles).toBeNull();
-    expect(out.redAngles).toBeNull();
+    expect(out.leftAngles).toBeNull();
+    expect(out.rightAngles).toBeNull();
   });
 });
 
@@ -291,15 +291,15 @@ describe("FrameParameterBuilder.updateHandPresenceCache — absent hand's prop i
   it("sequence with only blue motions reports sequenceHasRedMotion=false", () => {
     const builder = new FrameParameterBuilder();
     builder.updateHandPresenceCache(seq([oneHandStep()]));
-    expect(builder.sequenceHasBlueMotion).toBe(true);
-    expect(builder.sequenceHasRedMotion).toBe(false); // renderer nulls the red prop
+    expect(builder.sequenceHasLeftMotion).toBe(true);
+    expect(builder.sequenceHasRightMotion).toBe(false); // renderer nulls the red prop
   });
 
   it("both-hand sequence reports both present (control)", () => {
     const builder = new FrameParameterBuilder();
     builder.updateHandPresenceCache(seq([bothHandStep()]));
-    expect(builder.sequenceHasBlueMotion).toBe(true);
-    expect(builder.sequenceHasRedMotion).toBe(true);
+    expect(builder.sequenceHasLeftMotion).toBe(true);
+    expect(builder.sequenceHasRightMotion).toBe(true);
   });
 });
 
@@ -377,12 +377,12 @@ describe("hydrateSequence — placeholder beats cannot donate gridMode", () => {
     const blankBoxish = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: invisibleMotion({
+        [HandSide.LEFT]: invisibleMotion({
           startLocation: GridLocation.NORTHEAST,
           endLocation: GridLocation.NORTHEAST,
         }),
-        [MotionColor.RED]: invisibleMotion({
-          color: MotionColor.RED,
+        [HandSide.RIGHT]: invisibleMotion({
+          color: HandSide.RIGHT,
           startLocation: GridLocation.SOUTHWEST,
           endLocation: GridLocation.SOUTHWEST,
         }),
@@ -401,8 +401,8 @@ describe("hydrateSequence — placeholder beats cannot donate gridMode", () => {
     const blank = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: invisibleMotion(),
-        [MotionColor.RED]: invisibleMotion({ color: MotionColor.RED }),
+        [HandSide.LEFT]: invisibleMotion(),
+        [HandSide.RIGHT]: invisibleMotion({ color: HandSide.RIGHT }),
       },
     });
     const out = await hydrateSequence(seq([blank]), { loopDetector: null });
@@ -422,9 +422,9 @@ describe("analyzeDifficulty — invisible placeholders don't inflate the badge",
     const step = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: calmVisible(),
-        [MotionColor.RED]: invisibleMotion({
-          color: MotionColor.RED,
+        [HandSide.LEFT]: calmVisible(),
+        [HandSide.RIGHT]: invisibleMotion({
+          color: HandSide.RIGHT,
           startOrientation: Orientation.CLOCK,
           endOrientation: Orientation.CLOCK,
         }),
@@ -437,9 +437,9 @@ describe("analyzeDifficulty — invisible placeholders don't inflate the badge",
     const step = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: calmVisible(),
-        [MotionColor.RED]: motion({
-          color: MotionColor.RED,
+        [HandSide.LEFT]: calmVisible(),
+        [HandSide.RIGHT]: motion({
+          color: HandSide.RIGHT,
           turns: 0,
           startOrientation: Orientation.CLOCK,
           endOrientation: Orientation.CLOCK,
@@ -455,8 +455,8 @@ describe("enrichStepsWithGridPositions — placeholder beats keep null positions
     const blank = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: invisibleMotion(),
-        [MotionColor.RED]: invisibleMotion({ color: MotionColor.RED }),
+        [HandSide.LEFT]: invisibleMotion(),
+        [HandSide.RIGHT]: invisibleMotion({ color: HandSide.RIGHT }),
       },
     });
     enrichStepsWithGridPositions([blank]);
@@ -477,14 +477,14 @@ describe("extractPattern — placeholder hands extract as null (skip slot), not 
     const step = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: motion(), // PRO cw, turns 1 -> "cw"
-        [MotionColor.RED]: invisibleMotion({ color: MotionColor.RED }),
+        [HandSide.LEFT]: motion(), // PRO cw, turns 1 -> "cw"
+        [HandSide.RIGHT]: invisibleMotion({ color: HandSide.RIGHT }),
       },
     });
     const pattern = extractPattern(seq([step]), "wave0-guard");
-    expect(pattern.entries[0]?.blue).toBe("cw");
+    expect(pattern.entries[0]?.left).toBe("cw");
     // Before the fix this was "none" (placeholder STATIC@0), permanently
     // disabling nothing — but baking a fabricated slot into saved patterns.
-    expect(pattern.entries[0]?.red).toBeNull();
+    expect(pattern.entries[0]?.right).toBeNull();
   });
 });

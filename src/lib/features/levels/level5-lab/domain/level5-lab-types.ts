@@ -21,6 +21,6 @@ export type PositionGroup = "all" | "tau-diamond" | "tau-box" | "terra";
 
 /** Per-card orientation state: each card independently tracks blue + red */
 export interface CardOrientations {
-  blue: Orientation;
-  red: Orientation;
+  left: Orientation;
+  right: Orientation;
 }
