@@ -10,7 +10,10 @@
   import type { HTMLButtonAttributes } from "svelte/elements";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
   import PrimaryPropColorSettings from "$lib/shared/settings/components/tabs/prop-type/PrimaryPropColorSettings.svelte";
-  import { getSettings, updateSetting } from "$lib/shared/application/state/app-state.svelte";
+  import {
+    getSettings,
+    updateSetting,
+  } from "$lib/shared/application/state/app-state.svelte";
   import {
     shareTarget,
     saveActionLabel,
@@ -23,6 +26,7 @@
     onCopyLink?: () => void;
     linkCopied?: boolean;
     onPropsOpen?: () => void;
+    propsLabel?: string;
     onPublish?: () => void;
     onUnpublish?: () => void;
     onDeleteRequest?: () => void;
@@ -71,6 +75,7 @@
     onCopyLink,
     linkCopied = false,
     onPropsOpen,
+    propsLabel = "Props",
     onPublish,
     onUnpublish,
     onDeleteRequest,
@@ -208,7 +213,7 @@
     }
     if (onPropsOpen) {
       items.push({
-        label: "Props",
+        label: propsLabel,
         icon: "fa-wand-magic-sparkles",
         action: onPropsOpen,
         dividerBefore: items.length > 0,
@@ -300,7 +305,8 @@
                 <PrimaryPropColorSettings
                   colors={getSettings().primaryPropColors}
                   darkMode={getSettings().darkMode}
-                  onchange={(colors) => updateSetting("primaryPropColors", colors)}
+                  onchange={(colors) =>
+                    updateSetting("primaryPropColors", colors)}
                 />
               </div>
               {#if hasItems}

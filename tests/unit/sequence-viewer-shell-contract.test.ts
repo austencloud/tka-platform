@@ -24,6 +24,7 @@ const SHELL_PATH =
 const HOSTS: Record<string, string[]> = {
   "drawer host": [
     "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte",
+    "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerContent.svelte",
   ],
   "/sequence route host": [
     "src/routes/sequence/[id]/SequenceViewerPage.svelte",
@@ -259,11 +260,9 @@ describe("SequenceViewerShell host contract", () => {
     expect(viewerHeaderSource).not.toContain("Record Scene");
   });
 
-  it("uses Bits UI for the explicit More menu", () => {
-    expect(overflowMenuSource).toContain(
-      'import { DropdownMenu } from "bits-ui"'
-    );
-    expect(overflowMenuSource).toContain("<DropdownMenu.Content");
+  it("uses Bits UI for the explicit More popover", () => {
+    expect(overflowMenuSource).toContain('import { Popover } from "bits-ui"');
+    expect(overflowMenuSource).toContain("<Popover.Content");
     expect(overflowMenuSource).not.toContain("overflow-backdrop");
     expect(overflowMenuSource).not.toContain(
       "querySelectorAll<HTMLButtonElement>"
