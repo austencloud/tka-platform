@@ -839,14 +839,14 @@
           : undefined}
         hidden={isCompactDemo && !usesFocusedLayout && compactPane !== "build"}
       >
-        {#if isCompactDemo && phase !== "play" && !isGuidedBuild}
+        {#if isCompactDemo && phase !== "play" && !isGuidedBuild && !isContinuous}
           {@render propControl()}
         {/if}
 
         <!-- Turns imply "you can change the playing sequence's turns" — not true
          during playback, so they slide away for the play phase (freeing their
          strip for the player) and return on Keep building / Build another. -->
-        {#if phase !== "play" && !isGuidedBuild && (!isContinuous || phase !== "pick-start")}
+        {#if phase !== "play" && !isGuidedBuild && (!isContinuous || !isCompactDemo)}
           <div
             class="turns-pair"
             transition:slide={{ duration: motionDuration(DURATION.normal) }}
@@ -939,6 +939,25 @@
             {@render player(playSequence)}
           {/if}
         </div>
+
+        {#if isContinuous && isCompactDemo && phase !== "play"}
+          <details class="continuous-settings">
+            <summary>Prop and turn settings</summary>
+            <div class="continuous-settings-content">
+              {@render propControl()}
+              <div class="turns-pair">
+                <div class="tool-group turns-group blue">
+                  <span class="tool-label"><span class="hand-dot blue" aria-hidden="true"></span>Left turns</span>
+                  <SegmentedControl options={TURN_OPTIONS} value={leftTurnsValue} onchange={(v) => (leftTurnsValue = v)} color="blue" />
+                </div>
+                <div class="tool-group turns-group red">
+                  <span class="tool-label"><span class="hand-dot red" aria-hidden="true"></span>Right turns</span>
+                  <SegmentedControl options={TURN_OPTIONS} value={rightTurnsValue} onchange={(v) => (rightTurnsValue = v)} color="red" />
+                </div>
+              </div>
+            </div>
+          </details>
+        {/if}
       </div>
     </div>
 
@@ -1112,7 +1131,7 @@
     .compact-layout
     .sequence-column
     .workspace.has-sequence {
-    min-height: 10rem;
+    min-height: 13rem;
   }
 
   .continuous-workspace.compact-demo .continuous-preview {
@@ -1121,8 +1140,8 @@
   }
 
   .continuous-workspace.compact-demo .continuous-preview.has-motion {
-    flex-basis: 9rem;
-    min-height: 9rem;
+    flex-basis: 11rem;
+    min-height: 11rem;
   }
 
   .continuous-workspace .compact-layout .sequence-column .ws-frame {
@@ -1138,7 +1157,43 @@
   }
 
   .continuous-workspace .compact-layout .build-column .picker-pane {
-    min-height: clamp(19rem, 52svh, 24rem);
+    min-height: clamp(27rem, 70svh, 32rem);
+  }
+
+  .continuous-workspace.compact-demo .action-slot {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 0.35rem;
+  }
+
+  .continuous-workspace.compact-demo .action-swap {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .continuous-workspace.compact-demo .slot-side {
+    grid-row: 2;
+  }
+
+  .continuous-workspace.compact-demo .continuous-settings {
+    margin-top: 0.5rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg, rgba(10, 10, 18, 0.72));
+  }
+
+  .continuous-settings summary {
+    min-height: var(--min-touch-target, 44px);
+    line-height: 1.5rem;
+    padding: 0.75rem 1rem;
+    color: var(--theme-text, #fff);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .continuous-settings-content {
+    display: grid;
+    gap: 1rem;
+    padding: 0 1rem 1rem;
   }
 
   .compact-play-actions {
