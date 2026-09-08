@@ -85,7 +85,8 @@ it performs an inventory. `--limit` bounds a sample and `--concurrency` accepts
 1–8 sequence lanes. The output directory contains `shortcodes.json`,
 `report.json` and `artifact-manifest.json`. Retain it for retries and keep its
 sequence snapshot out of version control. The runner exits with code 2 if any
-records failed. It starts no HTTP listener and closes its renderer and workers.
+records failed. It starts no application HTTP listener and closes Vite's
+websocket, watcher, renderer and workers.
 Creating an empty `STOP` file in the output directory stops cleanly between
 sequences; remove it before resuming. A regression test verifies that missing
 assets and repeated decode errors still reject publication when interactive
@@ -95,3 +96,11 @@ The production sample covered 10 codes: 20 QR images and 173 missing canonical
 cells were published. All 20 public QR downloads decoded to their exact stored
 shortcode URL and prop parameters. The full snapshot subsequently contained
 22,072 codes, including two created during inventory.
+
+The full pass found `C4OF` carrying `centere` where the rotation lookup expects
+`centerE`. Both prop-angle entry points now reuse the existing
+`canonicalOrientation` owner. A narrowly scoped `orientation-case-v1` revision
+invalidates old images for those spellings while preserving normal cell keys.
+A census of the snapshot found only `C4OF` affected. Four regression tests cover
+both angle entry points and the scoped invalidation, and its restored right
+prop was directly inspected through the public image in a fresh browser tab.
