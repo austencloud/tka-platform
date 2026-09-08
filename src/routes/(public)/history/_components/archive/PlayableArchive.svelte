@@ -99,8 +99,7 @@
   <header class="archive-header" bind:offsetHeight={headingHeight}>
     <h1 class="room-title">Flow arts history</h1>
     <p>
-      How people have recorded movement, shared techniques, and built a language
-      for flow.
+      The people and projects behind the ways we teach and write down flow arts.
     </p>
     <div class="archive-context">
       <span
@@ -131,7 +130,7 @@
         <div class="index-sticky">
           <h2>Browse the archive</h2>
           <p class="index-note">
-            Dates refer to the evidence described in each entry.
+            Each entry explains its date.
           </p>
           <div
             class="index-scroll"
@@ -211,13 +210,12 @@
     <div class="archive-about-columns">
       <p>
         This collection follows notation systems, teaching projects, and
-        published research. The categories help you browse; they are not a
-        ranking or a claim that one system replaced another.
+        published research.
       </p>
       <p>
-        Each entry credits its contributors and links to the evidence behind its
-        account. A date may mark a publication, a surviving source, or work
-        recalled by its creator. The entry explains which.
+        Follow the sources to read or watch the original work. Dates refer to
+        publications, archived copies, or the creators’ accounts, as explained
+        in each entry.
       </p>
       <div class="archive-contact">
         <p>
@@ -229,8 +227,7 @@
           >Suggest an addition or correction</a
         >
         <small
-          >Include the entry name, your correction or addition, and a source we
-          can read.</small
+          >Send the entry name, your suggested change, and a source link.</small
         >
       </div>
     </div>
