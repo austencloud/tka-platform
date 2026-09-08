@@ -92,7 +92,7 @@
   $effect(() => {
     keepAlive.setActiveModule(activeModule);
     for (const id of keepAlive.mountedModules()) {
-      if (!moduleCache.has(id)) {
+      if (!moduleCache.has(id) && !moduleErrors.has(id)) {
         loadModule(id)
           .then(() => (keepAliveVersion += 1))
           .catch(() => {});
