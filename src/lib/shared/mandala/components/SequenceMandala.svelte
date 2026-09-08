@@ -11,6 +11,8 @@
 	} from "$lib/shared/render-gating/render-activity-gate";
 	import { cubicInOut } from "svelte/easing";
 	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+	import { applyMandalaHandColors } from "../domain/mandala-palette";
 	import type {
 		MandalaHandVisibility,
 		MandalaMode,
@@ -467,7 +469,10 @@
 			size,
 			style,
 			show,
-			palette: paletteOverride ?? (effectiveDarkMode ? DARK_MOTION_PALETTE : LIGHT_MOTION_PALETTE),
+			palette: paletteOverride ?? applyMandalaHandColors(
+				effectiveDarkMode ? DARK_MOTION_PALETTE : LIGHT_MOTION_PALETTE,
+				getSettings().primaryPropColors,
+			),
 			tipDx: effectiveDx,
 			strokeWidth,
 			gradient,
