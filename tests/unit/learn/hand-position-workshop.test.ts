@@ -33,6 +33,46 @@ function memory(saved?: unknown) {
 }
 
 describe("hand position workshop domain", () => {
+  it("remembers the exact last arrangement of each family independently in each grid", () => {
+    const workshop = createPositionWorkshopState(memory());
+    workshop.rememberPosition(
+      GridLocation.NORTH,
+      GridLocation.WEST,
+      GridMode.DIAMOND
+    );
+    workshop.rememberPosition(
+      GridLocation.SOUTH,
+      GridLocation.SOUTH,
+      GridMode.DIAMOND
+    );
+    workshop.rememberPosition(
+      GridLocation.NORTHEAST,
+      GridLocation.SOUTHEAST,
+      GridMode.BOX
+    );
+    workshop.rememberPosition(null, null, GridMode.DIAMOND);
+    expect(workshop.examplePair("gamma", GridMode.DIAMOND)).toEqual({
+      left: GridLocation.NORTH,
+      right: GridLocation.WEST,
+    });
+    expect(workshop.examplePair("gamma", GridMode.BOX)).toEqual({
+      left: GridLocation.NORTHEAST,
+      right: GridLocation.SOUTHEAST,
+    });
+    expect(workshop.examplePair("beta", GridMode.DIAMOND)).toEqual({
+      left: GridLocation.SOUTH,
+      right: GridLocation.SOUTH,
+    });
+    workshop.rememberPosition(
+      GridLocation.SOUTH,
+      GridLocation.EAST,
+      GridMode.DIAMOND
+    );
+    expect(workshop.examplePair("gamma", GridMode.DIAMOND)).toEqual({
+      left: GridLocation.SOUTH,
+      right: GridLocation.EAST,
+    });
+  });
   it("switches grids without changing the constructed family or losing a partial hand", () => {
     for (const left of getPlacementGridPoints(GridMode.DIAMOND)) {
       for (const right of getPlacementGridPoints(GridMode.DIAMOND)) {
