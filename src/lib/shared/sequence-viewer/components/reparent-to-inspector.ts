@@ -12,6 +12,9 @@ export interface ReparentOptions {
   /** Bottom-aligned control rows return to this stationary allocation while
    * their actual DOM parent (the canvas) is still flying independently. */
   returnAnchor?: HTMLElement | null;
+  flightLayer?: "artwork" | "controls";
+  /** A dependent control row must not dock underneath artwork still in flight. */
+  canDock?: () => boolean;
   onMoving?: (moving: boolean) => void;
 }
 type ReparentTarget = HTMLElement | null | ReparentOptions;
@@ -54,6 +57,7 @@ export function reparentToInspector(
   let destination: HTMLElement | null = null;
   let movingCallback: ReparentOptions["onMoving"];
   let trackingFrame = 0;
+  let dockingFrame = 0;
   let stationaryFlight: ReturnType<typeof setTimeout> | undefined;
 
   function restoreStyle(): void {
@@ -87,6 +91,7 @@ export function reparentToInspector(
     destination = next;
     const ticket = ++version;
     cancelAnimationFrame(trackingFrame);
+    cancelAnimationFrame(dockingFrame);
     clearTimeout(stationaryFlight);
     movingCallback?.(false);
     movingCallback = options.onMoving;
@@ -151,7 +156,10 @@ export function reparentToInspector(
       margin: "0",
       maxWidth: "none",
       maxHeight: "none",
-      zIndex: "1000",
+      zIndex:
+        options.flightLayer === "controls"
+          ? "calc(var(--z-debug, 1000) + 1)"
+          : "var(--z-debug, 1000)",
       pointerEvents: "none",
     });
     movingCallback?.(true);
@@ -176,6 +184,10 @@ export function reparentToInspector(
     trackingFrame = requestAnimationFrame(track);
     const settle = () => {
       if (ticket !== version) return;
+      if (options.canDock?.() === false) {
+        dockingFrame = requestAnimationFrame(settle);
+        return;
+      }
       cancelAnimationFrame(trackingFrame);
       restoreStyle();
       move(destination);
@@ -202,6 +214,7 @@ export function reparentToInspector(
     destroy: () => {
       ++version;
       cancelAnimationFrame(trackingFrame);
+      cancelAnimationFrame(dockingFrame);
       clearTimeout(stationaryFlight);
       motion.cancel();
       restoreStyle();
