@@ -78,6 +78,25 @@ def load_contract() -> tuple[dict, str]:
 CONTRACT, SOURCE_DIGEST = load_contract()
 if CONTRACT["coordinateSystem"]["gltfRuntime"]["integrationStatus"] != "compiled-cave-earth-room":
     raise RuntimeError("The shell must be built from the compiled cave-earth contract")
+
+# Everything below carves the room the 2026-09 regrade replaced: one ramp onto
+# a terrace 2.8 m up, then descent-a / landing / descent-b down the east wall.
+# The layout now emits an overlook spur, a catwalk gallery with three alcoves,
+# and four disjoint rail runs instead of one folded line, so this script cannot
+# simply be re-pointed - the vault carving, the rail legs, the root placement
+# and the QA cameras all have to be re-authored against the new decks. Fail
+# here, naming that, rather than partway through on a KeyError.
+BUILT_FOR_FLOORS = {"ramp", "terrace", "descent-a", "descent-b"}
+_missing = sorted(BUILT_FOR_FLOORS - {floor["id"] for floor in CONTRACT["floors"]})
+if _missing:
+    raise RuntimeError(
+        "This graybox script was written for the pre-regrade Root Terrace and "
+        f"the contract no longer carries {_missing}. Re-author the carve against "
+        "the current floors "
+        f"({sorted(floor['id'] for floor in CONTRACT['floors'])}) "
+        "and the contract's rails[] before rebuilding (scene gate 2)."
+    )
+
 DATUM = CONTRACT["datums"]
 ROOM = CONTRACT["room"]
 BOUNDS = ROOM["blenderBounds"]
