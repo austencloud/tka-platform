@@ -687,6 +687,8 @@ Usage:
 
     <!-- Path shape accidental glyph (top center, only when per-step override set) -->
     <PathShapeGlyph
+      leftColorOverride={effectiveLeftColor}
+      rightColorOverride={effectiveRightColor}
       leftMotion={pictograph.motions?.left}
       rightMotion={pictograph.motions?.right}
       {darkMode}

@@ -112,6 +112,30 @@
   let initializationError = $derived(getInitializationError());
   let settings = $derived(getSettings());
 
+  // Root tokens also reach menus and editors rendered through portals.
+  $effect(() => {
+    const colors = settings.primaryPropColors;
+    const root = document.documentElement;
+    for (const hand of ["left", "right"] as const) {
+      const name = `--user-${hand}-color`;
+      const rgbName = `--user-${hand}-rgb`;
+      const color = colors?.[hand];
+      if (color) {
+        root.style.setProperty(name, color);
+        root.style.setProperty(rgbName, [1, 3, 5].map((offset) => parseInt(color.slice(offset, offset + 2), 16)).join(", "));
+      } else {
+        root.style.removeProperty(name);
+        root.style.removeProperty(rgbName);
+      }
+    }
+    return () => {
+      for (const hand of ["left", "right"]) {
+        root.style.removeProperty(`--user-${hand}-color`);
+        root.style.removeProperty(`--user-${hand}-rgb`);
+      }
+    };
+  });
+
   // Voice control opt-in (hidden by default, enabled in Settings > Preferences)
   const voiceControlEnabled = $derived(settings?.voiceControlEnabled === true);
 
