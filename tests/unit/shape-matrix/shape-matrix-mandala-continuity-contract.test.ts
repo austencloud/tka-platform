@@ -356,24 +356,35 @@ describe("shape matrix mandala continuity", () => {
   });
 
   it("keeps the compact topbar as the only chrome row on the detail view", () => {
-    // The shell owns the animation state so the relationships toggle can
-    // live in the topbar; the pane heading is a wide-layout row only.
+    // The shell still owns the animation state (so every consumer shares one
+    // scope), but the way back off a section moved out of the shell's topbar
+    // in two later passes: the 2026-09-06 demo-layout rewrite (31a3411642)
+    // dropped the topbar's relationships-action button, and the 2026-09-07
+    // canvas-transport pass (e485f1d861) replaced it with a wide-only stage
+    // gear (ShapeMatrixStageActions) and a compact settings sheet with its
+    // own close button. Neither adds a second persistent row beside the
+    // topbar: the sheet is an absolute overlay shown only while a section is
+    // open, so the topbar remains the only standing chrome row.
     const shell = read("app/components/ShapeMatrixAppShell.svelte");
     expect(shell).toContain("setShapeMatrixAnimationContext(");
-    expect(shell).toContain('class="top-action relationships-action"');
-    expect(shell).toContain(
-      'appState.activeView === "detail" && animationState.activeSection !== null'
+    const drill = read("components/ShapeMatrixDrill.svelte");
+    expect(drill).toMatch(
+      /compactSettingsOpen = \$derived\(\s*!!appState &&\s*appState\.compact &&\s*appState\.surface === "matrix" &&\s*appState\.activeView === "detail" &&\s*animationState\.activeSection !== null\s*\);/
     );
+    expect(drill).toMatch(/\.compact-settings \{[^}]*position: absolute/s);
+    expect(drill).toContain('aria-label="Close settings"');
+    expect(drill).toContain("closeCompactSettings");
+    const stageActions = read("components/ShapeMatrixStageActions.svelte");
+    expect(stageActions).toContain("animationState.showRelationships();");
+    // ShapeMatrixDetailPane's own pane-heading (and the animation-context
+    // read it needed) was retired in the same 31a3411642 rewrite: the pane
+    // is nothing but the drill now, so it owns no heading or back-navigation
+    // chrome of its own — a stronger guarantee than a wide-only heading that
+    // the compact topbar is the sole standing chrome row.
     const detailPane = read("app/components/ShapeMatrixDetailPane.svelte");
-    expect(detailPane).toContain("getShapeMatrixAnimationContext()");
-    // The way back is only there while a control section covers the chips;
-    // while they are showing, the stage takes the heading's height.
-    expect(detailPane).toMatch(
-      /\{#if headingVisible\}\s*<header class="pane-heading">/
-    );
-    expect(detailPane).toContain(
-      "!state.compact && animationState.activeSection !== null"
-    );
+    expect(detailPane).toContain("<ShapeMatrixDrill");
+    expect(detailPane).not.toContain("<header");
+    expect(detailPane).not.toContain("pane-heading");
     // The toggle never borrows the back arrow the Matrix button owns.
     expect(detailPane).not.toContain("fa-arrow-left");
     const controls = read("app/components/ShapeMatrixTurnControls.svelte");

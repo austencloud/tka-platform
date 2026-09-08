@@ -116,6 +116,14 @@
         Read ratios in TKA
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
+      <a href="/history#archive-record-vtg">
+        The Vulcan Tech Gospel record
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a href="/history#archive-record-lorq">
+        The Lorq Nichols record
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
       <a
         href={ORIGINAL_SHAPE_MATRIX_URL}
         target="_blank"
