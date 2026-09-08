@@ -13,6 +13,13 @@ steps, pins prop and turn choices, and implements its own editing history. It
 demonstrates the benefit of nearby playback, but cannot replace the full workspace
 without losing capabilities. This implementation leaves that prototype alone.
 
+The laptop's `2026-09-08-astra-audit-handoff.md` arrived during final integration.
+It confirms that continuous Construct was a study, with saving disconnected and
+hold-to-preview unavailable without CreateModule context. Its proposed direction
+keeps editing, selected-step context, valid choices, and motion feedback together.
+This workspace implementation follows Austen's revised Play/Stop interaction and
+uses the full editor's existing owners rather than promoting the isolated demo.
+
 The workspace keeps its card, selection, option picker, levels, turn choices,
 hold-to-preview, undo/redo, sequence actions, Save, Share, and existing viewer.
 Playback is an explicit temporary mode, with no persistent layout preference.
