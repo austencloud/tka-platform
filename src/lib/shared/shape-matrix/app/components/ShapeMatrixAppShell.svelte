@@ -29,9 +29,9 @@
   import ShapeMatrixTheoryPane from "./ShapeMatrixTheoryPane.svelte";
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { runShapeMatrixDetailReveal } from "../services/shape-matrix-reveal";
-  import { growFade } from "$lib/shared/transitions/motion";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
+  import { growFade, motionDuration } from "$lib/shared/transitions/motion";
+  import ShapeMatrixPropWorkspace from "./ShapeMatrixPropWorkspace.svelte";
+  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
 
   interface Props {
     /** Embedded hosts (the Toys tab) get their name from module chrome, so
@@ -41,6 +41,26 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
+  const propMode = $derived(appState.compact && appState.propPickerOpen);
+  let appElement: HTMLElement | undefined;
+  const propMotion = createLayoutMotion({
+    getRoot: () => appElement,
+    groups: [{ selector: "[data-prop-layout]", datasetKey: "propLayout" }],
+    getDuration: () => motionDuration(DURATION.emphasis),
+  });
+  let previousPropMode: boolean | undefined;
+  $effect.pre(() => {
+    const next = propMode;
+    if (previousPropMode === undefined) {
+      previousPropMode = next;
+      return;
+    }
+    if (previousPropMode === next) return;
+    previousPropMode = next;
+    untrack(() => propMotion.capture());
+    void tick().then(() => propMotion.play());
+  });
+  $effect(() => () => propMotion.cancel());
   let turnPopover: ShapeMatrixTurnPopover | undefined;
 
   /** Native Back uses the same dismissal owners as the web interface. */
@@ -392,11 +412,13 @@
 
 <main
   class="shape-app"
+  bind:this={appElement}
+  class:prop-mode={propMode}
   data-shape-matrix-app
   class:compact-detail={appState.compact && appState.activeView === "detail"}
   class:theory
 >
-  <header class="topbar">
+  <header class="topbar" inert={propMode} aria-hidden={propMode}>
     {#if appState.compact}
       <div class="compact-context">
         {#if appState.activeView === "detail"}
@@ -549,24 +571,105 @@
     </div>
   </div>
 
-  <!-- Compact hosts show one pane at a time, so the grid pane that carries
-       the wide prop overlay is off screen whenever the dock is. The canonical
-       prop sheet takes over there; it keeps the picker open across choices
-       the same way, and closes on its handle, backdrop, X or Escape. -->
-  {#if appState.compact}
-    <PropSelectionSheet
-      isOpen={appState.propPickerOpen}
-      selectedPropType={appState.propType}
-      title="Prop"
-      onSelect={(next: PropType) => void appState.setPropType(next)}
-      onOpenChange={(open) => {
-        if (!open) appState.closePropPicker();
-      }}
-    />
+  {#if propMode}
+    <div class="prop-workspace-slot" data-prop-layout="picker">
+      <ShapeMatrixPropWorkspace />
+    </div>
   {/if}
 </main>
 
 <style>
+  /* The same renderer survives this recomposition. FLIP moves its existing
+     frame and grows the picker from the dock; only surrounding chrome fades. */
+  .shape-app.prop-mode {
+    grid-template-rows: minmax(0, min(50cqh, 100cqw)) minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .prop-mode .topbar {
+    position: absolute;
+    inset: 0 0 auto;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .prop-mode .workspace {
+    grid-row: 1;
+    padding: 0;
+    overflow: visible;
+  }
+  .prop-workspace-slot {
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    z-index: 3;
+  }
+  .prop-mode :global(.drill-stage),
+  .prop-mode :global(.theory-detail) {
+    padding: 0;
+  }
+  .prop-mode :global(.drill),
+  .prop-mode :global(.detail-body) {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "media";
+    gap: 0;
+  }
+  .prop-mode :global(.media-stage) {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "hero";
+    place-items: stretch;
+  }
+  .prop-mode :global(.detail-flow) {
+    grid-area: hero;
+    overflow: hidden;
+    gap: 0;
+  }
+  .prop-mode :global(.hero-stage) {
+    grid-template-rows: minmax(0, 1fr);
+    width: min(100cqw, 100cqh);
+    height: 100%;
+    justify-self: center;
+  }
+  .prop-mode :global(.stage-frame) {
+    width: min(100cqw, 100cqh);
+    height: 100%;
+    align-self: center;
+    min-height: 0;
+  }
+  .prop-mode :global(.stage-window) {
+    min-height: 0;
+  }
+  .topbar,
+  .shape-app :global([data-prop-mode-chrome]) {
+    transition:
+      opacity var(--transition-normal),
+      visibility var(--transition-normal);
+  }
+  .prop-mode :global([data-prop-mode-chrome]) {
+    position: absolute;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  @container shape-matrix-app (min-aspect-ratio: 1.25) {
+    .shape-app.prop-mode {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+    }
+    .prop-mode .workspace {
+      grid-column: 1;
+    }
+    .prop-workspace-slot {
+      grid-row: 1;
+      grid-column: 2;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .topbar,
+    .shape-app :global([data-prop-mode-chrome]) {
+      transition: none;
+    }
+  }
   .shape-app {
     position: absolute;
     inset: 0;

@@ -52,6 +52,7 @@
     onSelect,
     variant = "panel",
     flat = false,
+    tileDensity = "compact",
     scrollMode = "internal",
     fill = false,
     includeBareHands = false,
@@ -82,6 +83,8 @@
      * scrollbar beats grouping.
      */
     flat?: boolean;
+    /** Larger scrolling cards when the live preview shares the screen. */
+    tileDensity?: "compact" | "comfortable";
     /**
      * Drawers own a bounded internal scroller. Embedded inspectors already
      * scroll the whole tab, so their picker contributes its natural height and
@@ -408,7 +411,9 @@
     if (selectedPropType === null || sizeIsBig === big) return;
     onSelect(toggleBigVariant(selectedPropType));
   }
-  const normalizedFanAppearance = $derived(normalizeFanAppearance(fanAppearance));
+  const normalizedFanAppearance = $derived(
+    normalizeFanAppearance(fanAppearance)
+  );
   const fanLook = $derived(
     fanBuildPreviewOptions(normalizedFanAppearance).find(
       (option) => option.id === normalizedFanAppearance.build
@@ -444,8 +449,12 @@
       return;
     }
     const route = premium
-      ? premiumAllowed ? "select" : "premium-nudge"
-      : isUnlocked(prop) ? "select" : "earn-tip";
+      ? premiumAllowed
+        ? "select"
+        : "premium-nudge"
+      : isUnlocked(prop)
+        ? "select"
+        : "earn-tip";
 
     if (route === "select") {
       lockedTipFor = null;
@@ -588,6 +597,7 @@
           {:else}
             <div
               class="drill-tiles"
+              class:comfortable={tileDensity === "comfortable"}
               class:fill={drillLayout !== null}
               class:flat-grid={flat && drillLayout === null}
               class:section-buttons={!flat && drillLayout === null}
@@ -611,11 +621,16 @@
       {:else if flat}
         <div
           class="flat-grid"
+          class:comfortable={tileDensity === "comfortable"}
           class:fill={flatLayout !== null}
           style:height={flatLayout ? `${fillHeight}px` : undefined}
           style:--flat-cols={flatLayout?.cols}
-          style:--flat-half={flatLayout ? `${flatLayout.halfTrack}px` : undefined}
-          style:--flat-row={flatLayout ? `${flatLayout.rowHeight}px` : undefined}
+          style:--flat-half={flatLayout
+            ? `${flatLayout.halfTrack}px`
+            : undefined}
+          style:--flat-row={flatLayout
+            ? `${flatLayout.rowHeight}px`
+            : undefined}
           bind:this={flatEl}
         >
           {#each allBases as base, index (base)}
@@ -693,7 +708,9 @@
             draggable="false"
           />
         {/if}
-        <span class="look-name">{fanLook?.label ?? normalizedFanAppearance.build}</span>
+        <span class="look-name"
+          >{fanLook?.label ?? normalizedFanAppearance.build}</span
+        >
         <i class="fas fa-chevron-right look-caret" aria-hidden="true"></i>
       </button>
     </div>
@@ -832,10 +849,7 @@
      sized to land on the floor, on doubled tracks so a short last row can
      start one track in and centre itself. See flatLayout. */
   .flat-grid.fill {
-    grid-template-columns: repeat(
-      calc(var(--flat-cols) * 2),
-      var(--flat-half)
-    );
+    grid-template-columns: repeat(calc(var(--flat-cols) * 2), var(--flat-half));
     grid-auto-rows: var(--flat-row);
     gap: 8px;
     padding: 0;
@@ -858,6 +872,20 @@
   .drill-view .flat-grid {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 8px;
+  }
+
+  .flat-grid.comfortable {
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: 0.6rem;
+  }
+  .flat-grid.comfortable :global(.prop-button) {
+    min-height: 6.75rem;
+    aspect-ratio: 1.25;
+    padding: 0.5rem;
+  }
+  .flat-grid.comfortable :global(.prop-label) {
+    font-size: var(--font-size-min, 0.875rem);
+    white-space: normal;
   }
 
   .section-label {
