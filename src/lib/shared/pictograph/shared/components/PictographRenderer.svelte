@@ -19,6 +19,7 @@ Usage:
 -->
 
 <script lang="ts">
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
   import {
     isVisibleMotion,
@@ -121,6 +122,7 @@ Usage:
     // Live motion geometry. When present, the same prop SVGs used by
     // the finished pictograph render at these interpolated coordinates.
     propPositionOverrides = null,
+    directPropPositioning = false,
     // The arrow layer stays mounted so a completed motion can reveal it without
     // swapping renderers or rebuilding arrow assets.
     arrowOpacity = 1,
@@ -189,6 +191,7 @@ Usage:
     transitionKey?: string | null;
     /** Per-hand live positions for an in-place pictograph motion. */
     propPositionOverrides?: Partial<Record<HandSideValue, PropPosition>> | null;
+    directPropPositioning?: boolean;
     /** Opacity applied to the complete arrow layer. */
     arrowOpacity?: number;
     /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
@@ -400,6 +403,8 @@ Usage:
 
   // Parse direction from turns tuple for direction dot
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
+  const effectiveLeftColor = $derived(leftColorOverride ?? getSettings().primaryPropColors?.left);
+  const effectiveRightColor = $derived(rightColorOverride ?? getSettings().primaryPropColors?.right);
 </script>
 
 <div class="pictograph-renderer">
@@ -466,10 +471,11 @@ Usage:
                 : undefined}
               {cellIndex}
               {transitionKey}
-              directPositioning={propPositionOverrides?.[hand] !== undefined}
+              directPositioning={directPropPositioning ||
+                propPositionOverrides?.[hand] !== undefined}
               colorOverride={hand === HandSide.LEFT
-                ? leftColorOverride
-                : rightColorOverride}
+                ? effectiveLeftColor
+                : effectiveRightColor}
             />
           </g>
         {/if}
@@ -496,8 +502,8 @@ Usage:
                   {darkMode}
                   renderPart="shaft"
                   colorOverride={hand === HandSide.LEFT
-                    ? leftColorOverride
-                    : rightColorOverride}
+                    ? effectiveLeftColor
+                    : effectiveRightColor}
                 />
               </g>
             {/if}
@@ -519,8 +525,8 @@ Usage:
                   {darkMode}
                   renderPart="tip"
                   colorOverride={hand === HandSide.LEFT
-                    ? leftColorOverride
-                    : rightColorOverride}
+                    ? effectiveLeftColor
+                    : effectiveRightColor}
                 />
               </g>
             {/if}
@@ -543,8 +549,8 @@ Usage:
                   {transitionKey}
                   {darkMode}
                   colorOverride={hand === HandSide.LEFT
-                    ? leftColorOverride
-                    : rightColorOverride}
+                    ? effectiveLeftColor
+                    : effectiveRightColor}
                 />
               </g>
             {/if}
@@ -572,6 +578,9 @@ Usage:
     <!-- Turns Column (part of TKA) -->
     <g opacity={glyphOpacity}>
       <TurnsColumn
+        leftColorOverride={effectiveLeftColor}
+        rightColorOverride={effectiveRightColor}
+        {darkMode}
         {turnsTuple}
         letter={pictograph.letter}
         pictographData={pictograph}
@@ -610,6 +619,8 @@ Usage:
 
     <!-- Reversal indicators -->
     <ReversalIndicators
+      leftColorOverride={effectiveLeftColor}
+      rightColorOverride={effectiveRightColor}
       {leftReversal}
       {rightReversal}
       {hasValidData}

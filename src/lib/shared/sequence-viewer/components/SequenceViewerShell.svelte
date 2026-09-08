@@ -18,6 +18,7 @@
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
 <script lang="ts">
+  import PropViewingControl from "$lib/shared/browse/components/PropViewingControl.svelte";
   import { onDestroy, onMount, untrack, type Snippet } from "svelte";
   import { createViewerStudioSurfaces } from "../state/viewer-studio-surfaces.svelte";
   import { setViewerStudioSurfaces } from "../context/viewer-studio-surfaces-context";
@@ -821,6 +822,13 @@
         { count: reason !== "item" }
       )}
   />
+
+  {#if !ctx.isFullscreen && (ctx.leftPropType !== "hand" || ctx.rightPropType !== "hand")}
+    <PropViewingControl
+      sequence={ctx.effectiveSequence ?? sequence}
+      collectionPropType={ctx.collectionPropType}
+    />
+  {/if}
 
   {#if contextContent && !ctx.isFullscreen}
     {@render contextContent()}

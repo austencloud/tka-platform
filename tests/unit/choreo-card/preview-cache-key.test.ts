@@ -93,3 +93,29 @@ describe("getPreviewCacheKey — includeStartPosition", () => {
     );
   });
 });
+
+describe("getPreviewCacheKey — primary prop colors", () => {
+  const palette = { left: "#00ff88", right: "#ff8800" };
+  const keyFor = (colors?: typeof palette | null) =>
+    getPreviewCacheKey(
+      makeSequence(),
+      { ...makeOptions(), primaryPropColors: colors },
+      null,
+      true
+    );
+
+  it.each(["left", "right"] as const)(
+    "does not reuse a preview after changing the %s color",
+    (hand) => {
+      const cache = new Map([[keyFor(palette), "previous-palette-images"]]);
+      expect(cache.get(keyFor({ ...palette, [hand]: "#aa66ff" }))).toBeUndefined();
+      expect(cache.get(keyFor({ ...palette }))).toBe("previous-palette-images");
+    }
+  );
+
+  it("separates custom colors from defaults and reuses defaults after reset", () => {
+    const cache = new Map([[keyFor(), "default-images"]]);
+    expect(cache.get(keyFor(palette))).toBeUndefined();
+    expect(cache.get(keyFor(null))).toBe("default-images");
+  });
+});

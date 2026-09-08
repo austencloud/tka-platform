@@ -35,6 +35,7 @@ import { composeCardImage as composeCardImageFn } from "./card-composer";
 import { ensureCardFonts } from "./gelasio-fonts";
 // mandala geometry calculate() loaded dynamically to keep its dependency graph out of the worker bundle until needed
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
+import { applyMandalaHandColors } from "../../mandala/domain/mandala-palette";
 import { pairTipEnds } from "../../pictograph/prop/domain/prop-tip-ends";
 import { getMandalaPlacements } from "../../sequence-viewer/services/get-mandala-placements";
 import {
@@ -193,6 +194,7 @@ export class ImageComposer {
         }
       }
       return {
+        primaryPropColors: overrides.primaryPropColors,
         showTKA: overrides.showTKA,
         showTnD: overrides.showTnD,
         showElemental: overrides.showElemental,
@@ -228,6 +230,7 @@ export class ImageComposer {
     const appSettings = getSettings();
 
     const globalSettings: PictographVisibilityOptions = {
+      primaryPropColors: appSettings.primaryPropColors,
       showTKA: visibilityManager.getGlyphVisibility("tkaGlyph"),
       showTnD: visibilityManager.getGlyphVisibility("tndGlyph"),
       showElemental: visibilityManager.getGlyphVisibility("elementalGlyph"),
@@ -244,6 +247,7 @@ export class ImageComposer {
 
     if (overrides) {
       return {
+        primaryPropColors: overrides.primaryPropColors !== undefined ? overrides.primaryPropColors : globalSettings.primaryPropColors,
         showTKA: overrides.showTKA ?? globalSettings.showTKA,
         showTnD: overrides.showTnD ?? globalSettings.showTnD,
         showElemental: overrides.showElemental ?? globalSettings.showElemental,
@@ -492,6 +496,8 @@ export class ImageComposer {
     visibilitySettings: PictographVisibilityOptions,
     blob: Blob
   ): void {
+    // Custom palettes must not seed default preview cells.
+    if (visibilitySettings.primaryPropColors) return;
     const isDark = visibilitySettings.darkMode ?? false;
     const leftProp = visibilitySettings.leftPropType;
     const rightProp = visibilitySettings.rightPropType;
@@ -553,7 +559,7 @@ export class ImageComposer {
         rightPropType: rightPropType ?? visibilitySettings?.rightPropType,
       };
 
-      if (this.useCompositionalCaching && this.layerCompositor) {
+      if (this.useCompositionalCaching && this.layerCompositor && !finalVisibilitySettings.primaryPropColors) {
         await this.renderPictographWithLayerCompositor(
           ctx,
           pictographData,
@@ -825,7 +831,7 @@ export class ImageComposer {
 
       if (placements.length === 0) return;
 
-      const palette = isDarkMode
+      const defaultPalette = isDarkMode
         ? {
             leftStroke: DARK_MOTION_BLUE_STROKE,
             leftFill: DARK_MOTION_BLUE_FILL,
@@ -843,6 +849,8 @@ export class ImageComposer {
             purpleFill: LIGHT_MOTION_PURPLE_FILL,
           };
 
+      const visibility = await this.getVisibilitySettings(options.visibilityOverrides);
+      const palette = applyMandalaHandColors(defaultPalette, visibility.primaryPropColors);
       const mandalaScale = 0.85;
       const mandalaSize = Math.floor(stepSize * mandalaScale);
       const padding = (stepSize - mandalaSize) / 2;

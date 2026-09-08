@@ -42,6 +42,7 @@ interface PictographKeyInput {
   propAppearanceRevision?: string;
   turnGlyphRevision?: string;
   visibility: {
+    primaryPropColors?: { left: string; right: string };
     showTKA: boolean;
     showTnD: boolean;
     showElemental: boolean;
@@ -254,6 +255,7 @@ export class PictographKeyHasher {
       ...(propAppearanceRevision && { propAppearanceRevision }),
       ...(turnGlyphRevision && { turnGlyphRevision }),
       visibility: {
+        ...(visibility.primaryPropColors && { primaryPropColors: visibility.primaryPropColors }),
         showTKA: visibility.showTKA ?? true,
         showTnD: visibility.showTnD ?? false,
         showElemental: visibility.showElemental ?? false,

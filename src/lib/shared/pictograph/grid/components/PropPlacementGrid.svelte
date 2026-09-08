@@ -313,6 +313,8 @@
           showElemental={previewPictographData ? undefined : false}
           showPositions={previewPictographData ? undefined : false}
           disableTransitions={true}
+          directPropPositioning={aim.grabbedLocationColor !== null ||
+            aim.landing !== null}
           cellIndex={null}
           leftPropTypeOverride={leftPropType}
           rightPropTypeOverride={rightPropType}

@@ -14,6 +14,9 @@
 	AnimationEngine exists at a time no matter how big the grid is.
 -->
 <script lang="ts">
+  import { resolveViewingProps } from "$lib/shared/foundation/services/prop-viewing";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onDestroy, untrack } from "svelte";
   import { flyFade, popIn } from "$lib/shared/transitions/motion";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -30,16 +33,22 @@
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { DURATION, SLIDE, STAGGER } from "$lib/shared/transitions/transitions";
+  import {
+    DURATION,
+    SLIDE,
+    STAGGER,
+  } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   const {
     sequence,
+    collectionPropType = null,
     instant = false,
     onReady,
     headerFrac = 0,
   }: {
     sequence: SequenceData;
+    collectionPropType?: PropType | null;
     /** Height of the baked sheet's header band as a fraction of the card box
      * (from computeSheetRegionMap). The live header renders in exactly that
      * band, so toggling the preview never moves the word — it's the same
@@ -125,7 +134,11 @@
 
     const orchestrator = new SequenceAnimationOrchestrator(
       new AnimationStateManager(),
-      getViewerAnimationPropConfig
+      () => ({
+        ...getViewerAnimationPropConfig(),
+        ...resolveViewingProps(getSettings(), hydrated, collectionPropType)
+          .config,
+      })
     );
     const animState = createAnimationPanelState();
 
@@ -239,7 +252,10 @@
   <div
     class="preview-layer"
     style:--sheet-header-frac={headerFrac}
-    transition:popIn|global={{ duration: instant ? 0 : DURATION.emphasis, start: 0.94 }}
+    transition:popIn|global={{
+      duration: instant ? 0 : DURATION.emphasis,
+      start: 0.94,
+    }}
     aria-hidden="true"
   >
     <!-- The header is NOT part of the swap. It renders full-width at the top,
@@ -254,7 +270,9 @@
         darkMode={true}
         activeStepNumber={headerActiveStepNumber}
         difficultyLevel={headerDifficulty}
-        loopComponents={headerLoop.components.size > 0 ? headerLoop.components : null}
+        loopComponents={headerLoop.components.size > 0
+          ? headerLoop.components
+          : null}
         rotationPeriod={headerLoop.rotationPeriod}
         inversionPeriod={headerLoop.inversionPeriod}
         reflectionAxis={headerLoop.reflectionAxis}
@@ -359,7 +377,6 @@
     justify-content: center;
   }
 
-
   .preview-body.rail-right {
     flex-direction: row;
   }
@@ -454,5 +471,4 @@
     );
     mask-repeat: no-repeat;
   }
-
 </style>

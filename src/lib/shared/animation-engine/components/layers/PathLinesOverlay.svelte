@@ -16,6 +16,7 @@
     type AnimationVisibilityStateManager,
   } from "../../state/animation-visibility-state.svelte";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { motionDuration } from "$lib/shared/transitions/motion";
@@ -92,8 +93,8 @@
     return isVisibleMotion(motion) ? buildPathD(motion) : null;
   });
 
-  const leftColor = $derived(getMotionColor(HandSide.LEFT, "dark"));
-  const rightColor = $derived(getMotionColor(HandSide.RIGHT, "dark"));
+  const leftColor = $derived(getSettings().primaryPropColors?.left ?? getMotionColor(HandSide.LEFT, "dark"));
+  const rightColor = $derived(getSettings().primaryPropColors?.right ?? getMotionColor(HandSide.RIGHT, "dark"));
   const drawLeft = $derived(showLeft && leftPathD !== null);
   const drawRight = $derived(showRight && rightPathD !== null);
 </script>

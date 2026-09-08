@@ -69,6 +69,7 @@ export type LayerType = "base" | "gridPoints" | "tka" | "reversal" | "beat";
  * Options for layer rendering
  */
 export interface LayerRenderOptions {
+  primaryPropColors?: { left: string; right: string } | null;
   size: number;
   /** Width multiplier for duration-expanded cells (1 = square, 2 = double-wide). Default: 1 */
   widthMultiplier?: number;

@@ -58,7 +58,7 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
 }));
 
 vi.mock("$lib/shared/pictograph/prop/domain/enums/prop-type", () => ({
-  PropType: { STAFF: "staff" },
+  PropType: { STAFF: "staff", FAN: "fan" },
 }));
 
 vi.mock(
@@ -120,6 +120,40 @@ describe("sequence viewer library action feedback", () => {
     );
   });
 
+  it("persists the chosen pair while leaving the source unchanged", async () => {
+    mocks.saveSequence.mockResolvedValue({
+      persisted: true,
+      sequenceId: "copy",
+    });
+    const handler = makeHandler(false);
+    const pending = handler.handleSave();
+    handler.saveProps = {
+      leftPropType: "fan",
+      rightPropType: "staff",
+      catDogMode: true,
+    } as never;
+    handler.finishPropChoice(true);
+    await pending;
+    const stored = mocks.saveSequence.mock.calls[0]?.[0];
+    expect(stored.creatorIntent.propConfig).toEqual({
+      leftPropType: "fan",
+      rightPropType: "staff",
+      catDogMode: true,
+    });
+    expect(sequence).not.toHaveProperty("creatorIntent");
+  });
+
+  it("cancelling the prop choice never writes a library record", async () => {
+    const handler = makeHandler();
+    const pending = handler.handleSave();
+    expect(handler.saveProps).not.toBeNull();
+    handler.finishPropChoice(false);
+    await pending;
+    expect(mocks.saveSequence).not.toHaveBeenCalled();
+    expect(handler.saveProps).toBeNull();
+    expect(handler.isSaving).toBe(false);
+  });
+
   it("shows pending feedback immediately and settles as saved once persistence resolves", async () => {
     let resolveSave!: (result: {
       persisted: boolean;
@@ -134,11 +168,9 @@ describe("sequence viewer library action feedback", () => {
     const handler = makeHandler();
 
     const save = handler.handleSave();
-
-    // Save flips to its in-flight state on the same tick the user clicks, so
-    // the button never sits there looking untouched while the coordinator is
-    // resolved and the content hashed.
-    expect(handler.isSaving).toBe(true);
+    expect(mocks.saveSequence).not.toHaveBeenCalled();
+    handler.finishPropChoice(true);
+    await vi.waitFor(() => expect(handler.isSaving).toBe(true));
     expect(handler.isSaved).toBe(false);
 
     await vi.waitFor(() => expect(mocks.saveSequence).toHaveBeenCalledOnce());
@@ -178,7 +210,9 @@ describe("sequence viewer library action feedback", () => {
       .mockImplementation(() => {});
     const handler = makeHandler();
 
-    await handler.handleSave();
+    const pending = handler.handleSave();
+    handler.finishPropChoice(true);
+    await pending;
 
     expect(handler.isSaving).toBe(false);
     expect(handler.isSaved).toBe(false);
@@ -202,7 +236,9 @@ describe("sequence viewer library action feedback", () => {
     );
     const handler = makeHandler();
 
-    await handler.handleSave();
+    const pending = handler.handleSave();
+    handler.finishPropChoice(true);
+    await pending;
 
     expect(handler.isSaving).toBe(false);
     expect(handler.isSaved).toBe(true);
