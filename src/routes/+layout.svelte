@@ -285,10 +285,38 @@
     const loader = URL_TO_MODULE[segment];
     if (loader) {
       // Fire-and-forget. Cache warms up while DI/firebase/auth resolve in parallel.
-      loader().catch(() => {
+      trackBootImport(`active-module:${segment}`, loader).catch(() => {
         // Preload failure is non-critical - ModuleRenderer retries on demand.
       });
     }
+  }
+
+  function trackBootImport<T>(
+    label: string,
+    load: () => Promise<T>
+  ): Promise<T> {
+    // Start before the import: timing only its later await misses preloaded work.
+    const start = performance.now();
+    const finish = (outcome: "ok" | "error") => {
+      try {
+        performance.measure(`boot:import:${label}:${outcome}`, {
+          start,
+          end: performance.now(),
+        });
+      } catch {
+        /* timing must not prevent startup */
+      }
+    };
+    return load().then(
+      (value) => {
+        finish("ok");
+        return value;
+      },
+      (error) => {
+        finish("error");
+        throw error;
+      }
+    );
   }
 
   function startAppImports() {
@@ -297,9 +325,18 @@
     startActiveModulePreload();
     const common = {
       bootProfiler: import("$lib/shared/analytics/boot-profiler"),
-      di: import("$lib/shared/composition-root"),
-      firebase: import("$lib/shared/auth/firebase"),
-      authState: import("$lib/shared/auth/state/auth-state.svelte"),
+      di: trackBootImport(
+        "composition-root",
+        () => import("$lib/shared/composition-root")
+      ),
+      firebase: trackBootImport(
+        "firebase",
+        () => import("$lib/shared/auth/firebase")
+      ),
+      authState: trackBootImport(
+        "auth-state",
+        () => import("$lib/shared/auth/state/auth-state.svelte")
+      ),
       i18n: import("$lib/shared/i18n/i18n.svelte.js"),
       modalUrlState:
         import("$lib/shared/application/state/ui/modal-url-state.svelte"),
@@ -310,8 +347,11 @@
     // fast enough - adding it here pulls too many deps into initial parallel
     // fetch and slows DI.
     if (import.meta.env.PROD) {
-      (common as Record<string, Promise<unknown>>).mainApp =
-        import("$lib/shared/application/components/MainApplication.svelte");
+      (common as Record<string, Promise<unknown>>).mainApp = trackBootImport(
+        "main-application",
+        () =>
+          import("$lib/shared/application/components/MainApplication.svelte")
+      );
     }
     return common;
   }

@@ -1377,6 +1377,12 @@
       // Called by SvelteKit components as initialization proceeds.
 
       var __tkaCurrentPercent = 5;
+      function __tkaMarkSplash(label) {
+        try {
+          performance.mark("boot:splash:" + label);
+        } catch (e) {}
+      }
+      __tkaMarkSplash("script-start");
       var __tkaFinished = false;
       var __tkaPhaseBStarted = false; // Phase B owns the bar once it starts
       var __tkaLastTextTime = 0;
@@ -1386,6 +1392,7 @@
         // Monotonic: ignore out-of-order or duplicate calls
         if (percent <= __tkaCurrentPercent || __tkaFinished) return;
         __tkaCurrentPercent = percent;
+        __tkaMarkSplash("checkpoint:" + percent);
 
         // Phase B now owns the bar - prevent late Phase A callbacks from regressing it
         __tkaPhaseBStarted = true;
@@ -1422,6 +1429,7 @@
         var now = Date.now();
 
         if (percent >= 100) {
+          __tkaMarkSplash("ready-announced");
           __tkaFinished = true;
           var readyMsg =
             __tkaReadyMessages[
@@ -1432,8 +1440,10 @@
           // Hold ready message: 200ms fade-out + 200ms fade-in + 1s visible
           setTimeout(function () {
             if (screen) {
+              __tkaMarkSplash("dismiss-start");
               screen.classList.add("loaded");
               screen.addEventListener("transitionend", function () {
+                __tkaMarkSplash("removed");
                 screen.remove();
               });
             }
@@ -1448,8 +1458,10 @@
       window.__tkaLoadTimeout = setTimeout(function () {
         var screen = document.getElementById("app-loading");
         if (screen && !screen.classList.contains("loaded")) {
+          __tkaMarkSplash("timeout-dismiss");
           screen.classList.add("loaded");
           screen.addEventListener("transitionend", function () {
+            __tkaMarkSplash("removed");
             screen.remove();
           });
         }

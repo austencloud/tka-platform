@@ -357,6 +357,7 @@
     // already rendering, so retire the boot splash now instead of waiting for
     // the full async boot chain. Idempotent with the final __tkaLoadProgress(100).
     if (readBootSnapshot() !== null) {
+      bootProfiler.milestone("shell:ready-announced", { source: "snapshot" });
       window.__tkaLoadProgress?.(100, "Ready");
     }
 
@@ -450,6 +451,9 @@
         setInitializationState(true, false, null, 0);
 
         // Progress: Fully ready - triggers loading screen fade out with random ready message
+        bootProfiler.milestone("shell:ready-announced", {
+          source: "initialization",
+        });
         window.__tkaLoadProgress?.(100, "Ready");
         // Persist a boot snapshot so the NEXT load can skip the auth spinner and
         // render optimistically. role/uid seed the optimistic tier (W1b); the
@@ -739,7 +743,8 @@
         <mod.default
           primaryPropColors={settings.primaryPropColors}
           darkMode={settings.darkMode}
-          onPrimaryPropColorsChange={(value) => updateSetting("primaryPropColors", value)}
+          onPrimaryPropColorsChange={(value) =>
+            updateSetting("primaryPropColors", value)}
           bind:isOpen={propDrawerState.isOpen}
           selectedPropType={propDrawerSelectedPropType}
           color={catDogMode && propDrawerActiveTab === "right" ? "red" : "blue"}
