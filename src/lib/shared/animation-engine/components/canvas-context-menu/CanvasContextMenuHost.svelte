@@ -3,6 +3,8 @@
   Quick-access submenus for Effects, Efforts, Path Shape.
 -->
 <script lang="ts">
+  import VisualSavePrompt from "$lib/shared/library/components/VisualSavePrompt.svelte";
+  let savePrompt: VisualSavePrompt | undefined = $state();
   import { onDestroy } from "svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type {
@@ -66,7 +68,8 @@
 
   const visibilityManager =
     visibilityManagerOverride ?? getAnimationVisibilityManager();
-  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
+  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null =
+    null;
   try {
     effectsConfigState = getEffectsConfigContext();
   } catch {
@@ -103,7 +106,13 @@
                     rightPropType,
                     pathShape: visibilityManager.getPathShape(),
                   },
-                  onSaveToLibrary
+                  onSaveToLibrary ??
+                    (() =>
+                      savePrompt?.request(sequence, {
+                        leftPropType,
+                        rightPropType,
+                        pathShape: visibilityManager.getPathShape(),
+                      }))
                 ),
               ]
             : []),
@@ -130,5 +139,7 @@
     menuState = { open: true, x, y };
   }
 </script>
+
+<VisualSavePrompt bind:this={savePrompt} />
 
 <ContextMenu {menuState} items={menuItems} onClose={closeContextMenu} />

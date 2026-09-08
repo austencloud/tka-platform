@@ -137,7 +137,9 @@
         rightPropType: settingsService.settings.rightPropType,
         catDogMode: settingsService.settings.catDogMode,
       },
-      collectionPropType
+      settingsService.settings.propViewingMode === "as-saved"
+        ? collectionPropType
+        : null
     )
   );
 
@@ -180,6 +182,7 @@
 {#if useVirtualization}
   <!-- Virtualized: large flat list with 50+ items -->
   <VirtualizedSequenceGrid
+    {collectionPropType}
     sequences={dedupeByWord(engine.sequences as SequenceData[])}
     variationSource={engine.sequences as SequenceData[]}
     {thumbnailService}
@@ -200,6 +203,7 @@
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: virtualized (level banners + letter headers + word rows) -->
   <SectionedVirtualGrid
+    {collectionPropType}
     {engine}
     {thumbnailService}
     {scrollElement}

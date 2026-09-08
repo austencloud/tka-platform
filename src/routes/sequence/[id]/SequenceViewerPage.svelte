@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { withSavedProps } from "$lib/shared/foundation/services/prop-viewing";
+  import {
+    captureActivePropConfig,
+    resolveRecordedPropConfig,
+  } from "$lib/shared/foundation/services/recorded-prop-intent";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
@@ -290,27 +295,22 @@
     return { ...seq, ...updates } as SequenceData;
   }
 
-  /**
-   * Apply URL prop preferences to settings state.
-   * Uses PROP_TYPE_DECODE mapping (single char -> PropType).
-   */
+  // Link props belong to this presentation, never to the visitor's settings.
   function applyUrlPropPreferences() {
-    if (!urlLeftProp && !urlRightProp) return;
-
+    if (!sequence || (!urlLeftProp && !urlRightProp)) return;
     const parsed = parsePropsFromURL(page.url.searchParams);
-
-    if (parsed.leftPropType || parsed.rightPropType) {
-      const updates: { leftPropType?: PropType; rightPropType?: PropType } = {};
-
-      if (parsed.leftPropType) {
-        updates.leftPropType = parsed.leftPropType as PropType;
-      }
-      if (parsed.rightPropType) {
-        updates.rightPropType = parsed.rightPropType as PropType;
-      }
-
-      settingsService.updateSettings(updates);
-    }
+    const saved =
+      resolveRecordedPropConfig(sequence) ??
+      captureActivePropConfig(settingsService.settings);
+    sequence = withSavedProps(
+      sequence,
+      captureActivePropConfig({
+        ...saved,
+        leftPropType: (parsed.leftPropType as PropType) || saved.leftPropType,
+        rightPropType:
+          (parsed.rightPropType as PropType) || saved.rightPropType,
+      })
+    );
   }
 
   function reportScanResolutionSuccess(resolved: SequenceData): void {
