@@ -66,6 +66,12 @@ duplicate drawing geometry. Four worker threads draw QR SVGs from the options
 supplied by `QRCodeGenerator`. Their eight concurrent test results decoded to
 the expected existing link in both themes.
 
+Four additional workers prepare and compose missing pictographs through Vite's
+ModuleRunner transport, sharing the existing module loader without starting
+HTTP servers. Eight worker results matched the original Node composition path
+byte for byte. A warmed parallel sample rendered 48 cells in 694 ms. Uploads
+are capped at 32 concurrent requests and identical cells join one pending job.
+
 The runner reads shortcode records in pages of 500 and keeps a local snapshot
 for resumable passes. `--refresh` replaces that snapshot with a fresh read.
 It inventories existing Storage objects, fills missing canonical cells, then
@@ -80,6 +86,10 @@ it performs an inventory. `--limit` bounds a sample and `--concurrency` accepts
 `report.json` and `artifact-manifest.json`. Retain it for retries and keep its
 sequence snapshot out of version control. The runner exits with code 2 if any
 records failed. It starts no HTTP listener and closes its renderer and workers.
+Creating an empty `STOP` file in the output directory stops cleanly between
+sequences; remove it before resuming. A regression test verifies that missing
+assets and repeated decode errors still reject publication when interactive
+drawing code catches those errors.
 
 The production sample covered 10 codes: 20 QR images and 173 missing canonical
 cells were published. All 20 public QR downloads decoded to their exact stored

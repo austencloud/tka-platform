@@ -5,7 +5,7 @@
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
+import { createRequire, builtinModules } from "node:module";
 import { parseArgs } from "node:util";
 import { createServer } from "vite";
 import { installQrBakeNodeRuntime } from "./lib/qr-bake-node-runtime.mjs";
@@ -54,6 +54,21 @@ const server = await createServer({
 });
 await server.ws.close();
 await server.watcher.close();
+const cellWorkers = new QrBakeWorkerPool(
+  path.resolve(values["canvas-module"]),
+  4,
+  {
+    entry: "qr-bake-cell-worker.mjs",
+    runtime: { staticRoot: path.resolve("static") },
+    invoke: ({ data: { name, data } }) => {
+      if (name === "getBuiltins")
+        return builtinModules.flatMap((name) => [name, `node:${name}`]);
+      if (name === "fetchModule")
+        return server.environments.ssr.fetchModule(...data);
+      throw new Error(`Unknown module invocation: ${name}`);
+    },
+  }
+);
 const startedAt = new Date().toISOString();
 const report = {
   startedAt,
@@ -119,25 +134,7 @@ try {
     "shared/qr/services/short-code-manager"
   );
   const shortCodes = new ShortCodeManager();
-  const { pictographPreparer } = await load(
-    "shared/pictograph/shared/services/pictograph-preparer"
-  );
-  const { resolvePreviewCellRender } = await load(
-    "shared/sequence-viewer/services/preview-cell-render-contract"
-  );
-  const { LayerCompositor } = await load(
-    "shared/render/services/layer-compositor"
-  );
-  const { clearSvgImageCache } = await load(
-    "shared/render/services/svg-image-cache"
-  );
-  const { isVisibleMotion } = await load(
-    "shared/pictograph/shared/domain/models/motion-data"
-  );
-  const renderStrictly = installQrBakeNodeRuntime(
-    nodeCanvas,
-    path.resolve("static")
-  );
+  installQrBakeNodeRuntime(nodeCanvas, path.resolve("static"));
   const cache = new PreparedQrCache({
     get: async () => null,
     set: async () => {},
@@ -186,7 +183,6 @@ try {
   console.log(
     `Found ${cells.size} cell objects and ${prepared.size} QR objects`
   );
-  const compositor = new LayerCompositor();
   let activeUploads = 0;
   const uploadWaiters = [];
   const upload = async (work) => {
@@ -201,58 +197,11 @@ try {
       else activeUploads--;
     }
   };
-  let renderedCells = 0;
-  let renderQueue = Promise.resolve();
   const cellInFlight = new Map();
   const ensureCell = async (hash, cell) => {
     if (cells.has(`pictograph-cells/${hash}.webp`)) return;
     if (cellInFlight.has(hash)) return cellInFlight.get(hash);
-    const render = renderQueue.then(() =>
-      renderStrictly(async () => {
-        const resolved = resolvePreviewCellRender(
-          cell.data,
-          cell.darkMode,
-          cell.options
-        );
-        const prepared = await pictographPreparer.prepareSingle(
-          resolved.data,
-          resolved.prepareOptions
-        );
-        for (const hand of ["left", "right"]) {
-          const visible =
-            hand === "left"
-              ? cell.options.showLeftMotion
-              : cell.options.showRightMotion;
-          if (
-            visible !== false &&
-            isVisibleMotion(resolved.data.motions?.[hand]) &&
-            (!prepared._prepared?.propAssets[hand] ||
-              !prepared._prepared?.propPositions[hand])
-          )
-            throw new Error(`Missing prepared ${hand} prop`);
-        }
-        const result = await compositor.compose(
-          prepared,
-          resolved.renderOptions,
-          resolved.visibility
-        );
-        const bytes = await result.canvas.encode("webp", 90);
-        if (++renderedCells % 100 === 0) {
-          compositor.clearCache();
-          pictographPreparer.clearCache();
-          clearSvgImageCache();
-        }
-        return bytes;
-      })
-    );
-    renderQueue = render.then(
-      () => {},
-      () => {
-        compositor.clearCache();
-        pictographPreparer.clearCache();
-        clearSvgImageCache();
-      }
-    );
+    const render = cellWorkers.render(cell);
     const publish = render.then(async (bytes) => {
       try {
         await upload(() =>
@@ -389,6 +338,7 @@ try {
   await checkpoint();
   if (report.failed.length) process.exitCode = 2;
 } finally {
+  await cellWorkers.close();
   await qrWorkers.close();
   await server.close();
   await app.delete();
