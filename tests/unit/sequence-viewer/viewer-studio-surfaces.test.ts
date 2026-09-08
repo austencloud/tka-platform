@@ -118,10 +118,15 @@ describe("shared Studio surfaces", () => {
     step = 4;
     expect(state.cardFrame?.highlightedStepIndex).toBe(4);
     state.setMoving(true);
+    expect(state.canvasMoving).toBe(true);
+    state.setSurfaceMoving("transport", true);
     state.setSurfaceMoving("card", true);
     state.setMoving(false);
+    expect(state.canvasMoving).toBe(false);
     expect(state.moving).toBe(true);
     state.setSurfaceMoving("card", false);
+    expect(state.moving).toBe(true);
+    state.setSurfaceMoving("transport", false);
     expect(state.moving).toBe(false);
     releaseCard();
     expect(state.ownsCard(extra)).toBe(true);

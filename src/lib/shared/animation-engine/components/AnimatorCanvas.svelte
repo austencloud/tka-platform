@@ -897,6 +897,8 @@ Last audit: 2025-12-27
             animate: true,
             resize: "layout",
             returnAnchor: sharedTransport?.canvasHome,
+            flightLayer: "controls",
+            canDock: () => !sharedTransport?.canvasMoving,
             onMoving: (moving) =>
               sharedTransport?.setSurfaceMoving("transport", moving),
           }}
