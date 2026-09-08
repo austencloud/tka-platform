@@ -485,6 +485,44 @@
     return false;
   }
 
+  function sharedCanvasQuality() {
+    const surface = document.querySelector<HTMLElement>(
+      "[data-shared-animation-surface]"
+    );
+    const canvas = surface?.querySelector<HTMLCanvasElement>(
+      'canvas[data-animation-layer="props"]'
+    );
+    const bar = document.querySelector<HTMLElement>(
+      "[data-shared-studio-transport]"
+    );
+    let covered = false;
+    if (surface && bar && !surface.closest("[inert]")) {
+      const rect = bar.getBoundingClientRect();
+      // Flying surfaces ignore pointer input. Temporarily include them in the
+      // paint-order hit test, restoring before the browser paints or handles input.
+      const targets = [surface, bar];
+      const pointers = targets.map((node) => node.style.pointerEvents);
+      try {
+        targets.forEach((node) => (node.style.pointerEvents = "auto"));
+        const top = document.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2
+        );
+        covered = !!top && surface.contains(top) && !bar.contains(top);
+      } finally {
+        targets.forEach(
+          (node, index) => (node.style.pointerEvents = pointers[index])
+        );
+      }
+    }
+    const size = canvas ? Math.min(canvas.clientWidth, canvas.clientHeight) : 0;
+    const density =
+      canvas && size > 0 && !surface?.closest("[inert]")
+        ? canvas.width / (size * window.devicePixelRatio)
+        : null;
+    return { sharedTransportCovered: covered, sharedRasterDensity: density };
+  }
+
   function captureGeometrySample(): void {
     if (!activeTrace) return;
     if (
@@ -608,6 +646,7 @@
         sharedCanvasIdentity: elementIdentity(
           "[data-shared-animation-surface][data-surface-handoff] canvas"
         ),
+        ...sharedCanvasQuality(),
         sharedInspectorIdentity: elementIdentity(
           "[data-shared-studio-inspector]"
         ),

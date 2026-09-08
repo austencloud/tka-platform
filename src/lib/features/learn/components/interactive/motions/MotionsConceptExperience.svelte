@@ -32,6 +32,12 @@
   } from "./hand-motions-stage";
   import TimingDirectionBoard from "./TimingDirectionBoard.svelte";
   import TimingDirectionIntro from "./TimingDirectionIntro.svelte";
+  import TimingDirectionExamples from "./TimingDirectionExamples.svelte";
+  import {
+    TIMING_LESSON_TOPICS,
+    TIMING_LESSON_SCHEMA_VERSION,
+    migrateTimingLessonSavedStep,
+  } from "./timing-lesson-stage";
 
   let {
     onComplete,
@@ -63,7 +69,9 @@
     requireMode(element.familyId)
   );
   const timingDirectionIndex = HAND_PATH_STEPS.length;
-  const comparisonIndex = timingDirectionIndex + 1;
+  const comparisonIndex =
+    timingDirectionIndex +
+    (timingDirectionOnly ? TIMING_LESSON_TOPICS.length : 1);
   const firstStage = timingDirectionOnly ? timingDirectionIndex : 0;
   const totalStages = comparisonIndex - firstStage + 1;
 
@@ -79,8 +87,18 @@
   );
   const saved = persistence.load();
   const savedSchemaVersion = persistence.getPhaseData("stageSchemaVersion", 1);
+  const stageSchemaVersion = timingDirectionOnly
+    ? TIMING_LESSON_SCHEMA_VERSION
+    : HAND_MOTIONS_STAGE_SCHEMA_VERSION;
+  const schemaKey = timingDirectionOnly
+    ? "timingLessonSchemaVersion"
+    : "stageSchemaVersion";
   const savedStep = timingDirectionOnly
-    ? saved.step
+    ? migrateTimingLessonSavedStep(
+        saved.step,
+        persistence.getPhaseData(schemaKey, 1),
+        HAND_PATH_STEPS.length
+      )
     : migrateHandMotionsSavedStep(
         saved.step,
         savedSchemaVersion,
@@ -118,17 +136,21 @@
 
   if (viewMode !== "scroll" && savedStep !== (saved.step || 1)) {
     persistence.saveStep(savedStep);
-    persistence.savePhaseData(
-      "stageSchemaVersion",
-      HAND_MOTIONS_STAGE_SCHEMA_VERSION
-    );
+    persistence.savePhaseData(schemaKey, stageSchemaVersion);
   }
 
   const activeMotion = $derived(
     stepIndex < HAND_PATH_STEPS.length ? HAND_PATH_STEPS[stepIndex] : undefined
   );
   const isComparison = $derived(stepIndex === comparisonIndex);
-  const headingTitle = $derived(activeMotion?.name ?? "Timing and Direction");
+  const topic = $derived(
+    timingDirectionOnly && !isComparison
+      ? TIMING_LESSON_TOPICS[stepIndex - timingDirectionIndex]
+      : undefined
+  );
+  const headingTitle = $derived(
+    topic?.title ?? activeMotion?.name ?? "Timing and Direction"
+  );
   const headingEyebrow = $derived(
     activeMotion
       ? `Hand motion ${stepIndex + 1} of ${HAND_PATH_STEPS.length}`
@@ -154,10 +176,7 @@
       });
     }
     persistence.saveStep(stepIndex + 1);
-    persistence.savePhaseData(
-      "stageSchemaVersion",
-      HAND_MOTIONS_STAGE_SCHEMA_VERSION
-    );
+    persistence.savePhaseData(schemaKey, stageSchemaVersion);
     haptic?.trigger("selection");
   }
 
@@ -242,7 +261,9 @@
         eyebrow={headingEyebrow}
       >
         <p class="motion-description">
-          {#if activeMotion}
+          {#if topic}
+            {topic.description}
+          {:else if activeMotion}
             {activeMotion.guideCaption}
           {:else}
             <span class="description-phrase"
@@ -282,7 +303,16 @@
               </div>
             {:else}
               <div class="artifact-state timing-direction-state">
-                <TimingDirectionIntro active={!isComparison && !activeMotion} />
+                {#if timingDirectionOnly}
+                  <TimingDirectionExamples
+                    topic={topic?.id ?? "direction"}
+                    active={!isComparison}
+                  />
+                {:else}
+                  <TimingDirectionIntro
+                    active={!isComparison && !activeMotion}
+                  />
+                {/if}
               </div>
             {/if}
           </Crossfade>

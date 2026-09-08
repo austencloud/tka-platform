@@ -53,6 +53,47 @@ describe("reparentToInspector", () => {
     target.remove();
     anchor.remove();
   });
+  it("keeps controls aloft until artwork docks, including across a reversal", () => {
+    vi.useFakeTimers();
+    const origin = element("div"),
+      target = element("div"),
+      surface = element("section");
+    origin.append(surface);
+    document.body.append(origin, target);
+    surface.getAnimations = () => [];
+    surface.getBoundingClientRect = () => ({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 500,
+      bottom: 61,
+      width: 500,
+      height: 61,
+      toJSON: () => ({}),
+    });
+    let artworkMoving = true;
+    const options = {
+      animate: true,
+      resize: "layout" as const,
+      flightLayer: "controls" as const,
+      canDock: () => !artworkMoving,
+    };
+    const action = reparentToInspector(surface, { ...options, target: null });
+    action.update({ ...options, target });
+    vi.advanceTimersByTime(400);
+    expect(surface.parentNode).toBe(document.body);
+    expect(surface.style.zIndex).toBe("calc(var(--z-debug, 1000) + 1)");
+    action.update({ ...options, target: null });
+    artworkMoving = false;
+    vi.advanceTimersByTime(400);
+    expect(surface.parentNode).toBe(origin);
+    expect(surface.getAttribute("style")).toBeNull();
+    action.destroy();
+    origin.remove();
+    target.remove();
+    vi.useRealTimers();
+  });
   it("keeps a stationary control row above the host fade and cancels an obsolete landing", () => {
     vi.useFakeTimers();
     const origin = element("div"),

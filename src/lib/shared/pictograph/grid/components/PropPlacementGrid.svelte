@@ -45,6 +45,8 @@
     initialRightLocation?: GridLocation | null;
     betaSwapped?: boolean;
     previewPictographData?: StepData | PictographData | null;
+    /** An identified static position uses the normal in-pictograph letter glyph. */
+    positionLetter?: PictographData["letter"];
     resetEpoch?: number;
     /** Epoch-counted committed location change to play as an in-place motion. */
     motionMove?: PlacementMotionMove | null;
@@ -81,6 +83,7 @@
     initialRightLocation = null,
     betaSwapped = false,
     previewPictographData = null,
+    positionLetter,
     resetEpoch = 0,
     motionMove = null,
     showCenter = false,
@@ -305,9 +308,16 @@
     >
       <div class="pictograph-layer">
         <PictographContainer
-          pictographData={motion.step ?? pictographData}
+          pictographData={motion.step ??
+            (positionLetter !== undefined
+              ? { ...pictographData, letter: positionLetter }
+              : pictographData)}
           gridMode={previewPictographData ? null : gridMode}
-          showTKA={previewPictographData ? undefined : false}
+          showTKA={positionLetter !== undefined
+            ? true
+            : previewPictographData
+              ? undefined
+              : false}
           showReversals={previewPictographData ? undefined : false}
           showTnD={previewPictographData ? undefined : false}
           showElemental={previewPictographData ? undefined : false}

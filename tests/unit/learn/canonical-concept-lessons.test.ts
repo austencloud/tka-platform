@@ -157,9 +157,6 @@ describe("canonical concept lesson composition", () => {
     expect(motions).toContain(
       "const timingDirectionIndex = HAND_PATH_STEPS.length"
     );
-    expect(motions).toContain(
-      "const comparisonIndex = timingDirectionIndex + 1"
-    );
     expect(motions).toContain('activeMotion?.name ?? "Timing and Direction"');
     expect(motions).toContain('"stageSchemaVersion"');
     expect(motions).toContain("migrateHandMotionsSavedStep");
