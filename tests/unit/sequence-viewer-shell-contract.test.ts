@@ -24,6 +24,7 @@ const SHELL_PATH =
 const HOSTS: Record<string, string[]> = {
   "drawer host": [
     "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte",
+    "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerContent.svelte",
   ],
   "/sequence route host": [
     "src/routes/sequence/[id]/SequenceViewerPage.svelte",
