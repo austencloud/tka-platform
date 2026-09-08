@@ -2,6 +2,40 @@
 
 Scope: the shipped hand-positions experience, not a repository-wide code-quality grade.
 
+## Canonical pictographs and anchored feedback, September 8
+
+Austen accepted improved clarity but rejected the top-left glyph overlays,
+board-only centering, misaligned example rail, unfamiliar action chrome, and
+competing movement on success. This supersedes the glyph and success-motion
+choices below; previous verification was not acceptance of those choices.
+
+The lesson now supplies static Alpha/Beta/Gamma letters to the normal
+PictographContainer/TKAGlyph renderer, including the live placement board.
+No lesson-owned glyph positioning remains. The mode switch and instructions
+center across the composition; square examples align with the board's top and
+bottom edges. Narrow layouts put Next directly after the board, before examples.
+Tablet panes use the rail from 42rem of available width. Full 4K uses a 1152px
+board; the reported tall split pane retains the 896px board.
+
+The actual workspace UndoButton and ClearSequenceButton are reused through
+narrow, backward-compatible input extensions. Practice again uses PanelButton;
+Next remains LessonStageControls, as in Grid. Placement, history, exact example
+memory, selection, and grid rotation keep their existing owners. Success no
+longer shrinks the board or hides guided references. Title/instruction swaps
+crossfade in reserved space. Explicit disclosure and phase changes recompose
+one workshop through createLayoutMotion instead of flying each child separately.
+An incorrect answer highlights the corrective reference; independent practice
+shows its corrective pictograph within the board without shifting the stage.
+
+Verification: 34 focused tests pass, including all position-pair letter metadata;
+Svelte check has zero errors/warnings. Browser testing exercised all six builds,
+incorrect correction, exact example selection, grid switching, Clear, pointer
+drag and Undo. Drag release remains at the destination with zero interpolation.
+All seven CSS viewport tiers, the tall split pane and 640×450 zoom-equivalent
+reflow were inspected. Mobile controls and landscape actions remain reachable;
+reduced-motion controls settle immediately. Native touch and actual 200% browser
+zoom remain unverified. This presentation is pending Austen's hands-on review.
+
 ## Integrated playground and background recovery, September 8
 
 Austen accepted the drop correction, then rejected the family-only highlight,
