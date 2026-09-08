@@ -27,6 +27,7 @@
 >
   <div
     class="entry-composition"
+    class:tka-composition={entry.id === "tka"}
     class:release-browser={entry.id === "vtg"}
     class:explorable={applications.length > 0 ||
       works.length > 0 ||
@@ -87,12 +88,16 @@
           class:sheet={entry.id === "lorq"}
           data-artifact-kind={artifact.kind}
         >
-          <div class="artifact-label">{artifact.label}</div>
+          {#if entry.id !== "tka"}
+            <div class="artifact-label">{artifact.label}</div>
+          {/if}
           <div
             class="artifact-stage"
             class:portrait={entry.id === "lorq"}
             class:landscape={entry.id === "nine-square"}
-            class:intrinsic={entry.id === "poinotation" || entry.id === "vtg"}
+            class:intrinsic={entry.id === "poinotation" ||
+              entry.id === "vtg" ||
+              entry.id === "tka"}
             class:document={artifact.kind === "document"}
           >
             <ArchiveRecordVisual {entry} active />
@@ -362,5 +367,32 @@
     .entry-summary {
       font-size: 1.25rem;
     }
+  }
+  @container (min-width: 760px) {
+    .tka-composition.with-artifact {
+      width: 100%;
+      max-width: 108rem;
+      margin-inline: auto;
+      grid-template-rows: 1fr auto auto auto 1fr;
+    }
+    .tka-composition .entry-heading {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .tka-composition .entry-copy {
+      grid-row: 3;
+    }
+    .tka-composition .entry-details {
+      grid-row: 4;
+    }
+    .tka-composition .entry-artifact {
+      grid-row: 1 / span 5;
+      align-self: center;
+      position: static;
+      max-width: min(60rem, max(38rem, calc(100dvh - 32rem)));
+    }
+  }
+  .tka-composition .artifact-stage {
+    --tka-preview-max-width: 60rem;
   }
 </style>
