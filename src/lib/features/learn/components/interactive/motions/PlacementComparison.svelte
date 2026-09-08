@@ -54,6 +54,10 @@
             pictographData={example.data}
             {gridMode}
             darkMode
+            showGrid
+            showHandPoints
+            showLeftMotion
+            showRightMotion
             showTKA={false}
             showArrow={false}
             showTnD={false}
