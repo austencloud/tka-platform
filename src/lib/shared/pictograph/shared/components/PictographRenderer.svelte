@@ -67,6 +67,7 @@ Usage:
     rightColorOverride = undefined,
     // Core visibility controls
     showGrid = true,
+    gridPointsOnTop = false,
     showTKA = true,
     showReversals = true,
     showNonRadialPoints = false,
@@ -116,6 +117,7 @@ Usage:
     onToggleStepPosition = undefined,
     // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox)
     widthMultiplier = 1,
+    glyphLayout = "edges",
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
     transitionKey = null,
@@ -128,6 +130,8 @@ Usage:
     arrowOpacity = 1,
     // Duration multiplier for the step (1 = default, shown when != 1)
     duration = 1,
+    showDuration = true,
+    showPathShape = true,
     // Fires when the grid SVG has loaded (or errored). The grid loads asynchronously
     // and independently of the prepared arrow/prop data, so an offscreen/export
     // parent uses this to gate its readiness signal (otherwise a cold grid cache
@@ -146,6 +150,8 @@ Usage:
     rightColorOverride?: string;
     /** Master toggle for grid visibility */
     showGrid?: boolean;
+    /** Match the cached bitmap card's separate grid-point overlay. */
+    gridPointsOnTop?: boolean;
     showTKA?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
@@ -185,6 +191,8 @@ Usage:
     onToggleNonRadial?: () => void;
     /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
     widthMultiplier?: number;
+    /** Match the card compositor's square core and separate TKA overlay. */
+    glyphLayout?: "edges" | "card" | "card-custom";
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
     /** Stable editor identity for prop and arrow position caching. */
@@ -196,6 +204,9 @@ Usage:
     arrowOpacity?: number;
     /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
     duration?: number;
+    /** Card annotations are composed by the card's existing overlay layer. */
+    showDuration?: boolean;
+    showPathShape?: boolean;
     /** Fires when the grid finishes loading (or errors). Used by export readiness gating. */
     onGridReady?: () => void;
   }>();
@@ -207,7 +218,10 @@ Usage:
   // Offset to center the core 950x950 content in the expanded viewBox
   const coreContentOffset = $derived((expandedWidth - BASE_SIZE) / 2);
   // X offset for right-aligned glyphs (VTG, Elemental) to stay at right edge
-  const rightGlyphOffset = $derived(expandedWidth - BASE_SIZE);
+  const rightGlyphOffset = $derived(
+    glyphLayout === "edges" ? expandedWidth - BASE_SIZE : coreContentOffset
+  );
+  const tkaOffset = $derived(glyphLayout === "card-custom" ? coreContentOffset : 0);
 
   // Derived beat context
   const isStartPosition = $derived(stepNumber === 0);
@@ -440,6 +454,7 @@ Usage:
       <!-- Grid -->
       {#if showGrid || previewMode || animateVisibility}
         <GridSvg
+          layer={gridPointsOnTop ? "base" : "all"}
           {gridMode}
           {showNonRadialPoints}
           {handPointVisibility}
@@ -557,12 +572,23 @@ Usage:
           {/each}
         {/if}
       </g>
+      {#if gridPointsOnTop && showGrid}
+        <GridSvg
+          layer="points"
+          {gridMode}
+          {showNonRadialPoints}
+          {handPointVisibility}
+          {activeLocations}
+          {darkMode}
+          onLoaded={() => onGridReady?.()}
+        />
+      {/if}
     </g>
 
     <!-- Corner glyphs - positioned at edges of expanded viewBox -->
     <!-- TKA Glyph (fades when one motion is dimmed since it represents both hands) -->
     {#if pictograph.letter}
-      <g opacity={glyphOpacity}>
+      <g opacity={glyphOpacity} transform="translate({tkaOffset}, 0)">
         <TKAGlyph
           letter={pictograph.letter}
           pictographData={pictograph}
@@ -576,7 +602,7 @@ Usage:
     {/if}
 
     <!-- Turns Column (part of TKA) -->
-    <g opacity={glyphOpacity}>
+    <g opacity={glyphOpacity} transform="translate({tkaOffset}, 0)">
       <TurnsColumn
         leftColorOverride={effectiveLeftColor}
         rightColorOverride={effectiveRightColor}
@@ -594,7 +620,7 @@ Usage:
 
     <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
     {#if pictograph.letter}
-      <g opacity={glyphOpacity}>
+      <g opacity={glyphOpacity} transform="translate({tkaOffset}, 0)">
         <DirectionDot
           direction={parsedDirection}
           letter={pictograph.letter}
@@ -618,18 +644,20 @@ Usage:
     />
 
     <!-- Reversal indicators -->
-    <ReversalIndicators
-      leftColorOverride={effectiveLeftColor}
-      rightColorOverride={effectiveRightColor}
-      {leftReversal}
-      {rightReversal}
-      {hasValidData}
-      visible={showReversals}
-      {previewMode}
-      onToggle={onToggleReversals}
-      {leftMotionVisible}
-      {rightMotionVisible}
-    />
+    <g transform="translate({glyphLayout === 'edges' ? 0 : coreContentOffset}, 0)">
+      <ReversalIndicators
+        leftColorOverride={effectiveLeftColor}
+        rightColorOverride={effectiveRightColor}
+        {leftReversal}
+        {rightReversal}
+        {hasValidData}
+        visible={showReversals}
+        {previewMode}
+        onToggle={onToggleReversals}
+        {leftMotionVisible}
+        {rightMotionVisible}
+      />
+    </g>
 
     <!-- Fused Elemental + TnD glyph (bottom-right) -->
     <g opacity={glyphOpacity}>
@@ -681,19 +709,23 @@ Usage:
 
     <!-- Duration glyph (shows "2×", "0.5×", etc. when duration != 1) -->
     <!-- In timeline mode, use widthMultiplier as the live duration (reflects drag preview) -->
-    <DurationGlyph
-      duration={isExpanded ? widthMultiplier : duration}
-      {hasValidData}
-      {darkMode}
-      centerX={expandedWidth / 2}
-    />
+    {#if showDuration}
+      <DurationGlyph
+        duration={isExpanded ? widthMultiplier : duration}
+        {hasValidData}
+        {darkMode}
+        centerX={expandedWidth / 2}
+      />
+    {/if}
 
     <!-- Path shape accidental glyph (top center, only when per-step override set) -->
-    <PathShapeGlyph
-      leftMotion={pictograph.motions?.left}
-      rightMotion={pictograph.motions?.right}
-      {darkMode}
-    />
+    {#if showPathShape}
+      <PathShapeGlyph
+        leftMotion={pictograph.motions?.left}
+        rightMotion={pictograph.motions?.right}
+        {darkMode}
+      />
+    {/if}
   </svg>
 </div>
 
