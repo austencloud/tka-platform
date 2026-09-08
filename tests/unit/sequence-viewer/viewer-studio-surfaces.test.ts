@@ -21,16 +21,25 @@ describe("shared Studio surfaces", () => {
 
   it("loans one renderer to one slot, then gives it back without losing its registration", () => {
     const state = createViewerStudioSurfaces();
-    const canvas = document.createElement("div");
+    const html = () =>
+      document.createElementNS(
+        "http://www.w3.org/1999/xhtml",
+        "div"
+      ) as HTMLElement;
+    const canvas = html();
+    const home = html();
+    home.append(canvas);
     const unregister = state.registerCanvas(canvas);
     const first = {},
       second = {};
-    const a = document.createElement("div"),
-      b = document.createElement("div");
+    const a = html(),
+      b = html();
     let position = 2.5;
     const release = state.requestCanvas(first, a, () => frame(position));
     state.requestCanvas(second, b, () => frame(7));
     state.enter(2.5, true, 84);
+    a.append(canvas);
+    expect(state.canvasHome).toBe(home);
     expect(state.canvasTarget).toBe(a);
     expect(state.ownsCanvas(first)).toBe(true);
     expect(state.ownsCanvas(second)).toBe(false);
@@ -45,6 +54,7 @@ describe("shared Studio surfaces", () => {
     expect(state.canvasAvailable).toBe(true);
     unregister();
     expect(state.canvasAvailable).toBe(false);
+    expect(state.canvasHome).toBeNull();
   });
 
   it("isolates viewers and ignores stale cleanup from an outgoing owner", () => {

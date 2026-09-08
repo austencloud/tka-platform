@@ -339,7 +339,7 @@
             frames
           </span>
         {/each}
-        {#each ["sharedCanvasIdentity", "sharedInspectorIdentity", "sharedCardIdentity", "sharedTransportIdentity"] as key}
+        {#each ["sharedCanvasIdentity", "sharedInspectorIdentity", "sharedCardIdentity", "sharedTransportIdentity", "sharedScrubberIdentity", "sharedPlayButtonIdentity"] as key}
           {@const identities = new Set(
             workspaceSamples
               .map(
@@ -350,6 +350,8 @@
                       | "sharedInspectorIdentity"
                       | "sharedCardIdentity"
                       | "sharedTransportIdentity"
+                      | "sharedScrubberIdentity"
+                      | "sharedPlayButtonIdentity"
                   ]
               )
               .filter(Boolean)
@@ -361,7 +363,11 @@
                 ? "Shared inspector"
                 : key === "sharedCardIdentity"
                   ? "Shared Card"
-                  : "Shared transport"} identities: {identities.size}
+                  : key === "sharedScrubberIdentity"
+                    ? "Live scrubber"
+                    : key === "sharedPlayButtonIdentity"
+                      ? "Live play button"
+                      : "Shared transport"} identities: {identities.size}
           </span>
         {/each}
         <span
