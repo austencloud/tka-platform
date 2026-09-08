@@ -1,0 +1,86 @@
+/** Local playground job. One Blender process, then the existing intake gates. */
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { intakeCharacter } from "./character-intake.mjs";
+
+const [seedText, jobDirectory, source, assets, blender, stageDirectory] =
+  process.argv.slice(2);
+const seed = Number(seedText);
+if (!Number.isSafeInteger(seed) || seed < 0 || seed > 2147483647)
+  throw new Error("Invalid seed");
+const id = `mpfb-${seed}`;
+await mkdir(jobDirectory, { recursive: true });
+const generated = resolve(jobDirectory, "generated");
+try {
+  const result = await promisify(execFile)(
+    blender,
+    [
+      "--background",
+      "--factory-startup",
+      "--python-exit-code",
+      "1",
+      "--python",
+      resolve("scripts/characters/mpfb-proof.py"),
+      "--",
+      "--source",
+      source,
+      "--assets",
+      assets,
+      "--output",
+      generated,
+      "--seed",
+      seedText,
+    ],
+    {
+      timeout: 120_000,
+      maxBuffer: 16 * 1024 * 1024,
+      windowsHide: true,
+      env: {
+        ...process.env,
+        BLENDER_USER_RESOURCES: resolve(jobDirectory, "blender-user"),
+      },
+    }
+  );
+  await writeFile(
+    resolve(jobDirectory, "blender.log"),
+    result.stdout + result.stderr
+  );
+  const provenance = JSON.parse(
+    await readFile(
+      resolve("scripts/characters/mpfb-proof.provenance.json"),
+      "utf8"
+    )
+  );
+  provenance.id = id;
+  provenance.displayName = `MPFB ${seed}`;
+  provenance.description = `Locally generated adult character, seed ${seed}. Body, face, hair and outfit randomized with MPFB.`;
+  provenance.source.assetName = `Official MPFB base and CC0 system assets; seed ${seed}`;
+  provenance.acquiredAt = new Date().toISOString();
+  const provenanceFile = resolve(jobDirectory, "provenance.json");
+  await writeFile(provenanceFile, JSON.stringify(provenance, null, 2));
+  const resultIntake = await intakeCharacter({
+    source: resolve(generated, "mpfb-proof.glb"),
+    provenanceFile,
+    outputDirectory: resolve(jobDirectory, "intake"),
+    stageBakeoff: true,
+    stageDirectory,
+    skipThumbnail: true,
+    textureSize: 2048,
+  });
+  if (resultIntake.status === "rejected")
+    throw new Error(
+      "Character failed intake checks; see the job's intake report."
+    );
+  await writeFile(
+    resolve(jobDirectory, "result.json"),
+    JSON.stringify({ id: `intake-${id}`, seed })
+  );
+} catch (error) {
+  await writeFile(
+    resolve(jobDirectory, "failure.log"),
+    String(error) + "\n" + (error.stdout ?? "") + (error.stderr ?? "")
+  );
+  process.exitCode = 1;
+}
