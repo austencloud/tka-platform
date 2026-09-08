@@ -15,6 +15,7 @@ interface ViewerPropVisibilityInputs {
   imageComposition: ImageCompositionSyncState;
   getSequence: () => SequenceData | null;
   getHandPathMode: () => boolean;
+  getCollectionPropLocked?: () => boolean;
   getInitialLeftVisible: () => boolean | undefined;
   getInitialRightVisible: () => boolean | undefined;
   getAnimationServicesReady: () => boolean;
@@ -101,7 +102,11 @@ export function createViewerPropVisibilityState(
   });
 
   function handlePropTypeChange(propType: PropType): void {
-    if (isHandPathSequence(inputs.getSequence())) return;
+    if (
+      inputs.getCollectionPropLocked?.() ||
+      isHandPathSequence(inputs.getSequence())
+    )
+      return;
     void dependencies.updateSettings({
       leftPropType: propType,
       rightPropType: propType,

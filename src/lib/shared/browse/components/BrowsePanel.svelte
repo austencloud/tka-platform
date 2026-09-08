@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onMount, onDestroy } from "svelte";
   import { getBrowseThumbnailProvider } from "$lib/shared/browse/get-browse-thumbnail-provider";
   import { PinchZoomGridController } from "$lib/shared/browse/services/pinch-zoom-grid-controller";
@@ -19,6 +20,7 @@
   import { withResultsMorph } from "$lib/shared/transitions/results-morph";
 
   interface Props {
+    collectionPropType?: PropType | null;
     engine: BrowseEngine;
     layout: "fullpage" | "compact" | "minimal";
     onSelect?: (sequence: SequenceData, variations?: SequenceData[]) => void;
@@ -124,6 +126,7 @@
     toolbarVariant = "panel",
     resultTotal,
     collectionContext,
+    collectionPropType,
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? layout !== "minimal");
@@ -450,6 +453,7 @@
                 : undefined}
               scrollElement={contentEl}
               {collectionContext}
+              {collectionPropType}
               onSectionGridReady={(api) => (sectionApi = api)}
               onActiveSectionChange={(title) => (activeSection = title)}
             />

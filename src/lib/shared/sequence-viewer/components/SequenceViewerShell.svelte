@@ -720,7 +720,8 @@
       showInlineExportProgress={false}
       showTempoControls={false}
       showPathShape={false}
-      onPropChange={ctx.effectiveSequence?.sequenceKind === "hand-path"
+      onPropChange={ctx.collectionPropLocked ||
+      ctx.effectiveSequence?.sequenceKind === "hand-path"
         ? undefined
         : (prop) => {
             studioSurfaces.controls?.setProp(prop);
@@ -978,7 +979,9 @@
                         onBpmChange={(bpm) =>
                           interactions.handleBpmChange(bpm, "viewer")}
                         onSaveToLibrary={interactions.handleSave}
-                        onPropChange={(prop) =>
+                        onPropChange={ctx.collectionPropLocked
+                          ? undefined
+                          : (prop) =>
                           interactions.handlePropChange(prop, "viewer")}
                         onFanAppearanceChange={ctx.handleFanAppearanceChange}
                         playback={layout.showVideoGallery ||
