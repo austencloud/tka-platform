@@ -91,7 +91,6 @@
     ? getAvatarGripMotionAudit()
     : null;
 
-
   interface Props {
     sequenceData: SequenceData | null;
     currentStep: number;
@@ -115,6 +114,7 @@
     enableEffects?: boolean;
     /** Stationary stage casts can skip walk, jump, and foot-planting setup. */
     enablePerformerLocomotion?: boolean;
+    weldPerformerGrip?: boolean;
     /** Explicit ensemble budget for the existing effect renderers. */
     effectQualityTier?: QualityTier;
     /** Per-performer count offsets, sampled against the same shared clock. */
@@ -180,6 +180,7 @@
     hideOrientationHelpers = false,
     enableEffects = true,
     enablePerformerLocomotion = true,
+    weldPerformerGrip = false,
     effectQualityTier,
     performerStepOffsets = [],
     performerSteps = null,
@@ -677,9 +678,7 @@
 {/if}
 
 <!-- Lighting - reduced when the environment provides its own -->
-<T.AmbientLight
-  intensity={viewerBaseLighting.ambientIntensity}
-/>
+<T.AmbientLight intensity={viewerBaseLighting.ambientIntensity} />
 <T.DirectionalLight
   position={VIEWER_KEY_LIGHT_POSITION}
   intensity={viewerBaseLighting.directionalIntensity}
@@ -860,6 +859,7 @@
                 i < performerCount}
               enableLocomotion={enablePerformerLocomotion}
               enableFootPlanting={enablePerformerLocomotion}
+              weldGrip={weldPerformerGrip}
               isMoving={performer.isMoving}
               moveSpeed={performer.moveSpeed}
               moveDirection={performer.moveDirection}

@@ -9,6 +9,8 @@ import {
   POSITION_KINDS,
   positionKindFor,
   positionExample,
+  positionPairPreview,
+  POSITION_LETTERS,
   positionCorrection,
   positionCorrectionPair,
   changePositionGrid,
@@ -33,6 +35,20 @@ function memory(saved?: unknown) {
 }
 
 describe("hand position workshop domain", () => {
+  it("renders the canonical static letter for every arrangement without changing either hand", () => {
+    for (const mode of [GridMode.DIAMOND, GridMode.BOX]) {
+      for (const left of getPlacementGridPoints(mode)) {
+        for (const right of getPlacementGridPoints(mode)) {
+          const pair = { left: left.location, right: right.location };
+          const preview = positionPairPreview(pair, mode);
+          const kind = positionKindFor(pair.left, pair.right)!;
+          expect(preview.letter).toBe(POSITION_LETTERS[kind]);
+          expect(preview.motions?.left?.startLocation).toBe(pair.left);
+          expect(preview.motions?.right?.startLocation).toBe(pair.right);
+        }
+      }
+    }
+  });
   it("remembers the exact last arrangement of each family independently in each grid", () => {
     const workshop = createPositionWorkshopState(memory());
     workshop.rememberPosition(

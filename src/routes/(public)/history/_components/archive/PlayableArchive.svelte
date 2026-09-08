@@ -19,6 +19,7 @@
   let reader: HTMLElement;
   let indexRegion: HTMLElement;
   let indexScroll = $state<HTMLElement>();
+  let indexViewportHeight = $state(0);
   const compact = new MediaQuery("(max-width: 1099px)");
   const activeIndex = $derived(
     ARCHIVE_ENTRIES.findIndex((entry) => entry.id === activeEntry.id)
@@ -29,7 +30,8 @@
   $effect(() => {
     const selectedId = activeEntry.id;
     const viewport = indexScroll;
-    if (!viewport) return;
+    // Keep the selected row visible when a shorter record shrinks the index.
+    if (!viewport || !indexViewportHeight) return;
     void tick().then(() => {
       const selected = viewport.querySelector<HTMLElement>(
         `a[href="#archive-record-${selectedId}"]`
@@ -115,15 +117,21 @@
           />
         </details>
       {:else}
-        <h2>Browse the archive</h2>
-        <p class="index-note">
-          Dates refer to the evidence described in each entry.
-        </p>
-        <div class="index-scroll" bind:this={indexScroll}>
-          <ArchiveChronologicalIndex
-            activeEntryId={activeEntry.id}
-            onselect={selectEntry}
-          />
+        <div class="index-sticky">
+          <h2>Browse the archive</h2>
+          <p class="index-note">
+            Dates refer to the evidence described in each entry.
+          </p>
+          <div
+            class="index-scroll"
+            bind:this={indexScroll}
+            bind:clientHeight={indexViewportHeight}
+          >
+            <ArchiveChronologicalIndex
+              activeEntryId={activeEntry.id}
+              onselect={selectEntry}
+            />
+          </div>
         </div>
       {/if}
     </aside>
@@ -184,7 +192,7 @@
 
   <footer class="archive-about" id="about-this-archive">
     <h2>About this archive</h2>
-    <div>
+    <div class="archive-about-columns">
       <p>
         This collection follows notation systems, teaching projects, and
         published research. The categories help you browse; they are not a
@@ -195,18 +203,20 @@
         account. A date may mark a publication, a surviving source, or work
         recalled by its creator. The entry explains which.
       </p>
-      <p>
-        Curated by Austen Cloud, creator of The Kinetic Alphabet and Flow Arts
-        Composer.
-      </p>
-      <a
-        href="mailto:support@tkaflowarts.com?subject=Flow%20arts%20history%20correction"
-        >Suggest an addition or correction</a
-      >
-      <small
-        >Include the entry name, your correction or addition, and a source we
-        can read.</small
-      >
+      <div class="archive-contact">
+        <p>
+          Curated by Austen Cloud, creator of The Kinetic Alphabet and Flow Arts
+          Composer.
+        </p>
+        <a
+          href="mailto:support@tkaflowarts.com?subject=Flow%20arts%20history%20correction"
+          >Suggest an addition or correction</a
+        >
+        <small
+          >Include the entry name, your correction or addition, and a source we
+          can read.</small
+        >
+      </div>
     </div>
   </footer>
 </section>
@@ -216,6 +226,7 @@
     max-width: 100rem;
     margin-inline: auto;
     padding: clamp(1.25rem, 3vw, 3.5rem);
+    padding-bottom: 1.25rem;
     color: var(--theme-text);
   }
   .archive-header {
@@ -265,23 +276,35 @@
     align-items: start;
   }
   .entry-index {
-    position: sticky;
-    top: calc(var(--marketing-header-h, 64px) + 1rem);
+    /* Short records determine the row height. The full archive list must not
+       hold the footer below an otherwise finished entry. */
+    contain: size;
+    align-self: stretch;
     min-width: 0;
   }
+  .index-sticky {
+    position: sticky;
+    top: calc(var(--marketing-header-h, 64px) + 1rem);
+    height: min(100%, calc(100dvh - var(--marketing-header-h, 64px) - 2rem));
+    display: flex;
+    flex-direction: column;
+  }
   .entry-index h2 {
+    flex-shrink: 0;
     margin: 0 0 0.5rem 0.85rem;
     font-size: 1rem;
     font-weight: 650;
   }
   .index-note {
+    flex-shrink: 0;
     margin: 0 0.85rem 1rem;
     font-size: var(--font-size-compact, 0.75rem);
     line-height: 1.5;
     color: var(--theme-text-dim);
   }
   .index-scroll {
-    max-height: calc(100dvh - var(--marketing-header-h, 64px) - 8rem);
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
     overscroll-behavior: contain;
@@ -321,31 +344,34 @@
     text-align: right;
   }
   .archive-about {
-    display: grid;
-    grid-template-columns: 17rem minmax(0, 1fr);
-    gap: clamp(2rem, 4vw, 5rem);
     border-top: 1px solid var(--theme-stroke);
-    padding-top: 2rem;
-    margin-top: clamp(3rem, 6vw, 6rem);
+    padding-top: 1.25rem;
+    margin-top: 2.5rem;
     scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
+  }
+  .archive-about-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem 2rem;
   }
   .archive-about h2 {
     font:
-      550 1.5rem / 1.2 "Fraunces",
+      550 1.125rem / 1.3 "Fraunces",
       Georgia,
       serif;
-    margin: 0;
+    margin: 0 0 0.75rem;
   }
   .archive-about p {
-    max-width: 68ch;
     font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.65;
+    line-height: 1.5;
     color: var(--theme-text-dim);
-    margin: 0 0 0.9rem;
+    margin: 0;
   }
   .archive-about a {
-    display: inline-block;
-    padding-block: 0.6rem;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    width: fit-content;
     font-size: var(--font-size-min, 0.875rem);
   }
   .archive-about small {
@@ -355,8 +381,7 @@
     color: var(--theme-text-dim);
   }
   @media (max-width: 1099px) {
-    .archive-layout,
-    .archive-about {
+    .archive-layout {
       grid-template-columns: minmax(0, 1fr);
       gap: 1.5rem;
     }
@@ -364,6 +389,7 @@
       margin-bottom: 1.5rem;
     }
     .entry-index {
+      contain: none;
       scroll-margin-top: calc(var(--marketing-header-h, 64px) + 1rem);
       position: static;
     }
@@ -384,6 +410,19 @@
     }
     summary::-webkit-details-marker {
       display: none;
+    }
+  }
+  @media (max-width: 899px) {
+    .archive-about-columns {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .archive-contact {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 599px) {
+    .archive-about-columns {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>
