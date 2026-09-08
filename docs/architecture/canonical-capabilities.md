@@ -12,6 +12,13 @@ canvas handoff, reparent, shared element. The TnD `+layout.svelte` owns one play
 and context state across the hub and articles; route slots move its host without
 remounting it. `MarketingChrome` keeps one content key for this subtree only.
 
+Playback continuity between the Sequence Viewer and Post Studio keeps one
+mounted compact `UnifiedTimeline`, including its scrubber and play button.
+Its `reparentToInspector` flight opts into `createLayoutMotion` with
+`resize: "layout"`: the row changes width without scaling its controls. Other
+surface flights retain transform scaling. Searches: playback continuity,
+scrubber replacement, transport resizing.
+
 Sequence Viewer ↔ Post Studio surface continuity uses the same
 `reparentToInspector` action with `createLayoutMotion`. Viewer-local
 `createViewerStudioSurfaces` owns the canvas/inspector/Card/transport loan and composition-clock

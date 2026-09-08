@@ -35,7 +35,10 @@ Last audit: 2025-12-27
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
   import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
-  import { reparentToInspector } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
+  import {
+    reparentToInspector,
+    type ReparentOptions,
+  } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
   import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -317,8 +320,25 @@ Last audit: 2025-12-27
   const sharedTransport = $derived(
     shareStudioTransport ? studioSurfaces : null
   );
-  function ownTransport(node: HTMLElement) {
-    return { destroy: sharedTransport?.registerTransport(node) };
+  let transportHandoff: ReturnType<typeof reparentToInspector> | undefined;
+  $effect.pre(() => {
+    // The canvas moves too. Capture the bar before that parent starts flying,
+    // not from its already-relocated position inside the phone.
+    void sharedTransport?.active;
+    transportHandoff?.capture();
+  });
+  function ownTransport(node: HTMLElement, options: ReparentOptions) {
+    const unregister = sharedTransport?.registerTransport(node);
+    const handoff = reparentToInspector(node, options);
+    transportHandoff = handoff;
+    return {
+      update: handoff.update,
+      destroy: () => {
+        handoff.destroy();
+        unregister?.();
+        if (transportHandoff === handoff) transportHandoff = undefined;
+      },
+    };
   }
   const playbackAdapter = createAnimatorPlaybackAdapter({
     getCurrentStep: () => currentStep,
@@ -871,11 +891,12 @@ Last audit: 2025-12-27
              cannot switch away their own scrubber. -->
         <div
           class="shared-transport"
-          use:ownTransport
           data-shared-studio-transport={shareStudioTransport || undefined}
-          use:reparentToInspector={{
+          use:ownTransport={{
             target: sharedTransport?.transportTarget ?? null,
             animate: true,
+            resize: "layout",
+            returnAnchor: sharedTransport?.canvasHome,
             onMoving: (moving) =>
               sharedTransport?.setSurfaceMoving("transport", moving),
           }}
@@ -883,9 +904,8 @@ Last audit: 2025-12-27
           <UnifiedTimeline
             playback={sharedTransport?.transportPlayback ?? playbackAdapter}
             visible={!!sharedTransport?.active || !hideProgressBar}
-            hidePlay={sharedTransport?.transportTarget
-              ? false
-              : (hidePlay ?? tapToToggle)}
+            compact={shareStudioTransport}
+            hidePlay={shareStudioTransport ? false : (hidePlay ?? tapToToggle)}
             trailing={sharedTransport?.transportTrailing}
           />
         </div>

@@ -617,6 +617,12 @@
         sharedTransportIdentity: elementIdentity(
           "[data-shared-studio-transport] [aria-label='Playback transport']"
         ),
+        sharedScrubberIdentity: elementIdentity(
+          "[data-shared-studio-transport] [aria-label='Playback progress']"
+        ),
+        sharedPlayButtonIdentity: elementIdentity(
+          "[data-shared-studio-transport] .pill-play"
+        ),
         sharedSurfaces: Object.fromEntries(
           Object.entries({
             canvas:
@@ -626,6 +632,8 @@
             editor: "[data-shared-studio-inspector] .panel-scroll",
             card: "[data-shared-studio-card]",
             transport: "[data-shared-studio-transport]",
+            scrubber: "[data-shared-studio-transport] .pill-track",
+            playButton: "[data-shared-studio-transport] .pill-play",
             phone: ".output-frame",
           }).map(([key, selector]) => [key, elementBounds(selector)])
         ),
