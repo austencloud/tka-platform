@@ -73,6 +73,13 @@ export function positionPreview(
   const example = fixedLeft
     ? positionCorrectionPair(fixedLeft, kind, gridMode)
     : positionExample(kind, gridMode);
+  return positionPairPreview(example, gridMode);
+}
+
+export function positionPairPreview(
+  example: { left: GridLocation; right: GridLocation },
+  gridMode: GridMode
+) {
   return buildPlacementPictographData({
     gridMode,
     leftLocation: example.left,

@@ -127,14 +127,19 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
     // enters the lineage afterward, via Book of P.H.A.T. and Yee's own 2015 app
     // credits; see the `lorq` entry. Do not add him to this line.
     people:
-      "Compiled by Noel Yee. Transition Theory with Jordan Campbell and David “Tankboy” Cantor; chapters by Brian Thompson, Cantor, Maiki Nope, Ben Drexler, and Yee.",
+      "VTG 1 compiled by Noel Yee. Transition Theory with Jordan Campbell and David “Tankboy” Cantor; chapters by Brian Thompson, Cantor, Maiki Nope, Ben Drexler, and Yee.",
     // Yee's own site: "The first goal of VTG is to help the user to understand
     // the variety of flower patterns available in a given arm and prop timing
     // and direction. The second is to teach the user how to transition between
     // patterns within a given timing and direction." Volume 1's ten shapes are
     // from Yee's own walkthrough video.
     records:
-      "The flower patterns available within a given timing and direction, and how to move between them. Volume 1 covers the one-to-one case as ten minimal beat shapes for two hands: isolation, extension, vertical antispin, horizontal antispin, and the six hybrids they stack into.",
+      "A framework for flower patterns and the transitions between them, developed through illustrated guides and interactive apps. VTG 1 starts with ten minimal beat shapes for two hands. VTG 3 organizes patterns in a grid that records the timing and direction of hands and props separately; VTG 4 extends that framework through SpiroAnim.",
+    explore: {
+      kind: "original",
+      label: "Open the VTG 3 web app",
+      href: "https://vtg-v3.web.app/",
+    },
     subWorks: [
       {
         name: "VTG 1",
@@ -149,14 +154,54 @@ export const NOTATION_CATALOG: CatalogEntry[] = [
         note: "illustrated and written by Lorq Nichols, with Thompson, Cantor and Yee. The Shape Matrix is page 32",
       },
       {
-        name: "VTG 3",
-        note: "announced in 2019 as the final installment; never published",
+        name: "VTG 3: grid and document · 2019",
+        note: "A six-by-six grid of movement snapshots, with each pattern labeled by the timing and direction of the hands and props. The public document is marked Draft #1; it credits Yee, with inspiration from Cantor and Cassie McKenney.",
+      },
+      {
+        name: "VTG 3: phone and web apps",
+        note: "Available as an Android app by July 2019. Michael Caden Pike (MCP) and Yee turned the grid into animations, transitions and quizzes at 1:1, 1:3 and 1:5. A web version remains publicly accessible.",
+      },
+      {
+        name: "VTG 4 / SpiroAnim · 2026",
+        note: "Announced by the VTG Crew on August 29, 2026. Mentive’s SpiroAnim builds on the VTG 3 grid with quarter timing, quarter placement and additional ratios. Mentive credits the underlying concepts to other practitioners and describes his contribution as defining, exploring and visualizing them.",
       },
     ],
     sources: [
       {
         label: "The Vulcan Tech Gospel, on Noel Yee's site",
         href: "https://noelyee.com/instruction/vulcan-tech-gospel/",
+      },
+      {
+        label: "Noel Yee’s 2019 retrospective and VTG 3 announcement",
+        href: "https://noelyee.com/vulcan-tech-gospel-1-vtg-1-2011/",
+      },
+      {
+        label: "VTG 3 original document · Draft #1",
+        href: "https://drive.google.com/file/d/11jlw3ezJ4aSzH5zwlaM5_2mtOYy4U3WX/view",
+      },
+      {
+        label: "VTG 3 Android app · Michael Caden Pike (MCP)",
+        href: "https://play.google.com/store/apps/details?hl=en_US&id=net.firestaff.mcp.VTGv3",
+      },
+      {
+        label: "VTG 3 web app",
+        href: "https://vtg-v3.web.app/",
+      },
+      {
+        label: "VTG 3 grid in SpiroAnim · Instagram, August 27, 2026",
+        href: "https://www.instagram.com/vulcantechgospel/p/Dci0r-Mve05/",
+      },
+      {
+        label: "VTG 4 announcement · Instagram, August 29, 2026",
+        href: "https://www.instagram.com/vulcantechgospel/p/DcoQATwFrUA/",
+      },
+      {
+        label: "Mentive’s attribution of the underlying concepts",
+        href: "https://www.instagram.com/p/DcoQATwFrUA/c/17953419501233426/",
+      },
+      {
+        label: "SpiroAnim’s VTG 4 reference and interactive grids",
+        href: "https://spiroanim.com/vtg4/",
       },
     ],
   },

@@ -174,7 +174,13 @@ const CATALOG_CLASSIFICATION: Record<
 		lane: "languages",
 		shortTitle: "VTG",
 		firstDocumentedYear: 2010,
+		dateLabel: "2010 → 2026",
 		evidenceBasis: "directly-observed",
+		activity: {
+			status: "active",
+			lastVerifiedYear: 2026,
+			note: "The VTG 4 announcement is dated August 29, 2026. The public web apps were reviewed on September 8, 2026.",
+		},
 	},
 	"nine-square": {
 		lane: "languages",
@@ -248,6 +254,46 @@ const CATALOG_SOURCE_SUPPORTS: Record<
 		{
 			supports:
 				"The document, its chapter order and bylines, and Noel Yee's account of what the project set out to record.",
+			basis: "directly-observed",
+		},
+		{
+			supports:
+				"Yee’s February 2019 announcement of VTG 3 and his account of its origins in the earlier transition work.",
+			basis: "creators-account",
+		},
+		{
+			supports:
+				"The publicly shared VTG 3 draft, its six-by-six snapshot grid, separate hand and prop relationships, and credits to Yee, Cantor and McKenney.",
+			basis: "directly-observed",
+		},
+		{
+			supports:
+				"A released VTG Version 3 app, with dated reviews by July 2019. The listing credits MCP and Yee and describes the grid, animations, transitions and quizzes.",
+			basis: "directly-observed",
+		},
+		{
+			supports:
+				"The original VTG 3 grid and animations in a publicly accessible web app. Its About page credits Yee, Cantor and McKenney.",
+			basis: "directly-observed",
+		},
+		{
+			supports:
+				"The VTG Crew identifies Mentive’s SpiroAnim work as a translation of the VTG 3 grid into elemental terminology.",
+			basis: "creators-account",
+		},
+		{
+			supports:
+				"The August 29 launch calls Mentive’s application VTG 4 and describes quarter placement, quarter timing and ratios beyond 1:1, 1:3 and 1:5.",
+			basis: "creators-account",
+		},
+		{
+			supports:
+				"In his reply to the launch post, Mentive credits other practitioners for the concepts and describes his contribution as definitions, exploration and visualization.",
+			basis: "creators-account",
+		},
+		{
+			supports:
+				"The current VTG 4 reference, its relationship to the VTG 3 grid, and separate treatment of quarter timing and quarter placement.",
 			basis: "directly-observed",
 		},
 	],

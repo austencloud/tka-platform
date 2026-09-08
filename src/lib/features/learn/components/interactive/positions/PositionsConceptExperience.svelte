@@ -9,6 +9,7 @@
   import { WORKSPACE_BUTTON_ICON } from "$lib/features/create/shared/workspace-panel/shared/workspace-button-layout";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import "$lib/shared/selection/selection.css";
   import PropPlacementGrid from "$lib/shared/pictograph/grid/components/PropPlacementGrid.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import {
@@ -34,6 +35,7 @@
     positionKindFor,
     positionExample,
     positionPreview,
+    positionPairPreview,
     positionCorrection,
     transformPosition,
     changePositionGrid,
@@ -86,6 +88,7 @@
   );
   let epoch = $state(0);
   let showReference = $state<boolean | null>(null);
+  let hoveredExample = $state<PositionType | null>(null);
   let boardWidth = $state(300);
   let boardHeight = $state(320);
   let experienceElement: HTMLDivElement;
@@ -153,7 +156,8 @@
   const examples = $derived(
     POSITION_KINDS.map((kind) => ({
       kind,
-      data: positionPreview(kind, gridMode),
+      pair: workshop.examplePair(kind, gridMode),
+      data: positionPairPreview(workshop.examplePair(kind, gridMode), gridMode),
     }))
   );
   const title = $derived(
@@ -171,6 +175,12 @@
       change.leftLocation !== placement.leftLocation ||
       change.rightLocation !== placement.rightLocation;
     placement = change;
+    if (change.complete && change.activeHand === null)
+      workshop.rememberPosition(
+        change.leftLocation,
+        change.rightLocation,
+        gridMode
+      );
     workshop.evaluatePlacement(change);
     if (incorrect && change.complete && change.activeHand === null) {
       const retryEpoch = epoch;
@@ -194,6 +204,7 @@
   }
 
   function loadPair(left: GridLocation | null, right: GridLocation | null) {
+    workshop.rememberPosition(left, right, gridMode);
     preset = { left, right };
     placement = {
       leftLocation: left,
@@ -207,7 +218,7 @@
   }
 
   function study(kind: PositionType) {
-    const example = positionExample(kind, gridMode);
+    const example = workshop.examplePair(kind, gridMode);
     loadPair(example.left, example.right);
   }
 
@@ -307,26 +318,15 @@
     {/snippet}
 
     {#snippet artifact()}
-      <div class="workshop" class:exploring class:has-reference={referencesVisible}>
+      <div
+        class="workshop"
+        class:exploring
+        class:free-play={freePlay}
+        class:has-reference={referencesVisible}
+      >
         <div class="board-column">
           {#if freePlay}
             <div class="board-toolbar" data-position-stage="board-tools">
-              <div class="live-position" aria-live="polite" aria-atomic="true">
-                <Crossfade key={built}>
-                  <div class="position-name">
-                    {#if built}
-                      <span aria-hidden="true"
-                        ><TKAWordGlyph
-                          word={POSITION_TYPE_INFO[built].symbol}
-                          height={28}
-                          darkMode
-                        /></span
-                      >
-                      <strong>{POSITION_TYPE_INFO[built].label}</strong>
-                    {:else}<strong>Your position</strong>{/if}
-                  </div>
-                </Crossfade>
-              </div>
               <SegmentedControl
                 options={[
                   { value: GridMode.DIAMOND, label: "Diamond" },
@@ -409,6 +409,24 @@
               renderTray={false}
               onChange={changed}
             />
+            {#if freePlay}
+              <div class="board-identity" aria-live="polite" aria-atomic="true">
+                <span class="sr-only"
+                  >{built
+                    ? POSITION_TYPE_INFO[built].label
+                    : "Your position"}</span
+                >
+                <Crossfade key={built}>
+                  {#if built}<span aria-hidden="true"
+                      ><TKAWordGlyph
+                        word={POSITION_TYPE_INFO[built].symbol}
+                        height={40}
+                        darkMode
+                      /></span
+                    >{/if}
+                </Crossfade>
+              </div>
+            {/if}
           </div>
           <div class="advance" data-position-stage="advance">
             {#if !exploring && !workshop.canFinish}
@@ -477,9 +495,14 @@
                   aria-label="Position examples"
                 >
                   {#each examples as example (example.kind)}
+                    {@const matches =
+                      freePlay &&
+                      placement.leftLocation === example.pair.left &&
+                      placement.rightLocation === example.pair.right}
                     <div
-                      class="example"
-                      class:selected={freePlay && built === example.kind}
+                      class="example tka-seq-cell"
+                      class:is-selected={matches}
+                      class:is-hovered={hoveredExample === example.kind}
                     >
                       <div class="example-art" aria-hidden="true">
                         <PictographContainer
@@ -493,15 +516,26 @@
                           rightPropTypeOverride={PropType.HAND}
                         />
                       </div>
+                      <span class="example-glyph" aria-hidden="true"
+                        ><TKAWordGlyph
+                          word={POSITION_TYPE_INFO[example.kind].symbol}
+                          height={28}
+                          darkMode
+                        /></span
+                      >
                       {#if freePlay}
-                        <PanelButton
-                          ariaLabel={`Study ${POSITION_TYPE_INFO[example.kind].label} example`}
-                          ariaPressed={built === example.kind}
+                        <button
+                          type="button"
+                          class="tka-seq-hit"
+                          aria-label={`Study ${POSITION_TYPE_INFO[example.kind].label} example`}
+                          aria-pressed={matches}
+                          onpointerenter={() => (hoveredExample = example.kind)}
+                          onpointerleave={() => (hoveredExample = null)}
                           onclick={() => study(example.kind)}
-                          >{POSITION_TYPE_INFO[example.kind].label}</PanelButton
-                        >
+                        ></button>
                       {:else}
-                        <strong>{POSITION_TYPE_INFO[example.kind].label}</strong
+                        <span class="sr-only"
+                          >{POSITION_TYPE_INFO[example.kind].label}</span
                         >
                       {/if}
                     </div>
@@ -554,8 +588,8 @@
     width: 100%;
     min-height: 100%;
     color: var(--theme-text);
-    --position-board-size: clamp(18.5rem, calc(100svh - 36rem), 32rem);
-    --lesson-workshop-max: 52rem;
+    --position-board-size: clamp(18.5rem, calc(100svh - 28rem), 34rem);
+    --lesson-workshop-max: 78rem;
   }
   .workshop,
   .board-column,
@@ -564,34 +598,42 @@
   }
   .workshop {
     display: grid;
-    width: min(100%, 32rem);
+    width: min(100%, var(--position-board-size));
     margin-inline: auto;
   }
   @container (min-width: 48rem) {
     .workshop.has-reference {
-      --position-board-size: clamp(18.5rem, calc(100svh - 32rem), 36rem);
-      width: min(100%, calc(var(--position-board-size) + 13.5rem));
-      grid-template-columns: minmax(0, 1fr) 11rem;
-      gap: 2.5rem;
+      --position-board-size: clamp(18.5rem, calc(100svh - 32rem), 56rem);
+      width: min(100%, calc(var(--position-board-size) * 1.333 + 1.5rem));
+      grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+      column-gap: 1.5rem;
       align-items: start;
     }
-    .has-reference .board-column,
+    .has-reference .board-column {
+      display: contents;
+    }
+    .has-reference .board-column > * {
+      grid-column: 1;
+    }
     .has-reference .lesson-side {
       display: block;
       min-width: 0;
+      grid-column: 2;
+      grid-row: 2 / span 4;
     }
-    .lesson-side {
-      padding-top: 0.75rem;
+    .has-reference.free-play .lesson-side {
+      grid-row: 3 / span 3;
+    }
+    .lesson-side .reference-heading {
+      margin-top: 0;
     }
     .lesson-side .examples {
       grid-template-columns: 1fr;
       gap: 1rem;
     }
-    .lesson-side .example-art {
-      max-width: clamp(5rem, calc((100svh - 34rem) / 3), 9rem);
-    }
   }
   .board {
+    position: relative;
     aspect-ratio: 1;
     width: min(100%, var(--position-board-size));
     margin-inline: auto;
@@ -603,7 +645,7 @@
     display: grid;
     justify-items: center;
     gap: 0.35rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     text-align: center;
   }
   .current-task {
@@ -611,8 +653,9 @@
     align-items: center;
     gap: 0.5rem;
     min-height: 1.5rem;
-    font-size: 1rem;
-    font-weight: 650;
+    font-size: var(--font-size-min);
+    font-weight: 500;
+    color: var(--theme-text-dim);
   }
   .current-task.incorrect {
     color: var(--semantic-error);
@@ -669,28 +712,30 @@
   .support-actions {
     margin-block: 0.75rem;
   }
-  .position-name {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+  .support-actions:empty {
+    display: none;
   }
   .board-toolbar {
-    width: min(100%, var(--position-board-size));
+    width: min(100%, 20rem);
     margin-inline: auto;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 0.75rem 1.5rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
   }
-  .live-position {
-    min-width: 9rem;
-    font-size: 1.25rem;
+  .board-identity,
+  .example-glyph {
+    position: absolute;
+    top: 4%;
+    left: 5%;
+    pointer-events: none;
+    z-index: 2;
   }
-  .example.selected {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 3px;
+  .board-identity {
+    min-height: 40px;
+    min-width: 40px;
   }
   h3 {
     margin: 0;
@@ -721,21 +766,13 @@
   }
   .example {
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
+    aspect-ratio: 1;
+    --selection-selected-transform: none;
   }
   .example-art {
     width: 100%;
     aspect-ratio: 1;
     overflow: hidden;
-  }
-  .example strong {
-    font-size: var(--font-size-min, 14px);
-  }
-  .example :global(.panel-btn) {
-    padding-inline: 0.75rem;
   }
   .explore-tools {
     display: grid;

@@ -141,6 +141,66 @@ describe("four-lane history archive ledger", () => {
     }
   });
 
+  it("retains VTG 3's public draft and released app", () => {
+    const vtg = archiveEntry("vtg");
+    const works = vtg.catalogEntry?.subWorks ?? [];
+    const vtg3 = works.filter((work) => work.name.startsWith("VTG 3"));
+    const vtg3Text = vtg3.map((work) => work.note).join(" ");
+
+    expect(vtg3Text).toMatch(/Draft #1/);
+    expect(vtg3Text).toMatch(/Michael Caden Pike \(MCP\)/);
+    expect(vtg3Text).toMatch(/July 2019/);
+    expect(vtg3Text).not.toMatch(
+      /never published|never appeared|not released/i
+    );
+    expect(vtg.catalogEntry?.explore?.href).toBe("https://vtg-v3.web.app/");
+    expect(vtg.citations.map((citation) => citation.href)).toEqual(
+      expect.arrayContaining([
+        "https://drive.google.com/file/d/11jlw3ezJ4aSzH5zwlaM5_2mtOYy4U3WX/view",
+        "https://play.google.com/store/apps/details?hl=en_US&id=net.firestaff.mcp.VTGv3",
+      ])
+    );
+
+    const chronicle = readFileSync(
+      path.join(
+        repoRoot,
+        "src/routes/(public)/history/_components/archive/_lib/vtg-chronicle.svelte.ts"
+      ),
+      "utf8"
+    );
+    expect(chronicle).not.toMatch(/never-published VTG|VTG 3 never appeared/);
+  });
+
+  it("dates VTG 4's application announcement while retaining Mentive's conceptual attribution", () => {
+    const vtg = archiveEntry("vtg");
+    const vtg4 = vtg.catalogEntry?.subWorks?.find((work) =>
+      work.name.startsWith("VTG 4")
+    );
+    expect(vtg.firstDocumentedYear).toBe(2010);
+    expect(entrySpanEndYear(vtg)).toBe(2026);
+    expect(vtg4?.note).toMatch(/August 29, 2026/);
+    expect(vtg4?.note).toMatch(/Mentive.*SpiroAnim/);
+    expect(vtg4?.note).toMatch(
+      /credits the underlying concepts to other practitioners/
+    );
+
+    const announcement = vtg.citations.find((citation) =>
+      citation.href.endsWith("/p/DcoQATwFrUA/")
+    );
+    const attribution = vtg.citations.find((citation) =>
+      citation.href.endsWith("/c/17953419501233426/")
+    );
+    expect(announcement?.basis).toBe("creators-account");
+    expect(announcement?.supports).toMatch(/VTG 4/);
+    expect(attribution?.basis).toBe("creators-account");
+    expect(attribution?.supports).toMatch(/credits other practitioners/);
+    // Source descriptions are matched by position in the catalog. An added
+    // source must not silently receive the generic fallback claim.
+    for (const citation of vtg.citations) {
+      expect(citation.supports).toMatch(/VTG|Yee|MCP|Mentive/);
+    }
+  });
+
   it("orders each lane by evidence-backed calendar placement", () => {
     for (const lane of ARCHIVE_LANES) {
       const years = entriesForLane(lane.id).map(
