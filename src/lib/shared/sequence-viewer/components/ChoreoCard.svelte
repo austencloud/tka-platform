@@ -635,6 +635,7 @@
 
     return {
       ...baseOptions,
+      primaryPropColors: cloudProbeEnabled ? null : getSettings().primaryPropColors,
       // A scan represents the printed card, not the scanner's personal export
       // toggles. Pin the same canonical visibility used when QR creation
       // verifies cloud assets; retain the sequence's participating hands.
@@ -690,6 +691,7 @@
 
   renderLifecycle = createChoreoCardRenderLifecycle(
     () => ({
+      primaryPropColors: cloudProbeEnabled ? null : getSettings().primaryPropColors,
       sequence,
       leftPropType,
       rightPropType,

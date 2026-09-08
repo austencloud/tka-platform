@@ -21,6 +21,7 @@ import { mount, tick, unmount } from "svelte";
  * When provided, these override the global visibility settings
  */
 export interface PictographVisibilityOptions {
+  primaryPropColors?: { left: string; right: string } | null;
   showTKA?: boolean; // TKA Glyph includes turn numbers
   showTnD?: boolean;
   showElemental?: boolean;

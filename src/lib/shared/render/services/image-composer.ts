@@ -193,6 +193,7 @@ export class ImageComposer {
         }
       }
       return {
+        primaryPropColors: overrides.primaryPropColors,
         showTKA: overrides.showTKA,
         showTnD: overrides.showTnD,
         showElemental: overrides.showElemental,
@@ -228,6 +229,7 @@ export class ImageComposer {
     const appSettings = getSettings();
 
     const globalSettings: PictographVisibilityOptions = {
+      primaryPropColors: appSettings.primaryPropColors,
       showTKA: visibilityManager.getGlyphVisibility("tkaGlyph"),
       showTnD: visibilityManager.getGlyphVisibility("tndGlyph"),
       showElemental: visibilityManager.getGlyphVisibility("elementalGlyph"),
@@ -244,6 +246,7 @@ export class ImageComposer {
 
     if (overrides) {
       return {
+        primaryPropColors: overrides.primaryPropColors !== undefined ? overrides.primaryPropColors : globalSettings.primaryPropColors,
         showTKA: overrides.showTKA ?? globalSettings.showTKA,
         showTnD: overrides.showTnD ?? globalSettings.showTnD,
         showElemental: overrides.showElemental ?? globalSettings.showElemental,
@@ -492,6 +495,8 @@ export class ImageComposer {
     visibilitySettings: PictographVisibilityOptions,
     blob: Blob
   ): void {
+    // Custom palettes must not seed default preview cells.
+    if (visibilitySettings.primaryPropColors) return;
     const isDark = visibilitySettings.darkMode ?? false;
     const leftProp = visibilitySettings.leftPropType;
     const rightProp = visibilitySettings.rightPropType;
@@ -553,7 +558,7 @@ export class ImageComposer {
         rightPropType: rightPropType ?? visibilitySettings?.rightPropType,
       };
 
-      if (this.useCompositionalCaching && this.layerCompositor) {
+      if (this.useCompositionalCaching && this.layerCompositor && !finalVisibilitySettings.primaryPropColors) {
         await this.renderPictographWithLayerCompositor(
           ctx,
           pictographData,
