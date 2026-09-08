@@ -342,6 +342,7 @@
 
     {#snippet controls()}
       <LessonStageControls
+        progressAppearance="steps"
         label={isComparison
           ? viewMode === "scroll"
             ? "Done"
@@ -384,7 +385,12 @@
   }
 
   .motions-experience :global(.progress-stack) {
-    gap: 0.45rem;
+    gap: 0.6rem;
+  }
+
+  .motions-experience :global(.curriculum-progress) {
+    color: var(--theme-text-dim);
+    font-weight: 500;
   }
 
   .motions-experience.has-focused-comparison {

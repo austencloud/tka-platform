@@ -211,7 +211,7 @@
           disabled={disabled && !helpMode}
           aria-label={helpMode
             ? "Learn about Flip"
-            : "Flip sequence: flip up and down"}
+            : `Flip ${actionSubject}: flip up and down`}
         >
           <div class="btn-icon">
             <i class="fas fa-up-down" aria-hidden="true"></i>
@@ -239,7 +239,7 @@
               : `Swap hands in ${actionSubject}`}
         >
           <div class="btn-icon swap-icon-host">
-            <SwapIcon size="1em" />
+            <SwapIcon size="1em" monochrome={toolbar} />
           </div>
           <div class="btn-text">
             <span class="btn-label">Swap</span>
@@ -274,6 +274,7 @@
       <div class="rotation-pair">
         <button
           class="grid-btn rotate-ccw"
+          title={toolbar ? `Rotate left ${rotationDegrees}°` : undefined}
           class:help-active={helpMode}
           onclick={() => handleActionClick("rotate", onRotateCCW)}
           data-ghost={disabled || helpMode ? undefined : "safe"}
@@ -298,6 +299,7 @@
         </button>
         <button
           class="grid-btn rotate-cw"
+          title={toolbar ? `Rotate right ${rotationDegrees}°` : undefined}
           class:help-active={helpMode}
           onclick={() => handleActionClick("rotate", onRotateCW)}
           data-ghost={disabled || helpMode ? undefined : "safe"}
@@ -564,6 +566,41 @@
 
   .toolbar .btn-label {
     font-size: 1rem;
+  }
+
+  .toolbar .grid-btn[class] {
+    background: color-mix(
+      in srgb,
+      rgb(var(--btn-color)) 14%,
+      var(--sheet-bg-solid)
+    );
+    border-color: color-mix(
+      in srgb,
+      rgb(var(--btn-color)) 45%,
+      var(--sheet-bg-solid)
+    );
+  }
+
+  .toolbar .grid-btn[class]:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      rgb(var(--btn-color)) 24%,
+      var(--sheet-bg-solid)
+    );
+    border-color: rgb(var(--btn-color));
+    box-shadow: none;
+  }
+
+  .toolbar .btn-icon {
+    color: white;
+  }
+
+  .toolbar .rotation-pair .btn-text {
+    display: none;
+  }
+
+  .toolbar .rotation-pair .grid-btn {
+    min-width: 3.5rem;
   }
 
   .toolbar .rotation-pair {

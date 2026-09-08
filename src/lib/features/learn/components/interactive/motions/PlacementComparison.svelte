@@ -30,15 +30,24 @@
     }))
   );
 
-  function transform(action: "rotate" | "mirror" | "swap", rotationSteps = 1) {
+  function transform(
+    action: "rotate" | "mirror" | "flip" | "swap",
+    rotationSteps = 1
+  ) {
     pairs = pairs.map((pair) =>
-      transformPosition(pair.left, pair.right, action, {
-        rotationSteps,
-      })
+      transformPosition(
+        pair.left,
+        pair.right,
+        action === "flip" ? "mirror" : action,
+        {
+          rotationSteps,
+          reflectionAxis: action === "flip" ? 2 : 0,
+        }
+      )
     );
     if (action === "rotate")
       gridMode = getToggledGridMode(gridMode, rotationSteps);
-    announcement = `${action === "rotate" ? "Rotated 45 degrees" : action === "mirror" ? "Reflected" : "Hands swapped"}. Alpha, Beta and Gamma are unchanged. ${gridMode === GridMode.BOX ? "Box" : "Diamond"} grid.`;
+    announcement = `${action === "rotate" ? "Rotated 45 degrees" : action === "mirror" ? "Mirrored left and right" : action === "flip" ? "Flipped up and down" : "Hands swapped"}. Alpha, Beta and Gamma are unchanged. ${gridMode === GridMode.BOX ? "Box" : "Diamond"} grid.`;
   }
 </script>
 
@@ -96,6 +105,7 @@
       actionSubject="all positions"
       rotationDegrees={45}
       onMirror={() => transform("mirror")}
+      onFlip={() => transform("flip")}
       onSwap={() => transform("swap")}
       onRotateCCW={() => transform("rotate", -1)}
       onRotateCW={() => transform("rotate", 1)}
