@@ -399,6 +399,7 @@ export async function updateCollection(
       | "name"
       | "description"
       | "credit"
+      | "propType"
       | "coverImageUrl"
       | "color"
       | "icon"

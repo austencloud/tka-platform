@@ -14,6 +14,7 @@ import {
   type DocumentData,
   type Firestore,
 } from "firebase/firestore";
+import { parseCollectionProp } from "../domain/collection-prop";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
@@ -86,6 +87,7 @@ export function mapDocToCollection(
   return {
     id,
     name: data["name"] ?? "",
+    propType: parseCollectionProp(data["propType"]),
     description: data["description"],
     // Cleared fields are written as "" rather than deleted (updateDoc rejects
     // undefined), so normalise the empty string back to absent here.

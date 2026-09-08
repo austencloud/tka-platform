@@ -64,6 +64,7 @@ Variation support:
     onPrimaryAction,
     onHover,
     selected = false,
+    collectionPropType = null,
     leftPropType = undefined,
     rightPropType = undefined,
     catDogModeEnabled = false,
@@ -87,6 +88,7 @@ Variation support:
     /** Fires on pointer enter (debounced 150ms) for cache pre-warming */
     onHover?: (sequence: SequenceData) => void;
     selected?: boolean;
+    collectionPropType?: PropType | null;
     leftPropType?: PropType;
     rightPropType?: PropType;
     catDogModeEnabled?: boolean;
@@ -656,6 +658,7 @@ Variation support:
       {#await import("$lib/shared/browse/components/hover-preview/CardHoverPreviewLayer.svelte") then mod}
         <mod.default
           sequence={displayedSequence}
+          {collectionPropType}
           instant={morphDriven}
           headerFrac={sheetHeaderFrac}
           onReady={() => previewReadyResolve?.()}
