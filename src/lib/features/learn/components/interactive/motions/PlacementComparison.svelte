@@ -6,6 +6,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getToggledGridMode } from "$lib/shared/create/services/rotation-helpers";
+  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { createPropPlacementMotionState } from "$lib/shared/pictograph/grid/state/prop-placement-motion.svelte";
   import {
     buildPlacementTransformTransition,
@@ -68,8 +69,11 @@
         }
       )
     );
-    if (action === "rotate")
+    if (action === "rotate") {
+      // The grid cannot infer a turn's direction from diamond/box mode alone.
+      setGridRotationDirection(rotationSteps < 0 ? -1 : 1);
       gridMode = getToggledGridMode(gridMode, rotationSteps);
+    }
     if (action === "swap") betaSwapped = !betaSwapped;
     announcement = `${action === "rotate" ? "Rotated 45 degrees" : action === "mirror" ? "Mirrored left and right" : action === "flip" ? "Flipped up and down" : "Hands swapped"}. Alpha, Beta and Gamma are unchanged. ${gridMode === GridMode.BOX ? "Box" : "Diamond"} grid.`;
     if (reducedMotion()) {
