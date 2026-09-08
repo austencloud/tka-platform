@@ -2918,10 +2918,10 @@ diff --git a/dist/lib/components/props/Eightrings3D.svelte.d.ts.map b/dist/lib/c
 deleted file mode 100644
 index fadf6104b043722cb8415eb47964e1527ee8a117..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/props/Fan3D.svelte b/dist/lib/components/props/Fan3D.svelte
-index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c3217792730aa64 100644
+index dc635e752d11561cb585cbaaffa05b1e525d31e8..bfd1f4b09de7289a38eba0ba95c00c622320d074 100644
 --- a/dist/lib/components/props/Fan3D.svelte
 +++ b/dist/lib/components/props/Fan3D.svelte
-@@ -1,29 +1,52 @@
+@@ -1,29 +1,51 @@
 +<script module lang="ts">
 +  import type { BufferGeometry } from "three";
 +  import { buildFanShape, FAN_FRAME_WIDTH } from "./fan-profile";
@@ -2967,7 +2967,6 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c321779
    import { T } from "@threlte/core";
 -  import { DoubleSide } from "three";
 +  import { useGltf } from "@threlte/extras";
-+  import { untrack } from "svelte";
 +  import type { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
    import type { Prop3DProps } from "./Prop3DProps";
    import { PROP_COLORS } from "./Prop3DProps";
@@ -2989,7 +2988,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c321779
  
    let {
      propState,
-@@ -33,156 +56,121 @@
+@@ -33,156 +55,124 @@
      thickness,
      isActivePlayer = false,
      scale = 1,
@@ -3013,7 +3012,10 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c321779
  
 -  const staffLength = $derived(
 +  const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
-+  const gltf = useGltf(untrack(() => MODEL_URL));
++  const fanLoader = useGltf();
++  const gltf = $derived(fanLoader.load(
++    build.fanBuild === "flat-grip" ? "/models/props/fan-flat-grip.glb" : MODEL_URL
++  ));
 +  const rotation = $derived(computePropRotation(propState));
 +  const trailMaterial = $derived(getPlateMaterials(color).trail);
 +  const effectiveLength = $derived(
@@ -18517,10 +18519,10 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +  />
  {/if}
 diff --git a/src/lib/components/props/Fan3D.svelte b/src/lib/components/props/Fan3D.svelte
-index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c3217792730aa64 100644
+index dc635e752d11561cb585cbaaffa05b1e525d31e8..bfd1f4b09de7289a38eba0ba95c00c622320d074 100644
 --- a/src/lib/components/props/Fan3D.svelte
 +++ b/src/lib/components/props/Fan3D.svelte
-@@ -1,29 +1,52 @@
+@@ -1,29 +1,51 @@
 +<script module lang="ts">
 +  import type { BufferGeometry } from "three";
 +  import { buildFanShape, FAN_FRAME_WIDTH } from "./fan-profile";
@@ -18566,7 +18568,6 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c321779
    import { T } from "@threlte/core";
 -  import { DoubleSide } from "three";
 +  import { useGltf } from "@threlte/extras";
-+  import { untrack } from "svelte";
 +  import type { Material, Mesh, MeshStandardMaterial, Object3D } from "three";
    import type { Prop3DProps } from "./Prop3DProps";
    import { PROP_COLORS } from "./Prop3DProps";
@@ -18588,7 +18589,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c321779
  
    let {
      propState,
-@@ -33,156 +56,121 @@
+@@ -33,156 +55,124 @@
      thickness,
      isActivePlayer = false,
      scale = 1,
@@ -18612,7 +18613,10 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..8f93dc5db7f5d6d6da7f76381c321779
  
 -  const staffLength = $derived(
 +  const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
-+  const gltf = useGltf(untrack(() => MODEL_URL));
++  const fanLoader = useGltf();
++  const gltf = $derived(fanLoader.load(
++    build.fanBuild === "flat-grip" ? "/models/props/fan-flat-grip.glb" : MODEL_URL
++  ));
 +  const rotation = $derived(computePropRotation(propState));
 +  const trailMaterial = $derived(getPlateMaterials(color).trail);
 +  const effectiveLength = $derived(
@@ -34327,7 +34331,7 @@ index 0000000000000000000000000000000000000000..b06186fca0b9b1b41eb38ac86f0dcecd
 +}
 diff --git a/src/lib/state/prop-finish-state.svelte.ts b/src/lib/state/prop-finish-state.svelte.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..0392476d03b2fde881b69ea77a9e83303356ce0a
+index 0000000000000000000000000000000000000000..e9a22a5cd6230bdadb78732327aa466498d4d536
 --- /dev/null
 +++ b/src/lib/state/prop-finish-state.svelte.ts
 @@ -0,0 +1,106 @@
@@ -34345,7 +34349,7 @@ index 0000000000000000000000000000000000000000..0392476d03b2fde881b69ea77a9e8330
 +import { PropType } from "../domain/enums/PropType";
 +
 +export type PropFinish = "fire" | "day";
-+export type FanBuild = "pictograph" | "fire" | "lotus" | "day" | "moon";
++export type FanBuild = "pictograph" | "fire" | "lotus" | "day" | "moon" | "flat-grip";
 +export type FanFrameColor = "black" | "white";
 +export type FanCover = "bare" | "covered";
 +
