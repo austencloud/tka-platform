@@ -24,6 +24,58 @@ function staticMotion(color: HandSide) {
 }
 
 describe("PictographPreparer presentation visibility", () => {
+  it("starts independent prop work while arrows are pending and publishes a complete frame", async () => {
+    let releaseArrows!: () => void;
+    const arrowsPending = new Promise<void>((resolve) => {
+      releaseArrows = resolve;
+    });
+    const propLoader = {
+      loadPropSvg: vi.fn(async () => ({
+        svgData: {
+          svgContent: "<path/>",
+          viewBox: { width: 100, height: 100 },
+          center: { x: 50, y: 50 },
+        },
+      })),
+    };
+    const preparer = new PictographPreparer(
+      {
+        coordinateArrowLifecycle: async () => {
+          await arrowsPending;
+          return { positions: {}, assets: {}, mirroring: {} };
+        },
+      } as never,
+      propLoader as never,
+      {
+        calculatePlacement: async () => ({
+          positionX: 475,
+          positionY: 500,
+          rotationAngle: 0,
+        }),
+      } as never
+    );
+    const pictograph: PictographData = {
+      id: "parallel-layers",
+      motions: {
+        left: staticMotion(HandSide.LEFT),
+        right: staticMotion(HandSide.RIGHT),
+      },
+    };
+    let published = false;
+    const frame = preparer.prepareSingle(pictograph).then((value) => {
+      published = true;
+      return value;
+    });
+    await Promise.resolve();
+    expect(propLoader.loadPropSvg).toHaveBeenCalledTimes(2);
+    expect(published).toBe(false);
+    releaseArrows();
+    expect(Object.keys((await frame)._prepared!.propAssets)).toEqual([
+      "left",
+      "right",
+    ]);
+  });
+
   it("prepares a masked pair as a genuine one-hand pictograph", async () => {
     let arrowInput: PictographData | null = null;
     let arrowSoloMode = false;
