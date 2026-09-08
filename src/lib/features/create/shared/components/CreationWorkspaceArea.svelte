@@ -197,10 +197,10 @@
         if (source === "first" && !playback) retainedPlayback = null;
       }}
     />
+    {#if playback && readyPlayback !== playback}
+      <div class="playback-loading" role="status">Loading playback…</div>
+    {/if}
   </div>
-  {#if playback && readyPlayback !== playback}
-    <div class="playback-loading" role="status">Loading playback…</div>
-  {/if}
 </div>
 
 <style>
@@ -229,7 +229,7 @@
 
   .playback-loading {
     position: absolute;
-    inset: 60px 12px auto;
+    inset: 4px 12px auto;
     display: flex;
     align-items: center;
     justify-content: center;
