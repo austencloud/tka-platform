@@ -135,3 +135,43 @@ Keyboard scrubbing in Studio reached step 8 and preserved that pose on return
 to 2D. Normalized timeline percentages differ because Studio maps composition
 time, not sequence progress. As in the original verification, the 4K geometry
 was measured, but the host's screenshot capture crops/scales that viewport.
+
+## Canvas sharpness and scrubber stacking follow-up · 2026-09-08
+
+Two defects were reproduced on the integrated viewer. On Studio return, the
+canvas covered the scrubber for ten sampled frames between 65 and 331ms. Both
+flights used the same stacking level, and the controls could dock beneath the
+still-flying artwork. Repeated Card/Studio switches also left a 41px canvas
+bitmap stretched across roughly 489×487 logical pixels. The resize owner had
+sampled a transformed rectangle; completing that transform produces no
+ResizeObserver notification to repair the backing store.
+
+Control flights now have their own layer above artwork and wait for the canvas
+to dock. The dependency uses the canvas-only moving flag, so the transport cannot
+wait on itself. CanvasResizer measures untransformed client dimensions and
+retains its allocation while parked at zero size. No canvas or timeline clone
+was introduced.
+
+Three repeated Card/Studio pairs followed by Studio-to-2D were measured at each
+affected layout. All retained the same canvas and transport nodes, with zero
+leftover flight overlays. Raster density is backing pixels divided by logical
+canvas size and device pixel ratio.
+
+| Viewport | Studio raster density, all three visits | Canvas covering scrubber on return |
+| -------- | --------------------------------------- | ---------------------------------- |
+| 1440×900 | 1.00×                                   | 0 of 52 sampled frames             |
+| 820×1180 | 1.00×                                   | 0 of 39 sampled frames             |
+| 375×667  | 1.00×                                   | 0 of 43 sampled frames             |
+
+Direct screenshots show sharp grid points and props inside the phone. Seven
+selections 110ms apart retained both nodes and left no flight overlays. That
+interrupted pass retained an oversized 2.07× raster, rather than degrading it;
+ordinary settled passes use 1.00×. Reduced motion also retained both nodes,
+reported 1.00× density, and recorded zero covered frames.
+
+The review trace now exposes canvas-over-scrubber frame counts and final raster
+density. Mode assertions reject replays that did not actually change modes;
+mobile selection uses aria-current rather than desktop aria-pressed. Focused
+tests cover transformed sizing, zero-size parking, dependent docking and reversal,
+and the canvas-only moving state: 15 tests pass. Svelte check reports zero errors
+and warnings.

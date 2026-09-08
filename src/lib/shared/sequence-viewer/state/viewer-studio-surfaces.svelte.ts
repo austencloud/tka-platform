@@ -150,6 +150,9 @@ export function createViewerStudioSurfaces() {
     get moving() {
       return Object.values(movingSurfaces).some(Boolean);
     },
+    get canvasMoving() {
+      return movingSurfaces.canvas === true;
+    },
     get controls() {
       return active ? (controls?.() ?? null) : null;
     },
