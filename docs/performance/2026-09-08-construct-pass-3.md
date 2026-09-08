@@ -53,6 +53,9 @@ pointer. This pass does not reduce repeated updates once all groups are mounted.
   Every mounted group's markup refreshed; counts remained 16, 8, 8 and 4.
 - No browser console errors in the focused verification session.
 - Existing letter-type navigation and container-settling suites: 16 tests passed.
+- After merging current main, a desktop smoke run still revealed 16 cards first
+  at 658 ms; the complete grid was visually inspected again. Main's new optional
+  grid rotation props retain their existing defaults on this route.
 - The guarded local integration command owns the final Svelte/type check.
 
 ## Diagnostics and ownership
