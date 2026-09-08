@@ -720,7 +720,7 @@
       sequence={ctx.effectiveSequence}
       showInlineExportProgress={false}
       showTempoControls={false}
-      showPathShape={false}
+      showPathShape={!studioSurfaces.active}
       onPropChange={ctx.effectiveSequence?.sequenceKind === "hand-path"
         ? undefined
         : (prop) => {
