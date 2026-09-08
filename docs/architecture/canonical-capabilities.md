@@ -5,6 +5,15 @@ wholesale. Each row names the behavior owner. Verify the path in current code
 before relying on it. Add a row only for shared behavior or an intentional
 keep-separate decision, not for every component.
 
+Static placement transforms reuse `PictographContainer`'s `motionStartData`,
+`motionStep`, and `motionProgress` seam. `pictograph-motion-positioner` maps the
+2D animator's paths onto exact prepared start/end poses; `prop-placement-view-model`
+builds paired arc/linear transitions, and `createPropPlacementMotionState` owns
+the readiness-gated clock. Construct's arrival and placement editor keep their
+existing consumers. Searches: static pictograph animation, mirror, flip, swap,
+rotation, arrival motion. Learn queues actions and shares one clock across its
+three examples; it does not own another renderer or interpolation system.
+
 Timing-and-direction route continuity composes the existing `HandMotionPlayer`,
 `reparentToInspector` mounted-node action (also consumed by `ArtPane`), and
 `navigationMorphs`/`runNamedRouteMorph` route driver. Searches: persistent player,

@@ -68,7 +68,11 @@
   async function refreshCharacters(preferred: string | null) {
     candidates = await loadAvailableCandidates();
     for (const candidate of candidates) {
-      if (AVATAR_DEFINITIONS.some(({ id }) => id === candidate.id)) continue;
+      const existing = AVATAR_DEFINITIONS.find(({ id }) => id === candidate.id);
+      if (existing) {
+        existing.modelPath = candidate.modelUrl;
+        continue;
+      }
       AVATAR_DEFINITIONS.push({
         id: candidate.id as AvatarId,
         name: candidate.label,

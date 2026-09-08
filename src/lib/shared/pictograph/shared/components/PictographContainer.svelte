@@ -133,6 +133,7 @@ with pre-prepared data for better performance.
     // Optional in-place motion. The current pictograph remains the only
     // renderer while its props travel from the prepared start pose to this step.
     motionStartData = null,
+    motionStep = null,
     motionProgress = null,
     directPropPositioning = false,
     arrowOpacity = 1,
@@ -197,6 +198,8 @@ with pre-prepared data for better performance.
     stepNumberOverride?: boolean;
     /** Pictograph whose prepared prop positions define this motion's exact start pose. */
     motionStartData?: PictographData | null;
+    /** Presentation-only travel while the displayed pictograph owns the exact final pose. */
+    motionStep?: StepData | null;
     /** 0..1 interpolation progress. null renders the finished pictograph normally. */
     motionProgress?: number | null;
     /** Direct manipulation has already moved the props; do not replay that move. */
@@ -589,12 +592,18 @@ with pre-prepared data for better performance.
   });
 
   const motionPropPositionOverrides = $derived.by(() => {
-    if (motionProgress === null || !stepData || !preparedData?._prepared) {
+    const travelingStep = motionStep ?? stepData;
+    if (
+      motionProgress === null ||
+      !travelingStep ||
+      !preparedData?._prepared ||
+      appliedPrepareKey !== prepareKey
+    ) {
       return null;
     }
 
     return calculatePictographMotionPositions({
-      step: stepData,
+      step: travelingStep,
       progress: motionProgress,
       gridMode:
         overrideGridMode ?? preparedData._prepared.gridMode ?? GridMode.DIAMOND,
