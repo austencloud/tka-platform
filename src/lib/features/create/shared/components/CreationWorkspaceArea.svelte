@@ -63,13 +63,10 @@
   onDestroy(() => panelState.stopWorkspacePlayback());
 
   $effect(() => {
-    if (
-      playback &&
-      (navigationState.activeTab !== "construct" ||
-        activeSequenceState.currentSequenceRevision !==
-          playback.sourceSequenceRevision)
-    )
-      panelState.stopWorkspacePlayback();
+    panelState.syncWorkspacePlaybackSource(
+      navigationState.activeTab,
+      activeSequenceState.currentSequenceRevision
+    );
   });
 
   function stopOnEscape(event: KeyboardEvent) {

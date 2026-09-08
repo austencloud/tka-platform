@@ -67,6 +67,7 @@
     app.compact &&
       app.surface === "theory" &&
       app.activeView === "detail" &&
+      !app.propPickerOpen &&
       animationState.activeSection !== null
   );
 
@@ -308,7 +309,11 @@
          also repaints nothing in the grid: a tile is the two hands' shapes, and
          the pairing is what those two hands do to each other, which is a thing
          you watch rather than a thing you look at. -->
-    <div class="mode-picker" transition:growFade={{ axis: "y" }}>
+    <div
+      class="mode-picker"
+      data-prop-mode-chrome
+      transition:growFade={{ axis: "y" }}
+    >
       <ElementChipRow
         selected={app.theoryMode}
         onpick={(mode: VtgMode | null) => {
@@ -343,7 +348,7 @@
             <small>Its two hands run here, in the pairing chosen above.</small>
           </div>
         {:else}
-          <header class="pair-heading">
+          <header class="pair-heading" data-prop-mode-chrome>
             <div class="pair-keys">
               <strong style={`color: ${BLUE};`}>
                 {theoryRatioLabel(pair.left.ratio)}
@@ -357,7 +362,7 @@
 
           <!-- The stage is a button, so the gear is its sibling in a shared
                frame rather than a control nested inside a control. -->
-          <div class="stage-frame">
+          <div class="stage-frame" data-prop-layout="theory-canvas">
             {#if !app.compact}
               <ShapeMatrixStageActions />
             {/if}
@@ -412,7 +417,11 @@
         <!-- Outside the branch on purpose: it is true of the whole surface.
              The short question stays visible; the explanation waits until
              someone asks for it so this pane still feels like a toy. -->
-        <div class="boundary-disclosure" transition:growFade={{ axis: "y" }}>
+        <div
+          class="boundary-disclosure"
+          data-prop-mode-chrome
+          transition:growFade={{ axis: "y" }}
+        >
           <PanelButton
             fullWidth
             ariaExpanded={boundaryOpen}
@@ -490,7 +499,12 @@
          no letter, no steps and no word, and the panel's sequence-shaped
          affordances are turned off rather than pointed at nothing. -->
     {#if app.compact}
-      <div class="animation-controls" data-shape-matrix-dock>
+      <div
+        class="animation-controls"
+        data-prop-mode-chrome
+        data-prop-layout={app.surface === "theory" ? "picker" : undefined}
+        data-shape-matrix-dock
+      >
         <AnimationPanel
           isExporting={false}
           layout="bottom"

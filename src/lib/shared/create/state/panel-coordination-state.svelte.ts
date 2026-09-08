@@ -355,12 +355,18 @@ export interface PanelCoordinationState {
   get workspacePlayback(): {
     sequence: SequenceData;
     sourceSequenceRevision: number;
+    sourceTab: string;
   } | null;
   startWorkspacePlayback(
     sequence: SequenceData,
-    sourceSequenceRevision: number
+    sourceSequenceRevision: number,
+    sourceTab?: string
   ): void;
   stopWorkspacePlayback(): void;
+  syncWorkspacePlaybackSource(
+    sourceTab: string,
+    sourceSequenceRevision: number
+  ): void;
 
   // LOOP Completion Flow (triggers confirmation dialog in CreateModule)
   requestLoopCompletion(loopType: LOOPType): void;
@@ -473,6 +479,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let workspacePlayback = $state.raw<{
     sequence: SequenceData;
     sourceSequenceRevision: number;
+    sourceTab: string;
   } | null>(null);
   let restoreStepEditorAfterPlayback = false;
 
@@ -546,6 +553,13 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isDurationPreviewMode = false;
     previewSequence = null;
     originalSequence = null;
+  }
+
+  function stopWorkspacePlayback() {
+    if (!workspacePlayback) return;
+    workspacePlayback = null;
+    if (restoreStepEditorAfterPlayback) isStepEditorPanelOpen = true;
+    restoreStepEditorAfterPlayback = false;
   }
 
   return {
@@ -1003,7 +1017,11 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return workspacePlayback;
     },
 
-    startWorkspacePlayback(sequence, sourceSequenceRevision) {
+    startWorkspacePlayback(
+      sequence,
+      sourceSequenceRevision,
+      sourceTab = "construct"
+    ) {
       if (!sequence.steps.length || workspacePlayback) return;
       const restoreEditor = isStepEditorPanelOpen;
       closeAllPanels();
@@ -1012,14 +1030,20 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       workspacePlayback = {
         sequence: structuredClone($state.snapshot(sequence)),
         sourceSequenceRevision,
+        sourceTab,
       };
     },
 
-    stopWorkspacePlayback() {
-      if (!workspacePlayback) return;
-      workspacePlayback = null;
-      if (restoreStepEditorAfterPlayback) isStepEditorPanelOpen = true;
-      restoreStepEditorAfterPlayback = false;
+    stopWorkspacePlayback,
+
+    syncWorkspacePlaybackSource(sourceTab, sourceSequenceRevision) {
+      // Separate creation tabs can have the same revision counter.
+      if (
+        workspacePlayback &&
+        (workspacePlayback.sourceTab !== sourceTab ||
+          workspacePlayback.sourceSequenceRevision !== sourceSequenceRevision)
+      )
+        stopWorkspacePlayback();
     },
 
     enterOptionAudition(audition) {

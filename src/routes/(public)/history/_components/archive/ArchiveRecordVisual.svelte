@@ -12,7 +12,9 @@
 {#if entry.catalogEntry}
   <div
     class="artifact-visual"
-    class:natural={entry.id === "poinotation" || entry.id === "vtg"}
+    class:natural={entry.id === "poinotation" ||
+      entry.id === "vtg" ||
+      entry.id === "tka"}
   >
     <ArtifactVisual entry={entry.catalogEntry} {active} />
   </div>

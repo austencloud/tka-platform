@@ -13,11 +13,16 @@
     type ArchiveSection,
   } from "./_lib/archive-sections";
 
-  let { entry }: { entry: ArchiveEntry } = $props();
+  let {
+    entry,
+    selectedId = $bindable<string | null>(null),
+  }: {
+    entry: ArchiveEntry;
+    selectedId?: string | null;
+  } = $props();
   const sections = $derived(archiveSections(entry));
   const citations = $derived(archiveReadingSources(entry));
   const activity = $derived(activityLabel(entry));
-  let selectedId = $state<string | null>(null);
   let mode = $state<"browse" | "sources" | "full">("browse");
   const selected = $derived(
     sections.find((section) => section.id === selectedId) ?? sections[0]

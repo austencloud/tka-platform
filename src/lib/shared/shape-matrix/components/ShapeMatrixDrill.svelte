@@ -148,6 +148,7 @@
       appState.compact &&
       appState.surface === "matrix" &&
       appState.activeView === "detail" &&
+      !propPickerOpen &&
       animationState.activeSection !== null
   );
 
@@ -1228,6 +1229,7 @@
   {#if !solo}
     <div
       class="mode-picker"
+      data-prop-mode-chrome
       data-drill-region="modes"
       use:claimedViewTransitionName={{
         name: SHAPE_MATRIX_MODES_NAME,
@@ -1264,6 +1266,7 @@
          tile and the detail view; the mandala inside carries its own. -->
     <div
       class="hero-stage"
+      data-prop-layout="matrix-canvas"
       data-drill-region="hero"
       use:claimedViewTransitionName={{
         name: SHAPE_MATRIX_ACTIVE_STAGE_NAME,
@@ -1273,7 +1276,7 @@
       {#if appState && !appState.compact}
         <ShapeMatrixStageActions />
       {/if}
-      <div class="hero-header">
+      <div class="hero-header" data-prop-mode-chrome>
         <div class="hero-header-ghost" aria-hidden="true">
           <WordHeader word="A" visible={true} darkMode={headerDarkMode} />
         </div>
@@ -1342,6 +1345,7 @@
            name and rises in once the stage has landed. -->
     <div
       class="strip-zone"
+      data-prop-mode-chrome
       data-drill-region="strip"
       role="group"
       aria-label="Pictograph timeline"
@@ -1439,6 +1443,8 @@
   {#if !appState || appState.compact}
     <div
       class="animation-controls"
+      data-prop-mode-chrome
+      data-prop-layout={appState?.surface === "matrix" ? "picker" : undefined}
       data-drill-region="controls"
       data-shape-matrix-dock
       use:claimedViewTransitionName={{

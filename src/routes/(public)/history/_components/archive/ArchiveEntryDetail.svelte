@@ -1,11 +1,19 @@
 <script lang="ts">
   import { archiveLane, type ArchiveEntry } from "./_lib/archive-ledger";
   import { archiveArtifact } from "./_lib/archive-presentation";
+  import { archiveSections } from "./_lib/archive-sections";
+  import VtgReleaseVisual from "./VtgReleaseVisual.svelte";
   import ArchiveEntryResources from "./ArchiveEntryResources.svelte";
   import ArchiveRecordVisual from "./ArchiveRecordVisual.svelte";
 
   let { entry }: { entry: ArchiveEntry } = $props();
   const artifact = $derived(archiveArtifact(entry));
+  let selectedSectionId = $state<string | null>(null);
+  const selectedSection = $derived(
+    archiveSections(entry).find(
+      (section) => section.id === selectedSectionId
+    ) ?? archiveSections(entry)[0]
+  );
   const explore = $derived(entry.catalogEntry?.explore);
   const applications = $derived(entry.catalogEntry?.applications ?? []);
   const works = $derived(entry.catalogEntry?.subWorks ?? []);
@@ -19,6 +27,8 @@
 >
   <div
     class="entry-composition"
+    class:tka-composition={entry.id === "tka"}
+    class:release-browser={entry.id === "vtg"}
     class:explorable={applications.length > 0 ||
       works.length > 0 ||
       videos.length > 0}
@@ -44,7 +54,7 @@
         {#if entry.evidenceBasis === "unresolved" && entry.evidenceNote}
           <p class="source-caution">{entry.evidenceNote}</p>
         {/if}
-        {#if explore}
+        {#if explore && entry.id !== "vtg"}
           <a
             class="explore-link"
             href={explore.href}
@@ -63,18 +73,31 @@
             </p>{/if}
         {/if}
       </div>
-      {#if artifact}
+      {#if entry.id === "vtg"}
+        <div class="entry-details">
+          <ArchiveEntryResources {entry} bind:selectedId={selectedSectionId} />
+        </div>
+      {/if}
+      {#if entry.id === "vtg" && selectedSection}
+        <div class="entry-artifact release-artifact">
+          <VtgReleaseVisual sectionId={selectedSection.id} />
+        </div>
+      {:else if artifact}
         <figure
           class="entry-artifact"
           class:sheet={entry.id === "lorq"}
           data-artifact-kind={artifact.kind}
         >
-          <div class="artifact-label">{artifact.label}</div>
+          {#if entry.id !== "tka"}
+            <div class="artifact-label">{artifact.label}</div>
+          {/if}
           <div
             class="artifact-stage"
             class:portrait={entry.id === "lorq"}
             class:landscape={entry.id === "nine-square"}
-            class:intrinsic={entry.id === "poinotation" || entry.id === "vtg"}
+            class:intrinsic={entry.id === "poinotation" ||
+              entry.id === "vtg" ||
+              entry.id === "tka"}
             class:document={artifact.kind === "document"}
           >
             <ArchiveRecordVisual {entry} active />
@@ -82,9 +105,11 @@
           <figcaption>{artifact.note}</figcaption>
         </figure>
       {/if}
-      <div class="entry-details">
-        <ArchiveEntryResources {entry} />
-      </div>
+      {#if entry.id !== "vtg"}
+        <div class="entry-details">
+          <ArchiveEntryResources {entry} />
+        </div>
+      {/if}
     </div>
   </div>
 </article>
@@ -303,8 +328,71 @@
       grid-row: 2 / span 2;
       max-width: 32rem;
     }
+    .release-browser.with-artifact {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    }
+    .release-browser .release-artifact {
+      max-width: none;
+    }
     .explorable .entry-artifact.sheet {
       max-width: 28rem;
     }
+  }
+  @container (min-width: 1400px) {
+    .entry-composition.with-artifact {
+      grid-template-columns: minmax(26rem, 42rem) minmax(0, 1fr);
+      column-gap: clamp(3rem, 4cqi, 7rem);
+    }
+    .with-artifact .entry-artifact {
+      max-width: min(100%, max(38rem, calc(100dvh - 32rem)));
+    }
+    .release-browser.with-artifact {
+      grid-template-columns: minmax(26rem, 42rem) minmax(0, 1fr);
+      grid-template-rows: 1fr auto auto auto 1fr;
+    }
+    .release-browser .entry-heading {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .release-browser .entry-copy {
+      grid-row: 3;
+    }
+    .release-browser .entry-details {
+      grid-row: 4;
+    }
+    .release-browser .release-artifact {
+      grid-row: 1 / span 5;
+      max-width: none;
+    }
+    .entry-summary {
+      font-size: 1.25rem;
+    }
+  }
+  @container (min-width: 760px) {
+    .tka-composition.with-artifact {
+      width: 100%;
+      max-width: 108rem;
+      margin-inline: auto;
+      grid-template-rows: 1fr auto auto auto 1fr;
+    }
+    .tka-composition .entry-heading {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .tka-composition .entry-copy {
+      grid-row: 3;
+    }
+    .tka-composition .entry-details {
+      grid-row: 4;
+    }
+    .tka-composition .entry-artifact {
+      grid-row: 1 / span 5;
+      align-self: center;
+      position: static;
+      max-width: min(60rem, max(38rem, calc(100dvh - 32rem)));
+    }
+  }
+  .tka-composition .artifact-stage {
+    --tka-preview-max-width: 60rem;
   }
 </style>
