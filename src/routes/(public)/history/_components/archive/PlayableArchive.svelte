@@ -20,6 +20,11 @@
   let indexRegion: HTMLElement;
   let indexScroll = $state<HTMLElement>();
   let indexViewportHeight = $state(0);
+  let headingHeight = $state(0);
+  let aboutHeight = $state(0);
+  let neighborsHeight = $state(0);
+  // Rounded element measurements must not add a one-pixel page scrollbar.
+  const chromeRoundingAllowance = 2;
   const compact = new MediaQuery("(max-width: 1099px)");
   const activeIndex = $derived(
     ARCHIVE_ENTRIES.findIndex((entry) => entry.id === activeEntry.id)
@@ -84,8 +89,14 @@
   });
 </script>
 
-<section class="archive-room" aria-label="Flow arts history archive">
-  <header class="archive-header">
+<section
+  class="archive-room"
+  aria-label="Flow arts history archive"
+  style:--archive-chrome-height={headingHeight && aboutHeight && neighborsHeight
+    ? `${headingHeight + aboutHeight + neighborsHeight + chromeRoundingAllowance}px`
+    : "100dvh"}
+>
+  <header class="archive-header" bind:offsetHeight={headingHeight}>
     <h1 class="room-title">Flow arts history</h1>
     <p>
       How people have recorded movement, shared techniques, and built a language
@@ -149,6 +160,7 @@
       </Crossfade>
       <nav
         class="entry-neighbors"
+        bind:offsetHeight={neighborsHeight}
         aria-label="Previous and next entries by date"
       >
         {#if previous}
@@ -190,7 +202,11 @@
     </div>
   </div>
 
-  <footer class="archive-about" id="about-this-archive">
+  <footer
+    class="archive-about"
+    id="about-this-archive"
+    bind:offsetHeight={aboutHeight}
+  >
     <h2>About this archive</h2>
     <div class="archive-about-columns">
       <p>
@@ -223,6 +239,16 @@
 
 <style>
   .archive-room {
+    --archive-room-padding: clamp(1.25rem, 3vw, 3.5rem);
+    --archive-heading-gap: clamp(2rem, 4vw, 4rem);
+    --archive-entry-space: max(
+      0px,
+      calc(
+        100dvh - var(--marketing-header-h, 64px) - var(--archive-room-padding) -
+          1.25rem - var(--archive-heading-gap) - 5rem -
+          var(--archive-chrome-height)
+      )
+    );
     /* The record area uses spare screen height so the footer ends the page,
        including when the selected record is shorter than a tall viewport. */
     display: grid;
@@ -231,13 +257,13 @@
     box-sizing: border-box;
     max-width: 100rem;
     margin-inline: auto;
-    padding: clamp(1.25rem, 3vw, 3.5rem);
+    padding: var(--archive-room-padding);
     padding-bottom: 1.25rem;
     color: var(--theme-text);
   }
   .archive-header {
     max-width: 56rem;
-    margin-bottom: clamp(2rem, 4vw, 4rem);
+    margin-bottom: var(--archive-heading-gap);
   }
   h1 {
     font:
@@ -387,6 +413,9 @@
     color: var(--theme-text-dim);
   }
   @media (max-width: 1099px) {
+    .archive-room {
+      --archive-entry-space: 0px;
+    }
     .archive-layout {
       grid-template-columns: minmax(0, 1fr);
       align-content: start;
