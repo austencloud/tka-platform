@@ -65,6 +65,8 @@ export interface TransitionGeometrySample {
     sharedInspectorIdentity?: number;
     sharedCardIdentity?: number;
     sharedTransportIdentity?: number;
+    sharedScrubberIdentity?: number;
+    sharedPlayButtonIdentity?: number;
     sharedSurfaces?: Record<
       string,
       { left: number; top: number; width: number; height: number }

@@ -109,3 +109,29 @@ and warnings). The wider composition suite was initially blocked by a missing
 local `zod` package; after shared dependencies became available again it passed
 all 59 tests across eight files. Preview delivery uses the task's port 5428 until
 guarded integration succeeds.
+
+## Playback continuity follow-up · 2026-09-08
+
+The perceived replacement was measurable without a remount: the wide 2D bar
+and narrow Studio bar selected different responsive controls and heights. The
+viewer now keeps one compact UnifiedTimeline presentation, including the same
+play button, scrubber, and menu button. Tempo and advanced timing remain in its
+existing menu. The review trace now tracks scrubber and play-button identities,
+not just their wrapper.
+
+Control-row flights resize their layout rather than scaling their buttons. A
+stationary flight remains above the entering host's fade. The return also uses
+the canvas's stationary home allocation: measuring the flying canvas itself
+previously sent the bar toward a 368px phone-sized box before docking at 1260px.
+The corrected return grows through 700, 711, 760, 952, 1172, and 1238px toward
+1260px, with 44px play-button dimensions throughout. Live underlying endpoint
+sizes allow the surrounding panel to finish opening during the flight.
+
+Browser checks covered all seven viewport tiers; the final return-anchor change
+was rechecked at desktop, tablet, and phone sizes. Wrapper, timeline, scrubber,
+play button, and menu button retained identity. Six selections 110ms apart left
+the same scrubber and no flight overlay. Reduced motion skipped the flight.
+Keyboard scrubbing in Studio reached step 8 and preserved that pose on return
+to 2D. Normalized timeline percentages differ because Studio maps composition
+time, not sequence progress. As in the original verification, the 4K geometry
+was measured, but the host's screenshot capture crops/scales that viewport.

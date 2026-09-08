@@ -41,6 +41,7 @@ export interface StudioControls {
 export function createViewerStudioSurfaces() {
   let active = $state(false);
   let canvas = $state.raw<HTMLElement | null>(null);
+  let canvasHome = $state.raw<HTMLElement | null>(null);
   let inspector = $state.raw<HTMLElement | null>(null);
   let card = $state.raw<HTMLElement | null>(null);
   let cardDestinations = $state.raw<
@@ -131,6 +132,9 @@ export function createViewerStudioSurfaces() {
     get canvasAvailable() {
       return canvas !== null;
     },
+    get canvasHome() {
+      return canvasHome;
+    },
     get inspectorAvailable() {
       return inspector !== null;
     },
@@ -170,8 +174,12 @@ export function createViewerStudioSurfaces() {
     },
     registerCanvas(node: HTMLElement) {
       canvas = node;
+      canvasHome = node.parentElement;
       return () => {
-        if (canvas === node) canvas = null;
+        if (canvas === node) {
+          canvas = null;
+          canvasHome = null;
+        }
       };
     },
     registerInspector(node: HTMLElement) {
