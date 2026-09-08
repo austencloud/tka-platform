@@ -150,7 +150,7 @@
   }
   .pictograph {
     width: 100%;
-    max-width: 28rem;
+    max-width: min(clamp(28rem, 18vw, 42rem), max(10rem, calc(100cqh - 15rem)));
     aspect-ratio: 1;
     border: 1px solid var(--theme-stroke);
     border-radius: 1rem;
@@ -236,6 +236,41 @@
     }
     .transform-bar {
       gap: 0.75rem;
+    }
+  }
+
+  @container examples (max-height: 360px) and (min-width: 651px) {
+    .position-example {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .pictograph {
+      max-width: 6rem;
+    }
+    h2 {
+      font-size: 1.125rem;
+      gap: 0.4rem;
+    }
+    .transform-bar {
+      margin-top: 0.75rem;
+    }
+    .grid-label {
+      margin-top: 0.35rem;
+    }
+  }
+
+  @media (min-width: 2400px) {
+    h2 {
+      font-size: 2.25rem;
+    }
+    p {
+      font-size: 1.5rem;
+    }
+    .grid-label,
+    select,
+    .transform-bar :global(.panel-btn) {
+      font-size: 1.25rem;
     }
   }
 </style>

@@ -243,8 +243,10 @@
   class:is-intro={!activeMotion && !isComparison}
   class:has-focused-comparison={comparisonFocused}
   style:--intro-artifact-height={topic?.id === "placement"
-    ? "min(48rem, max(30rem, 46cqw))"
-    : "min(32rem, max(18rem, 30cqw))"}
+    ? "min(clamp(48rem, 32vw, 70rem), max(30rem, 46cqw))"
+    : topic?.id === "direction"
+      ? "min(clamp(36rem, 20vw, 48rem), max(24rem, 34cqw))"
+      : "min(clamp(32rem, 17vw, 44rem), max(18rem, 30cqw))"}
   onkeydown={handleKeydown}
   tabindex="0"
   role="application"
@@ -596,13 +598,18 @@
   }
 
   .device-fit.is-intro :global(.lesson-stage-frame) {
-    grid-template-rows: auto minmax(
-        0,
-        min(var(--intro-artifact-height), calc(100cqh - 18rem))
-      ) auto;
+    grid-template-rows:
+      auto minmax(0, min(var(--intro-artifact-height), calc(100cqh - 18rem)))
+      auto;
     align-content: center;
     max-width: 110rem;
     margin-inline: auto;
+  }
+
+  @media (min-width: 2400px) {
+    .device-fit.is-intro :global(.lesson-stage-frame) {
+      max-width: min(82cqw, 156rem);
+    }
   }
 
   .device-fit :global(.artifact-inner.wide) {
@@ -622,6 +629,10 @@
     overflow: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
+  }
+
+  .device-fit .timing-direction-state {
+    overflow: hidden;
   }
 
   .device-fit :global(.stage-controls) {

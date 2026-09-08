@@ -185,9 +185,9 @@
     align-items: center;
   }
   .teaching-band {
-    width: min(100%, 100rem);
+    width: min(100%, 144rem);
     margin-inline: auto;
-    padding: 0.5rem 0.25rem 1rem;
+    padding: 0.5rem 0.25rem;
   }
   .examples {
     display: grid;
@@ -275,12 +275,12 @@
   @container examples (max-width: 650px) {
     .examples {
       grid-template-columns: 1fr;
-      gap: 1.5rem;
+      gap: 1rem;
     }
     .example {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 1rem;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 0.75rem;
     }
     .pulse-picture {
       padding: 0.25rem;
@@ -291,10 +291,53 @@
     .reverse-label {
       font-size: 0.875rem;
     }
+    .teaching-band {
+      padding-block: 0.375rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+    }
+    p {
+      margin-top: 0.4rem;
+      line-height: 1.35;
+    }
+  }
+  @media (max-height: 540px) and (min-width: 651px) {
+    .example {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 0.75rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+    }
+    p {
+      margin-top: 0.4rem;
+      line-height: 1.35;
+    }
+    .direction-picture :global(.panel-btn) {
+      padding: 0.5rem;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .turn {
       transition: none;
+    }
+  }
+  @media (min-width: 2400px) {
+    .directions {
+      max-width: 112rem;
+    }
+    .pulse-picture,
+    .direction-picture {
+      max-width: 42rem;
+    }
+    p {
+      font-size: 1.5rem;
+    }
+    .reverse-label {
+      font-size: 1.25rem;
     }
   }
   :global([data-motion-preference="reduce"]) .turn {
