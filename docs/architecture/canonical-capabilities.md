@@ -5,6 +5,15 @@ wholesale. Each row names the behavior owner. Verify the path in current code
 before relying on it. Add a row only for shared behavior or an intentional
 keep-separate decision, not for every component.
 
+Standalone 3D workspaces compose `shared/3d/components/Viewer3DFullscreen.svelte`,
+which owns the scene canvas, adaptive `SceneControlWorkspace`, and shared
+timeline/tempo controls. Local character generators extend its HUD and inspector
+slots. `shared/3d/context/character-catalog-context.ts` supplies a reactive,
+host-scoped catalog to the existing `PerformerCharacterPicker`; other hosts keep
+the standard catalog. Searches: scene workspace, environment picker, performer
+selection, BPM, generated characters. Sequence selection remains with
+`shared/components/sequence-picker/SequencePickerModal.svelte`.
+
 Timing-and-direction route continuity composes the existing `HandMotionPlayer`,
 `reparentToInspector` mounted-node action (also consumed by `ArtPane`), and
 `navigationMorphs`/`runNamedRouteMorph` route driver. Searches: persistent player,
