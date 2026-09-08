@@ -29,11 +29,11 @@ Verification:
 - No production data, Storage rules or application deployment was changed
   during verification. The temporary browser fixture and server were removed.
 
-Deployment: the new `prepared-qrs` block in `storage.rules` must be deployed to
-enable shared reads and writes. Until then local reuse works and shared-cache
-failures fall back to existing preparation. The application change also needs
-the normal release before production viewers use this path. Records accumulate
-as cards are prepared; this change does not run a production backfill.
+The `prepared-qrs` Storage rules were deployed on September 8 after explicit
+authorization. The live rules were preserved outside that added block. Public
+downloads were verified against the deployed bucket. The application change
+still needs local integration and the normal release before production viewers
+use this path.
 
 ## Bulk baking
 
@@ -54,6 +54,34 @@ the existing backfill contract; pass a failed-code list through `listCodes` to
 retry. Already published artwork is reused.
 
 The bulk extension passed 17 focused tests and Svelte check with zero errors
-and warnings. It has not been run against production. The task branch remains
-blocked from integration by the primary checkout's existing `MERGE_HEAD`;
-the prepared Storage rules also require deployment authorization.
+and warnings. The task branch remains blocked from integration by the primary
+checkout's existing `MERGE_HEAD`.
+
+## Admin runner
+
+`scripts/bake-existing-qrs.mjs` runs the same payload hydrator, canonical cell
+keys, pictograph preparer/compositor and QR styling owner in Node. The Node
+adapter provides Canvas, local static assets and SVG decoding; it does not
+duplicate drawing geometry. Four worker threads draw QR SVGs from the options
+supplied by `QRCodeGenerator`. Their eight concurrent test results decoded to
+the expected existing link in both themes.
+
+The runner reads shortcode records in pages of 500 and keeps a local snapshot
+for resumable passes. `--refresh` replaces that snapshot with a fresh read.
+It inventories existing Storage objects, fills missing canonical cells, then
+publishes both QR themes. Render diagnostics and missing prepared props reject
+the cell before upload. All writes are create-only with a generation
+precondition; no shortcode records, ownership or scan counters are changed.
+
+Required arguments are `--credentials`, `--canvas-module` (an installation of
+`@napi-rs/canvas`) and `--output-dir`. `--apply` enables artifact writes; omitting
+it performs an inventory. `--limit` bounds a sample and `--concurrency` accepts
+1–8 sequence lanes. The output directory contains `shortcodes.json`,
+`report.json` and `artifact-manifest.json`. Retain it for retries and keep its
+sequence snapshot out of version control. The runner exits with code 2 if any
+records failed. It starts no HTTP listener and closes its renderer and workers.
+
+The production sample covered 10 codes: 20 QR images and 173 missing canonical
+cells were published. All 20 public QR downloads decoded to their exact stored
+shortcode URL and prop parameters. The full snapshot subsequently contained
+22,072 codes, including two created during inventory.

@@ -142,7 +142,12 @@ export class QRCodeGenerator {
     private readonly cellWarmer: CellWarmer = warmSequenceCells,
     private readonly preparedCache: PreparedQrStore = new PreparedQrCache(
       imageCache
-    )
+    ),
+    // The admin baker supplies a Node SVG runtime; styling stays owned here.
+    private readonly createQr: (
+      options: ConstructorParameters<typeof QRCodeStyling>[0]
+    ) => Pick<QRCodeStyling, "getRawData"> = (options) =>
+      new QRCodeStyling(options)
   ) {}
 
   /**
@@ -255,7 +260,7 @@ export class QRCodeGenerator {
       return cachedImage;
     }
 
-    const qrCode = new QRCodeStyling(
+    const qrCode = this.createQr(
       this.createQROptions(url, size, margin, style, centerIcon)
     );
 

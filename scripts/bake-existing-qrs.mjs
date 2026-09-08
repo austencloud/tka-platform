@@ -1,0 +1,395 @@
+/** Publish immutable QR artwork for existing links, using the application's renderer.
+ * Defaults to a read-only inventory. --apply authorizes artifact uploads only.
+ * Requires --credentials, --canvas-module and --output-dir. Never edits shortcodes.
+ */
+import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
+import { parseArgs } from "node:util";
+import { createServer } from "vite";
+import { installQrBakeNodeRuntime } from "./lib/qr-bake-node-runtime.mjs";
+import { QrBakeWorkerPool } from "./lib/qr-bake-worker-pool.mjs";
+
+const { values } = parseArgs({
+  options: {
+    apply: { type: "boolean", default: false },
+    refresh: { type: "boolean", default: false },
+    credentials: { type: "string" },
+    "canvas-module": { type: "string" },
+    "output-dir": { type: "string" },
+    limit: { type: "string", default: "0" },
+    concurrency: { type: "string", default: "4" },
+  },
+});
+for (const key of ["credentials", "canvas-module", "output-dir"])
+  if (!values[key]) throw new Error(`Missing --${key}`);
+const concurrency = Number(values.concurrency);
+const limit = Number(values.limit);
+if (
+  !Number.isInteger(concurrency) ||
+  concurrency < 1 ||
+  concurrency > 8 ||
+  !Number.isInteger(limit) ||
+  limit < 0
+)
+  throw new Error("Use concurrency 1–8 and a nonnegative integer limit");
+const require = createRequire(import.meta.url);
+const admin = require("firebase-admin");
+const nodeCanvas = require(path.resolve(values["canvas-module"]));
+const output = path.resolve(values["output-dir"]);
+await fs.mkdir(output, { recursive: true });
+const credential = JSON.parse(await fs.readFile(values.credentials, "utf8"));
+if (credential.project_id !== "the-kinetic-alphabet")
+  throw new Error("Unexpected Firebase project");
+const app = admin.initializeApp({
+  credential: admin.credential.cert(credential),
+  storageBucket: "the-kinetic-alphabet.firebasestorage.app",
+});
+const bucket = app.storage().bucket();
+const qrWorkers = new QrBakeWorkerPool(path.resolve(values["canvas-module"]));
+const server = await createServer({
+  server: { middlewareMode: true, hmr: false },
+  appType: "custom",
+});
+await server.ws.close();
+await server.watcher.close();
+const startedAt = new Date().toISOString();
+const report = {
+  startedAt,
+  apply: values.apply,
+  total: 0,
+  processed: 0,
+  ready: 0,
+  uploaded: 0,
+  cellsUploaded: 0,
+  reused: 0,
+  failed: [],
+  missingCells: {},
+  finished: false,
+};
+let next = 0;
+let stopped = false;
+process.once("SIGINT", () => {
+  stopped = true;
+});
+const checkpoint = async () => {
+  report.updatedAt = new Date().toISOString();
+  await fs.writeFile(
+    path.join(output, "report.json"),
+    JSON.stringify(report, null, 2)
+  );
+  console.log(
+    JSON.stringify({
+      processed: report.processed,
+      total: report.total,
+      ready: report.ready,
+      uploaded: report.uploaded,
+      cellsUploaded: report.cellsUploaded,
+      reused: report.reused,
+      failed: report.failed.length,
+      missingCells: Object.keys(report.missingCells).length,
+    })
+  );
+};
+try {
+  const load = (name) => server.ssrLoadModule(`/src/lib/${name}.ts`);
+  const { hydrateSelfContainedShortCodePayload } = await load(
+    "shared/qr/services/short-code-payload-hydrator"
+  );
+  const { hydrateSequence } = await load(
+    "shared/navigation/services/sequence-hydrator"
+  );
+  const { resolveScanPropConfig } = await load(
+    "shared/qr/services/scan-prop-resolver"
+  );
+  const { getCanonicalSequenceCells } = await load(
+    "shared/render/services/warm-sequence-cells"
+  );
+  const { deriveCloudCellHash } = await load(
+    "shared/render/services/cloud-cell-key"
+  );
+  const { PreparedQrCache } = await load(
+    "shared/qr/services/prepared-qr-cache"
+  );
+  const { QRCodeGenerator } = await load(
+    "shared/qr/services/qr-code-generator"
+  );
+  const { ShortCodeManager } = await load(
+    "shared/qr/services/short-code-manager"
+  );
+  const shortCodes = new ShortCodeManager();
+  const { pictographPreparer } = await load(
+    "shared/pictograph/shared/services/pictograph-preparer"
+  );
+  const { resolvePreviewCellRender } = await load(
+    "shared/sequence-viewer/services/preview-cell-render-contract"
+  );
+  const { LayerCompositor } = await load(
+    "shared/render/services/layer-compositor"
+  );
+  const { clearSvgImageCache } = await load(
+    "shared/render/services/svg-image-cache"
+  );
+  const { isVisibleMotion } = await load(
+    "shared/pictograph/shared/domain/models/motion-data"
+  );
+  const renderStrictly = installQrBakeNodeRuntime(
+    nodeCanvas,
+    path.resolve("static")
+  );
+  const cache = new PreparedQrCache({
+    get: async () => null,
+    set: async () => {},
+  });
+  let records;
+  const snapshot = path.join(output, "shortcodes.json");
+  try {
+    if (values.refresh)
+      throw Object.assign(new Error("Refresh snapshot"), { code: "ENOENT" });
+    records = JSON.parse(await fs.readFile(snapshot, "utf8"));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    records = [];
+    let cursor;
+    while (true) {
+      let query = app
+        .firestore()
+        .collection("shortcodes")
+        .orderBy(admin.firestore.FieldPath.documentId())
+        .limit(500);
+      if (cursor) query = query.startAfter(cursor);
+      const page = await query.get();
+      records.push(
+        ...page.docs.map((doc) => ({ code: doc.id, record: doc.data() }))
+      );
+      console.log(`Read ${records.length} shortcode records`);
+      if (page.size < 500) break;
+      cursor = page.docs.at(-1);
+    }
+    await fs.writeFile(snapshot, JSON.stringify(records));
+  }
+  // Consistent first choice when several historical codes describe identical content.
+  records.sort((a, b) => a.code.localeCompare(b.code));
+  if (limit) records = records.slice(0, limit);
+  report.total = records.length;
+  const names = async (prefix) =>
+    new Set(
+      (
+        await bucket.getFiles({ prefix, fields: "items(name),nextPageToken" })
+      )[0].map((file) => file.name)
+    );
+  const [cells, prepared] = await Promise.all([
+    names("pictograph-cells/"),
+    names("prepared-qrs/"),
+  ]);
+  console.log(
+    `Found ${cells.size} cell objects and ${prepared.size} QR objects`
+  );
+  const compositor = new LayerCompositor();
+  let activeUploads = 0;
+  const uploadWaiters = [];
+  const upload = async (work) => {
+    if (activeUploads >= 32)
+      await new Promise((resolve) => uploadWaiters.push(resolve));
+    else activeUploads++;
+    try {
+      return await work();
+    } finally {
+      const wake = uploadWaiters.shift();
+      if (wake) wake();
+      else activeUploads--;
+    }
+  };
+  let renderedCells = 0;
+  let renderQueue = Promise.resolve();
+  const cellInFlight = new Map();
+  const ensureCell = async (hash, cell) => {
+    if (cells.has(`pictograph-cells/${hash}.webp`)) return;
+    if (cellInFlight.has(hash)) return cellInFlight.get(hash);
+    const render = renderQueue.then(() =>
+      renderStrictly(async () => {
+        const resolved = resolvePreviewCellRender(
+          cell.data,
+          cell.darkMode,
+          cell.options
+        );
+        const prepared = await pictographPreparer.prepareSingle(
+          resolved.data,
+          resolved.prepareOptions
+        );
+        for (const hand of ["left", "right"]) {
+          const visible =
+            hand === "left"
+              ? cell.options.showLeftMotion
+              : cell.options.showRightMotion;
+          if (
+            visible !== false &&
+            isVisibleMotion(resolved.data.motions?.[hand]) &&
+            (!prepared._prepared?.propAssets[hand] ||
+              !prepared._prepared?.propPositions[hand])
+          )
+            throw new Error(`Missing prepared ${hand} prop`);
+        }
+        const result = await compositor.compose(
+          prepared,
+          resolved.renderOptions,
+          resolved.visibility
+        );
+        const bytes = await result.canvas.encode("webp", 90);
+        if (++renderedCells % 100 === 0) {
+          compositor.clearCache();
+          pictographPreparer.clearCache();
+          clearSvgImageCache();
+        }
+        return bytes;
+      })
+    );
+    renderQueue = render.then(
+      () => {},
+      () => {
+        compositor.clearCache();
+        pictographPreparer.clearCache();
+        clearSvgImageCache();
+      }
+    );
+    const publish = render.then(async (bytes) => {
+      try {
+        await upload(() =>
+          bucket.file(`pictograph-cells/${hash}.webp`).save(bytes, {
+            resumable: false,
+            preconditionOpts: { ifGenerationMatch: 0 },
+            metadata: {
+              contentType: "image/webp",
+              cacheControl: "public,max-age=31536000,immutable",
+            },
+          })
+        );
+        report.cellsUploaded++;
+      } catch (error) {
+        if (Number(error.code) !== 412) throw error;
+      }
+      cells.add(`pictograph-cells/${hash}.webp`);
+      delete report.missingCells[hash];
+    });
+    cellInFlight.set(hash, publish);
+    try {
+      await publish;
+    } finally {
+      cellInFlight.delete(hash);
+    }
+  };
+  const inFlight = new Map();
+  const expectedQrs = new Set();
+  const requiredCells = new Set();
+  const worker = async () => {
+    const generator = new QRCodeGenerator(
+      undefined,
+      { get: async () => null, set: async () => {} },
+      undefined,
+      undefined,
+      (options) => ({ getRawData: () => qrWorkers.render(options) })
+    );
+    while (!stopped && next < records.length) {
+      const { code, record } = records[next++];
+      try {
+        const raw = await hydrateSelfContainedShortCodePayload(code, record);
+        if (!raw) throw new Error("No valid self-contained sequence payload");
+        const sequence = await hydrateSequence(raw, { loopDetector: null });
+        const props = resolveScanPropConfig(sequence, record);
+        const missing = [];
+        const cellChecks = getCanonicalSequenceCells(sequence, props).flatMap(
+          ({ data, options }) =>
+            [true, false].map(async (darkMode) => {
+              const hash = await deriveCloudCellHash(data, darkMode, options);
+              requiredCells.add(hash);
+              if (!cells.has(`pictograph-cells/${hash}.webp`)) {
+                const cell = { code, data, options, darkMode };
+                report.missingCells[hash] ??= cell;
+                if (values.apply) await ensureCell(hash, cell);
+                else missing.push(hash);
+              }
+            })
+        );
+        const checked = await Promise.allSettled(cellChecks);
+        const rejected = checked.find((result) => result.status === "rejected");
+        if (rejected) throw rejected.reason;
+        if (missing.length)
+          throw new Error(`Missing ${missing.length} canonical cells`);
+        for (const darkMode of [true, false]) {
+          const options = {
+            size: 200,
+            style: "modern",
+            darkMode,
+            centerIcon: "play",
+          };
+          const key = await cache.keyFor(sequence, props, options);
+          const object = `prepared-qrs/${key}.json`;
+          expectedQrs.add(key);
+          if (prepared.has(object)) {
+            report.reused++;
+            continue;
+          }
+          if (inFlight.has(key)) {
+            await inFlight.get(key);
+            report.reused++;
+            continue;
+          }
+          if (!values.apply) continue;
+          const publish = (async () => {
+            const encodedUrl = shortCodes.urlForExistingCode(code, props);
+            const result = await generator.generateForUrl(encodedUrl, options);
+            const json = JSON.stringify({
+              key,
+              svg: result.svg,
+              encodedUrl,
+              shortCode: code,
+            });
+            if (Buffer.byteLength(json) >= 512 * 1024)
+              throw new Error("QR exceeds cache size limit");
+            try {
+              await bucket.file(object).save(json, {
+                resumable: false,
+                preconditionOpts: { ifGenerationMatch: 0 },
+                metadata: {
+                  contentType: "application/json",
+                  cacheControl: "public,max-age=31536000,immutable",
+                },
+              });
+              report.uploaded++;
+            } catch (error) {
+              if (Number(error.code) !== 412) throw error;
+              report.reused++;
+            }
+            prepared.add(object);
+          })();
+          inFlight.set(key, publish);
+          try {
+            await publish;
+          } finally {
+            inFlight.delete(key);
+          }
+        }
+        report.ready++;
+      } catch (error) {
+        report.failed.push({ code, reason: error.message });
+      }
+      report.processed++;
+      if (existsSync(path.join(output, "STOP"))) stopped = true;
+      if (report.processed % 100 === 0) await checkpoint();
+    }
+  };
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  report.finished = !stopped;
+  report.finishedAt = new Date().toISOString();
+  await fs.writeFile(
+    path.join(output, "artifact-manifest.json"),
+    JSON.stringify({ qrKeys: [...expectedQrs], cellHashes: [...requiredCells] })
+  );
+  await checkpoint();
+  if (report.failed.length) process.exitCode = 2;
+} finally {
+  await qrWorkers.close();
+  await server.close();
+  await app.delete();
+}
