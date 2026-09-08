@@ -9,6 +9,7 @@ MPFB source and the official CC0 system asset pack are external prerequisites.
 import argparse
 import importlib
 import json
+import math
 import random
 import sys
 import types
@@ -104,7 +105,13 @@ for side, handedness in [("Left", 1), ("Right", -1)]:
     palm_normal = forward.cross(across).normalized() * handedness
     for finger in ["Thumb", "Index", "Middle", "Ring", "Pinky"]:
         for joint in range(1, 4):
-            bones[f"{prefix}{finger}{joint}"].align_roll(palm_normal)
+            bone = bones[f"{prefix}{finger}{joint}"]
+            bone.align_roll(palm_normal)
+            # Thumb flexion crosses the palm; the other fingers flex into it.
+            # Mirror this quarter-turn because the runtime mirrors Y/Z pose
+            # deltas between hands while keeping positive-X flexion on both.
+            if finger == "Thumb":
+                bone.roll += handedness * math.pi / 2
 bpy.ops.object.mode_set(mode="OBJECT")
 parts = [
     ("eyes", "low-poly.mhclo", "Eyes"),
@@ -153,6 +160,7 @@ rigs = [o for o in bpy.context.selected_objects if o.type == "ARMATURE"]
 (args.output / "generation.json").write_text(json.dumps({
     "mpfbVersion": list(mpfb.VERSION), "blenderVersion": bpy.app.version_string,
     "seed": args.seed, "macros": macros, "details": details,
+    "handFrameVersion": 2,
     "skin": skin, "rig": "mixamo", "assets": parts,
     "bones": {r.name: [b.name for b in r.data.bones] for r in rigs},
 }, indent=2))

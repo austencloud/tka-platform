@@ -16,8 +16,13 @@
   import type { IToolPanelMethods } from "../types/create-module-types";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
   import WorkspacePanel from "../workspace-panel/core/WorkspacePanel.svelte";
+  import WorkspaceSequenceHeader from "../workspace-panel/sequence-display/components/WorkspaceSequenceHeader.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { onDestroy } from "svelte";
 
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState, layout } = ctx;
@@ -45,6 +50,34 @@
   const isMobilePortrait = $derived(layout.isMobilePortrait());
 
   const optionAudition = $derived(panelState.optionAudition);
+  const playback = $derived(panelState.workspacePlayback);
+  let readyPlayback = $state.raw<typeof playback>(null);
+  let retainedPlayback = $state.raw<typeof playback>(null);
+  let playbackStep = $state(0);
+
+  $effect(() => {
+    if (playback) retainedPlayback = playback;
+    else if (readyPlayback !== retainedPlayback) retainedPlayback = null;
+  });
+
+  onDestroy(() => panelState.stopWorkspacePlayback());
+
+  $effect(() => {
+    if (
+      playback &&
+      (navigationState.activeTab !== "construct" ||
+        activeSequenceState.currentSequenceRevision !==
+          playback.sourceSequenceRevision)
+    )
+      panelState.stopWorkspacePlayback();
+  });
+
+  function stopOnEscape(event: KeyboardEvent) {
+    if (event.key === "Escape" && playback) {
+      event.preventDefault();
+      panelState.stopWorkspacePlayback();
+    }
+  }
 
   $effect(() => {
     if (
@@ -86,19 +119,9 @@
   });
 </script>
 
-<!-- Layout 2: Actual workspace when method is selected -->
-<div
-  class="workspace-panel-wrapper"
-  style:padding-bottom="{buttonPanelHeight}px"
-  in:fade={{ duration: 400, delay: 200 }}
-  out:fade={{ duration: 300 }}
->
-  <!-- Duration pattern preview renders inside the editable workspace timeline
-       (SequenceDisplay swaps in panelState.previewSequence) — there is no
-       separate preview workspace. -->
-  <!-- CRITICAL: {#key} block ensures fresh StepGrid instances per tab
-       This prevents animation state pollution (step-grid-display-state.svelte)
-       But we DON'T key the parent layout to avoid workspace visibility timing issues -->
+<svelte:window onkeydown={stopOnEscape} />
+
+{#snippet card()}
   {#key navigationState.activeTab}
     <WorkspacePanel
       sequenceState={activeSequenceState}
@@ -113,6 +136,71 @@
       {letterSources}
     />
   {/key}
+{/snippet}
+
+{#snippet animation()}
+  {#if retainedPlayback}
+    {#key retainedPlayback}
+      {@const session = retainedPlayback}
+      <LazyMount
+        loader={() =>
+          import("../workspace-panel/components/WorkspacePlayback.svelte")}
+        active
+        props={{
+          sequence: session.sequence,
+          active: playback === session && readyPlayback === session,
+          onready: () => (readyPlayback = session),
+          onStepChange: (step: number) => (playbackStep = Math.floor(step)),
+        }}
+        onStatusChange={(status) => {
+          if (status === "error") readyPlayback = session;
+        }}
+      >
+        {#snippet error(_error, retry)}
+          <div class="playback-loading" role="alert">
+            <span>Playback could not load.</span>
+            <PanelButton onclick={retry}>Try again</PanelButton>
+          </div>
+        {/snippet}
+      </LazyMount>
+    {/key}
+  {/if}
+{/snippet}
+
+<!-- Layout 2: Actual workspace when method is selected -->
+<div
+  class="workspace-panel-wrapper"
+  style:padding-bottom="{buttonPanelHeight}px"
+  in:fade={{ duration: 400, delay: 200 }}
+  out:fade={{ duration: 300 }}
+>
+  <!-- Duration pattern preview renders inside the editable workspace timeline
+       (SequenceDisplay swaps in panelState.previewSequence) — there is no
+       separate preview workspace. -->
+  <!-- CRITICAL: {#key} block ensures fresh StepGrid instances per tab
+       This prevents animation state pollution (step-grid-display-state.svelte)
+       But we DON'T key the parent layout to avoid workspace visibility timing issues -->
+  <WorkspaceSequenceHeader
+    sequenceState={activeSequenceState}
+    word={currentDisplayWord}
+    {letterSources}
+    activeStepNumber={playback
+      ? playbackStep
+      : (animatingStepNumber ?? practiceStepIndex)}
+  />
+  <div class="workspace-content">
+    <DualSourceCrossfade
+      active={playback && readyPlayback === playback ? "second" : "first"}
+      first={card}
+      second={animation}
+      onsettled={(source) => {
+        if (source === "first" && !playback) retainedPlayback = null;
+      }}
+    />
+    {#if playback && readyPlayback !== playback}
+      <div class="playback-loading" role="status">Loading playback…</div>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -127,5 +215,28 @@
     flex-direction: column;
     overflow: hidden;
     /* padding-bottom is set dynamically via style attribute based on ButtonPanel height */
+  }
+
+  .workspace-panel-wrapper :global(.source > .workspace-panel) {
+    height: 100%;
+  }
+
+  .workspace-content {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .playback-loading {
+    position: absolute;
+    inset: 4px 12px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    color: var(--theme-text);
+    background: var(--theme-panel-bg);
+    font-size: var(--font-size-min, 14px);
   }
 </style>

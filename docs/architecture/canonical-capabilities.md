@@ -5,6 +5,15 @@ wholesale. Each row names the behavior owner. Verify the path in current code
 before relying on it. Add a row only for shared behavior or an intentional
 keep-separate decision, not for every component.
 
+Static placement transforms reuse `PictographContainer`'s `motionStartData`,
+`motionStep`, and `motionProgress` seam. `pictograph-motion-positioner` maps the
+2D animator's paths onto exact prepared start/end poses; `prop-placement-view-model`
+builds paired arc/linear transitions, and `createPropPlacementMotionState` owns
+the readiness-gated clock. Construct's arrival and placement editor keep their
+existing consumers. Searches: static pictograph animation, mirror, flip, swap,
+rotation, arrival motion. Learn queues actions and shares one clock across its
+three examples; it does not own another renderer or interpolation system.
+
 Timing-and-direction route continuity composes the existing `HandMotionPlayer`,
 `reparentToInspector` mounted-node action (also consumed by `ArtPane`), and
 `navigationMorphs`/`runNamedRouteMorph` route driver. Searches: persistent player,
@@ -73,3 +82,14 @@ and completed cell entrances). Published scan links extend its existing
 than minting account-owned short codes. Discovery: `onRenderProgress`,
 `onRenderSettled`, `generateForUrl`, and `showQRCode`; lesson cards compose
 these owners with `createLayoutMotion` and `DualSourceCrossfade`.
+
+QR display reuses `shared/qr/services/qr-code-generator.ts` and extends
+`qr-image-cache.ts` with `prepared-qr-cache.ts`: a successful preparation stores
+the artwork and short link locally and in `prepared-qrs/{contentHash}.json`.
+The key includes `encodeSequence`, canonical cell keys for both themes, and QR
+URL/style options. A cache hit bypasses warming and short-code allocation;
+only a completed strict warm can publish a cache entry. `warm-sequence-cells.ts`
+owns canonical cell enumeration and probes shared cells before rendering.
+Discovery: `generateForSequence`, `qr-image-cache`, `prepared-scan-card`,
+`warmSequenceCells`, `pictograph-cloud-cache`. Decision: extend these owners;
+do not introduce a second QR renderer or scan-asset preparation pipeline.

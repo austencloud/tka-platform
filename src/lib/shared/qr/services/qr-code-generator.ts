@@ -28,6 +28,7 @@ import {
   type WarmSequenceCellsResult,
 } from "$lib/shared/render/services/warm-sequence-cells";
 import { resolveScanPropConfig } from "./scan-prop-resolver";
+import { PreparedQrCache, type PreparedQrStore } from "./prepared-qr-cache";
 
 type CellWarmer = (
   sequence: SequenceData,
@@ -138,7 +139,15 @@ export class QRCodeGenerator {
   constructor(
     private readonly shortCodeManager?: ShortCodeManager,
     private readonly imageCache: QrImageCache = getQrImageCache(),
-    private readonly cellWarmer: CellWarmer = warmSequenceCells
+    private readonly cellWarmer: CellWarmer = warmSequenceCells,
+    private readonly preparedCache: PreparedQrStore = new PreparedQrCache(
+      imageCache
+    ),
+    // The admin baker supplies a Node SVG runtime; styling stays owned here.
+    private readonly createQr: (
+      options: ConstructorParameters<typeof QRCodeStyling>[0]
+    ) => Pick<QRCodeStyling, "getRawData"> = (options) =>
+      new QRCodeStyling(options)
   ) {}
 
   /**
@@ -251,7 +260,7 @@ export class QRCodeGenerator {
       return cachedImage;
     }
 
-    const qrCode = new QRCodeStyling(
+    const qrCode = this.createQr(
       this.createQROptions(url, size, margin, style, centerIcon)
     );
 
@@ -301,6 +310,15 @@ export class QRCodeGenerator {
       deckName: options?.deckName,
     };
 
+    const preparedKey = await this.preparedCache.keyFor(
+      sequence,
+      propConfig,
+      options
+    );
+    const ready = await this.preparedCache.get(preparedKey);
+    throwIfAborted(options?.signal);
+    if (ready) return ready;
+
     // A printable QR is a promise that its landing page is ready. Confirm the
     // exact prop pair in both supported card themes before minting or returning
     // the code; scanners should download these cells, never discover that the
@@ -338,12 +356,16 @@ export class QRCodeGenerator {
     // Generate QR code
     const { svg, dataUrl } = await this.generateQR(shortUrl, options);
 
-    return {
+    const result = {
       svg,
       dataUrl,
       encodedUrl: shortUrl,
       shortCode: code,
     };
+    // Only successful preparation may publish this reusable readiness proof.
+    // Uploading it never delays displaying or saving the QR that is ready now.
+    void this.preparedCache.set(preparedKey, result).catch(() => {});
+    return result;
   }
 
   async generateForUrl(

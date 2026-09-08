@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { bootProfiler } from "$lib/shared/analytics/boot-profiler";
   // get-create-module-initializer (64-file subtree) and get-extension-flow-coordinator
   // (10-file subtree) are imported dynamically at their only call sites (onMount /
   // LOOP action) so they stay OUT of the Create module's eager first-paint graph.
@@ -402,6 +403,8 @@
   }
 
   onMount(() => {
+    bootProfiler.milestone("create:mounted");
+    const finishActivation = bootProfiler.startSpan("create:activation");
     let checkIsMobile: (() => void) | null = null;
 
     // Hydrate the prop-unlock collection on entry so the redemption badge and
@@ -416,12 +419,18 @@
       try {
         const initStart = performance.now();
         initProgress = "Resolving services...";
-        const { getCreateModuleInitializer } =
-          await import("$lib/features/create/shared/get-create-module-initializer");
+        const { getCreateModuleInitializer } = await bootProfiler.measureAsync(
+          "create:initializer-import",
+          () =>
+            import("$lib/features/create/shared/get-create-module-initializer")
+        );
         const initService = getCreateModuleInitializer();
 
         initProgress = "Initializing workspace...";
-        const result = await initService.initialize();
+        const result = await bootProfiler.measureAsync(
+          "create:initialize",
+          () => initService.initialize()
+        );
         logger.log(
           `Create init took ${Math.round(performance.now() - initStart)}ms`
         );
@@ -508,12 +517,15 @@
 
         // Load sequence from deep link or pending edit, then initialize persistence
         await tick(); // Ensure DOM is ready
-        const loadResult =
-          await initService.loadSequenceAndInitializePersistence(
-            (sequence: any) =>
-              CreateModuleState!.sequenceState.setCurrentSequence(sequence),
-            () => CreateModuleState!.initializeWithPersistence()
-          );
+        const loadResult = await bootProfiler.measureAsync(
+          "create:restore-sequence",
+          () =>
+            initService.loadSequenceAndInitializePersistence(
+              (sequence: any) =>
+                CreateModuleState!.sequenceState.setCurrentSequence(sequence),
+              () => CreateModuleState!.initializeWithPersistence()
+            )
+        );
 
         if (loadResult.sequenceLoaded) {
           // Navigate to target tab if specified (deep link only)
@@ -532,13 +544,17 @@
 
         // A browser/WebContent reload resumes the same draft and analytics
         // session. Explicitly loaded work gets a fresh identity instead.
-        const sessionStart = await autosaver.resolveSessionForStart(
-          !loadResult.sequenceLoaded
+        const sessionStart = await bootProfiler.measureAsync(
+          "create:resolve-session",
+          () => autosaver!.resolveSessionForStart(!loadResult.sequenceLoaded)
         );
         sessionManager = new SessionManager(sessionStart.sessionId);
         if (sessionStart.recovered) {
           try {
-            await sessionManager.loadSession(sessionStart.sessionId);
+            await bootProfiler.measureAsync(
+              "create:restore-session-metadata",
+              () => sessionManager!.loadSession(sessionStart.sessionId)
+            );
           } catch (sessionError) {
             logger.warn(
               "[CreateModule] Existing session metadata could not be restored:",
@@ -562,6 +578,7 @@
 
         logger.success("Autosave started");
         logger.success("CreateModule initialized successfully");
+        bootProfiler.milestone("create:workspace-initialized");
 
         // Restore previously open panel if returning to create module
         // Only restore if no deep link was processed (deep link takes priority)
@@ -606,7 +623,9 @@
         };
         checkIsMobile();
         window.addEventListener("resize", checkIsMobile);
+        finishActivation();
       } catch (err) {
+        finishActivation("error");
         error =
           err instanceof Error
             ? err.message
@@ -617,6 +636,7 @@
 
     // Return cleanup function synchronously (required for Svelte 5 onMount)
     return () => {
+      finishActivation("cancelled");
       finishTutorialWorkspace();
 
       if (checkIsMobile) {
@@ -657,6 +677,7 @@
   // EVENT HANDLERS (Delegated to Services)
   // ============================================================================
   async function handleOptionSelected(option: PictographData): Promise<void> {
+    if (panelState.workspacePlayback) return;
     if (!handlers) {
       error = "Handlers service not initialized";
       return;
@@ -963,13 +984,11 @@
         />
 
         <!-- Always-mounted launcher (light): owns deep-link open + view-sequence redirect.
-       The heavy export/animation drawer host is deferred until first open via
-       LazyMount, then idle-prefetched so the first open is instant. -->
+       The heavy export/animation drawer host loads when requested. -->
         <SequenceDrawerLauncher />
         <LazyMount
           loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
           active={panelState.isExportPanelOpen}
-          prefetch
         />
 
         <!-- Sequence Actions Coordinator (deferred until first opened) -->
@@ -983,7 +1002,6 @@
         <LazyMount
           loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
           active={panelState.isStepEditorPanelOpen}
-          prefetch
         />
 
         <!-- LOOP Coordinator -->

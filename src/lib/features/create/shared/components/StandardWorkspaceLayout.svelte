@@ -207,7 +207,10 @@
     </div>
 
     {#if shouldShowWorkspace}
-      <div class="workspace-history-actions">
+      <div
+        class="workspace-history-actions"
+        inert={!!panelState.workspacePlayback}
+      >
         <UndoButton {CreateModuleState} onAction={handleWorkspaceUndo} />
         <UndoButton {CreateModuleState} direction="redo" />
       </div>
@@ -382,6 +385,10 @@
     z-index: 161;
     display: flex;
     pointer-events: auto;
+  }
+
+  .workspace-history-actions[inert] {
+    opacity: 0.45;
   }
 
   /* Collapsed state - invisible but still in layout flow */
