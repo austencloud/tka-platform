@@ -86,12 +86,11 @@ async function renderCanonicalCell(
   // download before rendering and another after upload.
   if (verifyUpload && pictographCloudCache.isCellKnownAvailable(hash)) return;
 
-  // Unknown hashes are expected writer misses. Keep this lookup quiet so a
-  // first-time canonical render goes straight to upload without logging a
-  // browser-visible 404 for the object it is about to create.
+  // A new browser has no local existence history. Probe the shared object
+  // before asking it to render and upload something another publisher made.
   if (verifyUpload) {
     const stored = await pictographCloudCache.download(hash, {
-      probeUnknown: false,
+      probeUnknown: true,
       signal,
     });
     throwIfAborted(signal);
@@ -156,11 +155,10 @@ async function ensureVerifiedCanonicalCell(
   throwIfAborted(signal);
 }
 
-export async function warmSequenceCells(
+export function getCanonicalSequenceCells(
   sequence: SequenceData,
   opts: WarmOptions = {}
-): Promise<WarmSequenceCellsResult> {
-  throwIfAborted(opts.signal);
+) {
   const leftProp = opts.leftPropType;
   const motionVisibility = getSequenceMotionVisibility(sequence);
   const renderOptions: PreviewCellRenderOptions = {
@@ -201,6 +199,15 @@ export async function warmSequenceCells(
     entries.push({ cell: index + 1, data: step, options });
   });
 
+  return entries;
+}
+
+export async function warmSequenceCells(
+  sequence: SequenceData,
+  opts: WarmOptions = {}
+): Promise<WarmSequenceCellsResult> {
+  throwIfAborted(opts.signal);
+  const entries = getCanonicalSequenceCells(sequence, opts);
   const hashes: string[] = [];
   const failures: WarmCellFailure[] = [];
   // Canonical warming sits inside thumbnail rendering and can run for several

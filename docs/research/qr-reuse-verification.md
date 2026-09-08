@@ -1,0 +1,36 @@
+# QR reuse verification — September 8, 2026
+
+Sequence QR generation now checks a prepared-artifact cache before warming
+pictographs or allocating a short code. Only a successful strict warm of both
+themes can populate this cache. Fresh publishers probe existing cloud cells
+before rendering. The viewer invalidates its QR when encoded motions change,
+even if the sequence ID stays the same.
+
+The cache persists SVG artwork and its short link in IndexedDB and shares them
+as `prepared-qrs/{hash}.json` in Firebase Storage. Keys include encoded sequence
+content, both themes' canonical cell keys (including renderer revisions), prop
+configuration, view mode, attribution parameters and artwork options. Existing
+QR images without a readiness record take the preparation path once.
+
+Verification:
+
+- 28 focused unit tests passed across the generator, cache, cell preparation
+  and viewer QR lifecycle.
+- Three Storage emulator tests passed against the isolated `demo-qr-reuse`
+  project: public reads; authenticated, bounded creation; and rejection of
+  replacement, deletion and listing by later viewers.
+- Svelte check reported zero errors and zero warnings.
+- In a task-owned browser, the real QR generator produced an SVG, which was
+  returned by a simulated shared-cache response. The first retrieval took
+  1.7 ms; reopening through a new cache instance and real IndexedDB took 0.9 ms.
+  There was one shared-cache read, zero cell warmer calls, zero short-code calls,
+  and identical artwork. These are local fixture timings, not production
+  network measurements. The resulting QR was visually inspected.
+- No production data, Storage rules or application deployment was changed
+  during verification. The temporary browser fixture and server were removed.
+
+Deployment: the new `prepared-qrs` block in `storage.rules` must be deployed to
+enable shared reads and writes. Until then local reuse works and shared-cache
+failures fall back to existing preparation. The application change also needs
+the normal release before production viewers use this path. Records accumulate
+as cards are prepared; this change does not run a production backfill.

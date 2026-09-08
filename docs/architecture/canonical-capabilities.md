@@ -73,3 +73,14 @@ and completed cell entrances). Published scan links extend its existing
 than minting account-owned short codes. Discovery: `onRenderProgress`,
 `onRenderSettled`, `generateForUrl`, and `showQRCode`; lesson cards compose
 these owners with `createLayoutMotion` and `DualSourceCrossfade`.
+
+QR display reuses `shared/qr/services/qr-code-generator.ts` and extends
+`qr-image-cache.ts` with `prepared-qr-cache.ts`: a successful preparation stores
+the artwork and short link locally and in `prepared-qrs/{contentHash}.json`.
+The key includes `encodeSequence`, canonical cell keys for both themes, and QR
+URL/style options. A cache hit bypasses warming and short-code allocation;
+only a completed strict warm can publish a cache entry. `warm-sequence-cells.ts`
+owns canonical cell enumeration and probes shared cells before rendering.
+Discovery: `generateForSequence`, `qr-image-cache`, `prepared-scan-card`,
+`warmSequenceCells`, `pictograph-cloud-cache`. Decision: extend these owners;
+do not introduce a second QR renderer or scan-asset preparation pipeline.
