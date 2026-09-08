@@ -226,12 +226,20 @@ describe("canonical concept lesson composition", () => {
     expect(timingBoard).not.toMatch(
       /border-(left|right|top|bottom):\s*[2-9]\d*px/
     );
-    expect(timingIntro).toContain('<h3 id="timing-heading">Timing</h3>');
-    expect(timingIntro).toContain('<h3 id="direction-heading">Direction</h3>');
+    // 2d3b8d4e86 rewrote the combined timing/direction panel into three
+    // independent examples (placement, timing, direction), dropping the old
+    // timing-heading/direction-heading ids and the timingMode/directionMode
+    // state names along with it. Assert the current structure instead.
+    expect(timingIntro).toContain('aria-label="Timing" use:renderGateTarget={gate}>');
+    expect(timingIntro).toContain("<h3>Timing</h3>");
+    expect(timingIntro).toContain('aria-label="Direction">');
+    expect(timingIntro).toContain("<h3>Direction</h3>");
     expect(timingIntro).toContain("SegmentedControl");
     expect(timingIntro).toContain('semantics="radiogroup"');
-    expect(timingIntro).toContain("data-timing={timingMode}");
-    expect(timingIntro).toContain("data-direction={directionMode}");
+    expect(timingIntro).toContain('let timing = $state<TimingMode>("together");');
+    expect(timingIntro).toContain(
+      'rotations[0] === rotations[1] ? "same" : "opposite"'
+    );
     // Static diagrams delegate their selection transitions to the reduced-motion-aware owner.
     expect(timingIntro).toContain(
       'import Crossfade from "$lib/shared/components/Crossfade.svelte"'
