@@ -537,10 +537,20 @@
     // actually doing — which is what makes animations stutter on arrival. Both the
     // gallery and the Creators tab still load on demand when actually opened.
     const constrainedConnection = isConstrainedConnection();
+    // A fast connection does not make the entire public gallery useful to
+    // someone opening Construct. Keep local cache/mutation wiring, but let
+    // Browse own its network load when it is actually the requested workspace.
+    const prefetchBrowseNetwork =
+      !constrainedConnection &&
+      window.location.pathname.split("/")[1] === "browse";
+    bootProfiler.milestone("browse:prefetch-policy", {
+      network: prefetchBrowseNetwork,
+      constrainedConnection,
+    });
     const prefetchBrowseData = async () => {
       // Gallery: always warm from the IndexedDB cache (local, instant). On a
-      // constrained connection, skip the fresh Firestore sync; otherwise sync in
-      // the background so the gallery is up to date before the user opens it.
+      // constrained connection or another workspace, skip the fresh Firestore
+      // sync. Browse itself loads its network data on demand when opened.
       //
       // The desktop build seeds that cache from its bundled public index on
       // first launch; wait for it so the warm finds data instead of an empty
@@ -552,7 +562,7 @@
         const prefetcher = getGalleryPrefetcher();
         if (prefetcher && typeof prefetcher.prefetch === "function") {
           prefetcher
-            .prefetch({ skipNetworkSync: constrainedConnection })
+            .prefetch({ skipNetworkSync: !prefetchBrowseNetwork })
             .catch((err: unknown) =>
               console.warn("[Layout] Gallery prefetch failed:", err)
             );
@@ -562,8 +572,8 @@
       }
 
       // Creators: purely speculative warming for the Creators tab. Skip it
-      // entirely on a constrained connection — it loads when the tab is opened.
-      if (!constrainedConnection) {
+      // on other workspaces or constrained connections; the tab loads on demand.
+      if (prefetchBrowseNetwork) {
         import("$lib/features/creators/state/creators-data-state.svelte")
           .then(({ creatorsDataState }) => {
             if (!creatorsDataState.isInitialized) {
