@@ -33,6 +33,22 @@ function sequence(): SequenceData {
 }
 
 describe("workspace playback", () => {
+  it("keeps Generate playback until its source tab or document changes", () => {
+    const state = createState();
+    state.startWorkspacePlayback(sequence(), 7, "generate");
+    const session = state.workspacePlayback;
+    state.syncWorkspacePlaybackSource("generate", 7);
+    expect(state.workspacePlayback).toBe(session);
+
+    // Matching revision numbers do not make two tabs the same document.
+    state.syncWorkspacePlaybackSource("construct", 7);
+    expect(state.workspacePlayback).toBeNull();
+
+    state.startWorkspacePlayback(sequence(), 7, "generate");
+    state.syncWorkspacePlaybackSource("generate", 8);
+    expect(state.workspacePlayback).toBeNull();
+  });
+
   it("holds a fixed document without mutating the draft", () => {
     const state = createState();
     const draft = sequence();

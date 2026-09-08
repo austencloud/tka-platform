@@ -1,5 +1,5 @@
-/** Compare a repaired MPFB export with its previous export, using runtime poses.
- * Run: node --import tsx scripts/characters/verify-mpfb-grip.mjs before.glb after.glb
+/** Validate an MPFB export, optionally comparing it with its previous export.
+ * Run: node --import tsx scripts/characters/verify-mpfb-grip.mjs [before.glb] after.glb
  * This measures joints, not skin contact; inspect the real viewer as well.
  */
 import assert from "node:assert/strict";
@@ -67,22 +67,28 @@ function measure(path) {
   return { rest, distances };
 }
 
-const [beforePath, afterPath] = process.argv.slice(2);
-assert(beforePath && afterPath, "Provide previous and repaired GLB paths");
-const before = measure(beforePath);
-const after = measure(afterPath);
-assert.equal(after.rest.size, before.rest.size, "Joint count changed");
-for (const [name, position] of before.rest) {
-  assert(
-    position.distanceTo(after.rest.get(name)) < 1e-5,
-    `${name}: rest joint moved`
-  );
+const paths = process.argv.slice(2);
+assert(
+  paths.length >= 1 && paths.length <= 2,
+  "Provide an MPFB GLB, or previous and repaired GLBs"
+);
+const before = paths.length === 2 ? measure(paths[0]) : null;
+const after = measure(paths.at(-1));
+if (before) {
+  assert.equal(after.rest.size, before.rest.size, "Joint count changed");
+  for (const [name, position] of before.rest) {
+    assert(
+      position.distanceTo(after.rest.get(name)) < 1e-5,
+      `${name}: rest joint moved`
+    );
+  }
 }
 for (const [index, hand] of after.distances.entries()) {
-  assert(
-    hand.thumbIndex < before.distances[index].thumbIndex * 0.6,
-    `${hand.side}: thumb still extends away from the grip`
-  );
+  if (before)
+    assert(
+      hand.thumbIndex < before.distances[index].thumbIndex * 0.6,
+      `${hand.side}: thumb still extends away from the grip`
+    );
   assert(
     hand.thumbIndex < hand.palmLength * 0.5,
     `${hand.side}: thumb misses the index side of the grip`
@@ -96,9 +102,10 @@ assert(
 console.log(
   JSON.stringify(
     {
-      before: before.distances,
+      ...(before
+        ? { before: before.distances, restJointsUnchanged: after.rest.size }
+        : {}),
       after: after.distances,
-      restJointsUnchanged: after.rest.size,
     },
     null,
     2

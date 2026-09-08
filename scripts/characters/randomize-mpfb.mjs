@@ -47,6 +47,22 @@ try {
     resolve(jobDirectory, "blender.log"),
     result.stdout + result.stderr
   );
+  // A complete finger rig can still point its thumbs away from the shaft.
+  // Exercise the actual runtime grip before this export enters the catalog.
+  const gripCheck = await promisify(execFile)(
+    process.execPath,
+    [
+      "--import",
+      "tsx",
+      "scripts/characters/verify-mpfb-grip.mjs",
+      resolve(generated, "mpfb-proof.glb"),
+    ],
+    { windowsHide: true, maxBuffer: 1024 * 1024 }
+  );
+  await writeFile(
+    resolve(jobDirectory, "grip-verification.json"),
+    gripCheck.stdout
+  );
   const provenance = JSON.parse(
     await readFile(
       resolve("scripts/characters/mpfb-proof.provenance.json"),
