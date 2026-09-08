@@ -301,7 +301,6 @@
       firebase: import("$lib/shared/auth/firebase"),
       authState: import("$lib/shared/auth/state/auth-state.svelte"),
       i18n: import("$lib/shared/i18n/i18n.svelte.js"),
-      posthog: import("$lib/shared/analytics/services/posthog"),
       modalUrlState:
         import("$lib/shared/application/state/ui/modal-url-state.svelte"),
       cacheBuster: import("$lib/shared/utils/cache-buster"),
@@ -553,12 +552,23 @@
 
     // Analytics: PostHog
     bootProfiler.mark("posthog");
-    const { initPostHog } = await imports.posthog;
-    await initPostHog();
-    const { initializePostHogLifecycleReporter } =
-      await import("$lib/shared/analytics/services/posthog-lifecycle-reporter");
-    initializePostHogLifecycleReporter();
-    bootProfiler.end("posthog");
+    void (async () => {
+      try {
+        const { initPostHog } =
+          await import("$lib/shared/analytics/services/posthog");
+        await initPostHog();
+        const { initializePostHogLifecycleReporter } =
+          await import("$lib/shared/analytics/services/posthog-lifecycle-reporter");
+        initializePostHogLifecycleReporter();
+      } catch (error) {
+        console.warn(
+          "[Layout] Optional analytics initialization failed:",
+          error
+        );
+      } finally {
+        bootProfiler.end("posthog");
+      }
+    })();
 
     // i18n
     bootProfiler.mark("i18n");
