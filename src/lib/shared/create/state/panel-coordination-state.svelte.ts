@@ -352,6 +352,16 @@ export interface PanelCoordinationState {
   ): void;
   exitOptionAudition(): void;
 
+  get workspacePlayback(): {
+    sequence: SequenceData;
+    sourceSequenceRevision: number;
+  } | null;
+  startWorkspacePlayback(
+    sequence: SequenceData,
+    sourceSequenceRevision: number
+  ): void;
+  stopWorkspacePlayback(): void;
+
   // LOOP Completion Flow (triggers confirmation dialog in CreateModule)
   requestLoopCompletion(loopType: LOOPType): void;
   setLoopCompletionCallback(cb: (loopType: LOOPType) => void): void;
@@ -460,6 +470,11 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let originalSequence = $state<SequenceData | null>(null);
   let optionAudition = $state<ConstructOptionAudition | null>(null);
   let optionAuditionRequestId = 0;
+  let workspacePlayback = $state.raw<{
+    sequence: SequenceData;
+    sourceSequenceRevision: number;
+  } | null>(null);
+  let restoreStepEditorAfterPlayback = false;
 
   // Preset drawer state
   let isPresetDrawerOpen = $state(false);
@@ -479,6 +494,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
    * This ensures only ONE panel is open at a time, preventing state conflicts
    */
   function closeAllPanels() {
+    workspacePlayback = null;
+    restoreStepEditorAfterPlayback = false;
     // Exit shift start mode
     isShiftStartMode = false;
     shiftStartHandler = null;
@@ -982,7 +999,31 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return optionAudition;
     },
 
+    get workspacePlayback() {
+      return workspacePlayback;
+    },
+
+    startWorkspacePlayback(sequence, sourceSequenceRevision) {
+      if (!sequence.steps.length || workspacePlayback) return;
+      const restoreEditor = isStepEditorPanelOpen;
+      closeAllPanels();
+      restoreStepEditorAfterPlayback = restoreEditor;
+      // Playback gets a fixed document. An edit cannot change the motion mid-beat.
+      workspacePlayback = {
+        sequence: structuredClone($state.snapshot(sequence)),
+        sourceSequenceRevision,
+      };
+    },
+
+    stopWorkspacePlayback() {
+      if (!workspacePlayback) return;
+      workspacePlayback = null;
+      if (restoreStepEditorAfterPlayback) isStepEditorPanelOpen = true;
+      restoreStepEditorAfterPlayback = false;
+    },
+
     enterOptionAudition(audition) {
+      if (workspacePlayback) return;
       isDurationPreviewMode = false;
       previewSequence = null;
       originalSequence = null;
