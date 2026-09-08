@@ -18,6 +18,7 @@ interface ICSVParser {
 export class MotionQueryHandler implements IMotionQueryHandler {
   private parsedData: Record<GridMode, ParsedCsvRow[]> | null = null;
   private isInitialized = false;
+  private pendingInitialization: Promise<void> | null = null;
 
   constructor(
     private csvLoader: CsvLoader,
@@ -30,6 +31,22 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       return;
     }
 
+    if (this.pendingInitialization) {
+      return this.pendingInitialization;
+    }
+
+    const initialization = this.initialize();
+    this.pendingInitialization = initialization;
+    try {
+      await initialization;
+    } finally {
+      if (this.pendingInitialization === initialization) {
+        this.pendingInitialization = null;
+      }
+    }
+  }
+
+  private async initialize(): Promise<void> {
     try {
       const csvData = await this.csvLoader.loadCSVDataSet();
       const parseSpan = bootProfiler.startSpan("csv:parse");

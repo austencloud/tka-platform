@@ -4,6 +4,7 @@ import { bootProfiler } from "$lib/shared/analytics/boot-profiler";
 // Module-level cache shared across all instances (defense against non-singleton usage)
 let sharedCsvCache: CsvDataSet | null = null;
 let sharedIsLoaded = false;
+let sharedPendingLoad: Promise<CsvDataSet> | null = null;
 
 const IDB_NAME = "tka-csv-cache";
 const IDB_VERSION = 1;
@@ -170,6 +171,36 @@ export class CsvLoader {
       return this.csvData;
     }
 
+    if (sharedPendingLoad) {
+      try {
+        const data = await sharedPendingLoad;
+        this.csvData = data;
+        this.isLoaded = true;
+        span("ok", { source: "pending" });
+        return data;
+      } catch (error) {
+        span("error", { source: "pending" });
+        throw error;
+      }
+    }
+
+    const pendingLoad = this.loadUncachedCsvData();
+    sharedPendingLoad = pendingLoad;
+    try {
+      const data = await pendingLoad;
+      span("ok", { source: this.resolveSource() });
+      return data;
+    } catch (error) {
+      span("error", { source: "unavailable" });
+      throw error;
+    } finally {
+      if (sharedPendingLoad === pendingLoad) {
+        sharedPendingLoad = null;
+      }
+    }
+  }
+
+  private async loadUncachedCsvData(): Promise<CsvDataSet> {
     // Try window pre-injection
     if (this.isWindowDataAvailable()) {
       const data = window.csvData as CsvDataSet;
@@ -177,7 +208,6 @@ export class CsvLoader {
       this.setMemoryCache(data);
       // Persist to IndexedDB in background (don't await)
       this.saveToIndexedDB(data);
-      span("ok", { source: "window" });
       return data;
     }
 
@@ -188,7 +218,6 @@ export class CsvLoader {
       this.setMemoryCache(data);
       // Persist to IndexedDB in background for offline use
       this.saveToIndexedDB(data);
-      span("ok", { source: "fetch" });
       return data;
     } catch (fetchError) {
       // Fetch failed - try IndexedDB offline cache
@@ -200,7 +229,6 @@ export class CsvLoader {
           );
           this.lastSource = "cache";
           this.setMemoryCache(cached);
-          span("ok", { source: "indexeddb" });
           return cached;
         }
       } catch (idbError) {
@@ -212,7 +240,6 @@ export class CsvLoader {
       const message =
         fetchError instanceof Error ? fetchError.message : "Unknown error";
       console.error("Failed to load CSV data from all sources:", message);
-      span("error", { source: "unavailable" });
       throw new Error(`CSV loading failed (offline with no cache): ${message}`);
     }
   }
@@ -226,6 +253,7 @@ export class CsvLoader {
     this.isLoaded = false;
     sharedCsvCache = null;
     sharedIsLoaded = false;
+    sharedPendingLoad = null;
   }
 
   private setMemoryCache(data: CsvDataSet): void {

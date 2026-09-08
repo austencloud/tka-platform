@@ -983,13 +983,11 @@
         />
 
         <!-- Always-mounted launcher (light): owns deep-link open + view-sequence redirect.
-       The heavy export/animation drawer host is deferred until first open via
-       LazyMount, then idle-prefetched so the first open is instant. -->
+       The heavy export/animation drawer host loads when requested. -->
         <SequenceDrawerLauncher />
         <LazyMount
           loader={() => import("./coordinators/SequenceDrawerHost.svelte")}
           active={panelState.isExportPanelOpen}
-          prefetch
         />
 
         <!-- Sequence Actions Coordinator (deferred until first opened) -->
@@ -1003,7 +1001,6 @@
         <LazyMount
           loader={() => import("./coordinators/StepEditorCoordinator.svelte")}
           active={panelState.isStepEditorPanelOpen}
-          prefetch
         />
 
         <!-- LOOP Coordinator -->
