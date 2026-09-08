@@ -33,7 +33,6 @@ import { getMotionColor } from "../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { assetFetch } from "../../../net/asset-fetch";
 
-
 // Persist caches across HMR to prevent mass network requests during development.
 // Without this, every code change would trigger many SVG refetches.
 
@@ -141,10 +140,22 @@ export class PropSvgLoader {
         };
       }
 
-      this.cacheMisses++;
-
       // Fetch raw SVG (uses raw cache + deduplication)
       const originalSvgText = await this.fetchSvgContentCached(path);
+
+      // A batch can share the fetch while every caller misses the first cache
+      // check. Reuse the first completed transform, retaining this card's pose.
+      const preparedWhileFetching =
+        this.transformedSvgCache.get(transformedCacheKey);
+      if (preparedWhileFetching) {
+        this.cacheHits++;
+        return {
+          ...preparedWhileFetching,
+          position: { x: propData.positionX, y: propData.positionY },
+          rotation: propData.rotationAngle,
+        };
+      }
+      this.cacheMisses++;
 
       // Apply color transformation with current theme mode. Physical fan
       // builds own their material colors, so only the marked frame group
@@ -282,7 +293,9 @@ export class PropSvgLoader {
   } {
     // Regex parse (no DOMParser): the composition worker has no DOM, and
     // DOMParser is undefined there. Reads the same `viewBox` attribute.
-    const viewBoxMatch = svgText.match(/<svg\b[^>]*\bviewBox\s*=\s*["']([^"']+)["']/i);
+    const viewBoxMatch = svgText.match(
+      /<svg\b[^>]*\bviewBox\s*=\s*["']([^"']+)["']/i
+    );
     if (!svgText.match(/<svg\b/i)) {
       throw new Error("Invalid SVG: No SVG element found");
     }
@@ -314,7 +327,9 @@ export class PropSvgLoader {
     propType?: string
   ): string {
     const isSelective = propType
-      ? (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(propType.toLowerCase())
+      ? (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(
+          propType.toLowerCase()
+        )
       : false;
 
     return applyMotionColorToSvg(svgText, color, {
