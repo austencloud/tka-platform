@@ -48,7 +48,7 @@ const STATIC_ROOT = resolve(process.cwd(), "static");
 
 /** Letter G tog-same dual-shift: both hands PRO S→W, radial start (in/in). */
 function makeG_bothHandsSouthToWest(): PictographData {
-  const motion = (color: "blue" | "red"): MotionData =>
+  const motion = (hand: "left" | "right"): MotionData =>
     createMotionData({
       motionType: "pro" as const,
       rotationDirection: "cw" as const,
@@ -57,13 +57,13 @@ function makeG_bothHandsSouthToWest(): PictographData {
       turns: 0,
       startOrientation: "in" as const,
       endOrientation: "in" as const,
-      color: color as MotionData["color"],
+      hand,
       gridMode: "diamond" as const,
     });
   return {
     id: "g-ts-test",
     letter: "G" as PictographData["letter"],
-    motions: { blue: motion("blue"), red: motion("red") },
+    motions: { left: motion("left"), right: motion("right") },
   };
 }
 
@@ -78,11 +78,11 @@ function handPathTransformed(p: PictographData): PictographData {
 
 describe("hand-path float arrow separation (G tog-same)", () => {
   const transformed = handPathTransformed(makeG_bothHandsSouthToWest());
-  const blue = transformed.motions.blue!;
-  const red = transformed.motions.red!;
+  const left = transformed.motions.left!;
+  const right = transformed.motions.right!;
 
   it("converts PRO shifts to floats but KEEPS radial orientations", () => {
-    for (const m of [blue, red]) {
+    for (const m of [left, right]) {
       expect(m.motionType).toBe("float");
       expect(m.turns).toBe("fl");
       // The regression: these were blanked to undefined, killing layer
@@ -93,7 +93,7 @@ describe("hand-path float arrow separation (G tog-same)", () => {
   });
 
   it("resolves the special-placement lookup context (from_layer1, '(fl, fl)')", () => {
-    const rawOriKey = generateOrientationKey(blue, transformed);
+    const rawOriKey = generateOrientationKey(left, transformed);
     expect(rawOriKey).toBe("in_in");
     // HAND props keep the specific key; the placer's folder fallback then maps
     // to the legacy bucket where the static JSON actually lives.
@@ -116,23 +116,23 @@ describe("hand-path float arrow separation (G tog-same)", () => {
     ) as Record<string, unknown>;
 
     const lookup = new SpecialPlacementLookup();
-    const redAdj = lookup.lookupAdjustment(
+    const rightAdj = lookup.lookupAdjustment(
       letterData,
       "(fl, fl)",
-      red,
+      right,
       transformed,
       "red"
     );
-    const blueAdj = lookup.lookupAdjustment(
+    const leftAdj = lookup.lookupAdjustment(
       letterData,
       "(fl, fl)",
-      blue,
+      left,
       transformed,
       "blue"
     );
 
-    expect(redAdj).toEqual(new Point(80, -100));
-    expect(blueAdj).toBeNull(); // → falls through to the default tier
+    expect(rightAdj).toEqual(new Point(80, -100));
+    expect(leftAdj).toBeNull(); // → falls through to the default tier
   });
 
   it("restores layer detection so blue's default key is beta-specific, not a bare miss", () => {
@@ -147,7 +147,7 @@ describe("hand-path float arrow separation (G tog-same)", () => {
     ) as Record<string, [number, number][]>;
     const availableKeys = Object.keys(floatDefaults);
 
-    const blueKey = generatePlacementKey(blue, transformed, availableKeys);
+    const blueKey = generatePlacementKey(left, transformed, availableKeys);
     expect(blueKey).toBe("float_to_layer1_beta");
 
     const blueDefault = (

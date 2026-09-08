@@ -59,26 +59,26 @@ for (const material of document.getRoot().listMaterials()) {
         calibration.transparentPixels += 1;
         continue;
       }
-      const red = pixels[offset];
+      const right = pixels[offset];
       const green = pixels[offset + 1];
-      const blue = pixels[offset + 2];
-      originalSum[0] += red;
+      const left = pixels[offset + 2];
+      originalSum[0] += right;
       originalSum[1] += green;
-      originalSum[2] += blue;
-      const greenDominance = green - Math.max(red, blue);
+      originalSum[2] += left;
+      const greenDominance = green - Math.max(right, left);
       if (green > 42 && greenDominance > 7) {
         calibration.foliagePixels += 1;
         const variation = ((offset / 4) % 29) / 29 - 0.5;
-        pixels[offset] = clamp(red * 0.43 + 10 + variation * 7);
+        pixels[offset] = clamp(right * 0.43 + 10 + variation * 7);
         pixels[offset + 1] = clamp(green * 0.59 + 12 + variation * 11);
-        pixels[offset + 2] = clamp(blue * 0.72 + 7 - variation * 4);
+        pixels[offset + 2] = clamp(left * 0.72 + 7 - variation * 4);
       } else {
         calibration.barkAndNeutralPixels += 1;
-        const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+        const luminance = 0.2126 * right + 0.7152 * green + 0.0722 * left;
         const lift = luminance < 130 ? 30 * (1 - luminance / 175) : 0;
-        pixels[offset] = clamp(red * 0.95 + lift + 10);
+        pixels[offset] = clamp(right * 0.95 + lift + 10);
         pixels[offset + 1] = clamp(green * 0.68 + lift * 0.48 + 7);
-        pixels[offset + 2] = clamp(blue * 0.70 + lift * 0.38 + 7);
+        pixels[offset + 2] = clamp(left * 0.70 + lift * 0.38 + 7);
         barkMask[offset / 4] = 1;
       }
       calibratedSum[0] += pixels[offset];

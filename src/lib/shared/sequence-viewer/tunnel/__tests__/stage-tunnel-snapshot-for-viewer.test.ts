@@ -8,11 +8,14 @@ import {
 import { EFFECTS_CONFIG_STORAGE_KEY } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 const snapshot = {
-  version: 2,
+  version: 3,
   tunnel: {
     config: { ...DEFAULT_CONFIG, fold: 6 },
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    },
     section: "props",
     presetRecipe: null,
   },
@@ -21,15 +24,15 @@ const snapshot = {
   paths: {
     pathShape: "concave",
     motionAwarePaths: true,
-    bluePathLines: true,
-    redPathLines: false,
+    leftPathLines: true,
+    rightPathLines: false,
   },
   playback: { bpm: 128, playbackMode: "step" },
   props: {
-    bluePropType: "buugeng",
-    redPropType: "buugeng",
-    blueBuugengFlipped: true,
-    redBuugengFlipped: false,
+    leftPropType: "buugeng",
+    rightPropType: "buugeng",
+    leftBuugengFlipped: true,
+    rightBuugengFlipped: false,
   },
   trailRender: { mode: "trail", marker: "exact" },
 } as unknown as TunnelSnapshot;
@@ -38,6 +41,7 @@ describe("stageTunnelSnapshotForViewer", () => {
   it("fans every pre-mount field into the viewer's canonical owners", () => {
     const dependencies = {
       visibility: {
+        setGridMode: vi.fn(),
         setEffortPreset: vi.fn(),
         setPathPolicy: vi.fn(),
         setVisibility: vi.fn(),
@@ -46,10 +50,13 @@ describe("stageTunnelSnapshotForViewer", () => {
       settings: { updateSettings: vi.fn() },
       saveViewState: vi.fn(),
       storage: { setItem: vi.fn() },
+      ensureCustomColorPreference: vi.fn(),
+      stageCustomColors: vi.fn(),
     } as unknown as TunnelViewerStagingDependencies;
 
     stageTunnelSnapshotForViewer(snapshot, dependencies);
 
+    expect(dependencies.visibility.setGridMode).toHaveBeenCalledWith("8point");
     expect(dependencies.visibility.setEffortPreset).toHaveBeenCalledWith(
       "punch"
     );
@@ -59,12 +66,12 @@ describe("stageTunnelSnapshotForViewer", () => {
     });
     expect(dependencies.visibility.setVisibility).toHaveBeenNthCalledWith(
       1,
-      "bluePathLines",
+      "leftPathLines",
       true
     );
     expect(dependencies.visibility.setVisibility).toHaveBeenNthCalledWith(
       2,
-      "redPathLines",
+      "rightPathLines",
       false
     );
     expect(dependencies.animationSettings.updateSettings).toHaveBeenCalledWith({
@@ -74,6 +81,10 @@ describe("stageTunnelSnapshotForViewer", () => {
       snapshot.props
     );
     expect(dependencies.saveViewState).toHaveBeenCalledWith(snapshot.tunnel);
+    expect(dependencies.ensureCustomColorPreference).toHaveBeenCalledOnce();
+    expect(dependencies.stageCustomColors).toHaveBeenCalledWith(
+      snapshot.tunnel.colors.custom
+    );
     expect(dependencies.storage?.setItem).toHaveBeenCalledWith(
       EFFECTS_CONFIG_STORAGE_KEY,
       JSON.stringify(snapshot.effects)

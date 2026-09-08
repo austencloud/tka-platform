@@ -17,7 +17,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -35,8 +35,8 @@ const AXES: Array<[GridLocation, GridLocation]> = [
 
 describe("roundtrip: 2-turn dash halves render at the physical staff angle", () => {
   it.each(AXES)("dash %s -> %s", (startLocation, endLocation) => {
-    const red = createMotionData({
-      color: MotionColor.RED,
+    const right = createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.DASH,
       startLocation,
       endLocation,
@@ -52,7 +52,7 @@ describe("roundtrip: 2-turn dash halves render at the physical staff angle", () 
       id: "probe",
       letter: null,
       gridMode: GridMode.DIAMOND,
-      motions: { red, blue: createPlaceholderMotion(MotionColor.BLUE) },
+      motions: { right, left: createPlaceholderMotion(HandSide.LEFT) },
       stepNumber: 1,
       duration: 1,
       isBlank: false,
@@ -62,16 +62,16 @@ describe("roundtrip: 2-turn dash halves render at the physical staff angle", () 
     const physicalDeg =
       (((calculateStaffAngleAt(
         {
-          motionType: red.motionType,
-          rotationDirection: red.rotationDirection,
-          startLocation: red.startLocation,
-          endLocation: red.endLocation,
-          startOrientation: red.startOrientation,
-          endOrientation: red.endOrientation,
+          motionType: right.motionType,
+          rotationDirection: right.rotationDirection,
+          startLocation: right.startLocation,
+          endLocation: right.endLocation,
+          startOrientation: right.startOrientation,
+          endOrientation: right.endOrientation,
           turns: 2,
         },
         0.5,
-        MotionColor.RED
+        HandSide.RIGHT
       )! *
         180) /
         Math.PI) %
@@ -81,7 +81,7 @@ describe("roundtrip: 2-turn dash halves render at the physical staff angle", () 
 
     const halved = buildHalvedStep(step, 0.5);
     expect(halved).not.toBeNull();
-    const mid = halved!.motions.red;
+    const mid = halved!.motions.right;
     console.log(
       `${startLocation}->${endLocation}: physical=${physicalDeg}deg ori=${mid.endOrientation}`
     );

@@ -284,8 +284,8 @@ describe("festival pack curation", () => {
         turnIntensity: number;
         steps: Array<{
           motions: {
-            blue: { turns: number };
-            red: { turns: number };
+            left: { turns: number };
+            right: { turns: number };
           };
         }>;
       }
@@ -293,8 +293,8 @@ describe("festival pack curation", () => {
 
     for (const record of Object.values(records)) {
       const turns = record.steps.flatMap((step) => [
-        step.motions.blue.turns,
-        step.motions.red.turns,
+        (step.motions.left ?? step.motions.blue).turns,
+        (step.motions.right ?? step.motions.red).turns,
       ]);
       expect(turns.every((turn) => Number.isInteger(turn))).toBe(true);
       expect(turns.every((turn) => turn === 0)).toBe(true);

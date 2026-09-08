@@ -540,12 +540,14 @@ Features:
   .type-navigation {
     position: relative;
     display: grid;
-    grid-template-columns: 40px minmax(0, 280px) 40px;
+    grid-template-columns:
+      var(--min-touch-target, 44px) minmax(0, 1fr)
+      var(--min-touch-target, 44px);
     align-items: center;
     justify-content: center;
     gap: 4px;
     width: 100%;
-    height: 40px;
+    min-height: calc(var(--min-touch-target, 44px) + 4px);
     padding: 1px;
     box-sizing: border-box;
     background-color: #12141c;
@@ -617,7 +619,7 @@ Features:
 
   .utility-disclosure {
     position: absolute;
-    top: 40px;
+    top: calc(var(--min-touch-target, 44px) + 4px);
     right: 0;
     left: 0;
     z-index: 3;
@@ -687,6 +689,10 @@ Features:
   .type-navigation-selector {
     width: 100%;
     min-width: 0;
+  }
+
+  .type-navigation-selector :global(.segmented-control) {
+    box-sizing: border-box;
   }
 
   .letter-type-group-label {

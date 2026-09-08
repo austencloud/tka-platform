@@ -3,6 +3,31 @@ import { clampSilkIntensity, EFFECTS_CONFIG_VERSION } from "./effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "./defaults";
 import { migrateLedConfig } from "$lib/shared/animation-engine/domain/types/led-config-migration";
 
+type UnknownRecord = Record<string, unknown>;
+
+/** Restores the prop-color fields written by pre-left/right effect settings. */
+export function normalizeLegacyEffectIntentColors<T>(
+  effectId: string,
+  value: T
+): T {
+  if (
+    (effectId !== "trails" && effectId !== "ghost") ||
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return value;
+  }
+
+  const source = value as UnknownRecord;
+  const normalized: UnknownRecord = { ...source };
+  normalized.leftColor ??= source.blueColor;
+  normalized.rightColor ??= source.redColor;
+  delete normalized.blueColor;
+  delete normalized.redColor;
+  return normalized as T;
+}
+
 /**
  * Migrate an arbitrary stored EffectsConfig up to the current version.
  * Safe to call on a current-version config (returns it unchanged after
@@ -463,8 +488,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // Seed the established prop hues so existing saved looks do not change.
   if (version < 32 && input.ghost) {
     const ghost = input.ghost as LegacyRecord;
-    ghost.blueColor ??= DEFAULT_EFFECTS_CONFIG.ghost.blueColor;
-    ghost.redColor ??= DEFAULT_EFFECTS_CONFIG.ghost.redColor;
+    ghost.leftColor ??= DEFAULT_EFFECTS_CONFIG.ghost.leftColor;
+    ghost.rightColor ??= DEFAULT_EFFECTS_CONFIG.ghost.rightColor;
   }
 
   // v32 → v33: Fire can preserve the original broad liquid presentation as a
@@ -498,6 +523,27 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (input.activePresets?.led) {
       // The v1 preset ids name patterns that no longer exist.
       input.activePresets = { ...input.activePresets, led: null };
+    }
+  }
+
+  // v36 → v37: the factory trail narrows by one pixel so it supports the prop
+  // path instead of covering the mandala beneath it. Only the former factory
+  // width moves; deliberate thinner or thicker choices stay untouched.
+  if (version < 37 && input.trails?.thickness === 5) {
+    input.trails = {
+      ...input.trails,
+      thickness: DEFAULT_EFFECTS_CONFIG.trails.thickness,
+    };
+  }
+
+  // v37 → v38: effect intent follows physical hand identity. Keep reading the
+  // literal prop-color keys saved before the terminology migration.
+  if (version < 38) {
+    if (input.trails) {
+      input.trails = normalizeLegacyEffectIntentColors("trails", input.trails);
+    }
+    if (input.ghost) {
+      input.ghost = normalizeLegacyEffectIntentColors("ghost", input.ghost);
     }
   }
 

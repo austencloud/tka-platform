@@ -18,11 +18,16 @@
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
 <script lang="ts">
-  import { onDestroy, onMount, type Snippet } from "svelte";
+  import PropViewingControl from "$lib/shared/browse/components/PropViewingControl.svelte";
+  import { onDestroy, onMount, untrack, type Snippet } from "svelte";
+  import { createViewerStudioSurfaces } from "../state/viewer-studio-surfaces.svelte";
+  import { setViewerStudioSurfaces } from "../context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "./reparent-to-inspector";
   import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { goto } from "$app/navigation";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
+  import ViewerWorkspacePanels from "./ViewerWorkspacePanels.svelte";
   import ViewerContentRail from "./ViewerContentRail.svelte";
   import ViewerModeBottomBar from "./ViewerModeBottomBar.svelte";
   import { dockTrayState } from "./ControlDock.svelte";
@@ -31,7 +36,15 @@
     createVideoPlayheadBridge,
     setVideoPlayheadContext,
   } from "../context/video-playhead-context";
-  import SequenceVideos from "./sequence-videos/SequenceVideos.svelte";
+  import DualSourceCrossfade from "$lib/shared/components/DualSourceCrossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { createPerformanceWorkspaceState } from "./sequence-videos/state/performance-workspace-state.svelte";
+  import { setPerformanceWorkspaceContext } from "./sequence-videos/context/performance-workspace-context";
+  import PerformanceStage from "./sequence-videos/PerformanceStage.svelte";
+  import PerformanceInspector from "./sequence-videos/PerformanceInspector.svelte";
+  import PerformanceEditor from "./sequence-videos/PerformanceEditor.svelte";
   import ViewerHeader from "./ViewerHeader.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
@@ -39,6 +52,7 @@
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeBar from "./PracticeBar.svelte";
   import PostStudioPane from "./PostStudioPane.svelte";
+  import { createPaneKeepAlive } from "./pane-keep-alive.svelte";
   import PracticeSetupBar from "./PracticeSetupBar.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -51,6 +65,7 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
+  import { uploadRenderedFilm } from "$lib/shared/video-collaboration/services/upload-rendered-film";
   import { canAccessPostStudio } from "../services/post-studio-access";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
@@ -86,12 +101,38 @@
     TunnelComposition,
     TunnelSaveTarget,
   } from "../tunnel/tunnel-composition";
+  import { createViewerInspectorHostState } from "../state/viewer-inspector-host-state.svelte";
+  import { setViewerInspectorHostContext } from "../context/viewer-inspector-host-context";
+  import { createViewerAnimatorInspectorState } from "../state/viewer-animator-inspector-state.svelte";
+  import { setViewerAnimatorInspectorContext } from "../context/viewer-animator-inspector-context";
+  import { loadActivePill } from "$lib/shared/animation-panel/state/active-pill-persistence";
+  import { createCardPresentationState } from "$lib/shared/share/state/card-presentation-state.svelte";
+  import {
+    cardPresentationFromFooterSettings,
+    resolveCardFooter,
+    type CardPresentation,
+  } from "$lib/shared/share/domain/models/card-presentation";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import {
+    trackSequenceRemixStarted,
+    trackSequenceViewed,
+    trackViewerAction,
+    trackViewerExport,
+    trackViewerPlaybackChanged,
+    trackViewerPracticeChanged,
+    trackViewerSettingChanged,
+    trackViewerViewChanged,
+    type SequenceViewerSource,
+  } from "$lib/shared/sequence-viewer/analytics/viewer-events";
 
   /** Host-owned export pipeline (such as the scan-origin account gate).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
   interface Props {
+    /** Development review fixture; never changes production rollout access. */
+    reviewPostStudio?: boolean;
     ctx: OrchestratorContext;
     sequence: SequenceData;
+    analyticsSource: SequenceViewerSource;
     isMobile: boolean;
     onClose: () => void;
     /** Override the header/menu Remix action when a host needs custom routing. */
@@ -158,12 +199,14 @@
   let {
     ctx,
     sequence,
+    analyticsSource,
     isMobile,
     onClose,
     onRemix,
     openAppHref,
     onAccountSignIn,
     startInSplit = false,
+    reviewPostStudio = false,
     startInCardThenSplit = false,
     exportOverrides,
     guideAction = null,
@@ -177,35 +220,153 @@
     onTunnelSaved,
   }: Props = $props();
 
+  let viewerWorkspaceElement = $state<HTMLElement | null>(null);
+  let artInspectorTarget = $state<HTMLElement | null>(null);
+  const inspectorHost = createViewerInspectorHostState();
+  setViewerInspectorHostContext(inspectorHost);
+  const animatorInspector =
+    createViewerAnimatorInspectorState(loadActivePill());
+  setViewerAnimatorInspectorContext(animatorInspector);
+  $effect(() => inspectorHost.setTarget(artInspectorTarget));
+
+  const imageCompositionDefaults = getImageCompositionManager();
+  const cardPresentation = createCardPresentationState({
+    getDefault: () =>
+      cardPresentationFromFooterSettings(
+        imageCompositionDefaults.showNotes,
+        imageCompositionDefaults.customNotesText
+      ),
+  });
+  $effect(() => {
+    const current = ctx.effectiveSequence ?? sequence;
+    cardPresentation.load(current);
+  });
+  const resolvedCardFooter = $derived(
+    resolveCardFooter(cardPresentation.value)
+  );
+  const currentCardImageComposition = $derived({
+    ...ctx.splitPaneImageComposition,
+    showNotes: resolvedCardFooter.show,
+    customNotesText: resolvedCardFooter.text,
+  });
+
+  async function persistCardPresentation(
+    value: CardPresentation = cardPresentation.value
+  ): Promise<boolean> {
+    if (cardPresentation.saving) return false;
+    cardPresentation.saving = true;
+    try {
+      const saved = await ctx.saveCardPresentation(value);
+      if (saved) cardPresentation.markSaved(value);
+      return saved;
+    } finally {
+      cardPresentation.saving = false;
+    }
+  }
+
+  function analyticsContext() {
+    return { sequenceId: sequence.id, source: analyticsSource } as const;
+  }
+
+  const captureViewerAndScanAction: typeof captureScanAction = (
+    action,
+    properties = {},
+    options = {}
+  ) => {
+    if (!embedded) {
+      trackViewerAction(analyticsContext(), action, properties);
+      if (action === "remix") trackSequenceRemixStarted(analyticsContext());
+    }
+    captureScanAction(action, properties, options);
+  };
+
+  const captureViewerAndScanExport: typeof captureScanExport = (
+    exportKind,
+    stage,
+    properties = {}
+  ) => {
+    if (!embedded) {
+      trackViewerExport(analyticsContext(), exportKind, stage, properties);
+    }
+    captureScanExport(exportKind, stage, properties);
+  };
+
+  const captureViewerAndScanPlayback: typeof captureScanPlaybackChanged = (
+    properties
+  ) => {
+    if (!embedded) {
+      trackViewerPlaybackChanged(analyticsContext(), properties);
+    }
+    captureScanPlaybackChanged(properties);
+  };
+
+  const captureViewerAndScanPractice: typeof captureScanPracticeChanged = (
+    action,
+    properties = {},
+    coalesce = false
+  ) => {
+    if (!embedded) {
+      trackViewerPracticeChanged(
+        analyticsContext(),
+        action,
+        properties,
+        coalesce
+      );
+    }
+    captureScanPracticeChanged(action, properties, coalesce);
+  };
+
+  const captureViewerAndScanSetting: typeof captureScanSettingChanged = (
+    properties
+  ) => {
+    if (!embedded) {
+      trackViewerSettingChanged(analyticsContext(), properties);
+    }
+    captureScanSettingChanged(properties);
+  };
+
+  const captureViewerAndScanView: typeof captureScanViewChanged = (
+    fromMode,
+    toMode,
+    source,
+    options = {}
+  ) => {
+    if (!embedded) {
+      trackViewerViewChanged(analyticsContext(), fromMode, toMode, source);
+    }
+    captureScanViewChanged(fromMode, toMode, source, options);
+  };
+
   const scanInstrumentationEnabled = isScanVisit();
   const layout = createViewerShellLayoutState(
     {
       getContext: () => ctx,
       getSequence: () => sequence,
       getIsMobile: () => isMobile,
+      getWorkspaceElement: () => viewerWorkspaceElement,
       startInSplit,
       startInCardThenSplit,
     },
     {
       getDeviceDetector,
-      captureScanSettingChanged,
-      captureScanViewChanged,
+      captureScanSettingChanged: captureViewerAndScanSetting,
+      captureScanViewChanged: captureViewerAndScanView,
       captureScanViewerOpened,
-      captureScanPlaybackChanged,
+      captureScanPlaybackChanged: captureViewerAndScanPlayback,
     }
   );
   const share = createViewerShellShareState(
     {
       getContext: () => ctx,
       getSequence: () => sequence,
-      getDefaultBluePropType: () => settingsService.settings.bluePropType,
+      getDefaultBluePropType: () => settingsService.settings.leftPropType,
     },
     {
       openSendSequenceSheet,
       buildSequenceSharePayload,
       buildThumbnailUrl,
       sendToStickerLab,
-      captureScanAction,
+      captureScanAction: captureViewerAndScanAction,
     }
   );
   // One playhead for the performance video and the notation beside it. The
@@ -232,15 +393,33 @@
     {
       navigate: goto,
       openExternalHref: (href) => window.location.assign(href),
-      captureScanAction,
-      captureScanExport,
-      captureScanPlaybackChanged,
-      captureScanPracticeChanged,
-      captureScanSettingChanged,
-      captureScanViewChanged,
+      captureScanAction: captureViewerAndScanAction,
+      captureScanExport: captureViewerAndScanExport,
+      captureScanPlaybackChanged: captureViewerAndScanPlayback,
+      captureScanPracticeChanged: captureViewerAndScanPractice,
+      captureScanSettingChanged: captureViewerAndScanSetting,
+      captureScanViewChanged: captureViewerAndScanView,
       endScanViewerSession,
       registerScanSessionCleanup,
     }
+  );
+
+  const performanceWorkspace = createPerformanceWorkspaceState(
+    {
+      getSequence: () => sequence,
+      getActive: () => layout.showVideoGallery,
+      getUploadRequested: () => layout.isVideoUploadActive,
+      onWorkOpenChange: interactions.handleVideoWorkOpenChange,
+    },
+    {
+      getStore: getSequenceVideosStore,
+      playhead: videoPlayhead,
+      onTimingSaved: () => toast.success("Timing saved"),
+    }
+  );
+  setPerformanceWorkspaceContext(performanceWorkspace);
+  const performanceEditorActive = $derived(
+    layout.showVideoGallery && performanceWorkspace.view !== "browse"
   );
 
   let consumedShareOnOpen = false;
@@ -361,6 +540,7 @@
   });
 
   onMount(() => {
+    if (!embedded) trackSequenceViewed(analyticsContext());
     const cleanupLayout = layout.mount();
     const cleanupInteractions = interactions.mount();
     return () => {
@@ -432,7 +612,139 @@
     awaitingSceneTake = false;
     share.resumeAfterSceneTake();
   });
+  // Opt-in cloud save for a film rendered here: the same performance-video
+  // pipeline the upload sheet uses, minus the file picker. Local retention and
+  // the download stay untouched — this is an extra destination, not a
+  // replacement.
+  const canSaveFilmToSequence = $derived(
+    ctx.isLoggedIn &&
+      VIDEO_UPLOAD_ENABLED &&
+      !!(ctx.effectiveSequence ?? sequence)
+  );
+
+  async function saveFilmToSequence(): Promise<void> {
+    const target = ctx.effectiveSequence ?? sequence;
+    const url = ctx.previewBlobUrl;
+    if (!target || !url) return;
+    try {
+      const blob = await (await fetch(url)).blob();
+      await uploadRenderedFilm({ sequence: target, blob });
+      toast.success("Film saved to this sequence");
+    } catch (error) {
+      console.warn("[RenderedFilm] Cloud save failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Could not save the film"
+      );
+      throw error;
+    }
+  }
+  // Prepare the editor once; keep the viewer and the draft alive on reversals.
+  const studio = createPaneKeepAlive(() => layout.showPostStudio);
+  const studioSurfaces = createViewerStudioSurfaces();
+  setViewerStudioSurfaces(studioSurfaces);
+  let animatorInspectorOrigin = $state<HTMLElement | null>(null);
+  let studioInspectorOrigin = $state<HTMLElement | null>(null);
+  // Match Studio's 70rem compact boundary. Tablet shell orientation alone
+  // does not guarantee room for a phone beside the full motion inspector.
+  const studioCanShareSideInspector = $derived(
+    !layout.effectiveMobile && layout.bodyWidth > 1120
+  );
+  const studioUsesSideInspector = $derived(
+    layout.showPostStudio && studioCanShareSideInspector
+  );
+  $effect(() => {
+    studioSurfaces.setExternalInspectorTarget(
+      studioCanShareSideInspector ? studioInspectorOrigin : null
+    );
+  });
+  function ownInspector(node: HTMLElement) {
+    return { destroy: studioSurfaces.registerInspector(node) };
+  }
+  $effect(() => {
+    const active = layout.showPostStudio;
+    untrack(() => {
+      if (active && !studioSurfaces.active) {
+        studioSurfaces.enter(
+          ctx.currentStepLocal,
+          ctx.isPlayingLocal,
+          ctx.bpmLocal
+        );
+        interactions.handleSystemPlaybackChange(false, "system_studio_handoff");
+      } else if (!active && studioSurfaces.active) {
+        const frame = studioSurfaces.frame;
+        if (frame) {
+          ctx.handleProgressBarSeek(frame.position);
+          interactions.handleSystemPlaybackChange(
+            frame.playing,
+            "system_studio_handoff"
+          );
+        }
+        studioSurfaces.leave();
+      }
+    });
+  });
 </script>
+
+<div class="shared-inspector-parking">
+  <div
+    class="shared-animator-inspector"
+    use:ownInspector
+    use:reparentToInspector={{
+      target: studioSurfaces.inspectorTarget ?? animatorInspectorOrigin,
+      animate: true,
+      onMoving: (moving) =>
+        studioSurfaces.setSurfaceMoving("inspector", moving),
+    }}
+    data-shared-studio-inspector
+  >
+    <ExportVideoDrawer
+      exportOptions={studioSurfaces.active ? undefined : ctx.exportOptions}
+      reserveExportSpace={studioSurfaces.active}
+      isExporting={interactions.videoBusy}
+      exportProgress={interactions.videoProgress}
+      canvasReady={ctx.canvasReady}
+      layout={studioSurfaces.active || !layout.isVideoExportActive
+        ? "sidebar"
+        : layout.effectiveMobile
+          ? "bottom"
+          : "sidebar"}
+      singlePlayDuration={ctx.singlePlayDuration}
+      isPlaying={studioSurfaces.controls?.playing ?? ctx.isPlayingLocal}
+      bpm={studioSurfaces.controls?.bpm ?? ctx.bpmLocal}
+      renderMode={studioSurfaces.active ? "2d" : ctx.renderMode}
+      playbackMode={ctx.playbackMode}
+      selectedPropType={studioSurfaces.controls?.propType ?? ctx.leftPropType}
+      fanAppearance={ctx.fanAppearance}
+      onFanAppearanceChange={ctx.handleFanAppearanceChange}
+      propChirality={createGlobalChiralitySeam()}
+      sequence={ctx.effectiveSequence}
+      showInlineExportProgress={false}
+      showTempoControls={false}
+      showPathShape={false}
+      onPropChange={ctx.effectiveSequence?.sequenceKind === "hand-path"
+        ? undefined
+        : (prop) => {
+            studioSurfaces.controls?.setProp(prop);
+            interactions.handlePropChange(prop, "video_export");
+          }}
+      onPlaybackToggle={() => {
+        if (studioSurfaces.controls) studioSurfaces.controls.toggle();
+        else interactions.handlePlaybackToggle("video_export");
+      }}
+      onBpmChange={(bpm) => {
+        studioSurfaces.controls?.setBpm(bpm);
+        interactions.handleBpmChange(bpm, "video_export");
+      }}
+      onExport={studioSurfaces.active
+        ? undefined
+        : () => interactions.handleVideoExport()}
+      onCancel={interactions.handleCancelVideoExport}
+      onSettingChange={scanInstrumentationEnabled
+        ? interactions.handleViewerControlSetting
+        : undefined}
+    />
+  </div>
+</div>
 
 <div
   class="drawer-viewer-container"
@@ -448,6 +760,7 @@
     hidden={ctx.isFullscreen}
     {embedded}
     {navigation}
+    titleOverride={tunnelComposition?.name?.trim() || null}
     {openAppHref}
     onAccountSignIn={!embedded ? onAccountSignIn : undefined}
     onAccountOpenApp={openAppHref && !embedded
@@ -472,8 +785,8 @@
         : interactions.handleEnterPractice
       : undefined}
     {canToggleMotionVisibility}
-    onMotionToggleBlue={() => interactions.handleMotionToggle("blue")}
-    onMotionToggleRed={() => interactions.handleMotionToggle("red")}
+    onMotionToggleLeft={() => interactions.handleMotionToggle("left")}
+    onMotionToggleRight={() => interactions.handleMotionToggle("right")}
     onVideoUpload={interactions.headerActions.onVideoUpload && !embedded
       ? interactions.handleHeaderVideoUpload
       : undefined}
@@ -509,6 +822,13 @@
         { count: reason !== "item" }
       )}
   />
+
+  {#if !ctx.isFullscreen && (ctx.leftPropType !== "hand" || ctx.rightPropType !== "hand")}
+    <PropViewingControl
+      sequence={ctx.effectiveSequence ?? sequence}
+      collectionPropType={ctx.collectionPropType}
+    />
+  {/if}
 
   {#if contextContent && !ctx.isFullscreen}
     {@render contextContent()}
@@ -559,9 +879,14 @@
       {/if}
       {#if ctx.hasSequence && ctx.effectiveSequence}
         <div
+          bind:this={viewerWorkspaceElement}
           class="viewer-and-export"
-          class:export-active={layout.isSidebarExportActive}
+          class:export-active={layout.isWorkspaceInspectorActive ||
+            studioUsesSideInspector}
           class:record-scene-active={layout.isRecordSceneActive}
+          class:card-inspector={layout.inspectorProfile === "card"}
+          class:performance-inspector={layout.inspectorProfile ===
+            "performance"}
           class:desktop={!layout.effectiveMobile}
           class:stacked-rail={layout.stackedExportWithRail}
           class:sidebar-collapsed={layout.exportSidebarCollapsed &&
@@ -569,8 +894,14 @@
           class:has-rail={layout.showRail}
         >
           {#if layout.showRail}
-            <div class="viewer-rail-wrap" class:collapsed={ctx.practiceActive}>
+            <div
+              class="viewer-rail-wrap"
+              class:collapsed={ctx.practiceActive}
+              inert={ctx.practiceActive}
+              aria-hidden={ctx.practiceActive}
+            >
               <ViewerContentRail
+                reviewPostStudio={import.meta.env.DEV && reviewPostStudio}
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
                 compact={layout.compactChrome && !isMobile}
@@ -586,240 +917,391 @@
               />
             </div>
           {/if}
-          {#if layout.showPostStudio}
-            <PostStudioPane
-              sequence={ctx.effectiveSequence}
-              resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
-              onExported={adoptPostStudioRender}
-              onSharePost={() => share.sharePost()}
-            />
-          {:else if layout.showVideoGallery}
-            <SequenceVideos
-              {sequence}
-              isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
-              isLoggedIn={ctx.isLoggedIn}
-              bpm={ctx.bpmLocal}
-              canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
-              uploadRequested={layout.isVideoUploadActive}
-              onSaveFirst={interactions.handleVideoUploadSaveFirst}
-              onSaveToLibrary={interactions.handleSave}
-              onUploadOpenChange={interactions.handleVideoWorkOpenChange}
-            />
-          {:else}
-            <ViewerSplitPane
-              sequence={ctx.effectiveSequence}
-              {tunnelComposition}
-              {tunnelSaveTarget}
-              {onTunnelSaved}
-              renderMode={ctx.renderMode}
-              isExporting={interactions.videoBusy}
-              bpm={ctx.bpmLocal}
-              onBpmChange={(bpm) => interactions.handleBpmChange(bpm, "viewer")}
-              onSaveToLibrary={interactions.handleSave}
-              onPropChange={(prop) =>
-                interactions.handlePropChange(prop, "viewer")}
-              playback={ctx.splitPanePlayback}
-              imageComposition={layout.isImageExportActive
-                ? {
-                    ...ctx.splitPaneImageComposition,
-                    darkMode: ctx.exportOptions.imageDarkMode,
-                    forceContain: true,
-                  }
-                : ctx.splitPaneImageComposition}
-              propRendering={ctx.splitPanePropRendering}
-              layout={{
-                isFullscreen: ctx.isFullscreen,
-                fullscreenStackVertical: ctx.fullscreenStackVertical,
-                isMobile: layout.effectiveMobile,
-                isLandscapeMobile: layout.isLandscape,
-                focusedPane:
-                  ctx.viewerState.viewerMode !== "split"
-                    ? ctx.viewerState.viewerMode === "card"
-                      ? "image"
-                      : "animation"
-                    : ctx.editingPane,
-                suppressCloseButton: ctx.viewerState.viewerMode !== "split",
-              }}
-              onRenderProgress={ctx.onRenderProgress}
-              onFocusPane={interactions.handleFocusPane}
-              onUnfocusPane={interactions.handleUnfocusPane}
-              onStepClick={interactions.handleStepClick}
-              onQrPlayClick={ctx.practiceActive ? undefined : layout.playFromQr}
-              onCanvasReady={ctx.handleCanvasReady}
-              onAutoLayoutResolved={layout.isImageExportActive
-                ? ctx.setResolvedCardAutoLayout
-                : undefined}
-              {rerenderTrigger}
-              onChoreoCardContextMenu={(x, y) =>
-                choreoCardMenuHost?.openContextMenu(x, y)}
-              onPlaybackToggle={() =>
-                interactions.handlePlaybackToggle("viewer_transport")}
-              onSystemPlaybackChange={interactions.handleSystemPlaybackChange}
-              onProgressBarSeek={interactions.handleProgressBarSeek}
-              onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
-              onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
-              playbackMode={ctx.playbackMode}
-              onPlaybackModeChange={(mode) =>
-                interactions.handlePlaybackModeChange(mode, "viewer")}
-              onSceneReadyChange={(ready) => (sceneReady3d = ready)}
-              splitConfig={ctx.viewerState.viewerMode === "split"
-                ? { leftPane: "animation", rightPane: "card" }
-                : ctx.viewerState.viewerMode === "card"
-                  ? { ...ctx.viewerState.splitConfig, rightPane: "card" }
-                  : ctx.viewerState.viewerMode === "animation" ||
-                      ctx.viewerState.viewerMode === "animation-3d" ||
-                      ctx.viewerState.viewerMode === "mandala" ||
-                      ctx.viewerState.viewerMode === "tunnel"
-                    ? {
-                        ...ctx.viewerState.splitConfig,
-                        leftPane: ctx.viewerState.viewerMode,
-                      }
-                    : ctx.viewerState.splitConfig}
-              isLoggedIn={ctx.isLoggedIn}
-              onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
-                ? interactions.handleGalleryVideoUpload
-                : undefined}
-              onArtExport={interactions.handleArtExport}
-              onArtShare={share.setArtShareTarget}
-              artShareActive={!!share.artShare}
-              onArtExportEvent={interactions.handleArtExportEvent}
-              onArtSettingChange={interactions.handleArtSettingChange}
-              onArtAction={interactions.handleArtAction}
-              onViewer3DSettingChange={scanInstrumentationEnabled
-                ? interactions.handleViewer3DSetting
-                : undefined}
-              onViewer3DAction={scanInstrumentationEnabled
-                ? interactions.handleViewer3DAction
-                : undefined}
-              practiceActive={ctx.practiceActive}
-              practiceRunning={ctx.practiceRunning}
-              practiceCountdown={ctx.practiceCountdown}
-              practiceCellSize={ctx.practiceViewPrefs.cellSize}
-              practiceCanvasFraction={0.5}
-              practiceMirrorEnabled={ctx.mirrorEnabled}
-            />
-          {/if}
-          {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
-            <Recording3DOverlay
-              countdownValue={ctx.countdownValue}
-              isRecording={ctx.isRecording3D}
-              elapsed={ctx.recordingElapsed}
-              onStop={interactions.handleStopRecording}
-              exportProgress={ctx.exportProgress}
-              isExporting={ctx.isExporting}
-              onCancelExport={interactions.handleCancelVideoExport}
-            />
-          {/if}
-          {#if ctx.renderMode !== "3d" && shellRendersTakeover && animTakeover.phase !== "idle"}
-            <ExportTakeover
-              phase={animTakeover.phase}
-              progress={interactions.videoProgress?.progress ?? 0}
-              phaseLabel={animTakeover.labelKey ? t(animTakeover.labelKey) : ""}
-              error={interactions.videoProgress?.error ?? null}
-              onCancel={interactions.handleCancelVideoExport}
-              onRetry={() => interactions.handleVideoExport("retry")}
-            >
-              {#snippet title()}
-                {#if motionProfile.kind === "solo"}
-                  <span class="takeover-title-text">{takeoverLabel}</span>
-                {:else}
-                  <TKAWordGlyph word={takeoverWord} height={28} darkMode />
-                {/if}
-              {/snippet}
-            </ExportTakeover>
-          {/if}
-          <ChoreoCardContextMenuHost
-            bind:this={choreoCardMenuHost}
-            sequence={ctx.effectiveSequence ?? sequence}
-            onSaveToLibrary={interactions.handleSave}
-            onRerender={() => {
-              rerenderTrigger++;
-            }}
-            isExportMode={layout.isImageExportActive}
-            exportOptions={ctx.exportOptions}
-            onSendTo={share.sendToInbox}
-            onSendToStickerLab={share.sendToStickerLab}
-            stepCount={sequence?.steps?.length ?? 0}
-            onAction={interactions.handleCardContextAction}
-          />
-          {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
-            <RecordSceneChrome
-              isExporting={ctx.isExporting}
-              canvasReady={ctx.canvasReady}
-              onExport={() => interactions.handleVideoExport()}
-              choreography={ctx.viewer3DState.cameraChoreography}
-              onSettingChange={scanInstrumentationEnabled
-                ? interactions.handleViewerControlSetting
-                : undefined}
-            />
-          {/if}
-          {#if layout.isSidebarExportActive}
+
+          {#snippet performanceEditor()}
             <div
-              class="export-panel-container"
-              class:sidebar={!layout.effectiveMobile &&
-                (layout.isVideoExportActive || layout.isVideoUploadActive)}
+              class="performance-editor-layer"
+              data-active={performanceEditorActive}
+              data-persistent-performance-editor
             >
-              {#if layout.isVideoExportActive}
-                {#if ctx.previewBlobUrl}
-                  <VideoPreviewPanel
-                    blobUrl={ctx.previewBlobUrl}
-                    saveLabel="Save"
-                    onDismiss={interactions.handleDismissExportedVideo}
-                    onRedownload={() =>
-                      void interactions.handleRedownloadExportedVideo()}
+              <PerformanceEditor
+                {sequence}
+                isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
+                bpm={ctx.bpmLocal}
+                onSaveFirst={interactions.handleVideoUploadSaveFirst}
+              />
+            </div>
+          {/snippet}
+
+          <ViewerWorkspacePanels
+            direction={layout.effectiveMobile ? "vertical" : "horizontal"}
+            inspectorActive={layout.isWorkspaceInspectorActive ||
+              studioUsesSideInspector}
+            inspectorCollapsed={!studioUsesSideInspector &&
+              layout.exportSidebarCollapsed &&
+              !layout.isImageExportActive}
+            inspectorProfile={studioUsesSideInspector
+              ? "motion"
+              : layout.inspectorProfile}
+            stackedInspectorSize={layout.showVideoGallery
+              ? "var(--performance-inspector-height)"
+              : "auto"}
+            takeover={performanceEditor}
+            takeoverActive={performanceEditorActive}
+          >
+            {#snippet stage()}
+              <div class="viewer-stage-container">
+                {#snippet studioSource()}
+                  {#if studio.mounted}
+                    <PostStudioPane
+                      active={layout.showPostStudio}
+                      sequence={ctx.effectiveSequence}
+                      resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
+                      onExported={adoptPostStudioRender}
+                      onSharePost={() => share.sharePost()}
+                    />
+                  {/if}
+                {/snippet}
+                {#snippet viewerSource()}
+                  {#snippet motionStageSource()}
+                    <div
+                      class="viewer-motion-stage-content viewer-motion-content-layer"
+                      data-active={!layout.showVideoGallery}
+                      data-persistent-motion-stage
+                    >
+                      <ViewerSplitPane
+                        sequence={ctx.effectiveSequence}
+                        {tunnelComposition}
+                        {tunnelSaveTarget}
+                        {onTunnelSaved}
+                        renderMode={ctx.renderMode}
+                        rendererHandleRequired={ctx.renderMode === "3d" &&
+                          (layout.isRecordSceneActive ||
+                            ctx.countdownValue > 0 ||
+                            ctx.isRecording3D ||
+                            ctx.isExporting ||
+                            !!ctx.pendingFilmRender ||
+                            interactions.videoBusy)}
+                        bpm={ctx.bpmLocal}
+                        onBpmChange={(bpm) =>
+                          interactions.handleBpmChange(bpm, "viewer")}
+                        onSaveToLibrary={interactions.handleSave}
+                        onPropChange={(prop) =>
+                          interactions.handlePropChange(prop, "viewer")}
+                        onFanAppearanceChange={ctx.handleFanAppearanceChange}
+                        playback={layout.showVideoGallery ||
+                        layout.showPostStudio
+                          ? { ...ctx.splitPanePlayback, isPlaying: false }
+                          : ctx.splitPanePlayback}
+                        imageComposition={layout.isImageExportActive
+                          ? {
+                              ...currentCardImageComposition,
+                              darkMode: ctx.exportOptions.imageDarkMode,
+                              forceContain: true,
+                            }
+                          : currentCardImageComposition}
+                        propRendering={ctx.splitPanePropRendering}
+                        layout={{
+                          isFullscreen: ctx.isFullscreen,
+                          fullscreenStackVertical: ctx.fullscreenStackVertical,
+                          isMobile: layout.effectiveMobile,
+                          isLandscapeMobile: layout.isLandscape,
+                          focusedPane:
+                            ctx.viewerState.viewerMode !== "split"
+                              ? ctx.viewerState.viewerMode === "card"
+                                ? "image"
+                                : "animation"
+                              : ctx.editingPane,
+                          suppressCloseButton:
+                            ctx.viewerState.viewerMode !== "split",
+                        }}
+                        onRenderProgress={ctx.onRenderProgress}
+                        onFocusPane={interactions.handleFocusPane}
+                        onUnfocusPane={interactions.handleUnfocusPane}
+                        onStepClick={interactions.handleStepClick}
+                        onQrPlayClick={ctx.practiceActive
+                          ? undefined
+                          : layout.playFromQr}
+                        onCanvasReady={ctx.handleCanvasReady}
+                        cardAutoLayoutOverride={layout.cardAutoLayoutOverride}
+                        cardContainSizeMotion={layout.cardContainSizeMotion}
+                        onAutoLayoutResolved={(resolved, width, height) => {
+                          const cardOwnsReadablePane =
+                            ctx.viewerState.viewerMode === "card" ||
+                            (ctx.viewerState.viewerMode === "split" &&
+                              ctx.editingPane !== "animation");
+                          // Keep the last Card box that was large enough to read.
+                          // A collapsing hidden Card must not replace that shape
+                          // with the wide, shallow grid its exit briefly measures.
+                          if (cardOwnsReadablePane) {
+                            layout.rememberReadableCardAutoLayout(
+                              resolved,
+                              width,
+                              height
+                            );
+                          }
+                          if (
+                            cardOwnsReadablePane &&
+                            (resolved || layout.isImageExportActive)
+                          ) {
+                            ctx.setResolvedCardAutoLayout(resolved);
+                          }
+                        }}
+                        {rerenderTrigger}
+                        onChoreoCardContextMenu={(x, y) =>
+                          choreoCardMenuHost?.openContextMenu(x, y)}
+                        onPlaybackToggle={() =>
+                          interactions.handlePlaybackToggle("viewer_transport")}
+                        onSystemPlaybackChange={interactions.handleSystemPlaybackChange}
+                        onProgressBarSeek={interactions.handleProgressBarSeek}
+                        onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
+                        onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
+                        playbackMode={ctx.playbackMode}
+                        onPlaybackModeChange={(mode) =>
+                          interactions.handlePlaybackModeChange(mode, "viewer")}
+                        onSceneReadyChange={(ready) => (sceneReady3d = ready)}
+                        splitConfig={ctx.viewerState.viewerMode === "split"
+                          ? { leftPane: "animation", rightPane: "card" }
+                          : ctx.viewerState.viewerMode === "card"
+                            ? {
+                                ...ctx.viewerState.splitConfig,
+                                rightPane: "card",
+                              }
+                            : ctx.viewerState.viewerMode === "animation" ||
+                                ctx.viewerState.viewerMode === "animation-3d" ||
+                                ctx.viewerState.viewerMode === "mandala" ||
+                                ctx.viewerState.viewerMode === "tunnel"
+                              ? {
+                                  ...ctx.viewerState.splitConfig,
+                                  leftPane: ctx.viewerState.viewerMode,
+                                }
+                              : ctx.viewerState.viewerMode === "videos"
+                                ? { leftPane: "animation", rightPane: "card" }
+                                : ctx.viewerState.splitConfig}
+                        isLoggedIn={ctx.isLoggedIn}
+                        onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
+                          ? interactions.handleGalleryVideoUpload
+                          : undefined}
+                        onArtExport={interactions.handleArtExport}
+                        onArtShare={share.setArtShareTarget}
+                        artShareActive={!!share.artShare}
+                        onArtExportEvent={interactions.handleArtExportEvent}
+                        onArtSettingChange={interactions.handleArtSettingChange}
+                        onArtAction={interactions.handleArtAction}
+                        onViewer3DSettingChange={scanInstrumentationEnabled
+                          ? interactions.handleViewer3DSetting
+                          : undefined}
+                        onViewer3DAction={scanInstrumentationEnabled
+                          ? interactions.handleViewer3DAction
+                          : undefined}
+                        practiceActive={ctx.practiceActive}
+                        practiceRunning={ctx.practiceRunning}
+                        practiceCountdown={ctx.practiceCountdown}
+                        practiceCellSize={ctx.practiceViewPrefs.cellSize}
+                        practiceCanvasFraction={0.5}
+                        practiceMirrorEnabled={ctx.mirrorEnabled}
+                      />
+                    </div>
+                  {/snippet}
+                  {#snippet performanceStageSource()}
+                    <div
+                      class="performance-stage-layer"
+                      data-active={layout.showVideoGallery}
+                      data-persistent-performance-stage
+                    >
+                      <PerformanceStage
+                        {sequence}
+                        onSaveToLibrary={interactions.handleSave}
+                      />
+                    </div>
+                  {/snippet}
+                  <DualSourceCrossfade
+                    active={layout.showVideoGallery ? "second" : "first"}
+                    first={motionStageSource}
+                    second={performanceStageSource}
+                    duration={DURATION.emphasis}
                   />
-                {:else}
-                  <!-- No tempo and no playback mode on the Motion page: the
-                       transport under the canvas carries both and is visible
-                       from every page of this panel. Showing them here too put
-                       one setting on screen twice in two different controls.
-                       `bpm` and `playbackMode` still come in — the export page
-                       reads them for its duration estimate. -->
-                  <ExportVideoDrawer
-                    exportOptions={ctx.exportOptions}
-                    isExporting={interactions.videoBusy}
-                    exportProgress={interactions.videoProgress}
-                    canvasReady={ctx.canvasReady}
-                    layout={layout.effectiveMobile ? "bottom" : "sidebar"}
-                    singlePlayDuration={ctx.singlePlayDuration}
-                    isPlaying={ctx.isPlayingLocal}
-                    bpm={ctx.bpmLocal}
-                    renderMode={ctx.renderMode}
-                    playbackMode={ctx.playbackMode}
-                    selectedPropType={ctx.bluePropType}
-                    propChirality={createGlobalChiralitySeam()}
-                    sequence={ctx.effectiveSequence}
-                    showInlineExportProgress={false}
-                    showTempoControls={false}
-                    onPropChange={(prop) =>
-                      interactions.handlePropChange(prop, "video_export")}
-                    onPlaybackToggle={() =>
-                      interactions.handlePlaybackToggle("video_export")}
-                    onBpmChange={(bpm) =>
-                      interactions.handleBpmChange(bpm, "video_export")}
-                    onExport={() => interactions.handleVideoExport()}
+                {/snippet}
+                <DualSourceCrossfade
+                  active={studio.shown ? "second" : "first"}
+                  first={viewerSource}
+                  second={studioSource}
+                  duration={DURATION.emphasis}
+                />
+                {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting || ctx.pendingFilmRender)}
+                  <Recording3DOverlay
+                    countdownValue={ctx.countdownValue}
+                    isRecording={ctx.isRecording3D}
+                    elapsed={ctx.recordingElapsed}
+                    onStop={interactions.handleStopRecording}
+                    exportProgress={ctx.exportProgress}
+                    isExporting={ctx.isExporting}
+                    onCancelExport={interactions.handleCancelVideoExport}
+                    pendingRender={ctx.pendingFilmRender}
+                    onConfirmRender={interactions.handleConfirmFilmRender}
+                    onDiscardRender={interactions.handleDiscardFilmRender}
+                  />
+                {/if}
+                {#if ctx.renderMode !== "3d" && shellRendersTakeover && animTakeover.phase !== "idle"}
+                  <ExportTakeover
+                    phase={animTakeover.phase}
+                    progress={interactions.videoProgress?.progress ?? 0}
+                    phaseLabel={animTakeover.labelKey
+                      ? t(animTakeover.labelKey)
+                      : ""}
+                    error={interactions.videoProgress?.error ?? null}
                     onCancel={interactions.handleCancelVideoExport}
+                    onRetry={() => interactions.handleVideoExport("retry")}
+                  >
+                    {#snippet title()}
+                      {#if motionProfile.kind === "solo"}
+                        <span class="takeover-title-text">{takeoverLabel}</span>
+                      {:else}
+                        <TKAWordGlyph
+                          word={takeoverWord}
+                          height={28}
+                          darkMode
+                        />
+                      {/if}
+                    {/snippet}
+                  </ExportTakeover>
+                {/if}
+                <ChoreoCardContextMenuHost
+                  bind:this={choreoCardMenuHost}
+                  sequence={ctx.effectiveSequence ?? sequence}
+                  onSaveToLibrary={interactions.handleSave}
+                  onRerender={() => {
+                    rerenderTrigger++;
+                  }}
+                  isExportMode={layout.isImageExportActive}
+                  exportOptions={ctx.exportOptions}
+                  onSendTo={share.sendToInbox}
+                  onSendToStickerLab={share.sendToStickerLab}
+                  stepCount={sequence?.steps?.length ?? 0}
+                  onAction={interactions.handleCardContextAction}
+                />
+                {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d && ctx.countdownValue === 0 && !ctx.isRecording3D}
+                  <RecordSceneChrome
+                    isExporting={ctx.isExporting || !!ctx.pendingFilmRender}
+                    canvasReady={ctx.canvasReady}
+                    onExport={() => interactions.handleVideoExport()}
+                    choreography={ctx.viewer3DState.cameraChoreography}
                     onSettingChange={scanInstrumentationEnabled
                       ? interactions.handleViewerControlSetting
                       : undefined}
                   />
                 {/if}
-              {:else if layout.isImageExportActive && !isMobile}
-                <!-- No onClose on desktop widths: the card settings shape what
-                     Share hands over and must stay put. Leave the Card pane via
-                     the content rail. Below the sidebar threshold the panel
-                     stacks under the hero (layout="bottom") while the rail
-                     column persists. -->
-                <ExportImagePanel
-                  exportOptions={ctx.exportOptions}
-                  stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
-                  resolvedAutoLayout={ctx.resolvedCardAutoLayout}
-                  layout={layout.effectiveMobile ? "bottom" : "sidebar"}
-                  onSettingChange={interactions.handleCardSettingChange}
-                />
-              {/if}
-            </div>
-          {/if}
+              </div>
+            {/snippet}
+
+            {#snippet inspector()}
+              <div
+                class="export-panel-container"
+                class:card-settings={layout.isImageExportActive}
+                class:art-settings={layout.isArtInspectorActive}
+                class:sidebar={!layout.effectiveMobile &&
+                  (layout.isVideoExportActive || layout.isVideoUploadActive)}
+              >
+                <!-- These layers share the inspector track for their entire
+                     lifetime. Changing data-active now starts the content
+                     crossfade in the same frame that PanelGroup moves the
+                     Card/inspector seam; there is no second mount-intro. -->
+                <div
+                  class="inspector-content-layer studio-settings-layer"
+                  data-active={studioUsesSideInspector}
+                  inert={!studioUsesSideInspector}
+                  aria-hidden={!studioUsesSideInspector}
+                  bind:this={studioInspectorOrigin}
+                ></div>
+                <div
+                  class="inspector-content-layer motion-settings-layer"
+                  data-active={layout.isVideoExportActive}
+                  inert={!layout.isVideoExportActive || undefined}
+                  aria-hidden={!layout.isVideoExportActive}
+                  data-effects-inspector
+                >
+                  {#if ctx.previewBlobUrl}
+                    <VideoPreviewPanel
+                      blobUrl={ctx.previewBlobUrl}
+                      saveLabel="Save"
+                      onDismiss={interactions.handleDismissExportedVideo}
+                      onRedownload={() =>
+                        void interactions.handleRedownloadExportedVideo()}
+                      onSaveToCloud={canSaveFilmToSequence
+                        ? saveFilmToSequence
+                        : undefined}
+                    />
+                  {:else}
+                    <!-- No tempo and no playback mode on the Motion page: the
+                         transport under the canvas carries both and is visible
+                         from every page of this panel. Showing them here too put
+                         one setting on screen twice in two different controls.
+                         `bpm` and `playbackMode` still come in — the export page
+                         reads them for its duration estimate. -->
+                    <div
+                      class="animator-inspector-origin"
+                      bind:this={animatorInspectorOrigin}
+                    ></div>
+                  {/if}
+                </div>
+                <div
+                  class="inspector-content-layer performance-inspector-layer"
+                  data-active={layout.showVideoGallery &&
+                    performanceWorkspace.view === "browse"}
+                  inert={!layout.showVideoGallery ||
+                    performanceWorkspace.view !== "browse" ||
+                    undefined}
+                  aria-hidden={!layout.showVideoGallery ||
+                    performanceWorkspace.view !== "browse"}
+                  data-persistent-performance-inspector
+                >
+                  <PerformanceInspector
+                    isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
+                    isLoggedIn={ctx.isLoggedIn}
+                    canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
+                  />
+                </div>
+                <div
+                  class="inspector-content-layer art-settings-layer"
+                  data-active={layout.isArtInspectorActive}
+                  inert={!layout.isArtInspectorActive || undefined}
+                  aria-hidden={!layout.isArtInspectorActive}
+                  bind:this={artInspectorTarget}
+                  data-viewer-art-inspector-target
+                ></div>
+                {#if !isMobile}
+                  <div
+                    class="inspector-content-layer card-settings-layer"
+                    data-active={layout.isImageExportActive}
+                    inert={!layout.isImageExportActive || undefined}
+                    aria-hidden={!layout.isImageExportActive}
+                  >
+                    <!-- Card settings share the persistent inspector layers on
+                         desktop. A direct Card-to-Motion switch can now fade
+                         these controls against the incoming settings instead
+                         of removing one panel before the other becomes visible. -->
+                    <ExportImagePanel
+                      exportOptions={ctx.exportOptions}
+                      stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
+                      resolvedAutoLayout={ctx.resolvedCardAutoLayout}
+                      layout={layout.effectiveMobile ? "bottom" : "sidebar"}
+                      onSettingChange={interactions.handleCardSettingChange}
+                      cardPresentation={cardPresentation.value}
+                      onCardPresentationChange={cardPresentation.set}
+                      onSaveCardPresentation={ctx.isOwned &&
+                      ctx.isOwnedLibraryRecord
+                        ? async () => {
+                            await persistCardPresentation();
+                          }
+                        : undefined}
+                      cardPresentationDirty={cardPresentation.dirty}
+                      cardPresentationSaving={cardPresentation.saving}
+                    />
+                  </div>
+                {/if}
+              </div>
+            {/snippet}
+          </ViewerWorkspacePanels>
         </div>
         {#if isMobile && layout.isImageExportActive && ctx.effectiveSequence}
           <!-- Entrance/exit fly now lives on ControlDock's root
@@ -832,6 +1314,15 @@
               layout="bottom"
               onClose={interactions.handleUnfocusPane}
               onSettingChange={interactions.handleCardSettingChange}
+              cardPresentation={cardPresentation.value}
+              onCardPresentationChange={cardPresentation.set}
+              onSaveCardPresentation={ctx.isOwned && ctx.isOwnedLibraryRecord
+                ? async () => {
+                    await persistCardPresentation();
+                  }
+                : undefined}
+              cardPresentationDirty={cardPresentation.dirty}
+              cardPresentationSaving={cardPresentation.saving}
             />
           </div>
         {/if}
@@ -858,6 +1349,7 @@
           }}
         >
           <ViewerModeBottomBar
+            reviewPostStudio={import.meta.env.DEV && reviewPostStudio}
             activeMode={ctx.viewerState.viewerMode}
             webgl2Available={ctx.viewer3DState.webgl2Available}
             onSelectSplit={() => layout.selectSplitMode()}
@@ -951,6 +1443,10 @@
       ? "video"
       : "card"}
     resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
+    initialCardPresentation={cardPresentation.value}
+    onSaveCardPresentation={ctx.isOwned && ctx.isOwnedLibraryRecord
+      ? persistCardPresentation
+      : undefined}
     onSendInTka={() => share.sendToInbox()}
     onOpenPostStudio={canAccessPostStudio()
       ? () => layout.selectViewerMode("post-studio")
@@ -960,6 +1456,16 @@
 </div>
 
 <style>
+  .shared-inspector-parking {
+    display: none;
+  }
+  .shared-animator-inspector,
+  .animator-inspector-origin {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+  }
   .drawer-viewer-container {
     /* One shared clock so the rail-out and bar-up choreograph in lockstep. */
     --ws-dur: 300ms;
@@ -1028,7 +1534,7 @@
     flex-shrink: 0;
     overflow: hidden;
     height: 0;
-    transform: translateX(110%);
+    transform: translateY(16px);
     opacity: 0;
     will-change: transform, opacity, height;
     /* Scoped to this element ONLY (it's an inherited property — set on a shared
@@ -1045,11 +1551,11 @@
   .practice-bar-rise.reserved {
     height: auto;
   }
-  /* Practice active: the bar slides in from the right + fades in, carrying the
-     setup config. Composited transform/opacity → 60fps. (Start swaps config→
+  /* Practice active: the bar rises a short distance and fades in, carrying the
+     setup config. (Start swaps config→
      cockpit via the inner conveyor; the bar itself stays put.) */
   .practice-bar-rise.reserved.up {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 
@@ -1093,8 +1599,47 @@
 
   .viewer-and-export {
     --export-sidebar-width: 560px;
+    --card-sidebar-width: clamp(480px, 28vw, 640px);
+    --performance-sidebar-width: clamp(380px, 24vw, 520px);
+    --active-inspector-width: var(--export-sidebar-width);
     position: relative;
+    display: flex;
+    flex-direction: row;
     flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .viewer-and-export.card-inspector {
+    --active-inspector-width: var(--card-sidebar-width);
+  }
+
+  /* Performances keeps a narrower column than the effects inspector so the
+     landscape video gets the width. The difference between the two tokens is
+     the seam travel PanelGroup animates on the structural clock when the mode
+     changes. */
+  .viewer-and-export.performance-inspector {
+    --active-inspector-width: var(--performance-sidebar-width);
+  }
+
+  .viewer-stage-container {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .viewer-motion-stage-content,
+  .performance-stage-layer,
+  .performance-editor-layer {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
     min-height: 0;
     overflow: hidden;
   }
@@ -1121,46 +1666,17 @@
     }
   }
 
-  .viewer-and-export:not(.desktop) {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .viewer-and-export:not(.desktop) :global(.view-container) {
+  .viewer-and-export:not(.desktop)
+    .viewer-stage-container
+    :global(.view-container) {
     flex: 1;
+    min-width: 0;
     min-height: 0;
   }
 
-  .viewer-and-export.desktop {
-    display: grid;
-    grid-template-columns: 1fr 0px;
-    grid-template-rows: minmax(0, 1fr);
-    transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  .viewer-and-export.desktop :global(.view-container) {
+  .viewer-and-export.desktop .viewer-stage-container :global(.view-container) {
     position: relative;
     inset: auto;
-  }
-
-  .viewer-and-export.export-active.desktop {
-    grid-template-columns: 1fr var(--export-sidebar-width);
-  }
-
-  .viewer-and-export.export-active.desktop.has-rail {
-    grid-template-columns: auto 1fr var(--export-sidebar-width);
-  }
-
-  .viewer-and-export.export-active.desktop.sidebar-collapsed {
-    grid-template-columns: 1fr 0px;
-  }
-
-  .viewer-and-export.export-active.desktop.has-rail.sidebar-collapsed {
-    grid-template-columns: auto 1fr 0px;
-  }
-
-  .viewer-and-export.desktop.has-rail:not(.export-active) {
-    grid-template-columns: auto 1fr;
   }
 
   /* The 3D scene rail pins its Presets/Save cluster to the same corner the
@@ -1196,12 +1712,207 @@
   }
 
   .export-panel-container {
+    position: relative;
     overflow: hidden;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     isolation: isolate;
     min-width: 0;
+  }
+
+  .export-panel-container.art-settings {
+    overflow: hidden;
+  }
+
+  /* Each layer paints the inspector surface across the whole track, and the
+     panel it holds paints none. A composed panel is narrower than the track
+     for as long as the seam is travelling, so leaving the surface on the panel
+     left the remaining band showing the workspace through the container's
+     partly transparent fill: a lighter vertical strip that appeared, held, and
+     vanished. Stacking container and layer reproduces the resting fill exactly
+     while covering the track at every intermediate width. */
+  .inspector-content-layer {
+    position: absolute;
+    inset: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-fast),
+      visibility 0s linear var(--duration-fast);
+  }
+
+  .inspector-content-layer[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity var(--transition-fast),
+      visibility 0s linear 0s;
+  }
+
+  .motion-settings-layer {
+    display: flex;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .performance-inspector-layer {
+    display: flex;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  .card-settings-layer {
+    display: flex;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  /* Art settings paint the card fill rather than the panel fill, so their layer
+     has to carry that token instead. Painting the shared one here would change
+     the inspector's colour under any theme whose card and panel fills differ. */
+  .art-settings-layer {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .inspector-content-layer :global(.export-panel),
+  .inspector-content-layer :global(.performance-inspector),
+  .inspector-content-layer :global(.art-settings-panel) {
+    background: transparent;
+  }
+
+  /* Every composed panel is pushed to the closing edge by an automatic start
+     margin, which is the one declaration that gets both directions right. A
+     panel narrower than the track keeps its place at the viewport edge and
+     simply fades, so a departing surface never slides its contents sideways on
+     the way out. A panel wider than the track has no free space for the margin
+     to absorb, so it collapses to zero and the panel is revealed from the seam
+     with its overflow spilling past the screen edge, where the cut cannot be
+     seen. Anchoring either direction by hand cuts a leading label column off or
+     drags a fading panel across the workspace.
+
+     The persistent Effects workspace is already composed at its destination
+     width while the zero-width inspector track is closed. PanelGroup then
+     reveals that stable surface through a moving clip instead of asking every
+     control row to rewrap at each intermediate width. */
+  .viewer-and-export.desktop
+    .motion-settings-layer
+    > :global(.export-panel.sidebar) {
+    width: var(--export-sidebar-width);
+    min-width: var(--export-sidebar-width);
+    flex: 0 0 var(--export-sidebar-width);
+    margin-left: auto;
+  }
+
+  /* The Performances inspector is composed at its own destination width
+     before the mode changes. PanelGroup then slides the seam from the effects
+     width to this width and reveals the already-laid-out column through the
+     moving clip, so nothing rewraps while the stage source crossfades. */
+  .viewer-and-export.desktop
+    .performance-inspector-layer
+    > :global(.performance-inspector) {
+    width: var(--performance-sidebar-width);
+    min-width: var(--performance-sidebar-width);
+    flex: 0 0 var(--performance-sidebar-width);
+    margin-left: auto;
+  }
+
+  /* Art settings are portaled in as an absolutely positioned host that already
+     fills the track, so `width: 100%` on the panel inside made it stretch and
+     re-wrap on every frame of the seam animation. Compose it at the same
+     destination width the Effects inspector uses. */
+  .viewer-and-export.desktop
+    .art-settings-layer
+    > :global(.art-settings-host.external)
+    > :global(.art-settings-panel) {
+    width: var(--export-sidebar-width);
+    min-width: var(--export-sidebar-width);
+    flex: 0 0 var(--export-sidebar-width);
+    margin-left: auto;
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .art-settings-layer
+    > :global(.art-settings-host.external)
+    > :global(.art-settings-panel) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  /* The card pin below is keyed to a mode-conditional container class, which
+     Svelte removes the instant the mode changes. The departing Card panel then
+     falls back to its intrinsic width and follows the closing seam. Keying the
+     same destination width to the persistent layer keeps it composed on the
+     way out as well as on the way in. */
+  .viewer-and-export.desktop
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: var(--card-sidebar-width);
+    min-width: var(--card-sidebar-width);
+    flex: 0 0 var(--card-sidebar-width);
+    margin-left: auto;
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .card-settings-layer
+    :global(.export-panel:not(.inline)) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .motion-settings-layer
+    > :global(.export-panel.sidebar) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .performance-inspector-layer
+    > :global(.performance-inspector) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {
+    transition-duration: 0ms, 0s;
+  }
+
+  /* PanelGroup owns the dock's structural motion. Keep Card settings composed
+     at their default destination width while the dock opens, so chip wrapping
+     and vertical centering do not invent a second, accidental transition. Once
+     the person grabs the seam, the panel follows that direct manipulation. */
+  .viewer-and-export.desktop .export-panel-container.card-settings {
+    display: flex;
+    justify-content: flex-end;
+    overflow: hidden;
+  }
+
+  .viewer-and-export.desktop
+    .export-panel-container.card-settings
+    :global(.export-panel:not(.inline)) {
+    width: var(--active-inspector-width);
+    min-width: var(--active-inspector-width);
+    flex: 0 0 var(--active-inspector-width);
+  }
+
+  :global(.panel-wrapper[data-manually-sized="true"])
+    .export-panel-container.card-settings
+    :global(.export-panel:not(.inline)) {
+    width: 100%;
+    min-width: 0;
+    flex-basis: 100%;
   }
 
   /* Stacked export layout — phones AND desktop widths too narrow for the 560px
@@ -1217,41 +1928,52 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .viewer-and-export:not(.desktop).export-active :global(.view-container) {
+  /* The stacked dock is content-sized: ViewerWorkspacePanels hands the track
+     `preferredSize: auto` and PanelGroup measures whatever is in flow. Every
+     inspector layer is absolute for the desktop crossfade, so nothing was in
+     flow, the container measured 0px, and the motion dock sat one pixel below
+     the viewport with no pill reachable. While stacked, the ACTIVE layer
+     returns to flow and gives the track its height; the inactive layers keep
+     stacking behind it at the same size. */
+  .viewer-and-export:not(.desktop)
+    .export-panel-container
+    > .inspector-content-layer[data-active="true"] {
+    position: relative;
+    inset: auto;
+  }
+
+  .viewer-and-export:not(.desktop)
+    .performance-inspector-layer
+    > :global(.performance-inspector) {
+    height: var(--performance-inspector-height);
+    min-height: 16rem;
+  }
+
+  .viewer-and-export {
+    --performance-inspector-height: min(46vh, 30rem);
+  }
+
+  @media (max-height: 34rem) {
+    .viewer-and-export:not(.desktop)
+      .performance-inspector-layer
+      > :global(.performance-inspector) {
+      height: var(--performance-inspector-height);
+      min-height: 10rem;
+    }
+
+    .viewer-and-export {
+      --performance-inspector-height: min(48vh, 13rem);
+    }
+  }
+
+  .viewer-and-export:not(.desktop).export-active
+    .viewer-stage-container
+    :global(.view-container) {
     position: relative;
     inset: auto;
     flex: 1;
     min-height: 0;
     overflow: hidden;
-  }
-
-  /* Narrow-desktop export (Card / 2D Animation below the sidebar threshold):
-     the settings stack under the hero exactly like the phone layout, but the
-     rail keeps its column — otherwise entering Card/2D at these widths swapped
-     the whole chrome to phone mode while Split/Mandala/Tunnel kept the rail. */
-  .viewer-and-export.stacked-rail {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-  .viewer-and-export.stacked-rail .viewer-rail-wrap {
-    grid-column: 1;
-    grid-row: 1 / -1;
-  }
-  .viewer-and-export.stacked-rail :global(.view-container) {
-    grid-column: 2;
-    grid-row: 1;
-    position: relative;
-    inset: auto;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .viewer-and-export.stacked-rail .export-panel-container {
-    grid-column: 2;
-    grid-row: 2;
-    border-left: none;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    overflow: visible;
   }
 
   /* Flow child of .drawer-body-content (a flex column), NOT an absolute overlay.
@@ -1264,11 +1986,5 @@
     position: relative;
     flex-shrink: 0;
     z-index: 3;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .viewer-and-export {
-      transition: none;
-    }
   }
 </style>

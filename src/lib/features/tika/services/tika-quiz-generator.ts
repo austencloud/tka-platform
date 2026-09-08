@@ -31,8 +31,8 @@ export interface PictographOption {
 export interface MotionPatternOption {
   id: string;
   type: "motion-pattern";
-  blueMotion: string;
-  redMotion: string;
+  leftMotion: string;
+  rightMotion: string;
   correct: boolean;
 }
 export interface QuizResult {
@@ -580,8 +580,8 @@ export class TikaQuizGenerator {
     allPatterns.push({
       id: "opt-correct",
       type: "motion-pattern",
-      blueMotion: typeDef.motionPattern.blue,
-      redMotion: typeDef.motionPattern.red,
+      leftMotion: typeDef.motionPattern.left,
+      rightMotion: typeDef.motionPattern.right,
       correct: true,
     });
 
@@ -591,16 +591,16 @@ export class TikaQuizGenerator {
       if (!otherDef) continue;
 
       if (
-        otherDef.motionPattern.blue === typeDef.motionPattern.blue &&
-        otherDef.motionPattern.red === typeDef.motionPattern.red
+        otherDef.motionPattern.left === typeDef.motionPattern.left &&
+        otherDef.motionPattern.right === typeDef.motionPattern.right
       )
         continue;
 
       allPatterns.push({
         id: `opt-${t}`,
         type: "motion-pattern",
-        blueMotion: otherDef.motionPattern.blue,
-        redMotion: otherDef.motionPattern.red,
+        leftMotion: otherDef.motionPattern.left,
+        rightMotion: otherDef.motionPattern.right,
         correct: false,
       });
 
@@ -611,8 +611,8 @@ export class TikaQuizGenerator {
       allPatterns.push({
         id: `opt-extra-${allPatterns.length}`,
         type: "motion-pattern",
-        blueMotion: "static",
-        redMotion: "dash",
+        leftMotion: "static",
+        rightMotion: "dash",
         correct: false,
       });
     }
@@ -628,8 +628,8 @@ export class TikaQuizGenerator {
         displayMode: "motion-chips",
         question: `What motion pattern do Type ${typeNum} (${typeDef.name}) letters have?`,
         options,
-        correctFeedback: `Correct! Type ${typeNum} has ${typeDef.motionPattern.blue} blue + ${typeDef.motionPattern.red} red.`,
-        incorrectFeedback: `Not quite. Type ${typeNum} has ${typeDef.motionPattern.blue} blue + ${typeDef.motionPattern.red} red.`,
+        correctFeedback: `Correct! Type ${typeNum} has ${typeDef.motionPattern.left} in the left hand + ${typeDef.motionPattern.right} in the right hand.`,
+        incorrectFeedback: `Not quite. Type ${typeNum} has ${typeDef.motionPattern.left} in the left hand + ${typeDef.motionPattern.right} in the right hand.`,
         explanation: typeDef.description,
         difficulty,
         topic: `type${typeNum}`,
@@ -895,13 +895,13 @@ export class TikaQuizGenerator {
     let explanation: string;
 
     if (isTrue) {
-      statement = `Type ${typeNum} (${typeDef.name}) letters have ${typeDef.motionPattern.blue} blue motion and ${typeDef.motionPattern.red} red motion.`;
+      statement = `Type ${typeNum} (${typeDef.name}) letters have ${typeDef.motionPattern.left} left-hand motion and ${typeDef.motionPattern.right} right-hand motion.`;
       explanation = `This is correct. ${typeDef.description}.`;
     } else {
-      const wrongBlue =
-        typeDef.motionPattern.blue === "shift" ? "dash" : "shift";
-      statement = `Type ${typeNum} (${typeDef.name}) letters have ${wrongBlue} blue motion and ${typeDef.motionPattern.red} red motion.`;
-      explanation = `Type ${typeNum} actually has ${typeDef.motionPattern.blue} blue motion and ${typeDef.motionPattern.red} red motion.`;
+      const wrongLeft =
+        typeDef.motionPattern.left === "shift" ? "dash" : "shift";
+      statement = `Type ${typeNum} (${typeDef.name}) letters have ${wrongLeft} left-hand motion and ${typeDef.motionPattern.right} right-hand motion.`;
+      explanation = `Type ${typeNum} actually has ${typeDef.motionPattern.left} left-hand motion and ${typeDef.motionPattern.right} right-hand motion.`;
     }
 
     return {

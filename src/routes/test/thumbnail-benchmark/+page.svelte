@@ -463,8 +463,8 @@
             const input: ThumbnailRenderInput = {
               sequenceName: seq.word || seq.name || "",
               sequenceId: seq.id,
-              bluePropType: propType,
-              redPropType: propType,
+              leftPropType: propType,
+              rightPropType: propType,
               catDogModeEnabled: false,
               lightMode: false,
               variant: "gallery",

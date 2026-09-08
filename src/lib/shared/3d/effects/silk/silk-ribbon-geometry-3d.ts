@@ -133,13 +133,15 @@ export class SilkRibbonGeometry3D {
   );
   private readonly sides = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON * 3);
   private readonly arcLengths = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON);
-  private readonly body: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly bodyAlt: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly edge: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly edgeAlt: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly propTint: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly body: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly bodyAlt: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly edge: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly edgeAlt: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly propTint: MutableRgb = { right: 1, green: 1, left: 1 };
   private sampleCursor = 0;
   private indexCursor = 0;
+  /** Index count published by the last commit(). Lets an idle ribbon skip republishing an already-empty frame. */
+  private committedIndexCount = 0;
 
   constructor(private readonly sampleCapacity: number) {
     const vertexCapacity = sampleCapacity * SILK_CROSS_SECTION_VERTEX_COUNT;
@@ -252,8 +254,28 @@ export class SilkRibbonGeometry3D {
     this.sampleCursor += count;
   }
 
+  /**
+   * Publishes this frame's writes to the GPU.
+   *
+   * Every dirtied attribute carries an explicit update range, and an attribute
+   * that received no writes stays clean. That matters more than it looks:
+   * three's WebGLAttributes.updateBuffer falls back to uploading the ENTIRE
+   * backing array when an attribute is dirty with no update ranges, so an idle
+   * ribbon used to push 4.8 MB of bufferSubData every frame for a mesh whose
+   * draw range was zero. Nothing reads a stale tail either way - setDrawRange
+   * bounds every draw to what this frame actually wrote.
+   */
   commit(): void {
     const vertexCount = this.sampleCursor * SILK_CROSS_SECTION_VERTEX_COUNT;
+    if (
+      vertexCount === 0 &&
+      this.indexCursor === 0 &&
+      this.committedIndexCount === 0
+    ) {
+      // An empty ribbon was already published: buffers are clean and the draw
+      // range is already zero, so there is nothing to republish.
+      return;
+    }
     this.markUpdated("position", vertexCount * 3);
     this.markUpdated("normal", vertexCount * 3);
     this.markUpdated("ribbonTangent", vertexCount * 3);
@@ -269,9 +291,17 @@ export class SilkRibbonGeometry3D {
     this.markUpdated("weaveFrequency", vertexCount);
     const index = this.geometry.index as BufferAttribute;
     index.clearUpdateRanges();
-    if (this.indexCursor > 0) index.addUpdateRange(0, this.indexCursor);
-    index.needsUpdate = true;
+    if (this.indexCursor > 0) {
+      index.addUpdateRange(0, this.indexCursor);
+      index.needsUpdate = true;
+    }
     this.geometry.setDrawRange(0, this.indexCursor);
+    this.committedIndexCount = this.indexCursor;
+  }
+
+  /** Index count published by the last commit(); 0 means nothing is drawn. */
+  get drawCount(): number {
+    return this.committedIndexCount;
   }
 
   clear(): void {
@@ -371,9 +401,9 @@ export class SilkRibbonGeometry3D {
         dynamicVelocities[i3] = velocityX;
         dynamicVelocities[i3 + 1] = velocityY;
         dynamicVelocities[i3 + 2] = velocityZ;
-        dynamicPositions[i3] += velocityX * dt;
-        dynamicPositions[i3 + 1] += velocityY * dt;
-        dynamicPositions[i3 + 2] += velocityZ * dt;
+        dynamicPositions[i3] = dynamicPositions[i3]! + velocityX * dt;
+        dynamicPositions[i3 + 1] = dynamicPositions[i3 + 1]! + velocityY * dt;
+        dynamicPositions[i3 + 2] = dynamicPositions[i3 + 2]! + velocityZ * dt;
       }
 
       // The head is pinned. Every following point keeps the path's travelled
@@ -401,9 +431,9 @@ export class SilkRibbonGeometry3D {
             dynamicPositions[i3 + 2]! - dynamicPositions[previous + 2]!;
           const distance = Math.hypot(dx, dy, dz) || targetDistance;
           const correction = ((distance - targetDistance) / distance) * 0.9;
-          dynamicPositions[i3] -= dx * correction;
-          dynamicPositions[i3 + 1] -= dy * correction;
-          dynamicPositions[i3 + 2] -= dz * correction;
+          dynamicPositions[i3] = dynamicPositions[i3]! - dx * correction;
+          dynamicPositions[i3 + 1] = dynamicPositions[i3 + 1]! - dy * correction;
+          dynamicPositions[i3 + 2] = dynamicPositions[i3 + 2]! - dz * correction;
         }
       }
 
@@ -639,14 +669,14 @@ export class SilkRibbonGeometry3D {
     const bodyMix = materialProfile.identityMix;
     const edgeMix = Math.min(0.42, bodyMix + 0.08);
     for (const color of [this.body, this.bodyAlt]) {
-      color.red = mix(color.red, this.propTint.red, bodyMix);
+      color.right = mix(color.right, this.propTint.right, bodyMix);
       color.green = mix(color.green, this.propTint.green, bodyMix);
-      color.blue = mix(color.blue, this.propTint.blue, bodyMix);
+      color.left = mix(color.left, this.propTint.left, bodyMix);
     }
     for (const color of [this.edge, this.edgeAlt]) {
-      color.red = mix(color.red, this.propTint.red, edgeMix);
+      color.right = mix(color.right, this.propTint.right, edgeMix);
       color.green = mix(color.green, this.propTint.green, edgeMix);
-      color.blue = mix(color.blue, this.propTint.blue, edgeMix);
+      color.left = mix(color.left, this.propTint.left, edgeMix);
     }
   }
 
@@ -772,12 +802,12 @@ export class SilkRibbonGeometry3D {
     const centerY = this.centers[i3 + 1]! + ny * flutterOffset - gravitySag;
     const centerZ = this.centers[i3 + 2]! + nz * flutterOffset;
     const colorMix = params.resolvedPalette.hueShift ? life : life * 0.08;
-    const bodyRed = mix(this.body.red, this.bodyAlt.red, colorMix);
+    const bodyRight = mix(this.body.right, this.bodyAlt.right, colorMix);
     const bodyGreen = mix(this.body.green, this.bodyAlt.green, colorMix);
-    const bodyBlue = mix(this.body.blue, this.bodyAlt.blue, colorMix);
-    const edgeRed = mix(this.edge.red, this.edgeAlt.red, colorMix);
+    const bodyLeft = mix(this.body.left, this.bodyAlt.left, colorMix);
+    const edgeRight = mix(this.edge.right, this.edgeAlt.right, colorMix);
     const edgeGreen = mix(this.edge.green, this.edgeAlt.green, colorMix);
-    const edgeBlue = mix(this.edge.blue, this.edgeAlt.blue, colorMix);
+    const edgeLeft = mix(this.edge.left, this.edgeAlt.left, colorMix);
     const alpha =
       Math.sqrt(params.intensity) *
       energyScale *
@@ -833,12 +863,12 @@ export class SilkRibbonGeometry3D {
       this.ribbonTangents[v3] = tx;
       this.ribbonTangents[v3 + 1] = ty;
       this.ribbonTangents[v3 + 2] = tz;
-      this.bodyColors[v3] = bodyRed;
+      this.bodyColors[v3] = bodyRight;
       this.bodyColors[v3 + 1] = bodyGreen;
-      this.bodyColors[v3 + 2] = bodyBlue;
-      this.edgeColors[v3] = edgeRed;
+      this.bodyColors[v3 + 2] = bodyLeft;
+      this.edgeColors[v3] = edgeRight;
       this.edgeColors[v3 + 1] = edgeGreen;
-      this.edgeColors[v3 + 2] = edgeBlue;
+      this.edgeColors[v3 + 2] = edgeLeft;
       this.alphas[vertex] = alpha;
       this.ribbonEdges[vertex] = across;
       this.progresses[vertex] = arcProgress;
@@ -863,7 +893,13 @@ export class SilkRibbonGeometry3D {
   private markUpdated(name: string, componentCount: number): void {
     const attribute = this.geometry.getAttribute(name) as BufferAttribute;
     attribute.clearUpdateRanges();
-    if (componentCount > 0) attribute.addUpdateRange(0, componentCount);
+    if (componentCount === 0) {
+      // Nothing was written, and the draw range excludes whatever the previous
+      // frame left behind. Leaving the attribute clean avoids a full-array
+      // re-upload of a buffer nothing will read.
+      return;
+    }
+    attribute.addUpdateRange(0, componentCount);
     attribute.needsUpdate = true;
   }
 }

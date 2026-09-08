@@ -60,6 +60,37 @@ describe("QualityTierDetector", () => {
     expect(tier).toBe(QualityTier.HIGH);
   });
 
+  it("detects the worker viewer tier without retaining a main-thread context", () => {
+    const loseContext = vi.fn();
+    const getContext = vi.fn(() => ({
+      MAX_TEXTURE_IMAGE_UNITS: 0x8872,
+      getParameter: () => 16,
+      getExtension: (name: string) =>
+        name === "EXT_color_buffer_float"
+          ? {}
+          : name === "WEBGL_lose_context"
+            ? { loseContext }
+            : null,
+    }));
+    vi.stubGlobal(
+      "OffscreenCanvas",
+      class {
+        constructor(
+          readonly width: number,
+          readonly height: number
+        ) {}
+        getContext = getContext;
+      }
+    );
+    vi.stubGlobal("navigator", { hardwareConcurrency: 12 });
+
+    const detector = new QualityTierDetector();
+    expect(detector.detectFromBrowserCapabilities()).toBe(QualityTier.HIGH);
+    expect(detector.detectFromBrowserCapabilities()).toBe(QualityTier.HIGH);
+    expect(getContext).toHaveBeenCalledTimes(1);
+    expect(loseContext).toHaveBeenCalledTimes(1);
+  });
+
   it("allows manual override", () => {
     const detector = new QualityTierDetector();
     detector.setOverride(QualityTier.LOW);

@@ -19,9 +19,9 @@ export const SYNONYMS: Record<string, string[]> = {
   cw: ["clockwise", "clock", "right"],
   ccw: ["counterclockwise", "counter-clockwise", "counter", "left", "anticlockwise", "anti-clockwise"],
 
-  // Hands/colors
-  blue: ["left", "lead", "blue-hand", "blue hand"],
-  red: ["right", "follow", "red-hand", "red hand"],
+  // Performer-relative hands. Canonical palette names remain accepted as input.
+  left: ["left", "left-hand", "left hand", "blue", "blue-hand", "blue hand"],
+  right: ["right", "right-hand", "right hand", "red", "red-hand", "red hand"],
   both: ["all", "either", "any"],
 
   // Constraint modes

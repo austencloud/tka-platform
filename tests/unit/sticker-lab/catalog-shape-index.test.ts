@@ -11,10 +11,10 @@ function sequence(id: string): SequenceData {
   return { id, word: id, steps: [] } as unknown as SequenceData;
 }
 
-function paths(blueD: string, redD = ""): MandalaPaths {
+function paths(leftD: string, rightD = ""): MandalaPaths {
   return {
-    blue: blueD ? [{ d: blueD, tipIndex: 0 }] : [],
-    red: redD ? [{ d: redD, tipIndex: 0 }] : [],
+    left: leftD ? [{ d: leftD, tipIndex: 0 }] : [],
+    right: rightD ? [{ d: rightD, tipIndex: 0 }] : [],
     purple: [],
   };
 }

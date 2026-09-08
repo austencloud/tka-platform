@@ -57,15 +57,15 @@ export function ensureMotionPlacement(
  * caller's element type; optional fields are cheaper to guard at the call site.
  */
 export function ensureStepPlacement<
-  T extends { motions?: { blue?: MotionData; red?: MotionData } },
+  T extends { motions?: { left?: MotionData; right?: MotionData } },
 >(step: T): T {
   if (!step?.motions) return step;
   return {
     ...step,
     motions: {
       ...step.motions,
-      blue: ensureMotionPlacement(step.motions.blue),
-      red: ensureMotionPlacement(step.motions.red),
+      left: ensureMotionPlacement(step.motions.left),
+      right: ensureMotionPlacement(step.motions.right),
     },
   };
 }

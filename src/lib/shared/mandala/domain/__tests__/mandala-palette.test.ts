@@ -44,8 +44,8 @@ describe("mandala-palette", () => {
 		const c1 = sampleGradient(morph, 0);
 		const c2 = sampleGradient(morph, 0.4);
 		const pal = flowPalette(morph, 0);
-		expect(pal.blueStroke).toBe(c1);
-		expect(pal.redStroke).toBe(c2);
+		expect(pal.leftStroke).toBe(c1);
+		expect(pal.rightStroke).toBe(c2);
 		expect(pal.purpleStroke).toBe(mixColors(c1, c2));
 	});
 
@@ -55,8 +55,8 @@ describe("mandala-palette", () => {
 		const c2 = sampleGradient(morph, (0.25 + 0.4) % 1);
 		const c3 = sampleGradient(morph, (0.25 + 0.7) % 1);
 		const g = flowGradientColors(morph, 0.25);
-		expect(g.blue).toEqual([c1, c3]);
-		expect(g.red).toEqual([c2, c1]);
+		expect(g.left).toEqual([c1, c3]);
+		expect(g.right).toEqual([c2, c1]);
 		expect(g.purple).toEqual([mixColors(c1, c2), c3]);
 	});
 });

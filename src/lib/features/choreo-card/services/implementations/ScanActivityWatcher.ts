@@ -86,9 +86,9 @@ export class ScanActivityWatcher implements IScanActivityWatcher {
                     ? data.deviceId
                     : null,
               userId: typeof data.userId === "string" ? data.userId : null,
-              bluePropType:
-                parsePropTypeFromURLValue(data.bluePropType) ?? null,
-              redPropType: parsePropTypeFromURLValue(data.redPropType) ?? null,
+              leftPropType:
+                parsePropTypeFromURLValue(data.leftPropType) ?? null,
+              rightPropType: parsePropTypeFromURLValue(data.rightPropType) ?? null,
               catDogMode:
                 typeof data.catDogMode === "boolean" ? data.catDogMode : null,
             };

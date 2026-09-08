@@ -24,6 +24,9 @@ const STORE_NAME = "thumbnails";
 // v5: Purge after 8-step column layout change.
 const DB_VERSION = 5;
 const DEFAULT_MAX_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB default limit
+// Persistence is optional. A blocked upgrade or busy disk must not keep the
+// gallery waiting before it can try the cloud cache or render queue.
+const CACHE_READ_BUDGET_MS = 500;
 
 interface CachedEntry {
   /** Hash key from ThumbnailKeyDeriver */
@@ -55,7 +58,10 @@ export class ThumbnailLocalCache {
     this.dbPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        this.dbPromise = null;
+        reject(request.error);
+      };
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
@@ -68,7 +74,19 @@ export class ThumbnailLocalCache {
         store.createIndex("timestamp", "timestamp", { unique: false });
       };
 
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        const db = request.result;
+        // Another tab may need a newer schema. Keeping this connection open
+        // blocks that tab's upgrade until the user closes this page.
+        db.onversionchange = () => {
+          db.close();
+          this.dbPromise = null;
+        };
+        db.onclose = () => {
+          this.dbPromise = null;
+        };
+        resolve(db);
+      };
     });
 
     return this.dbPromise;
@@ -77,30 +95,48 @@ export class ThumbnailLocalCache {
   async get(key: string): Promise<Blob | null> {
     if (!browser) return null;
 
-    try {
-      const db = await this.getDB();
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
+    return new Promise((resolve) => {
+      let settled = false;
+      let tx: IDBTransaction | undefined;
+      const finish = (blob: Blob | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(blob);
+      };
+      const timer = setTimeout(() => {
+        finish(null);
+        // Reclaim a queued transaction too, not just the caller's promise.
+        try {
+          tx?.abort();
+        } catch {
+          // The transaction may already have committed.
+        }
+      }, CACHE_READ_BUDGET_MS);
 
-      return new Promise((resolve, reject) => {
-        const request = store.get(key);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-          const result = request.result as CachedEntry | undefined;
-          if (result) {
-            // Update timestamp on access (LRU)
-            result.timestamp = Date.now();
-            store.put(result);
-            resolve(result.blob);
-          } else {
-            resolve(null);
-          }
-        };
-      });
-    } catch (error) {
-      console.warn("[ThumbnailLocalCache] get failed:", error);
-      return null;
-    }
+      void this.getDB()
+        .then((db) => {
+          // An open blocked by another tab can complete after our deadline.
+          // Keep the connection for future requests, but don't run obsolete reads.
+          if (settled) return;
+          tx = db.transaction(STORE_NAME, "readwrite");
+          tx.onabort = () => finish(null);
+          tx.onerror = () => finish(null);
+          const store = tx.objectStore(STORE_NAME);
+          const request = store.get(key);
+          request.onerror = () => finish(null);
+          request.onsuccess = () => {
+            if (settled) return;
+            const result = request.result as CachedEntry | undefined;
+            if (result) {
+              result.timestamp = Date.now();
+              store.put(result);
+            }
+            finish(result?.blob ?? null);
+          };
+        })
+        .catch(() => finish(null));
+    });
   }
 
   async set(key: string, blob: Blob): Promise<void> {

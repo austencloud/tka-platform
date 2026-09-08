@@ -13,7 +13,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
@@ -32,8 +32,8 @@ export function convertToStep(
     ...pictograph,
     stepNumber: stepNumber,
     duration: 1.0,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions,
   });
@@ -70,15 +70,15 @@ function ensureMotionsWithGridMode(
     gridMode: gridMode,
   });
 
-  const blueMotion = pictograph.motions[MotionColor.BLUE];
-  const redMotion = pictograph.motions[MotionColor.RED];
+  const leftMotion = pictograph.motions[HandSide.LEFT];
+  const rightMotion = pictograph.motions[HandSide.RIGHT];
 
   return {
-    [MotionColor.BLUE]: blueMotion
-      ? { ...blueMotion, gridMode }
+    [HandSide.LEFT]: leftMotion
+      ? { ...leftMotion, gridMode }
       : defaultMotion,
-    [MotionColor.RED]: redMotion
-      ? { ...redMotion, gridMode }
+    [HandSide.RIGHT]: rightMotion
+      ? { ...rightMotion, gridMode }
       : defaultMotion,
   };
 }

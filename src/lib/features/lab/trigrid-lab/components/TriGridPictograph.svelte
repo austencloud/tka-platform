@@ -21,19 +21,19 @@
 
   interface Props {
     mode: TriGridMode;
-    blueLocation: GridLocation;
-    redLocation: GridLocation;
-    blueOrientation: Orientation;
-    redOrientation: Orientation;
+    leftLocation: GridLocation;
+    rightLocation: GridLocation;
+    leftOrientation: Orientation;
+    rightOrientation: Orientation;
     showGrid: boolean;
   }
 
   const {
     mode,
-    blueLocation,
-    redLocation,
-    blueOrientation,
-    redOrientation,
+    leftLocation,
+    rightLocation,
+    leftOrientation,
+    rightOrientation,
     showGrid,
   }: Props = $props();
 
@@ -105,28 +105,28 @@
   const handPoints = $derived(calculator.getHandPoints(mode));
 
   // Beta detection: both props at the same vertex
-  const isBeta = $derived(blueLocation === redLocation);
+  const isBeta = $derived(leftLocation === rightLocation);
 
   // Prop transform chains (matching PropSvg.svelte pattern)
-  const blueTransform = $derived.by(() => {
-    let pt = handPoints.get(blueLocation);
+  const leftTransform = $derived.by(() => {
+    let pt = handPoints.get(leftLocation);
     if (!pt) return "";
     if (isBeta) {
-      const offset = calculator.computeBetaOffset(blueLocation, "blue", mode);
+      const offset = calculator.computeBetaOffset(leftLocation, "left", mode);
       pt = { x: pt.x + offset.x, y: pt.y + offset.y };
     }
-    const angle = calculator.computePropRotation(blueLocation, blueOrientation, mode);
+    const angle = calculator.computePropRotation(leftLocation, leftOrientation, mode);
     return `translate(${pt.x}, ${pt.y}) rotate(${angle}) translate(${-TRIAD_CENTER_X}, ${-TRIAD_CENTER_Y})`;
   });
 
-  const redTransform = $derived.by(() => {
-    let pt = handPoints.get(redLocation);
+  const rightTransform = $derived.by(() => {
+    let pt = handPoints.get(rightLocation);
     if (!pt) return "";
     if (isBeta) {
-      const offset = calculator.computeBetaOffset(redLocation, "red", mode);
+      const offset = calculator.computeBetaOffset(rightLocation, "right", mode);
       pt = { x: pt.x + offset.x, y: pt.y + offset.y };
     }
-    const angle = calculator.computePropRotation(redLocation, redOrientation, mode);
+    const angle = calculator.computePropRotation(rightLocation, rightOrientation, mode);
     // Red prop is mirrored (scaleX(-1)) like in the existing pipeline.
     // SVG transforms apply right-to-left: center → mirror → rotate → position.
     // The mirror flips the prop from pointing-right to pointing-left (adds 180°).
@@ -157,15 +157,15 @@
   {/if}
 
   <!-- Blue prop -->
-  {#if triadSvgContent && handPoints.get(blueLocation)}
-    <g class="prop-svg blue-prop" transform={blueTransform}>
+  {#if triadSvgContent && handPoints.get(leftLocation)}
+    <g class="prop-svg blue-prop" transform={leftTransform}>
       {@html colorizedTriad(BLUE_COLOR)}
     </g>
   {/if}
 
   <!-- Red prop -->
-  {#if triadSvgContent && handPoints.get(redLocation)}
-    <g class="prop-svg red-prop" transform={redTransform}>
+  {#if triadSvgContent && handPoints.get(rightLocation)}
+    <g class="prop-svg red-prop" transform={rightTransform}>
       {@html colorizedTriad(RED_COLOR)}
     </g>
   {/if}

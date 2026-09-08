@@ -178,7 +178,7 @@ export function defaultSettings(boundProp: string): PerformerSettings {
  */
 export function isHybrid(steps: readonly StepData[]): boolean {
   return steps.some(
-    (step) => step.motions.blue.motionType !== step.motions.red.motionType
+    (step) => step.motions.left.motionType !== step.motions.right.motionType
   );
 }
 

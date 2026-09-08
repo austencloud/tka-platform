@@ -18,8 +18,8 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
   let {
-    blueProp = null,
-    redProp = null,
+    leftProp = null,
+    rightProp = null,
     gridVisible = true,
     gridMode = null,
     letter = null,
@@ -32,8 +32,8 @@
     onVideoStepChange = () => {},
     onPlaybackToggle = () => {},
   }: {
-    blueProp?: PropState | null;
-    redProp?: PropState | null;
+    leftProp?: PropState | null;
+    rightProp?: PropState | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null | undefined;
     letter?: Letter | null;
@@ -63,8 +63,8 @@
   <!-- Live canvas (hidden when video mode is active) -->
   <div class="animation-canvas-wrapper" class:hidden={playbackMode === "video"}>
     <AnimatorCanvas
-      {blueProp}
-      {redProp}
+      {leftProp}
+      {rightProp}
       {gridVisible}
       {gridMode}
       {letter}

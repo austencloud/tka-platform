@@ -22,10 +22,10 @@ describe("performer initial reveal", () => {
     );
 
     expect(canvasSource).toContain("rendererReady &&\n      performersReady");
-    expect(curtainSource).toContain(
-      "sceneFeatures.allInitialRevealFeaturesSettled && additionalRevealReady"
+    expect(curtainSource).toMatch(
+      /sceneFeatures\.allInitialRevealFeaturesSettled\s*&&\s*additionalRevealReady\s*&&\s*warmupComplete/
     );
     expect(directorSource).toContain("waitForPerformersOnInitialReveal={true}");
-    expect(directorSource).toContain("enablePerformerLocomotion={false}");
+    expect(directorSource).toContain("enablePerformerLocomotion={true}");
   });
 });

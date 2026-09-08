@@ -42,8 +42,8 @@ import { DEFAULT_CANVAS_SIZE } from "../canvas-resizer.svelte";
 
 /** Default props sentinel used when lastPropsRef is null */
 const DEFAULT_ENGINE_PROPS: AnimationEngineProps = {
-  blueProp: null,
-  redProp: null,
+  leftProp: null,
+  rightProp: null,
 };
 
 export interface PlaybackSyncDeps {
@@ -148,6 +148,16 @@ export class PlaybackSync {
     // Keep simple reference for initial render (no copy, just reference)
     this._lastPropsRef = props;
 
+    // A canvas-scoped override must own the lazy backing layer as well as the
+    // frame's visibility bit. Calling the idempotent lifecycle seam here also
+    // handles an override that changes after initialization.
+    const effectiveMandalaVisible =
+      props.mandalaVisibleOverride ?? this.state.visibilityState.mandala;
+    if (effectiveMandalaVisible !== this._prevMandalaVisible) {
+      this._prevMandalaVisible = effectiveMandalaVisible;
+      lifecycleManager.syncMandalaOverlay(effectiveMandalaVisible);
+    }
+
     // Track only what we actually compare (avoid object spread GC pressure)
     this.prevStepData = props.stepData ?? null;
     this.prevSequenceData = props.sequenceData ?? null;
@@ -159,8 +169,8 @@ export class PlaybackSync {
 
     // Handle settings/trail capturer initialization
     const shouldInitTrailCapturer =
-      this.state.currentBluePropType !== "staff" ||
-      this.state.currentRedPropType !== "staff" ||
+      this.state.currentLeftPropType !== "staff" ||
+      this.state.currentRightPropType !== "staff" ||
       lifecycleManager.settingsService?.currentSettings ||
       props.externalTrailSettings !== undefined;
 
@@ -181,8 +191,8 @@ export class PlaybackSync {
       lifecycleManager.trailSettingsSync?.handleExternalSettingsSync(
         frameSystem.enforceUnilateralConstraint(
           props.externalTrailSettings,
-          this.state.currentBluePropType,
-          this.state.currentRedPropType
+          this.state.currentLeftPropType,
+          this.state.currentRightPropType
         )
       );
     }
@@ -355,8 +365,8 @@ export class PlaybackSync {
     // Update trail capturer with prop type and loopability changes
     if (lifecycleManager.trailCapturer && this.settingsLoaded) {
       lifecycleManager.trailCapturer.updateConfig({
-        bluePropType: this.state.currentBluePropType,
-        redPropType: this.state.currentRedPropType,
+        leftPropType: this.state.currentLeftPropType,
+        rightPropType: this.state.currentRightPropType,
         isSeamlesslyLoopable: props.isSeamlesslyLoopable,
       });
     }
@@ -396,11 +406,17 @@ export class PlaybackSync {
     const vm = getVM();
 
     // The mandala is a fundamental canvas layer, not an effect assignment.
-    // Create its backing canvas only while the persisted visibility toggle is
-    // on, then repaint immediately even when playback is paused.
-    if (state.mandala !== this._prevMandalaVisible) {
-      this._prevMandalaVisible = state.mandala;
-      lifecycleManager.syncMandalaOverlay(state.mandala);
+    // Its effective visibility can come from the persisted setting or a
+    // canvas-scoped override. Always run the idempotent lifecycle sync here:
+    // this subscription fires during initialization and creates an overlay
+    // even if an earlier pre-init update already recorded the override.
+    const effectiveMandalaVisible =
+      this._lastPropsRef?.mandalaVisibleOverride ?? state.mandala;
+    const mandalaVisibilityChanged =
+      effectiveMandalaVisible !== this._prevMandalaVisible;
+    this._prevMandalaVisible = effectiveMandalaVisible;
+    lifecycleManager.syncMandalaOverlay(effectiveMandalaVisible);
+    if (mandalaVisibilityChanged) {
       if (this.state.isInitialized) {
         lifecycleManager.renderLoop?.triggerRender(() =>
           frameSystem.buildFrameParams(
@@ -551,8 +567,8 @@ export class PlaybackSync {
     const propTextureLoader = lifecycleManager.propTextureLoader;
     if (propTextureLoader) {
       const pts = propTextureLoader.state;
-      this.state.setBluePropDimensions(pts.blueDimensions);
-      this.state.setRedPropDimensions(pts.redDimensions);
+      this.state.setLeftPropDimensions(pts.leftDimensions);
+      this.state.setRightPropDimensions(pts.rightDimensions);
     }
 
     // Sync from resize service (delegated to StateSynchronizer)
@@ -582,15 +598,15 @@ export class PlaybackSync {
 
     trailCapturer.initialize({
       canvasSize: getCanvasSize(),
-      bluePropDimensions: this.state.bluePropDimensions,
-      redPropDimensions: this.state.redPropDimensions,
+      leftPropDimensions: this.state.leftPropDimensions,
+      rightPropDimensions: this.state.rightPropDimensions,
       trailSettings: frameSystem.enforceUnilateralConstraint(
         effectiveTrailSettings,
-        this.state.currentBluePropType,
-        this.state.currentRedPropType
+        this.state.currentLeftPropType,
+        this.state.currentRightPropType
       ),
-      bluePropType: this.state.currentBluePropType,
-      redPropType: this.state.currentRedPropType,
+      leftPropType: this.state.currentLeftPropType,
+      rightPropType: this.state.currentRightPropType,
     });
 
     lifecycleManager.trailSettingsSync?.initialize(trailCapturer, () =>
@@ -619,8 +635,8 @@ export class PlaybackSync {
       a.maxPoints !== b.maxPoints ||
       a.lineWidth !== b.lineWidth ||
       a.glowBlur !== b.glowBlur ||
-      a.blueColor !== b.blueColor ||
-      a.redColor !== b.redColor ||
+      a.leftColor !== b.leftColor ||
+      a.rightColor !== b.rightColor ||
       a.minOpacity !== b.minOpacity ||
       a.maxOpacity !== b.maxOpacity ||
       a.trackingMode !== b.trackingMode ||

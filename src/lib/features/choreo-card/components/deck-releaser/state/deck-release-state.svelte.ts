@@ -8,6 +8,7 @@ import {
   extractReleasedSequenceIds,
   findDuplicateRelease,
   isGalleryRelease,
+  isHandPathRelease,
   isLoopRelease,
   isTnDRelease,
 } from "../deck-release-model";
@@ -23,8 +24,8 @@ export interface DeckReleaseStateDependencies {
     metadata: {
       name: string;
       description: string;
-      bluePropType: PropType;
-      redPropType: PropType;
+      leftPropType: PropType;
+      rightPropType: PropType;
     },
     recipe: DeckRecipe
   ): Promise<DeckRelease>;
@@ -40,6 +41,7 @@ export function createDeckReleaseState(
   let isLoading = $state(true);
 
   const tndReleases = $derived(releases.filter(isTnDRelease));
+  const handPathReleases = $derived(releases.filter(isHandPathRelease));
   const galleryReleases = $derived(releases.filter(isGalleryRelease));
   const loopReleases = $derived(releases.filter(isLoopRelease));
   const releasedSequenceIds = $derived(extractReleasedSequenceIds(releases));
@@ -73,8 +75,8 @@ export function createDeckReleaseState(
       if (deck.viewingRelease?.deckNumber === deckNumber) {
         deck.viewingRelease = null;
         deck.themeOverride = null;
-        deck.bluePropOverride = null;
-        deck.redPropOverride = null;
+        deck.leftPropOverride = null;
+        deck.rightPropOverride = null;
         deck.step = "configure";
         deck.persist();
       }
@@ -97,8 +99,8 @@ export function createDeckReleaseState(
         {
           name,
           description,
-          bluePropType: deck.bluePropType,
-          redPropType: deck.redPropType,
+          leftPropType: deck.leftPropType,
+          rightPropType: deck.rightPropType,
         },
         deck.toRecipe()
       );
@@ -148,13 +150,13 @@ export function createDeckReleaseState(
     deck.nextDeckNumber = release.deckNumber;
     deck.themeOverride = release.theme ?? null;
     if (isLoopRelease(release)) {
-      deck.bluePropOverride =
-        (release.bluePropType as PropType | undefined) ?? null;
-      deck.redPropOverride =
-        (release.redPropType as PropType | undefined) ?? null;
+      deck.leftPropOverride =
+        (release.leftPropType as PropType | undefined) ?? null;
+      deck.rightPropOverride =
+        (release.rightPropType as PropType | undefined) ?? null;
     } else {
-      deck.bluePropOverride = null;
-      deck.redPropOverride = null;
+      deck.leftPropOverride = null;
+      deck.rightPropOverride = null;
     }
     deck.step = "review";
     deck.persist();
@@ -172,6 +174,9 @@ export function createDeckReleaseState(
     },
     get galleryReleases() {
       return galleryReleases;
+    },
+    get handPathReleases() {
+      return handPathReleases;
     },
     get loopReleases() {
       return loopReleases;

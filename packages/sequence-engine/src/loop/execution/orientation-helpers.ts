@@ -21,52 +21,52 @@ export function updateStepOrientations(
   previousStep: SequenceStep
 ): SequenceStep {
   // Set start orientations from previous step's end orientations
-  const blueStartOri = previousStep.motions.blue.endOrientation || "in";
-  const redStartOri = previousStep.motions.red.endOrientation || "in";
+  const leftStartOri = previousStep.motions.left.endOrientation || "in";
+  const rightStartOri = previousStep.motions.right.endOrientation || "in";
 
   const withStart: SequenceStep = {
     ...step,
     motions: {
-      blue: {
-      ...step.motions.blue,
-      startOrientation: blueStartOri,
+      left: {
+      ...step.motions.left,
+      startOrientation: leftStartOri,
     },
-      red: {
-      ...step.motions.red,
-      startOrientation: redStartOri,
+      right: {
+      ...step.motions.right,
+      startOrientation: rightStartOri,
     },
     },
   };
 
   // Calculate end orientations
-  const blueEndOri = calculateEndOrientation({
-    motionType: withStart.motions.blue.motionType,
-    turns: withStart.motions.blue.turns,
-    rotationDirection: withStart.motions.blue.rotationDirection,
-    startLocation: withStart.motions.blue.startLocation,
-    endLocation: withStart.motions.blue.endLocation,
-    startOrientation: withStart.motions.blue.startOrientation,
+  const leftEndOri = calculateEndOrientation({
+    motionType: withStart.motions.left.motionType,
+    turns: withStart.motions.left.turns,
+    rotationDirection: withStart.motions.left.rotationDirection,
+    startLocation: withStart.motions.left.startLocation,
+    endLocation: withStart.motions.left.endLocation,
+    startOrientation: withStart.motions.left.startOrientation,
   });
 
-  const redEndOri = calculateEndOrientation({
-    motionType: withStart.motions.red.motionType,
-    turns: withStart.motions.red.turns,
-    rotationDirection: withStart.motions.red.rotationDirection,
-    startLocation: withStart.motions.red.startLocation,
-    endLocation: withStart.motions.red.endLocation,
-    startOrientation: withStart.motions.red.startOrientation,
+  const rightEndOri = calculateEndOrientation({
+    motionType: withStart.motions.right.motionType,
+    turns: withStart.motions.right.turns,
+    rotationDirection: withStart.motions.right.rotationDirection,
+    startLocation: withStart.motions.right.startLocation,
+    endLocation: withStart.motions.right.endLocation,
+    startOrientation: withStart.motions.right.startOrientation,
   });
 
   return {
     ...withStart,
     motions: {
-      blue: {
-      ...withStart.motions.blue,
-      endOrientation: blueEndOri,
+      left: {
+      ...withStart.motions.left,
+      endOrientation: leftEndOri,
     },
-      red: {
-      ...withStart.motions.red,
-      endOrientation: redEndOri,
+      right: {
+      ...withStart.motions.right,
+      endOrientation: rightEndOri,
     },
     },
   };

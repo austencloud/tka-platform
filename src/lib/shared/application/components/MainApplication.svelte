@@ -293,35 +293,35 @@
 
   // Global prop drawer (P key shortcut + PropIndicatorButton)
   const catDogMode = $derived(settings?.catDogMode ?? false);
-  const bluePropType = $derived(settings?.bluePropType ?? PropType.STAFF);
-  const redPropType = $derived(settings?.redPropType ?? PropType.STAFF);
-  let propDrawerActiveTab = $state<"blue" | "red">("blue");
+  const leftPropType = $derived(settings?.leftPropType ?? PropType.STAFF);
+  const rightPropType = $derived(settings?.rightPropType ?? PropType.STAFF);
+  let propDrawerActiveTab = $state<"left" | "right">("left");
 
-  // Reset to blue tab each time the drawer opens
+  // Reset to the left-hand tab each time the drawer opens.
   $effect(() => {
     if (propDrawerState.isOpen) {
-      propDrawerActiveTab = "blue";
+      propDrawerActiveTab = "left";
     }
   });
 
   // When cat/dog mode is on, show the selected prop for the active tab
   const propDrawerSelectedPropType = $derived(
-    catDogMode && propDrawerActiveTab === "red" ? redPropType : bluePropType
+    catDogMode && propDrawerActiveTab === "right" ? rightPropType : leftPropType
   );
 
   function handleGlobalPropSelect(propType: PropType) {
     if (catDogMode) {
-      if (propDrawerActiveTab === "blue") {
-        updateSetting("bluePropType", propType);
-        // Auto-switch to red tab so user can pick the other hand
-        propDrawerActiveTab = "red";
+      if (propDrawerActiveTab === "left") {
+        updateSetting("leftPropType", propType);
+        // Auto-switch to the right hand so the pair can be chosen in order.
+        propDrawerActiveTab = "right";
         return;
       } else {
-        updateSetting("redPropType", propType);
+        updateSetting("rightPropType", propType);
       }
     } else {
-      updateSetting("bluePropType", propType);
-      updateSetting("redPropType", propType);
+      updateSetting("leftPropType", propType);
+      updateSetting("rightPropType", propType);
     }
   }
 
@@ -329,8 +329,8 @@
     const newMode = !catDogMode;
     updateSetting("catDogMode", newMode);
     if (newMode) {
-      // Starting cat/dog mode: begin on blue tab
-      propDrawerActiveTab = "blue";
+      // Starting cat/dog mode: begin with the left hand.
+      propDrawerActiveTab = "left";
     }
   }
 
@@ -650,6 +650,9 @@
           open={authDrawerState.open}
           initialMode={authDrawerState.initialMode}
           reason={authDrawerState.reason}
+          attempt={authDrawerState.stepCapAttempts}
+          encore={authDrawerState.encorePrompt}
+          onAcceptEncore={() => authDrawerState.claimEncore()}
           onClose={() => authDrawerState.hide()}
         />
       {/await}
@@ -734,13 +737,16 @@
     {#if propDrawerState.isOpen}
       {#await import("../../settings/components/tabs/prop-type/PropSelectionSheet.svelte") then mod}
         <mod.default
+          primaryPropColors={settings.primaryPropColors}
+          darkMode={settings.darkMode}
+          onPrimaryPropColorsChange={(value) => updateSetting("primaryPropColors", value)}
           bind:isOpen={propDrawerState.isOpen}
           selectedPropType={propDrawerSelectedPropType}
-          color={catDogMode ? propDrawerActiveTab : "blue"}
+          color={catDogMode && propDrawerActiveTab === "right" ? "red" : "blue"}
           title={catDogMode
-            ? propDrawerActiveTab === "blue"
-              ? "Blue Prop"
-              : "Red Prop"
+            ? propDrawerActiveTab === "left"
+              ? "Left Prop"
+              : "Right Prop"
             : "Change Prop"}
           onSelect={handleGlobalPropSelect}
           showCatDogToggle={true}

@@ -547,8 +547,8 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
   const startPosition = steps[0];
   if (!startPosition) return steps;
 
-  let blueOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
-  let redOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+  let leftOrientation = (startPosition.leftMotion.endOrientation || "in") as Orientation;
+  let rightOrientation = (startPosition.rightMotion.endOrientation || "in") as Orientation;
 
   // Keep start position as-is
   result.push(startPosition);
@@ -558,44 +558,44 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
     const step = steps[i];
     if (!step) continue;
 
-    // Calculate blue end orientation
-    const blueEndOrientation = calculateEndOrientation({
-      motionType: step.blueMotion.motionType,
+    // Calculate left end orientation
+    const leftEndOrientation = calculateEndOrientation({
+      motionType: step.leftMotion.motionType,
       turns: 0, // CSV variations are all 0 turns
-      rotationDirection: step.blueMotion.rotationDirection || "cw",
-      startLocation: step.blueMotion.startLocation,
-      endLocation: step.blueMotion.endLocation,
-      startOrientation: blueOrientation,
+      rotationDirection: step.leftMotion.rotationDirection || "cw",
+      startLocation: step.leftMotion.startLocation,
+      endLocation: step.leftMotion.endLocation,
+      startOrientation: leftOrientation,
     });
 
-    // Calculate red end orientation
-    const redEndOrientation = calculateEndOrientation({
-      motionType: step.redMotion.motionType,
+    // Calculate right end orientation
+    const rightEndOrientation = calculateEndOrientation({
+      motionType: step.rightMotion.motionType,
       turns: 0,
-      rotationDirection: step.redMotion.rotationDirection || "cw",
-      startLocation: step.redMotion.startLocation,
-      endLocation: step.redMotion.endLocation,
-      startOrientation: redOrientation,
+      rotationDirection: step.rightMotion.rotationDirection || "cw",
+      startLocation: step.rightMotion.startLocation,
+      endLocation: step.rightMotion.endLocation,
+      startOrientation: rightOrientation,
     });
 
     // Create updated step with correct orientations
     result.push({
       ...step,
-      blueMotion: {
-        ...step.blueMotion,
-        startOrientation: blueOrientation,
-        endOrientation: blueEndOrientation,
+      leftMotion: {
+        ...step.leftMotion,
+        startOrientation: leftOrientation,
+        endOrientation: leftEndOrientation,
       },
-      redMotion: {
-        ...step.redMotion,
-        startOrientation: redOrientation,
-        endOrientation: redEndOrientation,
+      rightMotion: {
+        ...step.rightMotion,
+        startOrientation: rightOrientation,
+        endOrientation: rightEndOrientation,
       },
     });
 
     // Update for next iteration
-    blueOrientation = blueEndOrientation;
-    redOrientation = redEndOrientation;
+    leftOrientation = leftEndOrientation;
+    rightOrientation = rightEndOrientation;
   }
 
   return result;

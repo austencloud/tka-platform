@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from "vitest";
 // import light, same as prop-type-manager.layers.test.ts. Not exercised by
 // these tests (only additionalLayerColors calls it).
 vi.mock("../svg-generator", () => ({
-  getBaseMotionColors: () => ({ blue: "#1111ff", red: "#ff1111" }),
+  getBaseMotionColors: () => ({ left: "#1111ff", right: "#ff1111" }),
 }));
 
 import { PropTypeManager } from "../prop-type-manager";
@@ -31,25 +31,25 @@ import { PropTypeChanger } from "../prop-type-changer.svelte";
 // PropTypeManager calls. Real AnimatorState is a much larger interface; only
 // the members handleOverrides/handleSettingsChange/loadPropTextures touch are
 // needed here.
-function makeState(initialBlue: string, initialRed: string) {
-  let blue = initialBlue;
-  let red = initialRed;
+function makeState(initialLeft: string, initialRight: string) {
+  let left = initialLeft;
+  let right = initialRight;
   return {
-    get currentBluePropType() {
-      return blue;
+    get currentLeftPropType() {
+      return left;
     },
-    get currentRedPropType() {
-      return red;
+    get currentRightPropType() {
+      return right;
     },
-    setBluePropType: (v: string) => {
-      blue = v;
+    setLeftPropType: (v: string) => {
+      left = v;
     },
-    setRedPropType: (v: string) => {
-      red = v;
+    setRightPropType: (v: string) => {
+      right = v;
     },
     setLegacyPropType: () => {},
-    setBluePropDimensions: () => {},
-    setRedPropDimensions: () => {},
+    setLeftPropDimensions: () => {},
+    setRightPropDimensions: () => {},
     isInitialized: true,
   } as any;
 }
@@ -60,10 +60,10 @@ function makeManager(opts?: {
   renderLoopService?: object | null;
 }) {
   const renderer = {
-    prepareBluePropCrossfade: vi.fn(),
-    prepareRedPropCrossfade: vi.fn(),
-    startBluePropCrossfade: vi.fn(),
-    startRedPropCrossfade: vi.fn(),
+    prepareLeftPropCrossfade: vi.fn(),
+    prepareRightPropCrossfade: vi.fn(),
+    startLeftPropCrossfade: vi.fn(),
+    startRightPropCrossfade: vi.fn(),
   };
   const ptm = new PropTypeManager();
   ptm.wire({
@@ -95,17 +95,17 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     const state = makeState("staff", "staff");
 
     ptm.handleOverrides(
-      { bluePropType: "fan", redPropType: "fan" } as any,
+      { leftPropType: "fan", rightPropType: "fan" } as any,
       state,
       getFrameParams,
       false
     );
     await flushHotSwap();
 
-    expect(renderer.prepareBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.prepareRedPropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startRedPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareRightPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startRightPropCrossfade).not.toHaveBeenCalled();
   });
 
   it("fades only the color that actually changed on a later hot-swap", async () => {
@@ -113,35 +113,35 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     const state = makeState("staff", "staff");
 
     ptm.handleOverrides(
-      { bluePropType: "fan", redPropType: "fan" } as any,
+      { leftPropType: "fan", rightPropType: "fan" } as any,
       state,
       getFrameParams,
       false
     );
     await flushHotSwap();
-    renderer.prepareBluePropCrossfade.mockClear();
-    renderer.prepareRedPropCrossfade.mockClear();
-    renderer.startBluePropCrossfade.mockClear();
-    renderer.startRedPropCrossfade.mockClear();
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
 
-    // Blue changes fan -> club; red stays fan.
+    // Left changes fan -> club; right stays fan.
 
     ptm.handleOverrides(
-      { bluePropType: "club", redPropType: "fan" } as any,
+      { leftPropType: "club", rightPropType: "fan" } as any,
       state,
       getFrameParams,
       false
     );
     await flushHotSwap();
 
-    expect(renderer.prepareBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.prepareRedPropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startRedPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRightPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRightPropCrossfade).not.toHaveBeenCalled();
     expect(
-      renderer.prepareBluePropCrossfade.mock.invocationCallOrder[0]
+      renderer.prepareLeftPropCrossfade.mock.invocationCallOrder[0]
     ).toBeLessThan(
-      renderer.startBluePropCrossfade.mock.invocationCallOrder[0]!
+      renderer.startLeftPropCrossfade.mock.invocationCallOrder[0]!
     );
   });
 
@@ -150,29 +150,125 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     const state = makeState("staff", "staff");
 
     ptm.handleOverrides(
-      { bluePropType: "fan", redPropType: "fan" } as any,
+      { leftPropType: "fan", rightPropType: "fan" } as any,
       state,
       getFrameParams,
       false
     );
     await flushHotSwap();
-    renderer.prepareBluePropCrossfade.mockClear();
-    renderer.prepareRedPropCrossfade.mockClear();
-    renderer.startBluePropCrossfade.mockClear();
-    renderer.startRedPropCrossfade.mockClear();
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
 
     ptm.handleOverrides(
-      { bluePropType: "club", redPropType: "buugeng" } as any,
+      { leftPropType: "club", rightPropType: "buugeng" } as any,
       state,
       getFrameParams,
       false
     );
     await flushHotSwap();
 
-    expect(renderer.prepareBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.prepareRedPropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startBluePropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startRedPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRightPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRightPropCrossfade).toHaveBeenCalledTimes(1);
+  });
+
+  it("crossfades a fan build without changing the choreography prop type", async () => {
+    const propTextureService = {
+      state: {
+        leftDimensions: { width: 260, height: 207 },
+        rightDimensions: { width: 260, height: 207 },
+      },
+      loadPropTextures: vi.fn().mockResolvedValue(undefined),
+    };
+    const { ptm, renderer } = makeManager({ propTextureService });
+    const state = makeState("fan", "fan");
+
+    ptm.handleOverrides(
+      {
+        leftPropType: "fan",
+        rightPropType: "fan",
+        fanAppearance: {
+          build: "pictograph",
+          frameColor: "black",
+          cover: "bare",
+        },
+      } as any,
+      state,
+      getFrameParams,
+      false
+    );
+    await flushHotSwap();
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
+    propTextureService.loadPropTextures.mockClear();
+
+    const changed = ptm.handleOverrides(
+      {
+        leftPropType: "fan",
+        rightPropType: "fan",
+        fanAppearance: {
+          build: "fire",
+          frameColor: "black",
+          cover: "bare",
+        },
+      } as any,
+      state,
+      getFrameParams,
+      false
+    );
+    await flushHotSwap();
+
+    expect(changed).toBe(true);
+    expect(state.currentLeftPropType).toBe("fan");
+    expect(state.currentRightPropType).toBe("fan");
+    expect(propTextureService.loadPropTextures).toHaveBeenCalledWith(
+      "fan__fire_bare",
+      "fan__fire_bare",
+      false,
+      null
+    );
+    expect(renderer.prepareLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRightPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRightPropCrossfade).toHaveBeenCalledTimes(1);
+
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
+    propTextureService.loadPropTextures.mockClear();
+
+    ptm.handleOverrides(
+      {
+        leftPropType: "fan",
+        rightPropType: "fan",
+        fanAppearance: {
+          build: "fire",
+          frameColor: "black",
+          cover: "covered",
+        },
+      } as any,
+      state,
+      getFrameParams,
+      false
+    );
+    await flushHotSwap();
+
+    expect(propTextureService.loadPropTextures).toHaveBeenCalledWith(
+      "fan__fire_covered",
+      "fan__fire_covered",
+      false,
+      null
+    );
+    expect(renderer.prepareLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareRightPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startLeftPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startRightPropCrossfade).toHaveBeenCalledTimes(1);
   });
 
   it("does not fade when nothing actually changed (handleOverrides returns false)", async () => {
@@ -180,19 +276,19 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     const state = makeState("staff", "staff");
 
     ptm.handleOverrides(
-      { bluePropType: "fan", redPropType: "fan" } as any,
+      { leftPropType: "fan", rightPropType: "fan" } as any,
       state,
       getFrameParams,
       false
     );
     await flushHotSwap();
-    renderer.prepareBluePropCrossfade.mockClear();
-    renderer.prepareRedPropCrossfade.mockClear();
-    renderer.startBluePropCrossfade.mockClear();
-    renderer.startRedPropCrossfade.mockClear();
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
 
     const changed = ptm.handleOverrides(
-      { bluePropType: "fan", redPropType: "fan" } as any,
+      { leftPropType: "fan", rightPropType: "fan" } as any,
       state,
       getFrameParams,
       false
@@ -200,18 +296,18 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     await flushHotSwap();
 
     expect(changed).toBe(false);
-    expect(renderer.prepareBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.prepareRedPropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startRedPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareRightPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startRightPropCrossfade).not.toHaveBeenCalled();
   });
 
   it("finishes an async swap with the newest pose provider", async () => {
     let finishSwap!: () => void;
     const propTextureService = {
       state: {
-        blueDimensions: { width: 100, height: 200 },
-        redDimensions: { width: 100, height: 200 },
+        leftDimensions: { width: 100, height: 200 },
+        rightDimensions: { width: 100, height: 200 },
       },
       loadPropTextures: vi
         .fn()
@@ -231,7 +327,7 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     const state = makeState("staff", "staff");
 
     ptm.handleOverrides(
-      { bluePropType: "fan", redPropType: "fan" } as any,
+      { leftPropType: "fan", rightPropType: "fan" } as any,
       state,
       getFrameParams,
       false
@@ -242,7 +338,7 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     const resetPoseFrame = { pose: "reset" } as unknown as never;
     const incomingStartFrame = { pose: "incoming-start" } as unknown as never;
     ptm.handleOverrides(
-      { bluePropType: "club", redPropType: "club" } as any,
+      { leftPropType: "club", rightPropType: "club" } as any,
       state,
       () => resetPoseFrame,
       false
@@ -252,7 +348,7 @@ describe("PropTypeManager.handleOverrides crossfade trigger", () => {
     // A no-op prop update still carries the real start pose and must supersede
     // the reset-frame callback retained by the original hot-swap request.
     ptm.handleOverrides(
-      { bluePropType: "club", redPropType: "club" } as any,
+      { leftPropType: "club", rightPropType: "club" } as any,
       state,
       () => incomingStartFrame,
       false
@@ -273,8 +369,8 @@ describe("PropTypeManager.handleSettingsChange crossfade trigger", () => {
 
     (ptm as any).settingsService = {
       currentSettings: {
-        bluePropType: "club",
-        redPropType: "club",
+        leftPropType: "club",
+        rightPropType: "club",
         propType: "club",
       },
     };
@@ -289,10 +385,10 @@ describe("PropTypeManager.handleSettingsChange crossfade trigger", () => {
     ptm.handleSettingsChange(state, getFrameParams, false);
     await flushHotSwap();
 
-    expect(renderer.prepareBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.prepareRedPropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startRedPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareRightPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startRightPropCrossfade).not.toHaveBeenCalled();
   });
 
   it("fades only the color that genuinely changed via settings", async () => {
@@ -300,8 +396,8 @@ describe("PropTypeManager.handleSettingsChange crossfade trigger", () => {
     const { ptm, renderer } = makeManager({ propTypeChangeService });
     const settingsService: { currentSettings: Record<string, string> } = {
       currentSettings: {
-        bluePropType: "club",
-        redPropType: "club",
+        leftPropType: "club",
+        rightPropType: "club",
         propType: "club",
       },
     };
@@ -313,23 +409,23 @@ describe("PropTypeManager.handleSettingsChange crossfade trigger", () => {
     // Mount-time sync (see previous test) — not under test here.
     ptm.handleSettingsChange(state, getFrameParams, false);
     await flushHotSwap();
-    renderer.prepareBluePropCrossfade.mockClear();
-    renderer.prepareRedPropCrossfade.mockClear();
-    renderer.startBluePropCrossfade.mockClear();
-    renderer.startRedPropCrossfade.mockClear();
+    renderer.prepareLeftPropCrossfade.mockClear();
+    renderer.prepareRightPropCrossfade.mockClear();
+    renderer.startLeftPropCrossfade.mockClear();
+    renderer.startRightPropCrossfade.mockClear();
 
     // Genuine change: red only, club -> fan.
     settingsService.currentSettings = {
-      bluePropType: "club",
-      redPropType: "fan",
+      leftPropType: "club",
+      rightPropType: "fan",
       propType: "club",
     };
     ptm.handleSettingsChange(state, getFrameParams, false);
     await flushHotSwap();
 
-    expect(renderer.prepareBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.prepareRedPropCrossfade).toHaveBeenCalledTimes(1);
-    expect(renderer.startBluePropCrossfade).not.toHaveBeenCalled();
-    expect(renderer.startRedPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.prepareLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.prepareRightPropCrossfade).toHaveBeenCalledTimes(1);
+    expect(renderer.startLeftPropCrossfade).not.toHaveBeenCalled();
+    expect(renderer.startRightPropCrossfade).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,0 +1,20 @@
+{
+  "source": "blender/winter/blue-hour-lodge.blend",
+  "courtRadius": 7.7,
+  "courtHeight": 0.45,
+  "meshesBeforeInstancing": 92,
+  "trianglesBeforeInstancing": 621524,
+  "trees": 67,
+  "runtimePond": {
+    "x": 16,
+    "z": -10,
+    "y": 0.15
+  },
+  "chimney": [-14, 9.1, -21],
+  "hearth": [-13, 0.4, -4],
+  "bytes": 6500348,
+  "compression": "EXT_meshopt_compression; float positions preserved",
+  "textureFormat": "WebP, maximum 1024 square",
+  "sha256": "455142d133ca9b2528d0ab0b09a7e224bd8b081a59e4c36ad2d6c78aa84f5b84",
+  "meshes": 24
+}

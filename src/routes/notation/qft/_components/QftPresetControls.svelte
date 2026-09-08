@@ -7,13 +7,13 @@
     hand,
     tone,
   }: {
-    hand: "blue" | "red";
+    hand: "left" | "right";
     tone: "accent" | "blue" | "red";
   } = $props();
 
   const state = getQftAppContext();
   const activeId = $derived(
-    hand === "blue" ? state.bluePresetId : state.redPresetId
+    hand === "left" ? state.leftPresetId : state.rightPresetId
   );
   const chipColor = $derived(
     tone === "blue"

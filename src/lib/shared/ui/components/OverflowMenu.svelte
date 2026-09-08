@@ -1,8 +1,9 @@
 <!--
-  OverflowMenu - Three-dot dropdown for secondary actions
+  OverflowMenu - Dropdown for secondary actions
 
-  Displays a vertical three-dot icon button. On click, opens a positioned
-  dropdown with action items. Closes on outside click or Escape.
+  Displays either a compact three-dot trigger or a labelled toolbar trigger.
+  On click, opens a positioned dropdown with action items. Closes on outside
+  click or Escape.
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
@@ -31,6 +32,9 @@
     ariaLabel?: string;
     placement?: "top" | "bottom";
     align?: "left" | "right";
+    /** A labelled trigger keeps the menu behavior while reading as a normal
+     * toolbar action instead of an icon-only overflow affordance. */
+    triggerPresentation?: "icon" | "labelled";
     /**
      * Replaces the three-dot glyph inside the trigger button, which keeps the
      * expanded/haspopup wiring and the outside-click and Escape handling while
@@ -46,6 +50,7 @@
     ariaLabel = "More actions",
     placement = "top",
     align = "right",
+    triggerPresentation = "icon",
     trigger,
     triggerClass,
   }: Props = $props();
@@ -101,7 +106,8 @@
 >
   <button
     type="button"
-    class={triggerClass ?? "overflow-trigger"}
+    class="overflow-trigger {triggerClass ?? ''}"
+    class:labelled-trigger={triggerPresentation === "labelled"}
     {disabled}
     onclick={toggle}
     aria-label={ariaLabel}
@@ -170,8 +176,23 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
+    transition:
+      background-color var(--duration-fast, 150ms) var(--ease-out, ease),
+      border-color var(--duration-fast, 150ms) var(--ease-out, ease),
+      color var(--duration-fast, 150ms) var(--ease-out, ease);
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .overflow-trigger.labelled-trigger {
+    gap: 8px;
+    width: 100%;
+    height: auto;
+    min-height: var(--min-touch-target, 44px);
+    padding: 10px 16px;
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
   }
 
   .overflow-trigger:disabled {
@@ -195,7 +216,13 @@
     right: 0;
     min-width: 180px;
     padding: 4px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    /* The menu floats over dense cards and pictographs. Paint the theme wash
+       over a solid base so content behind it never competes with its labels. */
+    background-color: #12141c;
+    background-image: linear-gradient(
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)),
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);

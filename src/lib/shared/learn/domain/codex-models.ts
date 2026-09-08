@@ -10,8 +10,8 @@ import type { LetterCategory } from "$lib/shared/learn/domain/codex-types";
 export interface CodexLetterMapping {
   startPosition: string;
   endPosition: string;
-  blueMotionType: MotionType;
-  redMotionType: MotionType;
+  leftMotionType: MotionType;
+  rightMotionType: MotionType;
 }
 
 export interface CodexLetterRow {
@@ -34,7 +34,7 @@ export function createLetterMapping(
   return {
     startPosition: data.startPosition ?? "",
     endPosition: data.endPosition ?? "",
-    blueMotionType: data.blueMotionType ?? MotionType.STATIC,
-    redMotionType: data.redMotionType ?? MotionType.STATIC,
+    leftMotionType: data.leftMotionType ?? MotionType.STATIC,
+    rightMotionType: data.rightMotionType ?? MotionType.STATIC,
   };
 }

@@ -208,6 +208,9 @@ export interface AirChimneyLayout {
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
 
+  /** What the bay owns — its room plus the corridor it draws. The cave composer
+   *  routes terrain queries by THIS, never by `bayBounds`. */
+  bayFootprint: WorldRect[];
   /** Union bbox of the air bay. The terrain answers only inside it. */
   bayBounds: WorldRect;
 
@@ -252,7 +255,13 @@ function outerWorldRect(b: {
 export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null {
   const airWing = grid.wings.find((w) => w.id === AIR_ROOM_ID);
   const earthWing = grid.wings.find((w) => w.id === EARTH_ROOM_ID);
-  if (!airWing || !earthWing) return null;
+  // The neighbour is optional. It is read only to span the corridor between the
+  // two rooms, and the room picker can isolate this room on its own - a grid
+  // with no neighbour has no such corridor. Requiring it returned null, which
+  // left the wing component with a collapsed origin: the shell mounted at the
+  // world origin instead of around the visitor, and the isolated room rendered
+  // black with no error. Same fault, same fix, as the Root Terrace.
+  if (!airWing) return null;
 
   const shell = outerWorldRect(airWing.bounds);
   const air: WorldRect = {
@@ -350,27 +359,36 @@ export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null
   }
 
   // ── Corridor from Earth. Earth and Air both suppress their tile geometry, so
-  // the corridor between them is suppressed too and this module owns it.
-  const eb = earthWing.bounds;
+  // the corridor between them is suppressed too and this module owns it — from
+  // Earth's south wall row down to Air's own north wall. Earth's door tiles sit
+  // on that wall row and Earth's interior rects stop one row short of them, so
+  // the band has to start there or the doorway belongs to nobody. (Fire and
+  // Earth own their inbound corridors from the neighbour's wall column the
+  // same way.)
   const ab = airWing.bounds;
-  const corridorTxMin = Math.min(eb.x, ab.x) - 2;
-  const corridorTxMax = Math.max(eb.x + eb.width, ab.x + ab.width) + 2;
-  const corridor = bandRects(
-    grid,
-    corridorTxMin,
-    corridorTxMax,
-    eb.y + eb.height,
-    ab.y,
-    (t) => t === "corridor" || t === "door"
-  );
-  const corridorWalls = bandRects(
-    grid,
-    corridorTxMin,
-    corridorTxMax,
-    eb.y + eb.height,
-    ab.y - 1,
-    (t) => t === "wall"
-  );
+  const eb = earthWing?.bounds;
+  const corridorTxMin = eb ? Math.min(eb.x, ab.x) - 2 : 0;
+  const corridorTxMax = eb ? Math.max(eb.x + eb.width, ab.x + ab.width) + 2 : 0;
+  const corridor = eb
+    ? bandRects(
+        grid,
+        corridorTxMin,
+        corridorTxMax,
+        eb.y + eb.height - 1,
+        ab.y,
+        (t) => t === "corridor" || t === "door"
+      )
+    : [];
+  const corridorWalls = eb
+    ? bandRects(
+        grid,
+        corridorTxMin,
+        corridorTxMax,
+        eb.y + eb.height,
+        ab.y - 1,
+        (t) => t === "wall"
+      )
+    : [];
 
   // ── Floor rects. Ordered high → low, because elevationAt walks this list and
   // picks the first surface at or below the player's feet: the raised ledges
@@ -465,7 +483,8 @@ export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null
     })),
   ];
 
-  const bayBounds = unionRect([shell, ...corridor]);
+  const bayFootprint: WorldRect[] = [shell, ...corridor];
+  const bayBounds = unionRect(bayFootprint);
 
   return {
     air,
@@ -480,6 +499,7 @@ export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null
     floorRects,
     wallRects,
     ceilingRects,
+    bayFootprint,
     bayBounds,
     probes: {
       entry: { x: cx(shell), z: shell.minZ + 1.0 },

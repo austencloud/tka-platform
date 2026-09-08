@@ -21,14 +21,14 @@
   const { state: fuseState } = getFuseContext();
   const settings = getSettings();
   const source = $derived(
-    side === "blue" ? fuseState.blue : side === "red" ? fuseState.red : null
+    side === "left" ? fuseState.left : side === "right" ? fuseState.right : null
   );
   const sequence = $derived(source?.sequence ?? null);
-  const label = $derived(side === "red" ? "Red" : "Blue");
+  const label = $derived(side === "right" ? "Right" : "Left");
   const browseViewMode = $derived<BrowseViewMode>({
     subject: "props",
     granularity: "solo",
-    color: side ?? "blue",
+    hand: side ?? "left",
   });
   let isMobile = $state(responsiveLayoutManager.isMobilePortrait());
 
@@ -65,7 +65,7 @@
       {onClose}
     />
     <div class="first-step-content">
-      <p>Choose the beat that should become step 1.</p>
+      <p>Choose the step that should become step 1.</p>
       {#if sequence}
         <div class="first-step-card themed-scrollbar">
           <ChoreoCard
@@ -79,8 +79,8 @@
             showNotes={false}
             showLoopGlyph={false}
             darkMode={true}
-            bluePropType={settings.bluePropType}
-            redPropType={settings.redPropType}
+            leftPropType={settings.leftPropType}
+            rightPropType={settings.rightPropType}
             hideSoloHeader={true}
             fitWidth={true}
             onStepClick={(stepIndex) => void chooseFirstStep(stepIndex)}
@@ -100,6 +100,16 @@
     border-radius: 0;
   }
 
+  :global(.drawer-content.fuse-first-step-panel-container) {
+    --sheet-bg:
+      linear-gradient(
+        var(--theme-panel-bg, rgba(15, 17, 24, 0.96)),
+        var(--theme-panel-bg, rgba(15, 17, 24, 0.96))
+      ),
+      color-mix(in srgb, var(--theme-text, white) 8%, black);
+    --sheet-filter: none;
+  }
+
   .first-step-panel,
   .first-step-content {
     display: flex;
@@ -110,7 +120,7 @@
   .first-step-panel {
     width: 100%;
     height: 100%;
-    background: var(--theme-panel-bg);
+    background: transparent;
   }
 
   .first-step-content {

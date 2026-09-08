@@ -2,14 +2,14 @@
   import { getContactLabContext } from "../context/contact-lab-context";
 
   const labState = getContactLabContext();
-  const blueRegions = $derived(
+  const leftRegions = $derived(
     [
       ...new Set(
         labState.frame.balls.slice(0, 2).map((ball) => ball.contact.region)
       ),
     ].join(" + ")
   );
-  const redRegions = $derived(
+  const rightRegions = $derived(
     [
       ...new Set(
         labState.frame.balls.slice(2).map((ball) => ball.contact.region)
@@ -51,12 +51,12 @@
     <div class="contact-row blue">
       <span class="dot"></span>
       <span>Left pair</span>
-      <strong>{blueRegions}</strong>
+      <strong>{leftRegions}</strong>
     </div>
     <div class="contact-row red">
       <span class="dot"></span>
       <span>Right pair</span>
-      <strong>{redRegions}</strong>
+      <strong>{rightRegions}</strong>
     </div>
     <p class="gate">External review pending</p>
   </aside>

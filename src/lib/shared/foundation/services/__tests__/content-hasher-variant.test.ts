@@ -19,15 +19,15 @@ function seq() {
     steps: [
       {
         id: "s1",
-        stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        stepNumber: 1, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
         letter: null, startPosition: null, endPosition: null,
-        motions: { blue: m(), red: m() },
+        motions: { left: m(), right: m() },
       },
       {
         id: "s2",
-        stepNumber: 2, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
+        stepNumber: 2, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
         letter: null, startPosition: null, endPosition: null,
-        motions: { blue: m(), red: m() },
+        motions: { left: m(), right: m() },
       },
     ],
   });

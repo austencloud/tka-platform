@@ -606,10 +606,6 @@
       });
   }
 
-  function handleGuestShare(): void {
-    requireFullAccount();
-  }
-
   function openShareOptions(): void {
     if (!requireFullAccount()) return;
     announcedCardRequest = null;
@@ -639,7 +635,6 @@
 <WorkspaceShareControl
   bind:open={menuOpen}
   {useMobileSheet}
-  {hasFullAccount}
   disabled={controlDisabled}
   {tooltip}
   {cardPhase}
@@ -650,7 +645,6 @@
   {awaitingFreshGesture}
   {canShareCard}
   onTriggerClick={() => hapticService?.trigger("selection")}
-  onGuestShare={handleGuestShare}
   onShareCard={handleShareSelect}
   onSendSequence={handleSendSequence}
   onCopyLink={handleCopyLink}
@@ -667,7 +661,8 @@
   videoBlobUrl={null}
   isExportingVideo={false}
   exportProgress={null}
-  onRequestVideo={() => {}}
-  onSendInTka={sendSequenceToInbox}
+  availableArtifacts={["card"]}
+  canCreateLink={hasFullAccount}
+  onSendInTka={hasFullAccount ? sendSequenceToInbox : undefined}
   onClose={() => (postSheetOpen = false)}
 />

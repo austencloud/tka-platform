@@ -5,6 +5,7 @@
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import type {
     MandalaPathShape,
+    MandalaRenderOptions,
     UndulationEasing,
   } from "$lib/shared/mandala/domain/mandala-types";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
@@ -30,6 +31,7 @@
   import { openLineageSource, hasLineageSource } from "$lib/shared/collections/open-lineage-source";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { onMount } from "svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   type Phase = "gallery" | "detail" | "meditate-config" | "meditate-session";
   let phase = $state<Phase>("gallery");
@@ -38,9 +40,9 @@
     id: string;
     name: string;
     steps: StepLike[];
-    variant: "blue" | "red" | "both";
-    bluePropType: string;
-    redPropType: string;
+    variant: MandalaRenderOptions["show"];
+    leftPropType: string;
+    rightPropType: string;
     pathShape?: MandalaPathShape;
     createdAt: number;
     group: "curated" | "collection";
@@ -78,8 +80,8 @@
       name: m.name,
       steps: m.steps as StepLike[],
       variant: m.variant,
-      bluePropType: m.bluePropType,
-      redPropType: m.redPropType,
+      leftPropType: m.leftPropType,
+      rightPropType: m.rightPropType,
       pathShape: m.pathShape,
       createdAt: m.createdAt,
       group: "collection",
@@ -259,8 +261,8 @@
     try {
       const blob = await exportMandalaPNG(
         selectedMandala.steps,
-        selectedMandala.bluePropType,
-        selectedMandala.redPropType,
+        selectedMandala.leftPropType,
+        selectedMandala.rightPropType,
         {
           size: PNG_EXPORT_SIZE,
           background: "transparent",
@@ -298,8 +300,8 @@
       {
         name: selectedMandala.name,
         steps: selectedMandala.steps,
-        bluePropType: selectedMandala.bluePropType,
-        redPropType: selectedMandala.redPropType,
+        leftPropType: selectedMandala.leftPropType,
+        rightPropType: selectedMandala.rightPropType,
         variant: selectedMandala.variant,
         pathShape: selectedMandala.pathShape,
       },
@@ -338,8 +340,8 @@
       name: item.name,
       steps: item.steps,
       variant: item.variant,
-      bluePropType: item.bluePropType,
-      redPropType: item.redPropType,
+      leftPropType: item.leftPropType,
+      rightPropType: item.rightPropType,
       pathShape: item.pathShape,
       createdAt: item.createdAt,
       sourceWord: item.sourceWord,
@@ -395,8 +397,8 @@
           animatePeriod={BASE_PERIOD}
           animateEasing="sine"
           animateRotation={mandalaRotation}
-          bluePropType={selectedMandala.bluePropType}
-          redPropType={selectedMandala.redPropType}
+          leftPropType={selectedMandala.leftPropType}
+          rightPropType={selectedMandala.rightPropType}
           pathShape={selectedMandala.pathShape ?? "arc"}
         />
       </div>
@@ -426,8 +428,8 @@
         animateEasing={sessionEasing}
         animateRotation={mandalaRotation}
         tipDx={mandalaTipDx}
-        bluePropType={selectedMandala.bluePropType}
-        redPropType={selectedMandala.redPropType}
+        leftPropType={selectedMandala.leftPropType}
+        rightPropType={selectedMandala.rightPropType}
         pathShape={selectedMandala.pathShape ?? "arc"}
       />
       <MeditationOverlay
@@ -488,8 +490,8 @@
                   sequence={{ steps: item.steps }}
                   size={cardThumbSize}
                   show={item.variant}
-                  bluePropType={item.bluePropType}
-                  redPropType={item.redPropType}
+                  leftPropType={item.leftPropType}
+                  rightPropType={item.rightPropType}
                   pathShape={item.pathShape ?? "arc"}
                 />
               </div>
@@ -528,8 +530,8 @@
             animatePeriod={BASE_PERIOD}
             animateEasing="sine"
             animateRotation={mandalaRotation}
-            bluePropType={selectedMandala.bluePropType}
-            redPropType={selectedMandala.redPropType}
+            leftPropType={selectedMandala.leftPropType}
+            rightPropType={selectedMandala.rightPropType}
             pathShape={selectedMandala.pathShape ?? "arc"}
           />
         </div>
@@ -635,6 +637,16 @@
     {/if}
   {/snippet}
 </div>
+
+<!-- `cancelVideoExport` already existed but had no user-facing control: it only
+     ran on unmount/navigation. The takeover exposes it. -->
+<ExportTakeover
+  phase={videoExporting ? videoPhase : "idle"}
+  progress={videoProgress}
+  phaseLabel={videoPhase === "encoding" ? "Encoding..." : "Capturing..."}
+  onCancel={cancelVideoExport}
+  label="Exporting mandala video"
+/>
 
 <style>
   .mandala-module {

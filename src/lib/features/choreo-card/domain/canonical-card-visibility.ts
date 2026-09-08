@@ -43,8 +43,8 @@ export interface CanonicalCardVisibility {
     | "showQRCode"
     | "printMode"
     | "darkMode"
-    | "bluePropType"
-    | "redPropType"
+    | "leftPropType"
+    | "rightPropType"
   >;
 }
 
@@ -54,8 +54,8 @@ export interface CanonicalCardVisibility {
  */
 export function buildCanonicalCardVisibility(args: {
   tndElement?: TnDElement | null;
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
 }): CanonicalCardVisibility {
   return {
     addWord: CANONICAL_DECK_CARD_PROFILE.addWord,
@@ -71,8 +71,8 @@ export function buildCanonicalCardVisibility(args: {
       showQRCode: CANONICAL_DECK_CARD_PROFILE.showQRCode,
       printMode: CANONICAL_DECK_CARD_PROFILE.printMode,
       darkMode: CANONICAL_DECK_CARD_PROFILE.darkMode,
-      ...(args.bluePropType && { bluePropType: args.bluePropType }),
-      ...(args.redPropType && { redPropType: args.redPropType }),
+      ...(args.leftPropType && { leftPropType: args.leftPropType }),
+      ...(args.rightPropType && { rightPropType: args.rightPropType }),
     },
   };
 }

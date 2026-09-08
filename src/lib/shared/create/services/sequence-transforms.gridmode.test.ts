@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { deriveSequenceLetters } from "./sequence-transforms";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
   GridMode,
@@ -15,13 +15,13 @@ describe("deriveSequenceLetters derives gridMode per-step", () => {
     const boxStep = createStepData({
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          color: MotionColor.BLUE,
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
           startLocation: GridLocation.NORTHWEST,
           endLocation: GridLocation.NORTHEAST,
         }),
-        [MotionColor.RED]: createMotionData({
-          color: MotionColor.RED,
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
           startLocation: GridLocation.SOUTHWEST,
           endLocation: GridLocation.SOUTHEAST,
         }),

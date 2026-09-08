@@ -27,7 +27,15 @@ with open(GROUND_LAYOUT_PATH, "rb") as ground_layout_file:
     GROUND_LAYOUT_BYTES = ground_layout_file.read()
 GROUND_LAYOUT = json.loads(GROUND_LAYOUT_BYTES)
 GROUND_LAYOUT_SHA256 = hashlib.sha256(GROUND_LAYOUT_BYTES).hexdigest()
+
+MUSHROOM_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "autumn-mushroom-layout.json")
+with open(MUSHROOM_LAYOUT_PATH, "r", encoding="utf-8") as mushroom_layout_file:
+    MUSHROOM_LAYOUT = json.load(mushroom_layout_file)
 MODEL_DIR = os.path.join(PROJECT_ROOT, "static", "models", "autumn")
+# Raw Meshy authoring inputs are intentionally ignored by Git. A task worktree
+# can read the canonical inputs from the primary checkout without copying or
+# editing them, while every generated output still lands in this worktree.
+SOURCE_MODEL_DIR = os.environ.get("AUTUMN_SOURCE_MODEL_DIR", MODEL_DIR)
 AUTUMN_FLOOR_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "autumn-floor")
 FOREST_FLOOR_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "forest-floor")
 DIRT_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "terrain", "dirt")
@@ -102,19 +110,19 @@ HERO_TREE_SHAPE_VARIANTS = {
     "HeroTreeB_04": ((0.95, 1.06), (-0.028, -0.035)),
 }
 
-# Tree assets have broad, uneven root plates. Their object origins cannot tell
-# us whether the underside of those roots actually meets a rolling terrain
-# surface, especially after per-instance scale, rotation, mirroring, and lean.
-# Every tree is therefore seated from the transformed mesh itself. The lowest
-# surface in each XY root cell must finish beneath the exact terrain height at
-# that point, with enough overlap to survive mesh simplification and uneven
-# ground interpolation in the runtime GLB.
-TREE_ROOT_CONTACT_MARGIN = 0.14
+# Tree assets have broad, expressive root plates. The old rule buried the
+# entire transformed underside, including distant root tips crossing rolling
+# terrain. That prevented floating by sinking hero trunks as much as 1.4m and
+# hid some of the best sculptural geometry in the scene. Ground the load-bearing
+# central plate instead: a majority of its sampled underside must meet terrain,
+# but radiating roots may emerge naturally above it.
+TREE_ROOT_CONTACT_MARGIN = 0.06
 TREE_ROOT_CELL_SIZE = 0.42
-# Four samples cover the cardinal sides of the deliberately low-poly far-tree
-# trunks; scanned hero trees naturally contribute hundreds of envelope cells.
 TREE_ROOT_MIN_CONTACT_SAMPLES = 4
-TREE_ROOT_CONTACT_STRATEGY = "transformed-root-envelope-v1"
+TREE_ROOT_MIN_CONTACT_FRACTION = 0.50
+TREE_ROOT_CONTACT_PERCENTILE = 0.50
+TREE_ROOT_MAX_AUTOMATIC_SINK = 0.76
+TREE_ROOT_CONTACT_STRATEGY = "bounded-central-root-plate-v2"
 TREE_GROUNDING_RESULTS = {}
 
 # A second, lower canopy tier closes the empty horizon without turning the
@@ -183,10 +191,9 @@ MID_DEPTH_TREE_PLACEMENTS = (
     ("MidDepthSnag_SE_01", "Snag", 18.0, -38.0, 7.2, -2.56, 0.96, False, 1.08),
 )
 
-# The far tier is deliberately low-poly. At 50-105m, textured hero geometry
-# would spend millions of rasterized vertices on silhouettes softened by fog.
-# Four procedural families preserve Autumn's broadleaf/larch/snag rhythm for a
-# few hundred triangles per family, then reuse those meshes through instancing.
+# The far tier uses four aggressively reduced descendants of approved Autumn
+# tree families. At 50-105m, the shared 1.2k-2.7k triangle meshes retain real
+# bark/canopy atlases and species silhouettes without spending hero geometry.
 FAR_DEPTH_TREE_PLACEMENTS = (
     ("FarDepthRed_NW_01", "FarRed", -50.0, 48.0, 7.2, -0.30, 0.94, False),
     ("FarDepthGold_NW_01", "FarGold", -42.0, 59.0, 6.4, 0.72, 1.02, True),
@@ -222,6 +229,29 @@ FAR_DEPTH_TREE_PLACEMENTS = (
     ("FarDepthGold_S_02", "FarGold", 53.0, -49.0, 6.6, -1.74, 0.95, False),
     ("FarDepthLarch_SW_01", "FarLarch", -67.0, -70.0, 8.0, 2.46, 0.98, False),
     ("FarDepthRed_SE_01", "FarRed", 68.0, -72.0, 7.5, -2.62, 0.97, True),
+    # The first complete orbit exposed an empty reverse/side backlot between
+    # the hero grove and the outer silhouette belt. These inexpensive inner
+    # silhouettes close that gap without spending imported-tree geometry.
+    ("FarDepthGold_SW_Inner", "FarGold", -42.0, -34.0, 6.5, -0.62, 0.94, False),
+    ("FarDepthRed_SW_Inner", "FarRed", -30.0, -46.0, 7.0, 1.18, 0.96, True),
+    ("FarDepthLarch_S_Inner", "FarLarch", -10.0, -48.0, 7.6, -1.86, 0.98, False),
+    ("FarDepthGold_S_Inner", "FarGold", 10.0, -50.0, 6.7, 2.38, 0.93, True),
+    ("FarDepthRed_SE_Inner", "FarRed", 30.0, -45.0, 7.1, -0.94, 0.95, False),
+    ("FarDepthLarch_SE_Inner", "FarLarch", 43.0, -34.0, 7.8, 1.72, 0.97, True),
+    ("FarDepthSnag_W_Inner", "FarSnag", -49.0, -8.0, 7.0, -2.24, 0.96, False),
+    ("FarDepthGold_W_Inner", "FarGold", -51.0, 18.0, 6.6, 0.82, 0.94, True),
+    ("FarDepthRed_E_Inner", "FarRed", 50.0, -8.0, 6.9, -1.42, 0.95, True),
+    ("FarDepthLarch_E_Inner", "FarLarch", 52.0, 18.0, 7.7, 2.16, 0.98, False),
+    ("FarDepthSnag_S_Inner", "FarSnag", 0.0, -56.0, 7.2, 0.34, 0.97, True),
+    ("FarDepthGold_S_Closer", "FarGold", -13.0, -35.0, 7.1, -1.08, 0.97, True),
+    ("FarDepthRed_S_Closer", "FarRed", 0.0, -38.0, 7.4, 0.46, 0.98, False),
+    ("FarDepthLarch_S_Closer", "FarLarch", 14.0, -34.0, 7.8, 1.94, 0.97, True),
+    ("FarDepthRed_S_Grove_01", "FarRed", -25.0, -43.0, 7.5, 0.82, 0.96, False),
+    ("FarDepthLarch_S_Grove_01", "FarLarch", -19.0, -37.0, 8.4, -1.64, 0.98, True),
+    ("FarDepthGold_S_Grove_01", "FarGold", -7.0, -44.0, 7.0, 2.28, 0.95, False),
+    ("FarDepthGold_S_Grove_02", "FarGold", 7.0, -42.0, 7.2, -0.72, 0.96, True),
+    ("FarDepthLarch_S_Grove_02", "FarLarch", 19.0, -38.0, 8.2, 1.42, 0.97, False),
+    ("FarDepthRed_S_Grove_02", "FarRed", 26.0, -44.0, 7.4, -2.08, 0.96, True),
 )
 
 # The settlement now has a route with an actual destination. The broad lane
@@ -298,17 +328,34 @@ FERN_CLUSTERS = (
 # arc of small buff champignons in the open grass. Purple amethyst deceivers
 # appear as loose individuals in leaf litter near mature roots, while denser
 # honey-fungus colonies are reserved for fallen wood.
-FAIRY_CHAMPIGNON_ARC = ("FairyChampignonArc", 4.0, 12.0, 2.15, 24, 0.34)
+_FAIRY_CHAMPIGNON_ARC = MUSHROOM_LAYOUT["fairyChampignonArc"]
+FAIRY_CHAMPIGNON_ARC = (
+    _FAIRY_CHAMPIGNON_ARC["name"],
+    *_FAIRY_CHAMPIGNON_ARC["center"],
+    _FAIRY_CHAMPIGNON_ARC["radius"],
+    _FAIRY_CHAMPIGNON_ARC["count"],
+    _FAIRY_CHAMPIGNON_ARC["phase"],
+)
+FAIRY_CHAMPIGNON_GAPS = set(_FAIRY_CHAMPIGNON_ARC["gaps"])
 
-AMETHYST_DECEIVER_DRIFTS = (
-    ("AmethystWestRoot", -9.55, 5.45, 5, 0.62, 0.42),
-    ("AmethystEastRoot", 13.25, -5.75, 5, 0.58, 0.38),
-    ("AmethystFrontRoot", -15.35, -10.05, 5, 0.60, 0.40),
+AMETHYST_DECEIVER_DRIFTS = tuple(
+    (
+        drift["name"],
+        *drift["center"],
+        drift["count"],
+        *drift["spread"],
+    )
+    for drift in MUSHROOM_LAYOUT["amethystDeceiverDrifts"]
 )
 
-HONEY_FUNGUS_COLONIES = (
-    ("HoneyFungusLogOne", 10.35, 6.75, 8, 0.48, 0.34),
-    ("HoneyFungusLogTwo", -12.20, 12.85, 7, 0.44, 0.30),
+HONEY_FUNGUS_COLONIES = tuple(
+    (
+        colony["name"],
+        *colony["center"],
+        colony["count"],
+        *colony["spread"],
+    )
+    for colony in MUSHROOM_LAYOUT["honeyFungusColonies"]
 )
 
 GRASS_COLONIES = (
@@ -535,6 +582,17 @@ EARTH = forest_floor_material(
     diffuse_uv_name="Autumn Ground Macro UV",
     detail_uv_name="Autumn Ground Detail UV",
 )
+FOG_APRON_EARTH = forest_floor_material(
+    "Autumn Fog Apron",
+    (1.0, 1.0, 1.0),
+    0.0,
+    1.0,
+    AUTUMN_FLOOR_TEXTURE_DIR,
+    "autumn-ground-zoned.jpg",
+    "no-normal-map",
+    "no-roughness-map",
+    diffuse_uv_name="Autumn Ground Macro UV",
+)
 DAMP_EARTH = forest_floor_material(
     "Damp Pond Bank",
     (1.0, 1.0, 1.0),
@@ -575,15 +633,12 @@ HABITATION_LANTERN = principled_material(
     emission=(1.0, 0.20, 0.025),
     emission_strength=1.35,
 )
-FAR_TRUNK = principled_material("Far Autumn Trunk", (0.075, 0.043, 0.052), roughness=0.98)
-FAR_CANOPY_RED = principled_material(
-    "Far Autumn Canopy Red", (0.20, 0.048, 0.035), roughness=0.96
-)
-FAR_CANOPY_GOLD = principled_material(
-    "Far Autumn Canopy Gold", (0.28, 0.13, 0.035), roughness=0.95
-)
-FAR_CANOPY_SHADOW = principled_material(
-    "Far Autumn Canopy Shadow", (0.085, 0.035, 0.065), roughness=0.98
+HABITATION_CABIN_GLOW = principled_material(
+    "Low Amber Cabin Window",
+    (0.32, 0.11, 0.018),
+    roughness=0.46,
+    emission=(1.0, 0.16, 0.018),
+    emission_strength=1.8,
 )
 GRASS_BASE = principled_material("Autumn Wind Grass Base", (0.095, 0.125, 0.035), roughness=0.95)
 GRASS_MEDIUM = principled_material("Autumn Wind Grass Medium", (0.075, 0.105, 0.028), roughness=0.96)
@@ -595,17 +650,25 @@ MUSHROOM_STEM_LILAC = principled_material(
     "Autumn Mushroom Lilac Stem", (0.24, 0.11, 0.24), roughness=0.88
 )
 MUSHROOM_CHAMPIGNON_CAP = principled_material(
-    "Autumn Fairy Champignon Cap", (0.38, 0.25, 0.13), roughness=0.90
+    "Autumn Fairy Champignon Cap",
+    (0.38, 0.25, 0.13),
+    roughness=0.90,
+    emission=(0.20, 0.08, 0.018),
+    emission_strength=0.12,
 )
 MUSHROOM_AMETHYST_CAP = principled_material(
     "Autumn Amethyst Deceiver Cap",
     (0.24, 0.055, 0.28),
     roughness=0.82,
     emission=(0.15, 0.025, 0.18),
-    emission_strength=0.035,
+    emission_strength=0.18,
 )
 MUSHROOM_HONEY_CAP = principled_material(
-    "Autumn Honey Fungus Cap", (0.47, 0.21, 0.055), roughness=0.87
+    "Autumn Honey Fungus Cap",
+    (0.47, 0.21, 0.055),
+    roughness=0.87,
+    emission=(0.28, 0.075, 0.012),
+    emission_strength=0.15,
 )
 for grass_material in (GRASS_BASE, GRASS_MEDIUM, GRASS_HIGH):
     grass_material.diffuse_color = (*grass_material.diffuse_color[:3], 1.0)
@@ -616,10 +679,10 @@ for grass_material in (GRASS_BASE, GRASS_MEDIUM, GRASS_HIGH):
 # visible is what makes water look like water.
 POND_GLOW = principled_material(
     "Pond Underlight",
-    (0.055, 0.072, 0.068),
+    (0.070, 0.095, 0.090),
     roughness=0.78,
-    emission=(0.006, 0.026, 0.030),
-    emission_strength=0.06,
+    emission=(0.008, 0.040, 0.044),
+    emission_strength=0.12,
 )
 QA_WATER = preview_water_material()
 
@@ -663,7 +726,26 @@ def terrain_height(x, y):
 
 TERRAIN_HALF_SIZE = 31.0
 TERRAIN_SEGMENTS = 96
-APRON_OUTER_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
+GROUND_ATLAS_HALF_SIZE = float(GROUND_LAYOUT["worldExtent"])
+# The authored ecology and its macro atlas end at 165m. The visible ground must
+# continue much farther: high review cameras can look through the tree belt and
+# intersect the floor hundreds of metres away. At 1,024m the shipped fog has
+# effectively zero remaining transmittance, so the geometric edge cannot read.
+APRON_OUTER_HALF_SIZE = 1_024.0
+APRON_FLAT_HALF_SIZE = 256.0
+FAR_GROUND_HEIGHT = -8.5
+APRON_HORIZON_RING_HALF_SIZES = (
+    APRON_FLAT_HALF_SIZE,
+    304.0,
+    360.0,
+    424.0,
+    496.0,
+    576.0,
+    672.0,
+    784.0,
+    912.0,
+    APRON_OUTER_HALF_SIZE,
+)
 
 
 def chaikin_path(points, iterations=2):
@@ -752,11 +834,67 @@ def world_surface_height(x, y):
     blend = min(
         1.0,
         (half_size - TERRAIN_HALF_SIZE)
-        / (APRON_OUTER_HALF_SIZE - TERRAIN_HALF_SIZE),
+        / (GROUND_ATLAS_HALF_SIZE - TERRAIN_HALF_SIZE),
     )
-    far = -1.0 - 7.5 * blend**1.15
-    far += (1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)) * blend
-    return terrain_height(x, y) * (1.0 - blend) + far * blend
+    rolling_far = -1.0 - 7.5 * blend**1.15
+    rolling_far += (
+        1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)
+    ) * blend
+    authored_surface = terrain_height(x, y) * (1.0 - blend) + rolling_far * blend
+    if half_size <= GROUND_ATLAS_HALF_SIZE:
+        return authored_surface
+
+    # Past the baked ecology atlas, ease the ground onto one fog-hidden plane.
+    # Carrying the near-field normal response over sparse 100m+ quads created
+    # bright diagonal stitching even though the mesh itself was continuous.
+    flatten = min(
+        1.0,
+        (half_size - GROUND_ATLAS_HALF_SIZE)
+        / (APRON_FLAT_HALF_SIZE - GROUND_ATLAS_HALF_SIZE),
+    )
+    flatten = flatten * flatten * (3.0 - 2.0 * flatten)
+    return authored_surface * (1.0 - flatten) + FAR_GROUND_HEIGHT * flatten
+
+
+def fog_horizon_height(x, y):
+    """Turn the fog apron into a distant landscape instead of a flat slab.
+
+    The inner edge exactly matches ``world_surface_height`` at 256m. Beyond it,
+    broad deterministic ridges rise through the fog, then the outer two rings
+    descend below every supported sightline. The changing silhouette prevents
+    high and reverse cameras from exposing a ruler-straight ground/sky boundary
+    while the dense fog keeps this cheap mesh from reading as a new mountain
+    range behind the authored forest.
+    """
+    half_size = max(abs(x), abs(y))
+    if half_size <= APRON_FLAT_HALF_SIZE:
+        return world_surface_height(x, y)
+
+    amount = min(
+        1.0,
+        (half_size - APRON_FLAT_HALF_SIZE)
+        / (APRON_OUTER_HALF_SIZE - APRON_FLAT_HALF_SIZE),
+    )
+    angle = math.atan2(y, x)
+    ridge_envelope = smoothstep(0.0, 0.18, amount) * (
+        1.0 - smoothstep(0.62, 0.88, amount)
+    )
+    ridge_profile = (
+        34.0
+        + 15.0 * math.sin(angle * 3.0 + 0.45)
+        + 10.0 * math.cos(angle * 5.0 - 1.1)
+        + 7.0 * math.sin(angle * 7.0 + 0.6)
+        + 5.0 * math.sin(x * 0.010 + y * 0.014)
+        + 3.0 * math.cos(x * 0.017 - y * 0.008)
+    )
+    base_descent = 2.0 * smoothstep(0.45, 1.0, amount)
+    outer_drop = 36.0 * smoothstep(0.78, 1.0, amount)
+    return (
+        FAR_GROUND_HEIGHT
+        - base_descent
+        + ridge_profile * ridge_envelope
+        - outer_drop
+    )
 
 
 def autumn_ground_uv(x, y):
@@ -769,10 +907,10 @@ def autumn_ground_uv(x, y):
 
 def autumn_ground_macro_uv(x, y):
     """Map every ground mesh into the same baked world-space ecology."""
-    world_extent = float(GROUND_LAYOUT["worldExtent"])
+    world_extent = GROUND_ATLAS_HALF_SIZE
     return (
-        (x + world_extent) / (world_extent * 2.0),
-        (y + world_extent) / (world_extent * 2.0),
+        min(1.0, max(0.0, (x + world_extent) / (world_extent * 2.0))),
+        min(1.0, max(0.0, (y + world_extent) / (world_extent * 2.0))),
     )
 
 
@@ -818,6 +956,7 @@ def create_terrain():
     terrain["tka_pond_center"] = (POND_X, POND_Y)
     terrain["tka_pond_radii"] = (POND_RX, POND_RY)
     terrain["tka_ground_treatment"] = "baked-living-floor"
+    terrain["tka_camera_collision"] = True
     terrain["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
     terrain["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
     terrain["tka_ground_macro_diffuse"] = "autumn-ground-zoned.jpg"
@@ -851,12 +990,14 @@ def create_terrain_apron():
     out and the performance camera sits ~34m back, so the edge is at roughly the
     same depth as the trees framing it - any fog thick enough to hide the rim
     also erases the scene. The fix is geometric: keep going. This apron carries
-    the ground out to 165m, which at the scene's fog density is around 99%
-    extinction, so it fades into the sky rather than ending.
+    the ground out to 1,024m. The first 165m retain the authored macro atlas;
+    beyond that the texture edge is extended under accumulating fog. At the
+    scene's density, the outer edge has effectively zero transmittance.
 
-    It is deliberately cheap: 5 quad rings on the same perimeter
-    parametrisation as the terrain boundary, ~3.8k triangles total, one
-    material, no textures of its own.
+    It is deliberately cheap: detailed transition rings stop at 256m, then ten
+    broad rings form a rolling horizon before descending below the fog-opaque
+    edge. This costs fewer than 7,000 triangles while avoiding the geometric
+    horizon line created by one viewport-sized quad.
     """
     ring_half_sizes = (
         TERRAIN_HALF_SIZE,
@@ -864,7 +1005,8 @@ def create_terrain_apron():
         52.0,
         76.0,
         112.0,
-        APRON_OUTER_HALF_SIZE,
+        GROUND_ATLAS_HALF_SIZE,
+        256.0,
     )
     segments = TERRAIN_SEGMENTS
 
@@ -880,26 +1022,74 @@ def create_terrain_apron():
         nxt = (ring_index + 1) * perimeter
         for i in range(perimeter):
             j = (i + 1) % perimeter
-            faces.append((base + i, base + j, nxt + j, nxt + i))
+            # The perimeter walks counter-clockwise. Stitch inner-to-outer in
+            # the same orientation so the apron faces upward after the
+            # optimized asset makes the shared ground material front-sided.
+            faces.append((base + i, nxt + i, nxt + j, base + j))
 
-    mesh = bpy.data.meshes.new("Autumn Terrain Apron Mesh")
+    mesh = bpy.data.meshes.new("Autumn Terrain Transition Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
     mesh.materials.append(EARTH)
+    mesh.materials.append(FOG_APRON_EARTH)
     detail_uv = mesh.uv_layers.new(name="Autumn Ground Detail UV")
     macro_uv = mesh.uv_layers.new(name="Autumn Ground Macro UV")
     for polygon in mesh.polygons:
+        ring_index = polygon.index // perimeter
+        if ring_half_sizes[ring_index] >= GROUND_ATLAS_HALF_SIZE:
+            polygon.material_index = 1
         polygon.use_smooth = True
         for loop_index in polygon.loop_indices:
             vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
             detail_uv.data[loop_index].uv = autumn_ground_uv(vertex.co.x, vertex.co.y)
             macro_uv.data[loop_index].uv = autumn_ground_macro_uv(vertex.co.x, vertex.co.y)
-    apron = bpy.data.objects.new("Autumn_Terrain_Apron", mesh)
+    transition = bpy.data.objects.new("Autumn_Terrain_Apron_Transition", mesh)
+    bpy.context.scene.collection.objects.link(transition)
+    transition["tka_ground_treatment"] = "baked-living-floor-transition"
+    transition["tka_camera_collision"] = True
+    transition["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
+    transition["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
+
+    horizon_vertices = []
+    for half_size in APRON_HORIZON_RING_HALF_SIZES:
+        for x, y in square_perimeter_points(half_size, segments):
+            horizon_vertices.append((x, y, fog_horizon_height(x, y)))
+
+    horizon_faces = []
+    for ring_index in range(len(APRON_HORIZON_RING_HALF_SIZES) - 1):
+        base = ring_index * perimeter
+        nxt = (ring_index + 1) * perimeter
+        for i in range(perimeter):
+            j = (i + 1) % perimeter
+            horizon_faces.append((base + i, nxt + i, nxt + j, base + j))
+
+    horizon_mesh = bpy.data.meshes.new("Autumn Fog Horizon Mesh")
+    horizon_mesh.from_pydata(horizon_vertices, [], horizon_faces)
+    horizon_mesh.update()
+    horizon_mesh.materials.append(FOG_APRON_EARTH)
+    horizon_detail_uv = horizon_mesh.uv_layers.new(name="Autumn Ground Detail UV")
+    horizon_macro_uv = horizon_mesh.uv_layers.new(name="Autumn Ground Macro UV")
+    for polygon in horizon_mesh.polygons:
+        polygon.use_smooth = True
+        for loop_index in polygon.loop_indices:
+            vertex = horizon_mesh.vertices[
+                horizon_mesh.loops[loop_index].vertex_index
+            ]
+            horizon_detail_uv.data[loop_index].uv = autumn_ground_uv(
+                vertex.co.x, vertex.co.y
+            )
+            horizon_macro_uv.data[loop_index].uv = autumn_ground_macro_uv(
+                vertex.co.x, vertex.co.y
+            )
+
+    apron = bpy.data.objects.new("Autumn_Terrain_Apron", horizon_mesh)
     bpy.context.scene.collection.objects.link(apron)
-    apron["tka_ground_treatment"] = "baked-living-floor"
+    apron["tka_ground_treatment"] = "fog-dissolved-rolling-horizon"
+    apron["tka_camera_collision"] = True
     apron["tka_ground_layout_version"] = int(GROUND_LAYOUT["version"])
     apron["tka_ground_layout_sha256"] = GROUND_LAYOUT_SHA256
-    return len(faces)
+    apron["tka_ground_visible_extent"] = APRON_OUTER_HALF_SIZE
+    return len(faces) + len(horizon_faces)
 
 
 def create_path_contract(name, path_points, role, destination):
@@ -1009,9 +1199,155 @@ def add_habitation_cylinder(
     return obj
 
 
+def add_hewn_log_bench(name, location, length, radius, material, rotation, seed):
+    """Create a split-log seat whose silhouette holds up at performer scale."""
+    rng = random.Random(seed)
+    ring_count = 5
+    segments = 14
+    vertices = []
+    for ring in range(ring_count):
+        along = -length * 0.5 + length * ring / (ring_count - 1)
+        end_taper = 0.94 if ring in (0, ring_count - 1) else 1.0
+        ring_wobble = rng.uniform(0.96, 1.04)
+        for segment in range(segments):
+            angle = segment * math.tau / segments
+            radial = end_taper * ring_wobble * rng.uniform(0.96, 1.04)
+            across = math.cos(angle) * radius * radial
+            vertical = math.sin(angle) * radius * 0.78 * radial
+            # A broad adze-cut top reads as a usable seat instead of a pipe.
+            vertical = min(vertical, radius * 0.34)
+            vertices.append((along, across, vertical))
+
+    faces = []
+    for ring in range(ring_count - 1):
+        for segment in range(segments):
+            following = (segment + 1) % segments
+            faces.append(
+                (
+                    ring * segments + segment,
+                    ring * segments + following,
+                    (ring + 1) * segments + following,
+                    (ring + 1) * segments + segment,
+                )
+            )
+    faces.extend(
+        (
+            tuple(reversed(range(segments))),
+            tuple((ring_count - 1) * segments + index for index in range(segments)),
+        )
+    )
+    mesh = bpy.data.meshes.new(f"{name} Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    mesh.materials.append(material)
+    for polygon in mesh.polygons:
+        polygon.use_smooth = len(polygon.vertices) == 4
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    obj.location = location
+    obj.rotation_euler.z = rotation
+    obj["tka_role"] = "settlement-detail"
+    obj["tka_prop_language"] = "irregular-split-log"
+    return obj
+
+
+def add_irregular_stump(name, location, radius, height, scale_y, rotation, seed):
+    """Create a flared stump with one continuous bark shell and cut face."""
+    rng = random.Random(seed)
+    segments = 18
+    rings = (
+        (0.0, 1.18),
+        (height * 0.16, 1.02),
+        (height * 0.88, 0.92),
+        (height, 0.90),
+    )
+    angle_variation = [rng.uniform(0.93, 1.08) for _ in range(segments)]
+    vertices = []
+    for ring_index, (z, taper) in enumerate(rings):
+        for segment in range(segments):
+            angle = segment * math.tau / segments
+            ring_noise = angle_variation[segment] * rng.uniform(0.985, 1.015)
+            root_flare = 1.0
+            if ring_index == 0 and segment % 3 == 0:
+                root_flare = 1.10
+            vertices.append(
+                (
+                    math.cos(angle) * radius * taper * ring_noise * root_flare,
+                    math.sin(angle)
+                    * radius
+                    * taper
+                    * ring_noise
+                    * scale_y
+                    * root_flare,
+                    z + (rng.uniform(-0.008, 0.008) if ring_index == 3 else 0.0),
+                )
+            )
+
+    faces = []
+    material_indices = []
+    for ring in range(len(rings) - 1):
+        for segment in range(segments):
+            following = (segment + 1) % segments
+            faces.append(
+                (
+                    ring * segments + segment,
+                    ring * segments + following,
+                    (ring + 1) * segments + following,
+                    (ring + 1) * segments + segment,
+                )
+            )
+            material_indices.append(0)
+    faces.append(
+        tuple((len(rings) - 1) * segments + index for index in range(segments))
+    )
+    material_indices.append(1)
+    mesh = bpy.data.meshes.new(f"{name} Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    mesh.materials.append(HABITATION_WOOD)
+    mesh.materials.append(HABITATION_CUT_WOOD)
+    for polygon, material_index in zip(mesh.polygons, material_indices):
+        polygon.material_index = material_index
+        polygon.use_smooth = material_index == 0
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    obj.location = location
+    obj.rotation_euler.z = rotation
+    obj["tka_role"] = "settlement-detail"
+    obj["tka_prop_language"] = "root-flared-hewn-stump"
+    return obj
+
+
 def create_habitation_props():
     """Add a few practical objects that explain who keeps using this route."""
     props = []
+
+    # A single warm pane makes the distant destination readable through the
+    # trunks. It is emissive only: no extra light or shadow pass at runtime.
+    cabin_window_x, cabin_window_y = -11.05, 53.92
+    cabin_window_ground = world_surface_height(cabin_window_x, cabin_window_y)
+    props.append(
+        add_habitation_box(
+            "Autumn_Cabin_Window_Glow",
+            (cabin_window_x, cabin_window_y, cabin_window_ground + 1.92),
+            (0.54, 0.045, 0.62),
+            HABITATION_CABIN_GLOW,
+            DISTANT_CABIN_PLACEMENT[4],
+        )
+    )
+    for name, dimensions in (
+        ("Autumn_Cabin_Window_Mullion_V", (0.045, 0.052, 0.64)),
+        ("Autumn_Cabin_Window_Mullion_H", (0.56, 0.052, 0.045)),
+    ):
+        props.append(
+            add_habitation_box(
+                name,
+                (cabin_window_x, cabin_window_y - 0.012, cabin_window_ground + 1.92),
+                dimensions,
+                HABITATION_WOOD,
+                DISTANT_CABIN_PLACEMENT[4],
+            )
+        )
 
     # Three irregular stones finish the lane at the south-facing shack door.
     for index, (x, y, scale_x, scale_y, rotation) in enumerate(
@@ -1069,13 +1405,14 @@ def create_habitation_props():
     block_x, block_y = -12.15, 50.55
     block_ground = world_surface_height(block_x, block_y)
     props.append(
-        add_habitation_cylinder(
+        add_irregular_stump(
             "Autumn_Chopping_Block",
-            (block_x, block_y, block_ground + 0.24),
+            (block_x, block_y, block_ground),
             0.34,
             0.48,
-            HABITATION_WOOD,
-            vertices=11,
+            0.96,
+            -0.08,
+            6318,
         )
     )
 
@@ -1084,61 +1421,47 @@ def create_habitation_props():
     bench_x, bench_y, bench_rotation = 1.45, 20.25, -0.22
     bench_ground = world_surface_height(bench_x, bench_y)
     props.append(
-        add_habitation_box(
+        add_hewn_log_bench(
             "Autumn_Rough_Bench_Seat",
-            (bench_x, bench_y, bench_ground + 0.54),
-            (2.15, 0.44, 0.17),
+            (bench_x, bench_y, bench_ground + 0.55),
+            2.24,
+            0.27,
             HABITATION_WOOD,
             bench_rotation,
+            2414,
         )
     )
     for index, offset in enumerate((-0.70, 0.70)):
         leg_x = bench_x + math.cos(bench_rotation) * offset
         leg_y = bench_y + math.sin(bench_rotation) * offset
         props.append(
-            add_habitation_box(
+            add_habitation_cylinder(
                 f"Autumn_Rough_Bench_Leg_{index + 1:02d}",
-                (leg_x, leg_y, world_surface_height(leg_x, leg_y) + 0.27),
-                (0.18, 0.34, 0.54),
+                (leg_x, leg_y, world_surface_height(leg_x, leg_y) + 0.23),
+                0.16 + index * 0.012,
+                0.46,
                 HABITATION_WOOD,
-                bench_rotation,
+                vertices=14,
             )
         )
-    for index, (x, y, radius, height, taper, scale_y, rotation) in enumerate(
+    for index, (x, y, radius, height, scale_y, rotation) in enumerate(
         (
-            (-6.15, 19.10, 0.38, 0.46, 0.89, 0.91, 0.24),
-            (1.35, 14.85, 0.34, 0.42, 0.86, 1.08, -0.31),
+            (-6.15, 19.10, 0.38, 0.46, 0.91, 0.24),
+            (1.35, 14.85, 0.34, 0.42, 1.08, -0.31),
         )
     ):
         ground = world_surface_height(x, y)
-        bpy.ops.mesh.primitive_cone_add(
-            vertices=11,
-            radius1=radius,
-            radius2=radius * taper,
-            depth=height,
-            location=(x, y, ground + height * 0.5),
+        props.append(
+            add_irregular_stump(
+                f"Autumn_Stump_Seat_{index + 1:02d}",
+                (x, y, ground),
+                radius,
+                height,
+                scale_y,
+                rotation,
+                9127 + index,
+            )
         )
-        stump = bpy.context.object
-        stump.name = f"Autumn_Stump_Seat_{index + 1:02d}"
-        stump.scale.y = scale_y
-        stump.rotation_euler.z = rotation
-        stump.data.materials.append(HABITATION_WOOD)
-        stump["tka_role"] = "settlement-detail"
-        props.append(stump)
-
-        # A separate, slightly uneven cut face keeps the low-poly stump from
-        # reading as a single-color cylinder under the red autumn lighting.
-        cut_face = add_habitation_cylinder(
-            f"Autumn_Stump_Seat_Cut_{index + 1:02d}",
-            (x, y, ground + height + 0.007),
-            radius * taper * 0.94,
-            0.014,
-            HABITATION_CUT_WOOD,
-            vertices=11,
-        )
-        cut_face.scale.y = scale_y * 0.96
-        cut_face.rotation_euler.z = rotation
-        props.append(cut_face)
 
     # One small bucket by the door is enough to suggest water and chores.
     pail_x, pail_y = -11.55, 52.05
@@ -1333,12 +1656,13 @@ def decimate_asset_source(root, label, ratio, maximum_triangles):
         raise RuntimeError(f"Cannot decimate {label}: source has no meshes")
 
     before = sum(len(obj.data.polygons) for obj in mesh_objects)
+    effective_ratio = min(ratio, maximum_triangles / max(1, before) * 0.96)
     for obj in mesh_objects:
         bpy.ops.object.select_all(action="DESELECT")
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
         modifier = obj.modifiers.new(f"{label} Web LOD", "DECIMATE")
-        modifier.ratio = ratio
+        modifier.ratio = effective_ratio
         modifier.use_collapse_triangulate = True
         bpy.ops.object.modifier_apply(modifier=modifier.name)
         obj.select_set(False)
@@ -1382,6 +1706,18 @@ def duplicate_hierarchy(source_root, name):
     return mapping[source_root]
 
 
+def duplicate_source_for_lod(source_root, asset_id):
+    """Copy source geometry for destructive LOD work while sharing materials."""
+    root = duplicate_hierarchy(source_root, f"AssetSource_{asset_id}")
+    root.name = f"AssetSource_{asset_id}"
+    for obj in root.children_recursive:
+        if obj.type != "MESH":
+            continue
+        obj.data = obj.data.copy()
+        obj.name = f"{asset_id}_{obj.name.split('_')[-1]}"
+    return root
+
+
 def place_asset(
     source_root,
     name,
@@ -1411,6 +1747,8 @@ def place_asset(
         @ Matrix.Diagonal(Vector((mirror_x, scale_y, scale, 1.0)))
         @ normalize
     )
+    root["tka_placement_x"] = float(position[0])
+    root["tka_placement_y"] = float(position[1])
     for obj in root.children_recursive:
         if obj.type == "MESH":
             obj.name = f"{name}_{obj.name.split('_')[-1]}"
@@ -1430,15 +1768,7 @@ def transformed_mesh_vertices(root):
 
 
 def root_contact_envelope(root, target_height, footprint):
-    """Measure the underside of a transformed tree root plate in world space.
-
-    A single lowest vertex only proves that one root tip touches the ground.
-    The visible floating-tree failure happened because distant tips touched
-    while the broad central root plate remained in the air. We instead divide
-    the whole lower root band into XY cells and retain the lowest mesh point in
-    every occupied cell. Those points form a conservative underside envelope
-    across the central plate and every radiating root.
-    """
+    """Measure the load-bearing underside of a transformed central root plate."""
     points = transformed_mesh_vertices(root)
     if not points:
         raise RuntimeError(f"Cannot ground {root.name}: no transformed mesh vertices")
@@ -1462,23 +1792,74 @@ def root_contact_envelope(root, target_height, footprint):
         if existing is None or point.z < existing.z:
             cells[cell] = point.copy()
 
-    contacts = tuple(cells.values())
+    # Meshy assets are normalized by full crown bounds, so the placement XY is
+    # not necessarily the trunk XY. Lower-band vertex medians find the actual
+    # dense root mass without depending on an unreliable imported origin.
+    root_center_x = percentile([point.x for point in root_band], 0.50)
+    root_center_y = percentile([point.y for point in root_band], 0.50)
+    contact_radius = max(0.42, min(0.76, footprint * 0.32))
+    contacts = tuple(
+        point
+        for point in cells.values()
+        if math.hypot(point.x - root_center_x, point.y - root_center_y)
+        <= contact_radius
+    )
+    if len(contacts) < TREE_ROOT_MIN_CONTACT_SAMPLES:
+        contacts = tuple(
+            sorted(
+                cells.values(),
+                key=lambda point: math.hypot(
+                    point.x - root_center_x, point.y - root_center_y
+                ),
+            )[:TREE_ROOT_MIN_CONTACT_SAMPLES]
+        )
     if len(contacts) < TREE_ROOT_MIN_CONTACT_SAMPLES:
         raise RuntimeError(
-            f"Cannot ground {root.name}: root envelope has only {len(contacts)} cells"
+            f"Cannot ground {root.name}: central root plate has only "
+            f"{len(contacts)} cells"
         )
-    return contacts, root_band_height, cell_size
+    return (
+        contacts,
+        root_band_height,
+        cell_size,
+        contact_radius,
+        (root_center_x, root_center_y),
+    )
+
+
+def percentile(values, amount):
+    ordered = sorted(values)
+    if not ordered:
+        raise RuntimeError("Cannot calculate a percentile from an empty sequence")
+    position = (len(ordered) - 1) * amount
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return ordered[lower]
+    blend = position - lower
+    return ordered[lower] * (1.0 - blend) + ordered[upper] * blend
 
 
 def ground_tree_instance(root, name, target_height, footprint):
-    """Seat a tree from its root geometry and prove the contact after moving it."""
-    contacts, root_band_height, cell_size = root_contact_envelope(
-        root, target_height, footprint
-    )
+    """Seat a tree on its central root plate without swallowing radial roots."""
+    (
+        contacts,
+        root_band_height,
+        cell_size,
+        contact_radius,
+        root_center,
+    ) = root_contact_envelope(root, target_height, footprint)
     clearances_before = [
         point.z - world_surface_height(point.x, point.y) for point in contacts
     ]
-    grounding_depth = max(0.0, max(clearances_before) + TREE_ROOT_CONTACT_MARGIN)
+    desired_depth = (
+        percentile(clearances_before, TREE_ROOT_CONTACT_PERCENTILE)
+        + TREE_ROOT_CONTACT_MARGIN
+    )
+    grounding_depth = min(
+        TREE_ROOT_MAX_AUTOMATIC_SINK,
+        max(0.0, desired_depth),
+    )
     if grounding_depth > 0.0:
         root.matrix_world = (
             Matrix.Translation(Vector((0.0, 0.0, -grounding_depth)))
@@ -1490,11 +1871,16 @@ def ground_tree_instance(root, name, target_height, footprint):
         point.z - grounding_depth - world_surface_height(point.x, point.y)
         for point in contacts
     ]
-    maximum_clearance_after = max(clearances_after)
-    if maximum_clearance_after > -TREE_ROOT_CONTACT_MARGIN + 0.002:
+    contact_fraction = sum(
+        clearance <= 0.002 for clearance in clearances_after
+    ) / len(clearances_after)
+    central_clearance = percentile(clearances_after, TREE_ROOT_CONTACT_PERCENTILE)
+    if contact_fraction < TREE_ROOT_MIN_CONTACT_FRACTION or central_clearance > 0.002:
         raise RuntimeError(
-            f"Tree grounding failed for {name}: root envelope still clears terrain "
-            f"by {maximum_clearance_after:.4f}m"
+            f"Tree grounding failed for {name}: only {contact_fraction:.0%} of "
+            f"the central root plate contacts terrain and its "
+            f"{TREE_ROOT_CONTACT_PERCENTILE:.0%} clearance is "
+            f"{central_clearance:.4f}m"
         )
 
     result = {
@@ -1503,8 +1889,14 @@ def ground_tree_instance(root, name, target_height, footprint):
         "samples": len(contacts),
         "root_band_height": root_band_height,
         "cell_size": cell_size,
+        "contact_radius": contact_radius,
+        "root_center_x": root_center[0],
+        "root_center_y": root_center[1],
+        "contact_fraction": contact_fraction,
+        "central_clearance_after": central_clearance,
         "maximum_clearance_before": max(clearances_before),
-        "maximum_clearance_after": maximum_clearance_after,
+        "maximum_clearance_after": max(clearances_after),
+        "minimum_clearance_after": min(clearances_after),
     }
     TREE_GROUNDING_RESULTS[name] = result
     grounding_metadata = {
@@ -1513,9 +1905,16 @@ def ground_tree_instance(root, name, target_height, footprint):
         "tka_root_contact_samples": len(contacts),
         "tka_root_band_height": root_band_height,
         "tka_root_cell_size": cell_size,
+        "tka_root_contact_radius": contact_radius,
+        "tka_root_center_x": root_center[0],
+        "tka_root_center_y": root_center[1],
+        "tka_root_contact_fraction": contact_fraction,
+        "tka_root_central_clearance_after": central_clearance,
         "tka_root_max_clearance_before": max(clearances_before),
-        "tka_root_max_clearance_after": maximum_clearance_after,
+        "tka_root_max_clearance_after": max(clearances_after),
+        "tka_root_min_clearance_after": min(clearances_after),
         "tka_root_contact_margin": TREE_ROOT_CONTACT_MARGIN,
+        "tka_root_max_automatic_sink": TREE_ROOT_MAX_AUTOMATIC_SINK,
     }
     for key, value in grounding_metadata.items():
         root[key] = value
@@ -1529,8 +1928,8 @@ def ground_tree_instance(root, name, target_height, footprint):
 
     print(
         f"Tree grounded: {name} sank {grounding_depth:.3f}m from "
-        f"{len(contacts)} root-envelope samples "
-        f"(max clearance {maximum_clearance_after:.3f}m)"
+        f"{len(contacts)} central samples "
+        f"({contact_fraction:.0%} contact, outer roots allowed to emerge)"
     )
     return result
 
@@ -1574,188 +1973,35 @@ def hide_source(root):
         obj.hide_viewport = True
 
 
-def append_far_frustum(
-    vertices,
-    faces,
-    material_indices,
-    start,
-    end,
-    start_radius,
-    end_radius,
-    material_index=0,
-    segments=7,
-):
-    """Append one low-poly trunk or branch aligned between two points."""
-    start = Vector(start)
-    end = Vector(end)
-    direction = (end - start).normalized()
-    reference = Vector((0.0, 0.0, 1.0)) if abs(direction.z) < 0.88 else Vector((1.0, 0.0, 0.0))
-    right = direction.cross(reference).normalized()
-    forward = direction.cross(right).normalized()
-    first_ring = []
-    second_ring = []
-    for segment in range(segments):
-        angle = segment * math.tau / segments
-        radial = right * math.cos(angle) + forward * math.sin(angle)
-        first_ring.append(len(vertices))
-        vertices.append(tuple(start + radial * start_radius))
-        second_ring.append(len(vertices))
-        vertices.append(tuple(end + radial * end_radius))
-    for segment in range(segments):
-        following = (segment + 1) % segments
-        faces.append(
-            (
-                first_ring[segment],
-                first_ring[following],
-                second_ring[following],
-                second_ring[segment],
-            )
-        )
-        material_indices.append(material_index)
+def far_depth_tree_sources(imported_sources):
+    """Derive fog-tier trees from approved Autumn botanical silhouettes.
 
-
-def append_far_lobe(
-    vertices,
-    faces,
-    material_indices,
-    center,
-    radii,
-    material_index=1,
-    segments=8,
-):
-    """Append a faceted ellipsoid that keeps a readable crown in deep fog."""
-    center = Vector(center)
-    radius_x, radius_y, radius_z = radii
-    bottom = len(vertices)
-    vertices.append((center.x, center.y, center.z - radius_z))
-    lower_ring = []
-    upper_ring = []
-    for segment in range(segments):
-        angle = segment * math.tau / segments
-        cosine = math.cos(angle)
-        sine = math.sin(angle)
-        lower_ring.append(len(vertices))
-        vertices.append(
-            (
-                center.x + cosine * radius_x * 0.86,
-                center.y + sine * radius_y * 0.86,
-                center.z - radius_z * 0.28,
-            )
-        )
-        upper_ring.append(len(vertices))
-        vertices.append(
-            (
-                center.x + cosine * radius_x,
-                center.y + sine * radius_y,
-                center.z + radius_z * 0.34,
-            )
-        )
-    top = len(vertices)
-    vertices.append((center.x, center.y, center.z + radius_z))
-    for segment in range(segments):
-        following = (segment + 1) % segments
-        faces.extend(
-            (
-                (bottom, lower_ring[following], lower_ring[segment]),
-                (
-                    lower_ring[segment],
-                    lower_ring[following],
-                    upper_ring[following],
-                    upper_ring[segment],
-                ),
-                (upper_ring[segment], upper_ring[following], top),
-            )
-        )
-        material_indices.extend((material_index, material_index, material_index))
-
-
-def append_far_cone(
-    vertices,
-    faces,
-    material_indices,
-    center_z,
-    radius,
-    height,
-    material_index=1,
-    segments=8,
-):
-    base_ring = []
-    for segment in range(segments):
-        angle = segment * math.tau / segments
-        base_ring.append(len(vertices))
-        vertices.append((math.cos(angle) * radius, math.sin(angle) * radius, center_z - height * 0.5))
-    tip = len(vertices)
-    vertices.append((0.0, 0.0, center_z + height * 0.5))
-    for segment in range(segments):
-        following = (segment + 1) % segments
-        faces.append((base_ring[segment], base_ring[following], tip))
-        material_indices.append(material_index)
-
-
-def create_far_depth_tree_source(asset_id, style, canopy_material):
-    vertices = []
-    faces = []
-    material_indices = []
-    append_far_frustum(
-        vertices,
-        faces,
-        material_indices,
-        (0.0, 0.0, 0.0),
-        (0.0, 0.0, 6.2 if style == "snag" else 5.4),
-        0.32,
-        0.12,
-    )
-    if style == "broadleaf":
-        append_far_lobe(vertices, faces, material_indices, (-1.0, 0.0, 4.3), (1.55, 1.15, 1.35))
-        append_far_lobe(vertices, faces, material_indices, (1.0, 0.1, 4.5), (1.45, 1.18, 1.25))
-        append_far_lobe(vertices, faces, material_indices, (0.0, -0.1, 5.5), (1.75, 1.30, 1.45))
-    elif style == "larch":
-        append_far_cone(vertices, faces, material_indices, 2.8, 1.85, 3.0)
-        append_far_cone(vertices, faces, material_indices, 4.2, 1.45, 3.0)
-        append_far_cone(vertices, faces, material_indices, 5.6, 0.95, 2.7)
-    else:
-        append_far_frustum(
-            vertices,
-            faces,
-            material_indices,
-            (0.0, 0.0, 3.5),
-            (1.45, 0.25, 5.2),
-            0.16,
-            0.055,
-        )
-        append_far_frustum(
-            vertices,
-            faces,
-            material_indices,
-            (-0.02, 0.0, 4.5),
-            (-1.05, 0.35, 5.9),
-            0.13,
-            0.045,
-        )
-
-    mesh = bpy.data.meshes.new(f"{asset_id} Mesh")
-    mesh.from_pydata(vertices, [], faces)
-    mesh.update()
-    mesh.materials.append(FAR_TRUNK)
-    mesh.materials.append(canopy_material)
-    for polygon, material_index in zip(mesh.polygons, material_indices):
-        polygon.material_index = material_index
-        polygon.use_smooth = False
-    root = bpy.data.objects.new(f"AssetSource_{asset_id}", None)
-    bpy.context.scene.collection.objects.link(root)
-    tree = bpy.data.objects.new(f"{asset_id}_Mesh", mesh)
-    bpy.context.scene.collection.objects.link(tree)
-    tree.parent = root
-    return root
-
-
-def far_depth_tree_sources():
-    return {
-        "FarRed": create_far_depth_tree_source("FarRed", "broadleaf", FAR_CANOPY_RED),
-        "FarGold": create_far_depth_tree_source("FarGold", "broadleaf", FAR_CANOPY_GOLD),
-        "FarLarch": create_far_depth_tree_source("FarLarch", "larch", FAR_CANOPY_GOLD),
-        "FarSnag": create_far_depth_tree_source("FarSnag", "snag", FAR_CANOPY_SHADOW),
+    The previous sources were handmade cones and ellipsoids. Even in fog they
+    visibly switched art styles beside scanned trees. These LODs keep the same
+    bark/canopy atlases and irregular species silhouettes, while sharing one
+    aggressively reduced mesh per family across all 53 far placements.
+    """
+    source_families = {
+        "FarRed": "HeroA",
+        "FarGold": "Willow",
+        "FarLarch": "Larch",
+        "FarSnag": "Snag",
     }
+    far_sources = {}
+    for far_family, source_family in source_families.items():
+        source = duplicate_source_for_lod(
+            imported_sources[source_family], far_family
+        )
+        decimate_asset_source(
+            source,
+            f"{far_family} botanical fog LOD",
+            0.055,
+            2_800,
+        )
+        source["tka_lod_source_family"] = source_family
+        source["tka_lod_role"] = "textured-botanical-fog-tier"
+        far_sources[far_family] = source
+    return far_sources
 
 
 def tree_footprints():
@@ -1785,20 +2031,20 @@ def point_clear_of_footprints(x, y, extra=0.0):
 
 def create_asset_placements():
     sources = {
-        "HeroA": imported_asset_root("HeroA", os.path.join(MODEL_DIR, "hero-tree-a_raw.glb")),
-        "HeroB": imported_asset_root("HeroB", os.path.join(MODEL_DIR, "hero-tree-b_raw.glb")),
-        "Birch": imported_asset_root("Birch", os.path.join(MODEL_DIR, "silver-birch-cluster_raw.glb")),
-        "Snag": imported_asset_root("Snag", os.path.join(MODEL_DIR, "autumn-snag_raw.glb")),
-        "Larch": imported_asset_root("Larch", os.path.join(MODEL_DIR, "golden-larch_raw.glb")),
-        "Willow": imported_asset_root("Willow", os.path.join(MODEL_DIR, "autumn-willow_raw.glb")),
-        "Fern": imported_asset_root("Fern", os.path.join(MODEL_DIR, "fern-clump_raw.glb")),
-        "Log": imported_asset_root("Log", os.path.join(MODEL_DIR, "fallen-log_raw.glb")),
+        "HeroA": imported_asset_root("HeroA", os.path.join(SOURCE_MODEL_DIR, "hero-tree-a_raw.glb")),
+        "HeroB": imported_asset_root("HeroB", os.path.join(SOURCE_MODEL_DIR, "hero-tree-b_raw.glb")),
+        "Birch": imported_asset_root("Birch", os.path.join(SOURCE_MODEL_DIR, "silver-birch-cluster_raw.glb")),
+        "Snag": imported_asset_root("Snag", os.path.join(SOURCE_MODEL_DIR, "autumn-snag_raw.glb")),
+        "Larch": imported_asset_root("Larch", os.path.join(SOURCE_MODEL_DIR, "golden-larch_raw.glb")),
+        "Willow": imported_asset_root("Willow", os.path.join(SOURCE_MODEL_DIR, "autumn-willow_raw.glb")),
+        "Fern": imported_asset_root("Fern", os.path.join(SOURCE_MODEL_DIR, "fern-clump_raw.glb")),
+        "Log": imported_asset_root("Log", os.path.join(SOURCE_MODEL_DIR, "fallen-log_raw.glb")),
         "Cabin": imported_asset_root(
             "DistantWoodlandShack",
-            os.path.join(MODEL_DIR, "distant-woodland-shack_raw.glb"),
+            os.path.join(SOURCE_MODEL_DIR, "distant-woodland-shack_raw.glb"),
         ),
     }
-    sources.update(far_depth_tree_sources())
+    sources.update(far_depth_tree_sources(sources))
 
     decimate_asset_source(
         sources["Fern"],
@@ -2210,9 +2456,8 @@ def create_mushroom_ecology(rock_placements):
     mushroom_rng = random.Random(14731)
 
     ring_name, center_x, center_y, radius, count, phase = FAIRY_CHAMPIGNON_ARC
-    ring_gaps = {4, 5, 6, 17}
     for index in range(count):
-        if index in ring_gaps:
+        if index in FAIRY_CHAMPIGNON_GAPS:
             continue
         angle = phase + index * math.tau / count
         local_radius = radius * mushroom_rng.uniform(0.93, 1.08)
@@ -2228,7 +2473,7 @@ def create_mushroom_ecology(rock_placements):
                 "broken-fairy-ring",
                 x,
                 y,
-                mushroom_rng.uniform(0.105, 0.17),
+                mushroom_rng.uniform(0.18, 0.30),
                 angle + mushroom_rng.uniform(-0.35, 0.35),
                 mushroom_rng.uniform(0.82, 1.18),
             )
@@ -2253,7 +2498,7 @@ def create_mushroom_ecology(rock_placements):
                     "root-zone-leaf-litter",
                     x,
                     y,
-                    mushroom_rng.uniform(0.11, 0.19),
+                    mushroom_rng.uniform(0.18, 0.29),
                     mushroom_rng.uniform(-math.pi, math.pi),
                     mushroom_rng.uniform(0.78, 1.12),
                 )
@@ -2278,7 +2523,7 @@ def create_mushroom_ecology(rock_placements):
                     "fallen-deadwood",
                     x,
                     y,
-                    mushroom_rng.uniform(0.14, 0.25),
+                    mushroom_rng.uniform(0.22, 0.36),
                     angle + mushroom_rng.uniform(-0.4, 0.4),
                     mushroom_rng.uniform(0.82, 1.15),
                 )
@@ -2342,7 +2587,7 @@ def tune_imported_asset_materials(source_root, label, roughness_floor):
 
 
 def create_owl_perch():
-    source = imported_asset_root("PerchedOwl", os.path.join(MODEL_DIR, "perched-owl_raw.glb"))
+    source = imported_asset_root("PerchedOwl", os.path.join(SOURCE_MODEL_DIR, "perched-owl_raw.glb"))
     tune_imported_asset_materials(source, "Owl", 0.84)
     x, y, height = OWL_POSITION
     owl_tree_offset = tree_grounding_offset("HeroTreeA_03")
@@ -3021,7 +3266,7 @@ def verify_ecology(
     far_family_counts = {}
     for _name, family, *_rest in FAR_DEPTH_TREE_PLACEMENTS:
         far_family_counts[family] = far_family_counts.get(family, 0) + 1
-    expected_far_families = {"FarRed": 10, "FarGold": 9, "FarLarch": 9, "FarSnag": 5}
+    expected_far_families = {"FarRed": 16, "FarGold": 15, "FarLarch": 15, "FarSnag": 7}
     far_family_error = (
         far_family_counts
         if far_family_counts != expected_far_families
@@ -3098,8 +3343,11 @@ def verify_ecology(
         for name in expected_grounded_tree_names
         if name not in TREE_GROUNDING_RESULTS
         or TREE_GROUNDING_RESULTS[name]["samples"] < TREE_ROOT_MIN_CONTACT_SAMPLES
-        or TREE_GROUNDING_RESULTS[name]["maximum_clearance_after"]
-        > -TREE_ROOT_CONTACT_MARGIN + 0.002
+        or TREE_GROUNDING_RESULTS[name]["depth"]
+        > TREE_ROOT_MAX_AUTOMATIC_SINK + 0.002
+        or TREE_GROUNDING_RESULTS[name]["contact_fraction"]
+        < TREE_ROOT_MIN_CONTACT_FRACTION
+        or TREE_GROUNDING_RESULTS[name]["central_clearance_after"] > 0.002
     ]
     owl_tree_errors = [
         name
@@ -3117,6 +3365,7 @@ def verify_ecology(
             "Autumn_Chopping_Block",
             "Autumn_Water_Pail",
             "Autumn_Wayfinding_Lantern_Glow",
+            "Autumn_Cabin_Window_Glow",
             "Autumn_Door_Step_01",
         )
         if bpy.data.objects.get(name) is None
@@ -3175,8 +3424,10 @@ def verify_ecology(
     print(
         f"Tree grounding verified: {len(expected_grounded_tree_names)} placements, "
         f"{sum(result['samples'] for result in TREE_GROUNDING_RESULTS.values())} "
-        f"root-envelope samples, max clearance "
-        f"{max(result['maximum_clearance_after'] for result in TREE_GROUNDING_RESULTS.values()):.3f}m"
+        f"central-root samples, max sink "
+        f"{max(result['depth'] for result in TREE_GROUNDING_RESULTS.values()):.3f}m, "
+        f"minimum contact "
+        f"{min(result['contact_fraction'] for result in TREE_GROUNDING_RESULTS.values()):.0%}"
     )
     outer_grass = [1 for x, y in all_grass if math.hypot(x, y) > GRASS_FEATHER_START]
     print(
@@ -3442,7 +3693,7 @@ for label, path in QA_PATHS.items():
 print(f"Mesh objects:    {sum(1 for obj in bpy.data.objects if obj.type == 'MESH' and obj.visible_get())}")
 print(f"Unique meshes:   {len(bpy.data.meshes)}")
 print(f"Materials:       {len(bpy.data.materials)}")
-print(f"Terrain apron:   {apron_face_count} quads out to 165m")
+print(f"Terrain apron:   {apron_face_count} quads out to {APRON_OUTER_HALF_SIZE:.0f}m")
 print(
     f"Settlement paths: {path_lengths['cabin_lane']:.1f}m to shack + "
     f"{path_lengths['forest_trail']:.1f}m to golden larch sentinel"

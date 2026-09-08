@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { T } from "@threlte/core";
-  import {
-    type VoidSceneConfig,
-    createDefaultVoidConfig,
-  } from "../domain/models/scene-configs";
+  import { useTask, useThrelte } from "@threlte/core";
+  import { userProportionsState } from "@austencloud/scene-3d";
+  import type { VoidSceneConfig } from "../domain/models/scene-configs";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
-  import VoidPlatform from "./pure-black/VoidPlatform.svelte";
-  import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
+  import {
+    createVoidEnvironmentWorld,
+    type VoidEnvironmentWorld,
+  } from "../worlds/void/void-environment-world";
 
   interface Props {
     config?: VoidSceneConfig;
@@ -16,29 +16,27 @@
 
   let { config, stageRadius = 3, stageRadiusGrowth = 0 }: Props = $props();
 
-  const baseConfig = $derived(config ?? createDefaultVoidConfig());
+  const { scene } = useThrelte();
+  const sceneFeatures = getSceneFeatureContext();
+  let world: VoidEnvironmentWorld | null = null;
 
-  const activeConfig = $derived.by(() => {
-    const r = resolveCircularStageRadius(
+  $effect(() => {
+    const next = createVoidEnvironmentWorld({
+      config,
+      groundY: userProportionsState.groundY,
       stageRadius,
-      baseConfig.platform.radius,
-      undefined,
-      stageRadiusGrowth
-    );
-    if (r <= baseConfig.platform.radius) return baseConfig;
-    return {
-      ...baseConfig,
-      platform: { ...baseConfig.platform, radius: r },
+      stageRadiusGrowth,
+    });
+    scene.add(next.root);
+    world = next;
+    sceneFeatures?.reportReady("environment");
+
+    return () => {
+      if (world === next) world = null;
+      scene.remove(next.root);
+      next.dispose();
     };
   });
 
-  const sceneFeatures = getSceneFeatureContext();
-  $effect(() => {
-    sceneFeatures?.reportReady("environment");
-  });
+  useTask((delta) => world?.update(delta));
 </script>
-
-<VoidPlatform config={activeConfig.platform} />
-
-<T.AmbientLight intensity={activeConfig.ambientIntensity} />
-<T.DirectionalLight position={[5, 10, 5]} intensity={0.3} />

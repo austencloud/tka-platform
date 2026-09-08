@@ -27,7 +27,7 @@
       .filter((t): t is (typeof LAUNCHPAD_TILES)[number] => t !== undefined);
 
   const FAQ_LINK = { label: "FAQ", href: "/faq" };
-  const GLOSSARY_LINK = { label: "Glossary", href: "/glossary" };
+  const GLOSSARY_LINK = { label: "Kinetic Atlas", href: "/atlas" };
 
   const tiles = $derived(
     variant === "demote"

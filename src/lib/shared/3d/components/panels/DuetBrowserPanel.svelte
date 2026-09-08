@@ -193,15 +193,15 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
 
               <div class="duet-info">
                 <div class="sequence-pair">
-                  <span class="avatar-label">{t('duet_a1')}</span>
-                  <span class="sequence-id" title={duet.avatar1SequenceId}>
-                    {duet.avatar1SequenceId.slice(0, 8)}...
+                  <span class="performer-label">{t('duet_p1')}</span>
+                  <span class="sequence-id" title={duet.performer1SequenceId}>
+                    {duet.performer1SequenceId.slice(0, 8)}...
                   </span>
                 </div>
                 <div class="sequence-pair">
-                  <span class="avatar-label">{t('duet_a2')}</span>
-                  <span class="sequence-id" title={duet.avatar2SequenceId}>
-                    {duet.avatar2SequenceId.slice(0, 8)}...
+                  <span class="performer-label">{t('duet_p2')}</span>
+                  <span class="sequence-id" title={duet.performer2SequenceId}>
+                    {duet.performer2SequenceId.slice(0, 8)}...
                   </span>
                 </div>
               </div>
@@ -422,7 +422,7 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
     font-size: var(--font-size-compact, 12px);
   }
 
-  .avatar-label {
+  .performer-label {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-weight: 500;
   }

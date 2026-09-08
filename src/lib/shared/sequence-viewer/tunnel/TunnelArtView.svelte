@@ -23,8 +23,8 @@
     playback,
     controller,
     bpm = 60,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     onSaveTunnel,
     saveTunnelLabel = "Save tunnel",
     onPlayingChange,
@@ -32,8 +32,10 @@
     stageFit = "cover",
     animationSettingsState = animationSettings,
     visibilityManager,
-    blueBuugengFlipped,
-    redBuugengFlipped,
+    leftBuugengFlipped,
+    rightBuugengFlipped,
+    onCanvasReady,
+    onActivePerformerStepsChange,
   }: {
     sequence: SequenceData;
     playback?: ViewerPlaybackState;
@@ -42,8 +44,8 @@
     /** Global tempo from the sidebar's Playback section. Drives the playhead so
      *  the tempo selector controls the kaleidoscope (60 BPM = 1 beat/sec). */
     bpm?: number;
-    bluePropType?: string;
-    redPropType?: string;
+    leftPropType?: string;
+    rightPropType?: string;
     /** Save the live tunnel to the collection (owned by ArtPane). Absent = no
      *  save entry in the canvas right-click menu. */
     onSaveTunnel?: () => void;
@@ -59,9 +61,31 @@
     stageFit?: "cover" | "contain";
     animationSettingsState?: AnimationSettingsState;
     visibilityManager?: AnimationVisibilityStateManager;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
+    onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+    /** Reports the one card cell that matches each authored stage instance. */
+    onActivePerformerStepsChange?: (
+      stepIndices: Readonly<Record<string, number>>
+    ) => void;
   } = $props();
+
+  let readyFrame = 0;
+
+  function handleCanvasReady(canvas: HTMLCanvasElement | null): void {
+    cancelAnimationFrame(readyFrame);
+    if (!canvas) {
+      onCanvasReady?.(null);
+      return;
+    }
+
+    // AnimatorCanvas announces its backing surface before starting the render
+    // loop. Hold the parent reveal through the first painted frame so a cold
+    // Tunnel never fades up as an initialized-but-empty canvas.
+    readyFrame = requestAnimationFrame(() => {
+      readyFrame = requestAnimationFrame(() => onCanvasReady?.(canvas));
+    });
+  }
 
   function handlePlaybackToggle(): void {
     const next = toggleTunnelPlayback(playing, "canvas");
@@ -140,7 +164,10 @@
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      cancelAnimationFrame(readyFrame);
+    };
   });
 
   // Unbounded-within-loop playhead (1-indexed) for the kaleidoscope sampling —
@@ -153,6 +180,17 @@
   const additionalLayers = $derived(
     controller.additionalLayersAt(samplingStep)
   );
+  let announcedPerformerSteps = "";
+  $effect(() => {
+    if (!onActivePerformerStepsChange) return;
+    const next = controller.authoredPerformerStepIndicesAt(samplingStep);
+    const key = Object.entries(next)
+      .map(([performerId, index]) => `${performerId}:${index}`)
+      .join("|");
+    if (key === announcedPerformerSteps) return;
+    announcedPerformerSteps = key;
+    onActivePerformerStepsChange(next);
+  });
 
   // Reuse the sidebar's chosen effect, applied uniformly across every layer.
   const activeEffect = $derived(effectsConfig?.activeEffect ?? "none");
@@ -184,15 +222,16 @@
       </div>
     {:else if seq}
       <AnimatorCanvas
-        blueProp={base.blue}
-        redProp={base.red}
+        leftProp={base.left}
+        rightProp={base.right}
         {additionalLayers}
         tunnelSpectrum={controller.spectrum}
+        tunnelPropColors={controller.exactPropColors}
         tunnelSelectedLayer={controller.spotlightLayers}
-        {bluePropType}
-        {redPropType}
-        {blueBuugengFlipped}
-        {redBuugengFlipped}
+        {leftPropType}
+        {rightPropType}
+        {leftBuugengFlipped}
+        {rightBuugengFlipped}
         sequenceData={seq}
         currentStep={displayStep}
         isPlaying={playing}
@@ -204,6 +243,7 @@
         {trailSettings}
         {tipEffectMap}
         effectsConfigState={effectsConfig ?? undefined}
+        onCanvasReady={handleCanvasReady}
         visibilityManagerOverride={visibilityManager}
         gridVisible={controller.gridVisible}
         hideHeader={true}

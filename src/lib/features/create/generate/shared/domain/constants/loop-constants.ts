@@ -44,7 +44,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     component: LOOPComponent.SWAPPED,
     label: "Swapped",
     shortLabel: "Swapped",
-    description: "Blue and red hands swap roles",
+    description: "Left and right hands swap roles",
     icon: "shuffle",
     color: "#2ecc71",
   },

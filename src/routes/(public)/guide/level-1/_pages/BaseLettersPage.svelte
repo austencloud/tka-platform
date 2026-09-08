@@ -31,7 +31,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -61,7 +61,7 @@
   // Pro keeps the prop with the handpath (CW, in→in); anti counter-rotates
   // (CCW, in→out). Hybrid = blue anti + red pro (proof: right pro, left anti).
   type Hand = { type: MotionType; rot: RotationDirection; from: GridLocation; to: GridLocation; eo: Orientation };
-  type Cell = { letter: Letter; name: string; blue: Hand; red: Hand };
+  type Cell = { letter: Letter; name: string; left: Hand; right: Hand };
   const pro = (from: GridLocation, to: GridLocation): Hand => ({ type: MotionType.PRO, rot: CW, from, to, eo: IN });
   const anti = (from: GridLocation, to: GridLocation): Hand => ({ type: MotionType.ANTI, rot: CCW, from, to, eo: OUT });
 
@@ -73,9 +73,9 @@
       x: 154.5,
       y: 231.8,
       cells: [
-        { letter: Letter.A, name: "A", blue: pro(SO_, W), red: pro(N, E) },
-        { letter: Letter.B, name: "B", blue: anti(SO_, W), red: anti(N, E) },
-        { letter: Letter.C, name: "C", blue: anti(SO_, W), red: pro(N, E) },
+        { letter: Letter.A, name: "A", left: pro(SO_, W), right: pro(N, E) },
+        { letter: Letter.B, name: "B", left: anti(SO_, W), right: anti(N, E) },
+        { letter: Letter.C, name: "C", left: anti(SO_, W), right: pro(N, E) },
       ],
     },
     // G/H/I - β→β Tog-Same: both hands e→s.
@@ -84,15 +84,15 @@
       x: 154.5,
       y: 563.4,
       cells: [
-        { letter: Letter.G, name: "G", blue: pro(E, SO_), red: pro(E, SO_) },
-        { letter: Letter.H, name: "H", blue: anti(E, SO_), red: anti(E, SO_) },
-        { letter: Letter.I, name: "I", blue: anti(E, SO_), red: pro(E, SO_) },
+        { letter: Letter.G, name: "G", left: pro(E, SO_), right: pro(E, SO_) },
+        { letter: Letter.H, name: "H", left: anti(E, SO_), right: anti(E, SO_) },
+        { letter: Letter.I, name: "I", left: anti(E, SO_), right: pro(E, SO_) },
       ],
     },
   ];
   const CELL = 120;
 
-  const hand = (color: MotionColor, h: Hand) =>
+  const hand = (color: HandSide, h: Hand) =>
     createMotionData({
       motionType: h.type,
       rotationDirection: h.rot,
@@ -106,7 +106,7 @@
       gridMode: GridMode.DIAMOND,
     });
 
-  const staticHand = (color: MotionColor, loc: GridLocation) =>
+  const staticHand = (color: HandSide, loc: GridLocation) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -123,16 +123,16 @@
       id: `bl-${c.name}${stepNumber === null ? "" : `-${stepNumber}`}`,
       letter: c.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
-      endPosition: getGridPositionFromLocations(c.blue.to, c.red.to),
+      startPosition: getGridPositionFromLocations(c.left.from, c.right.from),
+      endPosition: getGridPositionFromLocations(c.left.to, c.right.to),
       motions: {
-        blue: hand(MotionColor.BLUE, c.blue),
-        red: hand(MotionColor.RED, c.red),
+        left: hand(HandSide.LEFT, c.left),
+        right: hand(HandSide.RIGHT, c.right),
       },
       stepNumber,
       duration: 1,
-      blueReversal: false,
-      redReversal: false,
+      leftReversal: false,
+      rightReversal: false,
       isBlank: false,
     }) as unknown as StepData;
 
@@ -144,11 +144,11 @@
       letter: null,
       gridMode: GridMode.DIAMOND,
       stepNumber: 0,
-      startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
-      endPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
+      startPosition: getGridPositionFromLocations(c.left.from, c.right.from),
+      endPosition: getGridPositionFromLocations(c.left.from, c.right.from),
       motions: {
-        blue: staticHand(MotionColor.BLUE, c.blue.from),
-        red: staticHand(MotionColor.RED, c.red.from),
+        left: staticHand(HandSide.LEFT, c.left.from),
+        right: staticHand(HandSide.RIGHT, c.right.from),
       },
     } as unknown as StepData,
     letterStep(c, 1),
@@ -284,8 +284,8 @@
         <PictographContainer
           pictographData={{ ...RESOLVED[key]![1], stepNumber: undefined } as unknown as StepData}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           showGrid={true}
           showTKA={true}
           showPositions={false}

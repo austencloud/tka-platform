@@ -64,7 +64,7 @@ export const SCENE_OPTIONS: SceneOption[] = [
     id: "rainbow",
     label: "Rainbow",
     icon: "fa-rainbow",
-    description: "Rainbow aurora with flowing color bands and colorful particles",
+    description: "Lakeside flow pavilion beneath seven luminous fabric sails",
   },
   {
     id: "celestial",

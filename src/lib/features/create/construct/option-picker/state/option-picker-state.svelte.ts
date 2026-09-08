@@ -88,11 +88,11 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     return [
       sequence.length,
       first?.startPosition ?? "x",
-      getMotionFingerprint(first?.motions?.blue),
-      getMotionFingerprint(first?.motions?.red),
+      getMotionFingerprint(first?.motions?.left),
+      getMotionFingerprint(first?.motions?.right),
       last?.endPosition ?? "x",
-      getMotionFingerprint(last?.motions?.blue),
-      getMotionFingerprint(last?.motions?.red),
+      getMotionFingerprint(last?.motions?.left),
+      getMotionFingerprint(last?.motions?.right),
       gridMode,
     ].join("|");
   }
@@ -253,24 +253,24 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
   function getDebugInfo() {
     // Extract motion data for debugging - this is critical for diagnosing option loading issues
     const getMotionDebugData = (p: PictographData) => ({
-      hasBlueMotion: !!p.motions?.blue,
-      hasRedMotion: !!p.motions?.red,
-      blueMotion: p.motions?.blue
+      hasLeftMotion: !!p.motions?.left,
+      hasRightMotion: !!p.motions?.right,
+      leftMotion: p.motions?.left
         ? {
-            startLocation: p.motions.blue.startLocation,
-            endLocation: p.motions.blue.endLocation,
-            startOrientation: p.motions.blue.startOrientation,
-            endOrientation: p.motions.blue.endOrientation,
-            motionType: p.motions.blue.motionType,
+            startLocation: p.motions.left.startLocation,
+            endLocation: p.motions.left.endLocation,
+            startOrientation: p.motions.left.startOrientation,
+            endOrientation: p.motions.left.endOrientation,
+            motionType: p.motions.left.motionType,
           }
         : null,
-      redMotion: p.motions?.red
+      rightMotion: p.motions?.right
         ? {
-            startLocation: p.motions.red.startLocation,
-            endLocation: p.motions.red.endLocation,
-            startOrientation: p.motions.red.startOrientation,
-            endOrientation: p.motions.red.endOrientation,
-            motionType: p.motions.red.motionType,
+            startLocation: p.motions.right.startLocation,
+            endLocation: p.motions.right.endLocation,
+            startOrientation: p.motions.right.startOrientation,
+            endOrientation: p.motions.right.endOrientation,
+            motionType: p.motions.right.motionType,
           }
         : null,
     });
@@ -291,7 +291,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
       currentSequenceLength: currentSequence.length,
       // Quick diagnosis: last beat motion status
       lastStepHasMotions: lastStepMotionData
-        ? lastStepMotionData.hasBlueMotion && lastStepMotionData.hasRedMotion
+        ? lastStepMotionData.hasLeftMotion && lastStepMotionData.hasRightMotion
         : false,
       lastStepMotionData,
       // Full sequence with motion data

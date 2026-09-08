@@ -16,6 +16,7 @@
    */
   import GuidePictograph from "../../level-1/_components/GuidePictograph.svelte";
   import CodexTransitionGlyph from "./CodexTransitionGlyph.svelte";
+  import PictographTypeFrame from "$lib/shared/pictograph/shared/components/PictographTypeFrame.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -35,6 +36,7 @@
     showTransition = true,
     theme = "print",
     dataOverride,
+    href,
     onSelect,
   }: {
     cell: CodexCellDef;
@@ -63,12 +65,14 @@
     /** Live-transformed pictograph (rotate/mirror/color-swap) to render instead
      *  of the canonical dataset. Only the interactive reader supplies this. */
     dataOverride?: PictographData | null;
+    /** Presence makes the whole cell a semantic navigation link. */
+    href?: string;
     /** Presence makes the cell clickable - only the reader supplies it. */
     onSelect?: (id: string) => void;
   } = $props();
 
   const data = $derived(dataOverride ?? codexData(cell.id));
-  const selection = onSelect ? getSequenceSelection() : null;
+  const selection = onSelect || href ? getSequenceSelection() : null;
 </script>
 
 {#snippet cellBody()}
@@ -76,30 +80,51 @@
     <span class="cell-top"><CodexTransitionGlyph text={cell.top} /></span>
   {/if}
   <div class="picto">
-    <GuidePictograph
-      {data}
-      size="sm"
-      {showGrid}
-      showArrows={true}
-      {propType}
-      {showTKA}
-      showTnD={showGlyph}
-      showElemental={showGlyph}
-      {showPositions}
-      {showReversals}
-      {showNonRadialPoints}
-      printMode={true}
-      darkMode={false}
-      forceTheme={theme === "dark" ? "dark" : undefined}
-      eager={true}
-    />
+    {#if theme === "dark"}
+      <PictographTypeFrame letter={data?.letter}>
+        <GuidePictograph
+          {data}
+          size="sm"
+          {showGrid}
+          showArrows={true}
+          {propType}
+          {showTKA}
+          showTnD={showGlyph}
+          showElemental={showGlyph}
+          {showPositions}
+          {showReversals}
+          {showNonRadialPoints}
+          printMode={true}
+          darkMode={false}
+          forceTheme="dark"
+          eager={true}
+        />
+      </PictographTypeFrame>
+    {:else}
+      <GuidePictograph
+        {data}
+        size="sm"
+        {showGrid}
+        showArrows={true}
+        {propType}
+        {showTKA}
+        showTnD={showGlyph}
+        showElemental={showGlyph}
+        {showPositions}
+        {showReversals}
+        {showNonRadialPoints}
+        printMode={true}
+        darkMode={false}
+        eager={true}
+      />
+    {/if}
   </div>
   {#if cell.name && showName}
     <span class="cell-name">{cell.name}</span>
   {/if}
 {/snippet}
 
-{#if onSelect}
+{#if onSelect || href}
   <div
     class="codex-cell interactive tka-seq-cell"
     class:is-hovered={selection?.isHovered(cell.id)}
@@ -109,8 +134,9 @@
     <SelectionHit
       groupId={cell.id}
       isGroupStart
-      label={`Animate ${cell.label}${cell.name ? `, ${cell.name}` : ""}`}
-      onselect={() => onSelect(cell.id)}
+      label={`Explore ${cell.label}${cell.name ? `, ${cell.name}` : ""} variations`}
+      {href}
+      onselect={() => onSelect?.(cell.id)}
     />
   </div>
 {:else}
@@ -126,6 +152,7 @@
     align-items: center;
     gap: 2px;
     min-width: 0;
+    border-radius: var(--codex-cell-radius, 0);
   }
 
   /* Every colour and caption size below is a token whose DEFAULT is the value
@@ -153,7 +180,11 @@
     width: var(--codex-picto-size, 110px);
     aspect-ratio: 1;
     box-sizing: border-box;
-    border: 1px solid var(--codex-cell-border, #2b2b2b);
+    border: var(
+      --codex-cell-frame,
+      1px solid var(--codex-cell-border, #2b2b2b)
+    );
+    border-radius: var(--codex-cell-radius, 0);
     display: flex;
     align-items: center;
     justify-content: center;

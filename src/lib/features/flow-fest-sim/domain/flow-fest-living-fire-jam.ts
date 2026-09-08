@@ -13,19 +13,22 @@ export type FlowFestFestivalPersonBehavior =
   | "led-session"
   | "field-practice";
 
+/**
+ * Festival attendees must read as ordinary humans. The chXX catalog also
+ * contains creature models that this union deliberately excludes: ch10 is a
+ * zombie (bloody decayed skin, reads as a charred body), ch34 is a green
+ * plant creature, and ch44 is a near-black creature with glowing accents.
+ */
 export type FlowFestFestivalAvatarId =
   | "ch01"
   | "ch07"
-  | "ch10"
   | "ch12"
   | "ch18"
   | "ch21"
   | "ch22"
   | "ch24"
-  | "ch34"
   | "ch41"
-  | "ch42"
-  | "ch44";
+  | "ch42";
 
 export interface FlowFestFestivalPersonPlacement {
   id: string;

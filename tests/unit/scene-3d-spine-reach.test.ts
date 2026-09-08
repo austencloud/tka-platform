@@ -31,7 +31,7 @@ describe("scene-3d cross-body shoulder reach", () => {
     expect(spine.y).toBeCloseTo(0, 6);
   });
 
-  it("carries both shoulders forward for a symmetric crossed-hand pose", () => {
+  it("keeps a symmetric crossed-hand pose centered without a forced bow", () => {
     const result = twister.computeSpineTwist(
       new Vector3(0.4, 0, 0.42),
       new Vector3(-0.4, 0, 0.42),
@@ -39,7 +39,7 @@ describe("scene-3d cross-body shoulder reach", () => {
     );
     const spine = rotationFrom(result.spine1);
 
-    expect(spine.x).toBeGreaterThan(0);
+    expect(spine.x).toBeCloseTo(0, 6);
     expect(spine.y).toBeCloseTo(0, 6);
   });
 
@@ -51,7 +51,7 @@ describe("scene-3d cross-body shoulder reach", () => {
     );
     const spine = rotationFrom(result.spine1);
 
-    expect(spine.x).toBeGreaterThan(0);
+    expect(spine.x).toBeCloseTo(0, 6);
     expect(spine.y).toBeGreaterThan(0);
   });
 });

@@ -36,6 +36,24 @@ export interface Section {
   groupId?: string;
 }
 
+/** Static copy for a module landing surface. Routing still treats the landing
+ * as `/module`, never as a synthetic tab. */
+export interface ModuleHomeDefinition {
+  label: string;
+  optionLabel?: string;
+  ariaLabel?: string;
+  description?: string;
+  icon?: string;
+}
+
+/** A module landing surface prepared for the active navigation chrome. */
+export interface SectionHomeDestination extends ModuleHomeDefinition {
+  icon: string;
+  color?: string;
+  gradient?: string;
+  active: boolean;
+}
+
 /**
  * Section Group
  * A collapsible cluster of sections within a single module's sidebar.
@@ -96,6 +114,8 @@ export interface ModuleDefinition {
   description?: string;
   isMain: boolean;
   sections: Section[];
+  /** Optional `/module` landing destination shown above the module's tabs. */
+  home?: ModuleHomeDefinition;
   /** Optional collapsible group definitions. When present, the desktop sidebar
    *  renders this module's sections clustered under group headers (sections are
    *  matched by their `groupId`). Absent → flat list (default). */

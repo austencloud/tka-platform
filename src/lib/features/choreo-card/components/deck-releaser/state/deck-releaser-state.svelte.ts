@@ -31,8 +31,8 @@ import {
 
 export interface DeckReleaserStateDependencies {
   storage: DeckReleaserSessionStorage;
-  getBluePropType(): PropType | null | undefined;
-  getRedPropType(): PropType | null | undefined;
+  getLeftPropType(): PropType | null | undefined;
+  getRightPropType(): PropType | null | undefined;
   mintSeed(): string;
   nextReferenceNumber(): number;
 }
@@ -47,8 +47,8 @@ export interface DeckReleaserState {
   name: string;
   description: string;
   themeOverride: string | null;
-  bluePropOverride: PropType | null;
-  redPropOverride: PropType | null;
+  leftPropOverride: PropType | null;
+  rightPropOverride: PropType | null;
   brokenLoopCount: number;
   variationConfig: VariationConfig;
   selectedStartOriModes: Set<StartOriMode>;
@@ -63,8 +63,8 @@ export interface DeckReleaserState {
   selectedLoopTypes: Set<string>;
   selectedLevels: Set<number>;
   selectedStartPositionIds: Set<string>;
-  startOriBlue: string;
-  startOriRed: string;
+  startOriLeft: string;
+  startOriRight: string;
   propStyle: "smooth" | "mixed" | "choppy";
   handStyle: "smooth" | "mixed" | "choppy";
   dashStyle: "low" | "mixed" | "high";
@@ -87,8 +87,8 @@ export interface DeckReleaserState {
   drawGeneration: number;
   poolsLoaded: boolean;
   readonly theme: string;
-  readonly bluePropType: PropType;
-  readonly redPropType: PropType;
+  readonly leftPropType: PropType;
+  readonly rightPropType: PropType;
   readonly savedViewingDeckNumber: number | null;
   persist(): void;
   toggleStartOriMode(mode: StartOriMode): void;
@@ -121,8 +121,8 @@ export function createDeckReleaserState(
   let name = $state(saved?.name ?? "");
   let description = $state(saved?.description ?? "");
   let themeOverride = $state<string | null>(null);
-  let bluePropOverride = $state<PropType | null>(null);
-  let redPropOverride = $state<PropType | null>(null);
+  let leftPropOverride = $state<PropType | null>(null);
+  let rightPropOverride = $state<PropType | null>(null);
   let brokenLoopCount = $state(0);
   let variationConfig = $state<VariationConfig>(
     saved?.variationConfig ?? { ...DEFAULT_VARIATION_CONFIG }
@@ -155,8 +155,8 @@ export function createDeckReleaserState(
   let selectedStartPositionIds = $state<Set<string>>(
     new Set(saved?.startPositionIds ?? [])
   );
-  let startOriBlue = $state(saved?.startOriBlue ?? "in");
-  let startOriRed = $state(saved?.startOriRed ?? "in");
+  let startOriLeft = $state(saved?.startOriLeft ?? "in");
+  let startOriRight = $state(saved?.startOriRight ?? "in");
   let propStyle = $state<"smooth" | "mixed" | "choppy">(
     saved?.propStyle ?? "mixed"
   );
@@ -207,8 +207,8 @@ export function createDeckReleaserState(
       loopTypes: [...selectedLoopTypes],
       levels: [...selectedLevels],
       startPositionIds: [...selectedStartPositionIds],
-      startOriBlue,
-      startOriRed,
+      startOriLeft,
+      startOriRight,
       propStyle,
       handStyle,
       dashStyle,
@@ -273,8 +273,8 @@ export function createDeckReleaserState(
       if (selectedStartPositionIds.size > 0) {
         recipe.startPositionIds = [...selectedStartPositionIds];
       }
-      recipe.startOriBlue = startOriBlue;
-      recipe.startOriRed = startOriRed;
+      recipe.startOriLeft = startOriLeft;
+      recipe.startOriRight = startOriRight;
       recipe.propStyle = propStyle;
       recipe.handStyle = handStyle;
       recipe.dashStyle = dashStyle;
@@ -309,8 +309,8 @@ export function createDeckReleaserState(
     name = "";
     description = "";
     themeOverride = null;
-    bluePropOverride = null;
-    redPropOverride = null;
+    leftPropOverride = null;
+    rightPropOverride = null;
     brokenLoopCount = 0;
     deckMode = recipe.deckMode;
     selectedStartOriModes = new Set(
@@ -343,8 +343,8 @@ export function createDeckReleaserState(
       );
       selectedLevels = new Set(recipe.levels?.length ? recipe.levels : [1]);
       selectedStartPositionIds = new Set(recipe.startPositionIds ?? []);
-      if (recipe.startOriBlue) startOriBlue = recipe.startOriBlue;
-      if (recipe.startOriRed) startOriRed = recipe.startOriRed;
+      if (recipe.startOriLeft) startOriLeft = recipe.startOriLeft;
+      if (recipe.startOriRight) startOriRight = recipe.startOriRight;
       if (recipe.propStyle) propStyle = recipe.propStyle;
       if (recipe.handStyle) handStyle = recipe.handStyle;
       if (recipe.dashStyle) dashStyle = recipe.dashStyle;
@@ -382,15 +382,15 @@ export function createDeckReleaserState(
     name = "";
     description = "";
     themeOverride = null;
-    bluePropOverride = null;
-    redPropOverride = null;
+    leftPropOverride = null;
+    rightPropOverride = null;
     brokenLoopCount = 0;
     seed = deps.mintSeed();
     selectedLoopTypes = new Set(["rotated"]);
     selectedLevels = new Set([1]);
     selectedStartPositionIds = new Set();
-    startOriBlue = "in";
-    startOriRed = "in";
+    startOriLeft = "in";
+    startOriRight = "in";
     step = "configure";
     persist();
   }
@@ -450,17 +450,17 @@ export function createDeckReleaserState(
     set themeOverride(value) {
       themeOverride = value;
     },
-    get bluePropOverride() {
-      return bluePropOverride;
+    get leftPropOverride() {
+      return leftPropOverride;
     },
-    set bluePropOverride(value) {
-      bluePropOverride = value;
+    set leftPropOverride(value) {
+      leftPropOverride = value;
     },
-    get redPropOverride() {
-      return redPropOverride;
+    get rightPropOverride() {
+      return rightPropOverride;
     },
-    set redPropOverride(value) {
-      redPropOverride = value;
+    set rightPropOverride(value) {
+      rightPropOverride = value;
     },
     get brokenLoopCount() {
       return brokenLoopCount;
@@ -546,17 +546,17 @@ export function createDeckReleaserState(
     set selectedStartPositionIds(value) {
       selectedStartPositionIds = value;
     },
-    get startOriBlue() {
-      return startOriBlue;
+    get startOriLeft() {
+      return startOriLeft;
     },
-    set startOriBlue(value) {
-      startOriBlue = value;
+    set startOriLeft(value) {
+      startOriLeft = value;
     },
-    get startOriRed() {
-      return startOriRed;
+    get startOriRight() {
+      return startOriRight;
     },
-    set startOriRed(value) {
-      startOriRed = value;
+    set startOriRight(value) {
+      startOriRight = value;
     },
     get propStyle() {
       return propStyle;
@@ -687,19 +687,19 @@ export function createDeckReleaserState(
     get theme() {
       return "rainbow";
     },
-    get bluePropType() {
+    get leftPropType() {
       return (
-        bluePropOverride ??
+        leftPropOverride ??
         selectedPropType ??
-        deps.getBluePropType() ??
+        deps.getLeftPropType() ??
         PropType.STAFF
       );
     },
-    get redPropType() {
+    get rightPropType() {
       return (
-        redPropOverride ??
+        rightPropOverride ??
         selectedPropType ??
-        deps.getRedPropType() ??
+        deps.getRightPropType() ??
         PropType.STAFF
       );
     },

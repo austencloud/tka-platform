@@ -4,6 +4,8 @@
   import ExportPopover from "$lib/shared/sequence-viewer/components/ExportPopover.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import type { SceneVideoExportState } from "../services/create-scene-video-export.svelte";
+  import RenderFilmCard from "$lib/shared/sequence-viewer/components/record-scene/RenderFilmCard.svelte";
+  import type { Scene3DFilm } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
 
   interface Props {
     open: boolean;
@@ -11,15 +13,27 @@
     bpm: number;
     exporter: SceneVideoExportState;
     onClose: () => void;
+    /** Present when this modal was opened to re-render a recorded camera
+     *  performance. The film replaces the current static angle, and the card's
+     *  quality presets replace the full export settings. */
+    film?: Scene3DFilm | undefined;
   }
 
-  let { open = $bindable(), sequence, bpm, exporter, onClose }: Props = $props();
+  let {
+    open = $bindable(),
+    sequence,
+    bpm,
+    exporter,
+    onClose,
+    film = undefined,
+  }: Props = $props();
 
   const state = $derived(exporter.state);
   const progressPercent = $derived(
     Math.round(Math.max(0, Math.min(1, state.progress?.progress ?? 0)) * 100)
   );
   const progressLabel = $derived.by(() => {
+    if (state.isCancelling) return "Cancelling render";
     switch (state.progress?.stage) {
       case "capturing":
         return "Rendering frames";
@@ -41,7 +55,7 @@
 
   async function render(): Promise<void> {
     exporter.clearError();
-    await exporter.render(sequence, bpm);
+    await exporter.render(sequence, bpm, film);
   }
 </script>
 
@@ -80,14 +94,20 @@
       />
     {:else}
       <div class="shot-summary">
-        <i class="fas fa-video" aria-hidden="true"></i>
+        <i class="fas {film ? 'fa-clapperboard' : 'fa-video'}" aria-hidden="true"></i>
         <div>
-          <strong>Export the current shot</strong>
-          <span>Your camera angle, performers, effects, and environment.</span>
+          <strong>{film ? "Render this recording" : "Export the current shot"}</strong>
+          <span>
+            {film
+              ? "The camera path you recorded, at whatever quality you pick."
+              : "Your camera angle, performers, effects, and environment."}
+          </span>
         </div>
       </div>
 
-      <ExportPopover />
+      {#if !film}
+        <ExportPopover />
+      {/if}
 
       {#if state.error}
         <p class="export-error" role="alert">{state.error}</p>
@@ -108,12 +128,35 @@
           >
             <span style:width={`${progressPercent}%`}></span>
           </div>
-          <button type="button" class="cancel-button" onclick={exporter.cancel}>
-            Cancel
+          <button
+            type="button"
+            class="cancel-button"
+            onclick={exporter.cancel}
+            disabled={state.isCancelling}
+            aria-label={state.isCancelling
+              ? "Cancelling render"
+              : "Cancel render"}
+          >
+            {state.isCancelling ? "Cancelling..." : "Cancel"}
           </button>
         </div>
+      {:else if film}
+        <RenderFilmCard
+          presentation="inline"
+          durationSeconds={film.durationSeconds}
+          exportOptions={exporter.options}
+          title="Quality"
+          renderLabel="Render film"
+          discardLabel="Cancel"
+          onRender={() => void render()}
+          onDiscard={close}
+        />
       {:else}
-        <button type="button" class="render-button" onclick={() => void render()}>
+        <button
+          type="button"
+          class="render-button"
+          onclick={() => void render()}
+        >
           <i class="fas fa-clapperboard" aria-hidden="true"></i>
           Render 3D video
         </button>
@@ -223,7 +266,11 @@
     justify-content: center;
     gap: 0.625rem;
     padding: 0.75rem 1rem;
-    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 62%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #22d3ee) 62%,
+      transparent
+    );
     background: var(--theme-accent, #22d3ee);
     color: #061014;
     font-weight: 800;
@@ -259,9 +306,15 @@
 
   .cancel-button {
     align-self: center;
+    min-width: 7.5rem;
     padding: 0.625rem 1rem;
     background: transparent;
     color: var(--theme-text, #fff);
+  }
+
+  .cancel-button:disabled {
+    cursor: wait;
+    opacity: 0.62;
   }
 
   .export-error {

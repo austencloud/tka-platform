@@ -105,7 +105,7 @@ describe("festival sampler turn review", () => {
 
   it("changes the whole cyclic motif when one visible step is edited", () => {
     const entries = parseFestivalTurnPattern("1|0-0|0-1|0-0|0");
-    const edited = setFestivalTurnMotifValue(entries, 2, 2, "red", 1);
+    const edited = setFestivalTurnMotifValue(entries, 2, 2, "right", 1);
 
     expect(formatFestivalTurnPattern(edited)).toBe("1|1-0|0-1|1-0|0");
     expect(smallestFestivalTurnMotifLength(edited)).toBe(2);

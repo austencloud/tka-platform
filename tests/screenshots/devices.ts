@@ -217,8 +217,8 @@ export const PUBLIC_ROUTES: RouteConfig[] = [
     waitSelector: ".terms-page",
   },
   {
-    path: "/notation",
-    label: "notation",
+    path: "/history",
+    label: "history",
     requiresAuth: false,
     isModule: false,
     waitSelector: ".playable-viewport .room-title",
@@ -242,8 +242,8 @@ const VIEWER_SEQUENCE_ID = "2LKS";
 const VIEWER_3D_PERFORMER = (x: number, z: number) => ({
   position: { x, z },
   facingAngle: 0,
-  customBluePlane: "wall",
-  customRedPlane: "wall",
+  customLeftPlane: "wall",
+  customRightPlane: "wall",
   name: null,
   settings: {
     prop: null,

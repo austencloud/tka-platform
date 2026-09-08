@@ -1,0 +1,10 @@
+{
+  "emulation": "2 reported hardware threads, 375x667 CSS pixels, reduced motion",
+  "canvas": [
+    {
+      "height": 607,
+      "width": 375
+    }
+  ],
+  "perf": "FPS 52 P95 29.7 ms P99 44.9 ms GPU95 4.3 ms Long 2.56% Drift 0.0% Draw 107 Tris 3287.7k Geo 122 Tex 12 Prog 57"
+}

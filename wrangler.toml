@@ -76,3 +76,11 @@ namespace_id = "1006"
   [ratelimits.simple]
   limit = 20
   period = 60
+
+[[ratelimits]]
+name = "RL_SOFTWARE_SUBMISSION"
+namespace_id = "1007"
+
+  [ratelimits.simple]
+  limit = 4
+  period = 60

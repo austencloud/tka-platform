@@ -48,17 +48,17 @@ export class PulseRenderer3D {
   private readonly flash = new Float32Array(RING_CAPACITY);
   private readonly thickness = new Float32Array(RING_CAPACITY);
   private readonly glowStyle = new Uint8Array(RING_CAPACITY);
-  private readonly red = new Float32Array(RING_CAPACITY);
+  private readonly right = new Float32Array(RING_CAPACITY);
   private readonly green = new Float32Array(RING_CAPACITY);
-  private readonly blue = new Float32Array(RING_CAPACITY);
-  private readonly fadeRed = new Float32Array(RING_CAPACITY);
+  private readonly left = new Float32Array(RING_CAPACITY);
+  private readonly fadeRight = new Float32Array(RING_CAPACITY);
   private readonly fadeGreen = new Float32Array(RING_CAPACITY);
-  private readonly fadeBlue = new Float32Array(RING_CAPACITY);
+  private readonly fadeLeft = new Float32Array(RING_CAPACITY);
   private readonly hueShift = new Uint8Array(RING_CAPACITY);
   private readonly lastBeatIndex = new Map<number, number>();
   private readonly lastSpawn = new Map<number, number>();
-  private readonly color: MutableRgb = { red: 1, green: 1, blue: 1 };
-  private readonly fadeColor: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly color: MutableRgb = { right: 1, green: 1, left: 1 };
+  private readonly fadeColor: MutableRgb = { right: 1, green: 1, left: 1 };
   private readonly writeState: ParticleInstanceWrite = {
     x: 0,
     y: 0,
@@ -66,9 +66,9 @@ export class PulseRenderer3D {
     scaleX: 1,
     scaleY: 1,
     scaleZ: 1,
-    red: 1,
+    right: 1,
     green: 1,
-    blue: 1,
+    left: 1,
     alpha: 1,
   };
   private clock = 0;
@@ -203,12 +203,12 @@ export class PulseRenderer3D {
     this.flash[slot] = source.params.flash;
     this.thickness[slot] = source.params.ringThicknessRatio;
     this.glowStyle[slot] = source.params.style === "glow" ? 1 : 0;
-    this.red[slot] = this.color.red;
+    this.right[slot] = this.color.right;
     this.green[slot] = this.color.green;
-    this.blue[slot] = this.color.blue;
-    this.fadeRed[slot] = this.fadeColor.red;
+    this.left[slot] = this.color.left;
+    this.fadeRight[slot] = this.fadeColor.right;
     this.fadeGreen[slot] = this.fadeColor.green;
-    this.fadeBlue[slot] = this.fadeColor.blue;
+    this.fadeLeft[slot] = this.fadeColor.left;
     this.hueShift[slot] = source.params.resolvedPalette.hueShift ? 1 : 0;
   }
 
@@ -229,14 +229,14 @@ export class PulseRenderer3D {
       falloff *
       this.amplitude[index]!;
     const colorMix = this.hueShift[index] === 1 ? progress : progress * 0.35;
-    const red =
-      this.red[index]! + (this.fadeRed[index]! - this.red[index]!) * colorMix;
+    const right =
+      this.right[index]! + (this.fadeRight[index]! - this.right[index]!) * colorMix;
     const green =
       this.green[index]! +
       (this.fadeGreen[index]! - this.green[index]!) * colorMix;
-    const blue =
-      this.blue[index]! +
-      (this.fadeBlue[index]! - this.blue[index]!) * colorMix;
+    const left =
+      this.left[index]! +
+      (this.fadeLeft[index]! - this.left[index]!) * colorMix;
     const deformation = this.asymmetry[index]! * (0.2 + 0.3 * energy);
     const scaleX = radius * (1 + deformation * 0.55);
     const scaleY = radius * (1 - deformation * 0.18);
@@ -252,9 +252,9 @@ export class PulseRenderer3D {
         index,
         scaleX * inset,
         scaleY * inset,
-        red,
+        right,
         green,
-        blue,
+        left,
         alpha / Math.sqrt(copies),
         0
       );
@@ -297,9 +297,9 @@ export class PulseRenderer3D {
         index,
         glowScale,
         glowScale,
-        red,
+        right,
         green,
-        blue,
+        left,
         this.glowStyle[index] === 1 ? alpha * 0.09 : flashAlpha * 0.5,
         0
       );
@@ -311,9 +311,9 @@ export class PulseRenderer3D {
     index: number,
     scaleX: number,
     scaleY: number,
-    red: number,
+    right: number,
     green: number,
-    blue: number,
+    left: number,
     alpha: number,
     xOffset: number
   ): void {
@@ -324,9 +324,9 @@ export class PulseRenderer3D {
     write.scaleX = scaleX;
     write.scaleY = scaleY;
     write.scaleZ = 1;
-    write.red = red;
+    write.right = right;
     write.green = green;
-    write.blue = blue;
+    write.left = left;
     write.alpha = alpha;
     pool.write(write);
   }

@@ -13,7 +13,7 @@ export async function ensureMotionData(
 ): Promise<SequenceData | null> {
   // Check if sequence already has motion data
   const hasMotions = seq.steps?.some(
-    (b) => b?.motions?.blue && b?.motions?.red
+    (b) => b?.motions?.left && b?.motions?.right
   );
   if (hasMotions) return seq;
 
@@ -25,7 +25,7 @@ export async function ensureMotionData(
         galleryId,
         seq.id
       );
-      if (loaded?.steps?.some((b) => b?.motions?.blue && b?.motions?.red)) {
+      if (loaded?.steps?.some((b) => b?.motions?.left && b?.motions?.right)) {
         return loaded;
       }
     } catch (err) {

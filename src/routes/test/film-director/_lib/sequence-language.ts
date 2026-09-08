@@ -98,7 +98,7 @@ const DIFFICULTY_BY_LEVEL: Record<DirectorSequenceLevel, DifficultyLevel> = {
 
 export type DirectorPositionRef =
   | string
-  | { blue: string; red: string }
+  | { left: string; right: string }
   | { group: DirectorPositionGroup; location: string };
 
 export type DirectorTurnValue = number | "fl";
@@ -107,12 +107,12 @@ export type DirectorTurnLane = DirectorTurnValue | DirectorTurnValue[];
 
 export type DirectorTurns =
   | DirectorTurnLane
-  | { blue?: DirectorTurnLane; red?: DirectorTurnLane }
+  | { left?: DirectorTurnLane; right?: DirectorTurnLane }
   | { intensity: number };
 
 export type DirectorStartOrientation =
   | DirectorOrientation
-  | { blue?: DirectorOrientation; red?: DirectorOrientation };
+  | { left?: DirectorOrientation; right?: DirectorOrientation };
 
 /**
  * A film is authored as JSON as often as it is authored in TypeScript, so the
@@ -132,7 +132,13 @@ export interface DirectorSequenceControls {
   startPosition?: DirectorPositionRef;
   startOrientation?: DirectorStartOrientation;
   turns?: DirectorTurns;
-  level?: DirectorSequenceLevel;
+  /**
+   * Gap 20. One level, or a ramp the cast walks from `from` to `to`. The ramp
+   * is only sayable in cast defaults; the schema rejects it on one performer.
+   */
+  level?:
+    | DirectorSequenceLevel
+    | { ramp: { from: DirectorSequenceLevel; to: DirectorSequenceLevel } };
   gridMode?: GridMode;
   /** Prop spin continuity. */
   flow?: DirectorContinuity;
@@ -148,26 +154,113 @@ export type DirectorGeneratedSequence =
   | ({ word: string } & DirectorSequenceControls)
   | ({ length: number } & DirectorSequenceControls);
 
+/** Hands a transform may address. `both` is the default everywhere it applies. */
+export type DirectorTransformHand = "left" | "right" | "both";
+
+export const DIRECTOR_ROTATION_DEGREES = [
+  45, 90, 135, 180, 225, 270, 315,
+] as const;
+export type DirectorRotationDegrees = (typeof DIRECTOR_ROTATION_DEGREES)[number];
+
+/**
+ * One operation on another performer's sequence, applied in the order
+ * written. Every op maps onto a function the Create module's Actions panel
+ * already owns in `sequence-transformer.ts`; the film adds words, not math.
+ *
+ * - `mirror`: reflect across the north-south axis (what `mirrorOf` does).
+ * - `flip`: reflect across the east-west axis.
+ * - `rotate`: turn the whole pattern about the grid center, 45° steps.
+ * - `swap-hands`: the left hand's motions go to the right hand and back.
+ * - `invert`: pro and anti trade, and every rotation direction reverses.
+ * - `rewind`: play the sequence backwards (retrograde).
+ * - `start-at`: rotate the phrase so the named step is danced first.
+ */
+export type DirectorSequenceTransform =
+  | { op: "mirror"; hand?: DirectorTransformHand }
+  | { op: "flip"; hand?: DirectorTransformHand }
+  | {
+      op: "rotate";
+      degrees: DirectorRotationDegrees;
+      direction: "cw" | "ccw";
+      hand?: DirectorTransformHand;
+    }
+  | { op: "swap-hands" }
+  | { op: "invert"; hand?: DirectorTransformHand }
+  | { op: "rewind"; hand?: DirectorTransformHand }
+  | { op: "start-at"; step: number };
+
+export interface DirectorTransformedSequence {
+  transformOf: string;
+  transforms: DirectorSequenceTransform[];
+}
+
+/** A saved sequence in the public library, by its `publicSequences` id. */
+export interface DirectorLibrarySequence {
+  library: string;
+}
+
 /**
  * What one performer spins. `demo` is the film's shared sequence; `word` and
  * `length` generate a new one through the same pipeline the Create module
  * uses; `mirrorOf` reflects another performer's sequence across the
- * north-south axis — the transform that makes a pair read as mirrored rather
- * than merely synchronized.
+ * north-south axis, the one-word spelling of
+ * `{transformOf, transforms: [{op: "mirror"}]}`; `transformOf` applies any
+ * chain of the Actions-panel transforms to another performer's sequence; and
+ * `library` plays a sequence someone saved to the public library.
  *
- * `demo` and `mirrorOf` take no controls. A mirror is its source's sequence
- * reflected, so a turn figure written on the mirror would have to disagree
- * with the thing it claims to reflect.
+ * `{source: "none"}` is a performer who stands and watches: no prop phrase, no
+ * generated sequence, the body idling in place. Blocking still applies, so a
+ * watcher can walk on, stand, and turn.
+ *
+ * `demo`, `none`, `mirrorOf`, `transformOf`, and `library` take no controls. A
+ * derived sequence is its source's sequence changed in a stated way, so a turn
+ * figure written on it would have to disagree with the thing it claims to
+ * derive from; a library sequence is already finished; and a performer who
+ * spins nothing has nothing for a control to shape.
  */
 export type DirectorPerformerSequence =
   | { source: "demo" }
+  | { source: "none" }
   | { mirrorOf: string }
+  | DirectorTransformedSequence
+  | DirectorLibrarySequence
   | DirectorGeneratedSequence;
+
+/** A performer who spins nothing this scene and simply stands and watches. */
+export function isIdleSequence(
+  sequence: DirectorPerformerSequence
+): sequence is { source: "none" } {
+  return "source" in sequence && sequence.source === "none";
+}
 
 export function isGeneratedSequence(
   sequence: DirectorPerformerSequence
 ): sequence is DirectorGeneratedSequence {
   return "word" in sequence || "length" in sequence;
+}
+
+export function isTransformedSequence(
+  sequence: DirectorPerformerSequence
+): sequence is DirectorTransformedSequence {
+  return "transformOf" in sequence;
+}
+
+export function isLibrarySequence(
+  sequence: DirectorPerformerSequence
+): sequence is DirectorLibrarySequence {
+  return "library" in sequence;
+}
+
+/**
+ * The performer a derived sequence reads from, or null for a sequence that
+ * stands on its own. `mirrorOf` and `transformOf` are the two derived forms.
+ */
+export function transformSourceId(
+  sequence: DirectorPerformerSequence
+): string | null {
+  if ("mirrorOf" in sequence) return sequence.mirrorOf;
+  if ("transformOf" in sequence) return sequence.transformOf;
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -219,8 +312,8 @@ const POSITION_CATALOG = DIRECTOR_POSITION_GROUPS.map((group) => {
 }).join(", ");
 
 function describePosition(position: GridPosition): string {
-  const [blue, red] = getGridLocationsFromPosition(position);
-  return `${position} (blue ${blue}, red ${red})`;
+  const [left, right] = getGridLocationsFromPosition(position);
+  return `${position} (left ${left}, right ${right})`;
 }
 
 /**
@@ -246,22 +339,22 @@ export function resolvePositionRef(
     return name as GridPosition;
   }
 
-  if ("blue" in ref) {
-    const blue = requireLocation(ref.blue, where);
-    const red = requireLocation(ref.red, where);
+  if ("left" in ref) {
+    const left = requireLocation(ref.left, where);
+    const right = requireLocation(ref.right, where);
     try {
-      return getGridPositionFromLocations(blue, red);
+      return getGridPositionFromLocations(left, right);
     } catch {
       throw new Error(
-        `${where}: no TKA position puts blue at ${blue} and red at ${red}.`
+        `${where}: no TKA position puts the left hand at ${left} and right hand at ${right}.`
       );
     }
   }
 
   const location = requireLocation(ref.location, where);
   const candidates = POSITIONS_BY_GROUP.get(ref.group)!.filter((position) => {
-    const [blue, red] = getGridLocationsFromPosition(position);
-    return blue === location || red === location;
+    const [left, right] = getGridLocationsFromPosition(position);
+    return left === location || right === location;
   });
 
   if (candidates.length === 1) return candidates[0]!;
@@ -273,7 +366,7 @@ export function resolvePositionRef(
   throw new Error(
     `${where}: "${ref.group} at ${location}" could be ${candidates
       .map(describePosition)
-      .join(" or ")}. Name one, or give a {blue, red} pair.`
+      .join(" or ")}. Name one, or give a {left, right} pair.`
   );
 }
 
@@ -287,11 +380,11 @@ function isIntensity(turns: DirectorTurns): turns is { intensity: number } {
 
 function isLanePair(
   turns: DirectorTurns
-): turns is { blue?: DirectorTurnLane; red?: DirectorTurnLane } {
+): turns is { left?: DirectorTurnLane; right?: DirectorTurnLane } {
   return (
     typeof turns === "object" &&
     !Array.isArray(turns) &&
-    ("blue" in turns || "red" in turns)
+    ("left" in turns || "right" in turns)
   );
 }
 
@@ -347,11 +440,11 @@ function compileTurns(
   }
 
   const lanes: TurnLanes = isLanePair(turns)
-    ? { blue: toLane(turns.blue), red: toLane(turns.red) }
-    : { blue: toLane(turns), red: toLane(turns) };
+    ? { left: toLane(turns.left), right: toLane(turns.right) }
+    : { left: toLane(turns), right: toLane(turns) };
 
-  lanes.blue.forEach((value) => assertTurnAllowed(value, level, "blue", where));
-  lanes.red.forEach((value) => assertTurnAllowed(value, level, "red", where));
+  lanes.left.forEach((value) => assertTurnAllowed(value, level, "left", where));
+  lanes.right.forEach((value) => assertTurnAllowed(value, level, "right", where));
   return { turnPattern: lanes };
 }
 
@@ -361,17 +454,17 @@ function compileTurns(
 
 function compileOrientations(
   orientation: DirectorStartOrientation | undefined
-): { blueStartOrientation?: string; redStartOrientation?: string } {
+): { leftStartOrientation?: string; rightStartOrientation?: string } {
   if (orientation === undefined) return {};
   if (typeof orientation === "string") {
     return {
-      blueStartOrientation: orientation,
-      redStartOrientation: orientation,
+      leftStartOrientation: orientation,
+      rightStartOrientation: orientation,
     };
   }
   return {
-    ...(orientation.blue ? { blueStartOrientation: orientation.blue } : {}),
-    ...(orientation.red ? { redStartOrientation: orientation.red } : {}),
+    ...(orientation.left ? { leftStartOrientation: orientation.left } : {}),
+    ...(orientation.right ? { rightStartOrientation: orientation.right } : {}),
   };
 }
 
@@ -430,7 +523,12 @@ export function compileSequenceDirective(
   sequence: DirectorGeneratedSequence,
   where = "sequence"
 ): GenerationOptions {
-  const level = sequence.level ?? DEFAULT_SEQUENCE_LEVEL;
+  // Gap 20. A cast-wide level ramp is spent during resolution, where the
+  // performer's place in the cast is known, so what reaches the compiler is
+  // always a plain level. The narrowing states that rather than assuming it.
+  const spokenLevel = sequence.level;
+  const level =
+    typeof spokenLevel === "number" ? spokenLevel : DEFAULT_SEQUENCE_LEVEL;
   const turns = compileTurns(sequence.turns, level, where);
   const startPosition = sequence.startPosition
     ? resolvePositionRef(sequence.startPosition, `${where} start position`)
@@ -502,6 +600,11 @@ export function sequenceDirectiveKey(
   sequence: DirectorPerformerSequence
 ): string {
   if ("mirrorOf" in sequence) return `mirrorOf:${sequence.mirrorOf}`;
+  if ("transformOf" in sequence) {
+    return `transformOf:${sequence.transformOf}:${stableJson(sequence.transforms)}`;
+  }
+  if ("library" in sequence) return `library:${sequence.library}`;
+  if (isIdleSequence(sequence)) return "none";
   if (!isGeneratedSequence(sequence)) return "demo";
   return `generated:${stableJson(sequence)}`;
 }

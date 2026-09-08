@@ -321,6 +321,7 @@
   function handleWorkSelect(sequence: SequenceData) {
     hapticService?.trigger("selection");
     openSequenceViewer(sequence, {
+      source: "creator_directory",
       returnPath: "/creators",
       returnLabel: "Creators",
     });
@@ -396,7 +397,11 @@
 
   function handleSelect(creator: EnhancedUserProfile) {
     hapticService?.trigger("selection");
-    void openCreatorProfile(creator.id, creator.displayName);
+    void openCreatorProfile(
+      creator.id,
+      creator.displayName,
+      "creator_directory"
+    );
   }
 
   /** Confirm writes before updating every roster projection of the relationship. */
@@ -409,8 +414,9 @@
     const wasFollowing = creator.isFollowing;
 
     try {
-      if (wasFollowing) await unfollowUser(viewerId, creator.id);
-      else await followUser(viewerId, creator.id);
+      if (wasFollowing)
+        await unfollowUser(viewerId, creator.id, "creator_directory");
+      else await followUser(viewerId, creator.id, "creator_directory");
       creatorsDataState.updateUserFollowStatus(
         creator.id,
         !wasFollowing,

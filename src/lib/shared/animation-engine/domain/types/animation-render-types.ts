@@ -3,47 +3,55 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { QualityHints } from "./quality-types";
 
 export interface AdditionalLayerRenderData {
-  blueProp: PropState | null;
-  redProp: PropState | null;
-  blueTrailPoints: TrailPoint[];
-  redTrailPoints: TrailPoint[];
-  hasBlue: boolean;
-  hasRed: boolean;
-  blueColor: string;
-  redColor: string;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
+  leftTrailPoints: TrailPoint[];
+  rightTrailPoints: TrailPoint[];
+  hasLeft: boolean;
+  hasRight: boolean;
+  opacity: number;
+  /** Visible formation travel is not performed motion and must not ink a trail. */
+  trailCaptureSuppressed?: boolean;
+  /** Lets review telemetry distinguish formation travel from performed motion. */
+  formationTransitionActive?: boolean;
+  leftColor: string;
+  rightColor: string;
   /** Per-performer prop type (Performer Set); drives the hand-never-rotates rule
    *  for this copy. Absent → the global prop type. */
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
 }
 
 export interface AnimationVisibilitySettings {
   gridVisible: boolean;
   propsVisible: boolean;
   trailsVisible: boolean;
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
+  leftMotionVisible: boolean;
+  rightMotionVisible: boolean;
 }
 
 export interface RenderSceneParams {
-  blueProp: PropState | null;
-  redProp: PropState | null;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
   gridVisible: boolean;
+  /** Host-owned alpha for a coordinated transformation. Undefined leaves the
+   * grid visibility manager in charge of ordinary toggles. */
+  gridOpacity?: number;
   gridMode: string | null;
   letter: string | null;
   turnsTuple: string | null;
-  bluePropDimensions: { width: number; height: number };
-  redPropDimensions: { width: number; height: number };
-  blueTrailPoints: TrailPoint[];
-  redTrailPoints: TrailPoint[];
+  leftPropDimensions: { width: number; height: number };
+  rightPropDimensions: { width: number; height: number };
+  leftTrailPoints: TrailPoint[];
+  rightTrailPoints: TrailPoint[];
   additionalLayers?: AdditionalLayerRenderData[];
   trailSettings: TrailSettings;
   currentTime: number;
   visibility: AnimationVisibilitySettings;
-  bluePropFlipped?: boolean;
-  redPropFlipped?: boolean;
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropFlipped?: boolean;
+  rightPropFlipped?: boolean;
+  leftPropType?: string;
+  rightPropType?: string;
   qualityHints?: QualityHints;
   skipTrailRendering?: boolean;
   /** Performer spotlight: selected performer (0 = base, k = copy arm k) or null.

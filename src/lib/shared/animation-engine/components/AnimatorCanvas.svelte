@@ -30,15 +30,21 @@ Last audit: 2025-12-27
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { TrailSettings } from "../domain/types/trail-types";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+  import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import CanvasSurface from "./CanvasSurface.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
   import SequenceProgressBar from "$lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { AnimationEngine } from "../services/animation-engine.svelte";
+  import {
+    AnimationEngine,
+    type AdditionalLayerTextureStatus,
+  } from "../services/animation-engine.svelte";
   import {
     getAnimationVisibilityManager,
     type AnimationVisibilityStateManager,
@@ -61,15 +67,21 @@ Last audit: 2025-12-27
   import SplitCanvasView from "./SplitCanvasView.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { QualityTier } from "../domain/types/quality-types";
+  import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+  import type { ElementalType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { GlyphOverlayFrameMode } from "../domain/glyph-overlay-frame";
 
   // Props
   let {
-    blueProp,
-    redProp,
+    leftProp,
+    rightProp,
     additionalLayers = [],
+    preloadAdditionalLayers = [],
     tunnelSpectrum = true,
+    tunnelPropColors = null,
     tunnelSelectedLayer = null,
     gridVisible = true,
+    gridOpacity = undefined,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
@@ -80,17 +92,21 @@ Last audit: 2025-12-27
     onCanvasReady = () => {},
     onPlaybackToggle = () => {},
     trailSettings: externalTrailSettings = $bindable(),
-    bluePropType = null,
-    redPropType = null,
-    blueBuugengFlipped = undefined,
-    redBuugengFlipped = undefined,
+    leftPropType = null,
+    rightPropType = null,
+    fanAppearance = undefined,
+    leftBuugengFlipped = undefined,
+    rightBuugengFlipped = undefined,
     word = null,
     previewDarkMode = null,
     hideTkaGlyph = false,
     hideStepNumbers = false,
     positionGlyphVisible = false,
+    propElementalType = null,
+    glyphFrame = "pictograph",
     hidePathLines = false,
     hideProgressBar = false,
+    shareStudioTransport = false,
     hideHeader = false,
     isSeamlesslyLoopable = undefined,
     progressBarVariant = "gradient",
@@ -104,11 +120,15 @@ Last audit: 2025-12-27
     tipEffortMap: cellTipEffortMap = undefined,
     disableContextMenu = false,
     fillContainer = false,
+    disassemblyLayout = "stacked",
+    disassemblyTarget = null,
+    onDisassemblyTargetChange = undefined,
     prewarmEffects = undefined,
     showNonRadialPoints = true,
     resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
     onEffectError = undefined,
+    onAdditionalLayerTextureStatusChange = undefined,
     visibilityManagerOverride = undefined,
     effectsConfigState = undefined,
     externalToggleDisassemble = undefined,
@@ -131,12 +151,17 @@ Last audit: 2025-12-27
     onSaveToLibrary = undefined,
     initialQualityTier = undefined,
   }: {
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
+    preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
+    tunnelPropColors?: TunnelPropColorPair | null;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
+    /** Optional externally choreographed grid alpha. The Sequence Viewer uses
+     * this when 2D transforms into Tunnel on one reversible timeline. */
+    gridOpacity?: number;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
@@ -147,10 +172,11 @@ Last audit: 2025-12-27
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onPlaybackToggle?: () => void;
     trailSettings?: TrailSettings;
-    bluePropType?: string | null;
-    redPropType?: string | null;
-    blueBuugengFlipped?: boolean;
-    redBuugengFlipped?: boolean;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
+    fanAppearance?: FanAppearance;
+    leftBuugengFlipped?: boolean;
+    rightBuugengFlipped?: boolean;
     word?: string | null;
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
@@ -158,10 +184,16 @@ Last audit: 2025-12-27
     /** Show the α/β/γ start→end position indicator centered at the top. Educational
      *  overlay for the guide's hand-path exploration; off by default everywhere else. */
     positionGlyphVisible?: boolean;
+    /** Optional prop timing/direction relationship shown opposite the hand element. */
+    propElementalType?: ElementalType | null;
+    /** Coordinate frame for pictograph annotations. Stage embeds may use the
+     *  full rectangular canvas wrapper without stretching the motion plane. */
+    glyphFrame?: GlyphOverlayFrameMode;
     /** Force-hide the dotted prop-center path lines regardless of the visibility
      *  manager (e.g. the Tunnel art view, which never wants path overlays). */
     hidePathLines?: boolean;
     hideProgressBar?: boolean;
+    shareStudioTransport?: boolean;
     /** Hide the WordHeader slot (portrait-mobile reclaims this vertical space). */
     hideHeader?: boolean;
     isSeamlesslyLoopable?: boolean;
@@ -185,6 +217,13 @@ Last audit: 2025-12-27
     tipEffortMap?: TipEffortMap;
     disableContextMenu?: boolean;
     fillContainer?: boolean;
+    /** How the combined hero and two isolated canvases share their host while
+     *  disassembled. Sidecar is designed for square, fill-mode embeds. */
+    disassemblyLayout?: "stacked" | "sidecar" | "auto";
+    /** Controlled target for the built-in disassembly state machine. Unlike
+     *  externalToggleDisassemble, this keeps AnimatorCanvas as rendering owner. */
+    disassemblyTarget?: boolean | null;
+    onDisassemblyTargetChange?: (disassembled: boolean) => void;
     /** WebGL overlay effects (today: "fire") to warm at engine startup so the
      *  first switch never freezes. Forwarded to CanvasSurface → AnimationEngine. */
     prewarmEffects?: EffectType[];
@@ -195,6 +234,9 @@ Last audit: 2025-12-27
     onInitialized?: () => void;
     /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
     onEffectError?: (effectName: string, error: Error) => void;
+    onAdditionalLayerTextureStatusChange?: (
+      status: AdditionalLayerTextureStatus
+    ) => void;
     /** Per-instance visibility manager. When provided, this canvas uses its own
      * manager instead of the global singleton. Enables multiple canvases to have
      * independent visibility/effect settings (e.g. landing page with two players). */
@@ -271,6 +313,13 @@ Last audit: 2025-12-27
   const resolvedContextId =
     contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
 
+  const studioSurfaces = getViewerStudioSurfaces();
+  const sharedTransport = $derived(
+    shareStudioTransport ? studioSurfaces : null
+  );
+  function ownTransport(node: HTMLElement) {
+    return { destroy: sharedTransport?.registerTransport(node) };
+  }
   const playbackAdapter = createAnimatorPlaybackAdapter({
     getCurrentStep: () => currentStep,
     getSteps: () => sequenceData?.steps ?? [],
@@ -289,8 +338,13 @@ Last audit: 2025-12-27
   // assembled → disassembling → disassembled → reassembling → assembled
   // All transitions happen via CSS on the SAME DOM tree. No overlay swaps.
   type ViewState =
-    "assembled" | "disassembling" | "disassembled" | "reassembling";
+    | "assembled"
+    | "disassembling"
+    | "disassembled"
+    | "reassembling";
   let viewState = $state<ViewState>("assembled");
+  let autoLayoutCandidate = $state<"stacked" | "sidecar">("stacked");
+  let disassemblySessionLayout = $state<"stacked" | "sidecar">("stacked");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let longPressFired = false;
@@ -314,21 +368,70 @@ Last audit: 2025-12-27
   // settled "disassembled" state.
   const splitResizePaused = $derived(viewState !== "disassembled");
 
+  const resolvedDisassemblyLayout = $derived(
+    disassemblyLayout === "auto"
+      ? viewState === "assembled"
+        ? autoLayoutCandidate
+        : disassemblySessionLayout
+      : disassemblyLayout
+  );
+
+  function observeDisassemblyHost(node: HTMLElement) {
+    const update = () => {
+      const { width, height } = node.getBoundingClientRect();
+      if (width <= 0 || height <= 0) return;
+      autoLayoutCandidate = width >= height * 1.15 ? "sidecar" : "stacked";
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return {
+      destroy() {
+        observer.disconnect();
+      },
+    };
+  }
+
+  function beginDisassembly(): void {
+    if (viewState !== "assembled") return;
+    disassemblySessionLayout = autoLayoutCandidate;
+    engine?.pauseResize();
+    viewState = "disassembling";
+  }
+
+  function beginReassembly(): void {
+    if (viewState !== "disassembled") return;
+    engine?.pauseResize();
+    viewState = "reassembling";
+  }
+
   function toggleDisassemble() {
     if (viewState === "assembled") {
-      // Pause ResizeObserver so the CSS width transition doesn't clear the canvas buffer
-      engine?.pauseResize();
-      viewState = "disassembling";
-      // The split view mounts collapsed and fires onBothReady when its engines render.
+      beginDisassembly();
     } else if (viewState === "disassembled") {
-      // Pause ResizeObserver before CSS width transition back to full size
-      engine?.pauseResize();
-      // Collapse the split view (splitExpandRequested flips false); remove it when
-      // its collapse transition ends (onCollapseComplete).
-      viewState = "reassembling";
+      beginReassembly();
     }
     // Ignore during active transitions
   }
+
+  function requestDisassemblyToggle(): void {
+    if (externalToggleDisassemble) {
+      externalToggleDisassemble();
+      return;
+    }
+    if (disassemblyTarget !== null) {
+      onDisassemblyTargetChange?.(!disassemblyTarget);
+      return;
+    }
+    toggleDisassemble();
+  }
+
+  $effect(() => {
+    const target = disassemblyTarget;
+    if (target === null) return;
+    if (target && viewState === "assembled") beginDisassembly();
+    if (!target && viewState === "disassembled") beginReassembly();
+  });
 
   // The split view finished its expand (open) transition: settle into the
   // disassembled state and resume the hero engine's ResizeObserver so it catches
@@ -475,8 +578,8 @@ Last audit: 2025-12-27
   let globalDarkMode = $state(false);
   let wordHeaderVisible = $state(false);
   let progressBarVisible = $state(false);
-  let bluePathLinesVisible = $state(false);
-  let redPathLinesVisible = $state(false);
+  let leftPathLinesVisible = $state(false);
+  let rightPathLinesVisible = $state(false);
   $effect.pre(() => {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     elementalGlyphVisible = visibilityManager.getVisibility("elementalGlyph");
@@ -484,8 +587,8 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    bluePathLinesVisible = visibilityManager.getVisibility("bluePathLines");
-    redPathLinesVisible = visibilityManager.getVisibility("redPathLines");
+    leftPathLinesVisible = visibilityManager.getVisibility("leftPathLines");
+    rightPathLinesVisible = visibilityManager.getVisibility("rightPathLines");
   });
 
   const darkModeEnabled = $derived(
@@ -502,11 +605,11 @@ Last audit: 2025-12-27
   const effectiveBeatNumbersVisible = $derived(
     stepNumbersVisible && !hideStepNumbers
   );
-  const effectiveBluePathLinesVisible = $derived(
-    bluePathLinesVisible && !hidePathLines
+  const effectiveLeftPathLinesVisible = $derived(
+    leftPathLinesVisible && !hidePathLines
   );
-  const effectiveRedPathLinesVisible = $derived(
-    redPathLinesVisible && !hidePathLines
+  const effectiveRightPathLinesVisible = $derived(
+    rightPathLinesVisible && !hidePathLines
   );
 
   function handleVisibilityChange() {
@@ -516,8 +619,8 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    bluePathLinesVisible = visibilityManager.getVisibility("bluePathLines");
-    redPathLinesVisible = visibilityManager.getVisibility("redPathLines");
+    leftPathLinesVisible = visibilityManager.getVisibility("leftPathLines");
+    rightPathLinesVisible = visibilityManager.getVisibility("rightPathLines");
   }
 
   // Register/unregister observer reactively so visibilityManager is tracked
@@ -610,8 +713,11 @@ Last audit: 2025-12-27
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="animation-container"
+  use:observeDisassemblyHost
   data-focused={focused || undefined}
   data-fill={fillContainer || undefined}
+  data-disassembly-layout={resolvedDisassemblyLayout}
+  data-glyph-frame={glyphFrame}
   data-no-progress={hideProgressBar || undefined}
   data-hide-header={hideHeader || undefined}
   data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
@@ -653,12 +759,15 @@ Last audit: 2025-12-27
 
     <CanvasSurface
       bind:engine
-      {blueProp}
-      {redProp}
+      {leftProp}
+      {rightProp}
       {additionalLayers}
+      {preloadAdditionalLayers}
       {tunnelSpectrum}
+      {tunnelPropColors}
       {tunnelSelectedLayer}
       {gridVisible}
+      {gridOpacity}
       {gridMode}
       {backgroundAlpha}
       {letter}
@@ -667,10 +776,11 @@ Last audit: 2025-12-27
       {currentStep}
       {isPlaying}
       bind:trailSettings={externalTrailSettings}
-      {bluePropType}
-      {redPropType}
-      {blueBuugengFlipped}
-      {redBuugengFlipped}
+      {leftPropType}
+      {rightPropType}
+      {fanAppearance}
+      {leftBuugengFlipped}
+      {rightBuugengFlipped}
       {previewDarkMode}
       {isSeamlesslyLoopable}
       {showNonRadialPoints}
@@ -685,9 +795,11 @@ Last audit: 2025-12-27
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
       elementalGlyphVisible={effectiveElementalGlyphVisible}
+      {propElementalType}
+      {glyphFrame}
       {effectiveBeatNumbersVisible}
-      bluePathLinesVisible={effectiveBluePathLinesVisible}
-      redPathLinesVisible={effectiveRedPathLinesVisible}
+      leftPathLinesVisible={effectiveLeftPathLinesVisible}
+      rightPathLinesVisible={effectiveRightPathLinesVisible}
       {suppress2DOverlays}
       {resizePaused}
       {visibilityManagerOverride}
@@ -699,6 +811,7 @@ Last audit: 2025-12-27
       {onCanvasReady}
       onInitialized={onInitializedCallback}
       {onEffectError}
+      {onAdditionalLayerTextureStatusChange}
       cornerControl={cornerToggle ? cornerToggleControl : undefined}
     />
 
@@ -706,10 +819,12 @@ Last audit: 2025-12-27
          Rendered via SplitCanvasView (CanvasSurface leaves) - never a self-import. -->
     {#if showSplitCanvases}
       <SplitCanvasView
-        {blueProp}
-        {redProp}
+        {leftProp}
+        {rightProp}
         {gridVisible}
         {gridMode}
+        {backgroundAlpha}
+        layout={resolvedDisassemblyLayout}
         {letter}
         {stepData}
         {sequenceData}
@@ -718,8 +833,9 @@ Last audit: 2025-12-27
         {fireConfig}
         {ledConfig}
         trailSettings={externalTrailSettings}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
+        {fanAppearance}
         tipEffectMap={cellTipEffectMap}
         {visibilityManagerOverride}
         {showNonRadialPoints}
@@ -753,11 +869,26 @@ Last audit: 2025-12-27
              on the page. Hosts can still opt out wholesale with
              `hideProgressBar` (embedded previews, showcase players); the user
              cannot switch away their own scrubber. -->
-        <UnifiedTimeline
-          playback={playbackAdapter}
-          visible={!hideProgressBar}
-          hidePlay={hidePlay ?? tapToToggle}
-        />
+        <div
+          class="shared-transport"
+          use:ownTransport
+          data-shared-studio-transport={shareStudioTransport || undefined}
+          use:reparentToInspector={{
+            target: sharedTransport?.transportTarget ?? null,
+            animate: true,
+            onMoving: (moving) =>
+              sharedTransport?.setSurfaceMoving("transport", moving),
+          }}
+        >
+          <UnifiedTimeline
+            playback={sharedTransport?.transportPlayback ?? playbackAdapter}
+            visible={!!sharedTransport?.active || !hideProgressBar}
+            hidePlay={sharedTransport?.transportTarget
+              ? false
+              : (hidePlay ?? tapToToggle)}
+            trailing={sharedTransport?.transportTrailing}
+          />
+        </div>
       {/if}
     </div>
   </div>
@@ -802,14 +933,14 @@ Last audit: 2025-12-27
     <CanvasContextMenuHost
       bind:this={contextMenuHost}
       sequence={sequenceData}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       showSettings={!disableContextMenu}
       {onSaveToLibrary}
       disassembled={externalToggleDisassemble
         ? externalDisassembled
-        : isDisassembledView}
-      onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
+        : (disassemblyTarget ?? isDisassembledView)}
+      onToggleDisassemble={requestDisassemblyToggle}
       captureEffectDiagnostics={() => engine?.captureEffectDiagnostics() ?? {}}
       {onToggle3DView}
       extraItems={extraContextMenuItems}
@@ -1235,6 +1366,17 @@ Last audit: 2025-12-27
       max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
       opacity 0.2s ease-out;
   }
+  .shared-transport {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* The live canvas has its own flight while its transport takes another slot.
+     Ancestor clips resume at docking, not midway through that shared flight. */
+  :global([data-surface-flight]) .animation-container,
+  :global([data-surface-flight]) .content-wrapper {
+    overflow: visible;
+  }
 
   /* ===========================================
      CONSTRAINED MODE: Canvas-only when squeezed
@@ -1379,7 +1521,7 @@ Last audit: 2025-12-27
     container-type: size;
   }
 
-  .animation-container[data-fill] :global(.canvas-wrapper) {
+  .animation-container[data-fill] .content-wrapper > :global(.canvas-wrapper) {
     flex: 1;
     height: auto !important;
     min-height: 0;
@@ -1389,8 +1531,14 @@ Last audit: 2025-12-27
      same wrapper must instead fit one full-width hero plus two half-width
      canvases beneath it. Without this later override, fill mode wins the
      cascade and the three canvases are forced into a full-width column. */
-  .animation-container[data-fill][data-view="disassembling"] .content-wrapper,
-  .animation-container[data-fill][data-view="disassembled"] .content-wrapper {
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-view="disassembling"]
+    .content-wrapper,
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-view="disassembled"]
+    .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 7rem) * 2 / 3)) !important;
     max-width: calc((100cqh - 7rem) * 2 / 3) !important;
   }
@@ -1398,12 +1546,78 @@ Last audit: 2025-12-27
   /* A relocated/hidden transport leaves only the word header above the three
      canvases. Reclaim that space so the disassembled composition uses the
      full height available to embedded players such as Shape Matrix. */
-  .animation-container[data-fill][data-no-progress][data-view="disassembling"]
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-no-progress][data-view="disassembling"]
     .content-wrapper,
-  .animation-container[data-fill][data-no-progress][data-view="disassembled"]
+  .animation-container[data-fill]:not(
+      [data-disassembly-layout="sidecar"]
+    )[data-no-progress][data-view="disassembled"]
     .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 3.5rem) * 2 / 3)) !important;
     max-width: calc((100cqh - 3.5rem) * 2 / 3) !important;
+  }
+
+  /* A square embedded stage cannot fit the default 1.5-square vertical stack.
+     Sidecar keeps the combined motion and both isolated views inside the same
+     stage: the hero owns two tracks and the split pair owns one. The tracks
+     animate together while the engine's ResizeObserver is paused by the
+     existing disassembly state machine. */
+  .animation-container[data-disassembly-layout="sidecar"] .content-wrapper {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 0;
+    transition:
+      grid-template-columns var(--transition-dramatic),
+      column-gap var(--transition-dramatic);
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"] .header-slot,
+  .animation-container[data-disassembly-layout="sidecar"] .progress-slot {
+    grid-column: 1 / -1;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"] .header-slot {
+    grid-row: 1;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"]
+    .content-wrapper
+    > :global(.canvas-wrapper) {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"]
+    .content-wrapper
+    > :global(.split-canvases) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"] .progress-slot {
+    grid-row: 3;
+  }
+
+  .animation-container[data-disassembly-layout="sidecar"][data-view="disassembling"]
+    .content-wrapper,
+  .animation-container[data-disassembly-layout="sidecar"][data-view="disassembled"]
+    .content-wrapper {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    column-gap: clamp(0.25rem, 1cqw, 0.75rem);
+  }
+
+  /* A stage-framed embed deliberately uses a rectangular canvas wrapper. The
+     normal constrained-player rule hides the header in a landscape box, but
+     this composition reserves the full-width header as part of the stage
+     chrome. An explicit hideHeader request still wins. */
+  .animation-container[data-glyph-frame="stage"]:not([data-hide-header])
+    .header-slot {
+    max-height: 100px;
+    opacity: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {

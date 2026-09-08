@@ -5,6 +5,7 @@ import type {
 } from "$lib/shared/application/state/app-state.svelte";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { isHandPathSequence } from "$lib/shared/foundation/domain/models/sequence-kind";
 import type { getSequenceMotionVisibility } from "$lib/shared/foundation/services/sequence-motion-profile";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ImageCompositionSyncState } from "../components/image-composition-sync.svelte";
@@ -14,8 +15,9 @@ interface ViewerPropVisibilityInputs {
   imageComposition: ImageCompositionSyncState;
   getSequence: () => SequenceData | null;
   getHandPathMode: () => boolean;
-  getInitialBlueVisible: () => boolean | undefined;
-  getInitialRedVisible: () => boolean | undefined;
+  getCollectionPropType?: () => PropType | null | undefined;
+  getInitialLeftVisible: () => boolean | undefined;
+  getInitialRightVisible: () => boolean | undefined;
   getAnimationServicesReady: () => boolean;
   getHapticService: () => HapticFeedback | null;
   onUrlParamChange: ((key: string, value: string) => void) | undefined;
@@ -26,8 +28,8 @@ interface ViewerPropVisibilityDependencies {
   updateSettings: typeof updateSettings;
   getSequenceMotionVisibility: typeof getSequenceMotionVisibility;
   updateAnimationPropTypes: (
-    bluePropType: PropType,
-    redPropType: PropType
+    leftPropType: PropType,
+    rightPropType: PropType
   ) => void;
   setAnimationDarkMode: (darkMode: boolean) => void;
   encodePropForUrl: (propType: PropType) => string;
@@ -35,11 +37,11 @@ interface ViewerPropVisibilityDependencies {
 
 function applyMotionVisibility(
   state: SequenceViewerVisibilityState,
-  visibility: { showBlueMotion: boolean; showRedMotion: boolean }
+  visibility: { showLeftMotion: boolean; showRightMotion: boolean }
 ): void {
   state.reset();
-  if (!visibility.showBlueMotion) state.setBlueMotion(false);
-  if (!visibility.showRedMotion) state.setRedMotion(false);
+  if (!visibility.showLeftMotion) state.setLeftMotion(false);
+  if (!visibility.showRightMotion) state.setRightMotion(false);
 }
 
 export function createViewerPropVisibilityState(
@@ -49,16 +51,17 @@ export function createViewerPropVisibilityState(
   const settings = $derived(dependencies.getSettings());
   const isHandPath = $derived(
     inputs.getHandPathMode() ||
+      isHandPathSequence(inputs.getSequence()) ||
       Boolean(inputs.getSequence()?.metadata?.isHandPathVisualization)
   );
-  const bluePropType = $derived(settings.bluePropType);
-  const redPropType = $derived(settings.redPropType);
+  const leftPropType = $derived(settings.leftPropType);
+  const rightPropType = $derived(settings.rightPropType);
   const catDogModeEnabled = $derived(settings.catDogMode);
-  const activeBlueProp = $derived(
-    isHandPath ? PropType.HAND : (bluePropType ?? PropType.STAFF)
+  const activeLeftProp = $derived(
+    isHandPath ? PropType.HAND : (leftPropType ?? PropType.STAFF)
   );
-  const activeRedProp = $derived(
-    isHandPath ? PropType.HAND : (redPropType ?? PropType.STAFF)
+  const activeRightProp = $derived(
+    isHandPath ? PropType.HAND : (rightPropType ?? PropType.STAFF)
   );
   const activeCatDog = $derived(
     isHandPath ? false : (catDogModeEnabled ?? false)
@@ -69,7 +72,7 @@ export function createViewerPropVisibilityState(
     viewerVisibility,
     inputs.getSequence()
       ? dependencies.getSequenceMotionVisibility(inputs.getSequence()!)
-      : { showBlueMotion: true, showRedMotion: true }
+      : { showLeftMotion: true, showRightMotion: true }
   );
 
   $effect(() => {
@@ -77,13 +80,14 @@ export function createViewerPropVisibilityState(
     void sequence?.id;
     const visibility = sequence
       ? dependencies.getSequenceMotionVisibility(sequence)
-      : { showBlueMotion: true, showRedMotion: true };
+      : { showLeftMotion: true, showRightMotion: true };
     untrack(() => {
       applyMotionVisibility(viewerVisibility, {
-        showBlueMotion:
-          visibility.showBlueMotion && (inputs.getInitialBlueVisible() ?? true),
-        showRedMotion:
-          visibility.showRedMotion && (inputs.getInitialRedVisible() ?? true),
+        showLeftMotion:
+          visibility.showLeftMotion && (inputs.getInitialLeftVisible() ?? true),
+        showRightMotion:
+          visibility.showRightMotion &&
+          (inputs.getInitialRightVisible() ?? true),
       });
     });
   });
@@ -91,7 +95,7 @@ export function createViewerPropVisibilityState(
   $effect(() => {
     if (!inputs.getAnimationServicesReady()) return;
     try {
-      dependencies.updateAnimationPropTypes(activeBlueProp, activeRedProp);
+      dependencies.updateAnimationPropTypes(activeLeftProp, activeRightProp);
     } catch {
       // A viewer can select props before the animation service finishes
       // loading. The service reads the same settings when startup completes.
@@ -99,9 +103,12 @@ export function createViewerPropVisibilityState(
   });
 
   function handlePropTypeChange(propType: PropType): void {
+    if (isHandPathSequence(inputs.getSequence())) return;
     void dependencies.updateSettings({
-      bluePropType: propType,
-      redPropType: propType,
+      propViewingMode: "my-props",
+      catDogMode: false,
+      leftPropType: propType,
+      rightPropType: propType,
     });
     if (inputs.getAnimationServicesReady()) {
       dependencies.updateAnimationPropTypes(propType, propType);
@@ -124,11 +131,11 @@ export function createViewerPropVisibilityState(
     get isHandPath() {
       return isHandPath;
     },
-    get activeBlueProp() {
-      return activeBlueProp;
+    get activeLeftProp() {
+      return activeLeftProp;
     },
-    get activeRedProp() {
-      return activeRedProp;
+    get activeRightProp() {
+      return activeRightProp;
     },
     get activeCatDog() {
       return activeCatDog;

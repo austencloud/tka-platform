@@ -36,6 +36,7 @@ describe("sequence viewer Play intent", () => {
         steps: [],
       } as never,
       {
+        analyticsSource: "qr",
         playOnOpen: true,
         fromUrl: true,
         skipHistoryPush: true,
@@ -55,6 +56,7 @@ describe("sequence viewer Play intent", () => {
         steps: [],
       } as never,
       {
+        analyticsSource: "qr",
         playOnOpen: true,
         fromUrl: true,
         skipHistoryPush: true,
@@ -71,6 +73,7 @@ describe("sequence viewer Play intent", () => {
     openSequenceOverlay(
       { id: "tunnel-source", name: "Tunnel", word: "A", steps: [] } as never,
       {
+        analyticsSource: "create_workspace",
         fromUrl: true,
         skipHistoryPush: true,
         onTunnelSaved,
@@ -87,13 +90,19 @@ describe("sequence viewer Play intent", () => {
   it("starts a fresh viewer session when an open sequence is replaced", () => {
     openSequenceOverlay(
       { id: "first", name: "First", word: "A", steps: [] } as never,
-      { fromUrl: true, shortCode: "FIRST", skipHistoryPush: true }
+      {
+        analyticsSource: "qr",
+        fromUrl: true,
+        shortCode: "FIRST",
+        skipHistoryPush: true,
+      }
     );
     const firstSession = overlay.sessionKey;
 
     openSequenceOverlay(
       { id: "second", name: "Second", word: "B", steps: [] } as never,
       {
+        analyticsSource: "qr",
         fromUrl: true,
         shortCode: "SECOND",
         skipHistoryPush: true,
@@ -111,13 +120,19 @@ describe("sequence viewer Play intent", () => {
   it("reopens a closed viewer for the next scanned sequence", () => {
     openSequenceOverlay(
       { id: "first", name: "First", word: "A", steps: [] } as never,
-      { fromUrl: true, shortCode: "FIRST", skipHistoryPush: true }
+      {
+        analyticsSource: "qr",
+        fromUrl: true,
+        shortCode: "FIRST",
+        skipHistoryPush: true,
+      }
     );
     closeSequenceOverlay();
 
     openSequenceOverlay(
       { id: "second", name: "Second", word: "B", steps: [] } as never,
       {
+        analyticsSource: "qr",
         fromUrl: true,
         shortCode: "SECOND",
         skipHistoryPush: true,

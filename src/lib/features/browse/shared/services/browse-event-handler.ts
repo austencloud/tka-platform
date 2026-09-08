@@ -100,6 +100,7 @@ export class BrowseEventHandler {
     // takes over the picking - the overlay selects the variation the card was
     // showing by id, so the click lands where the pager left off.
     openSequenceViewer(sequence, {
+      source: "browse_gallery",
       returnPath: "/browse/gallery",
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,
@@ -196,6 +197,7 @@ export class BrowseEventHandler {
 
   handleSpotlightView(sequence: SequenceData): void {
     openSequenceViewer(sequence, {
+      source: "browse_gallery",
       returnPath: "/browse/gallery",
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,

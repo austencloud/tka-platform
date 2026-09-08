@@ -25,6 +25,7 @@ import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/fil
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import {
   DEFAULT_BROWSE_VIEW_MODE,
+  normalizeBrowseViewMode,
   type BrowseViewMode,
 } from "$lib/shared/browse/domain/browse-view-mode";
 import type {
@@ -53,6 +54,7 @@ import { withLibraryBrowseDate } from "$lib/shared/browse/services/browse-date";
 import { organizeSections as organizeBrowseSections } from "$lib/shared/browse/services/browse-section-manager";
 import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+import { getSavedSequenceIds } from "$lib/shared/library/services/saved-sequence-ledger";
 
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
@@ -85,7 +87,7 @@ function sameViewMode(a: BrowseViewMode, b: BrowseViewMode): boolean {
   return (
     a.subject === b.subject &&
     a.granularity === b.granularity &&
-    a.color === b.color
+    a.hand === b.hand
   );
 }
 
@@ -222,7 +224,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
   // View mode (compositional browsing)
   let _viewMode = $state<BrowseViewMode>(
-    persisted?.viewMode ?? { ...DEFAULT_BROWSE_VIEW_MODE }
+    persisted?.viewMode
+      ? normalizeBrowseViewMode(persisted.viewMode)
+      : { ...DEFAULT_BROWSE_VIEW_MODE }
   );
 
   // Search state
@@ -259,27 +263,32 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
   // switch without ever carrying one account's rows into another preview).
   let libraryCache: SequenceData[] | null = null;
   let libraryCacheUserId: string | null = null;
-  let libraryLoadRevision = 0;
+  // Every async producer of allSequences shares one revision. Source changes,
+  // host-owned pools, and teardown invalidate older work before it can publish.
+  let poolLoadRevision = 0;
   let initialized = false;
   let lastEffectiveUserId = authState.effectiveUserId;
+  let lastFullAccount = authState.isFullAccount;
 
   // --- Derived: filtering + sorting pipeline ---
 
+  const searchedPool = $derived.by(() =>
+    _searchQuery.trim()
+      ? applyBrowseFilter(
+          allSequences,
+          BrowseFilterType.CONTAINS_LETTERS,
+          _searchQuery
+        )
+      : allSequences
+  );
+
   const filteredAndSorted = $derived.by(() => {
-    let result = allSequences;
+    let result = searchedPool;
 
     if (activeFilters.size > 0) {
       // applyFilters is generic over `T extends ActiveFilter`, so the engine's
       // richer ActiveFilter (with `locked`) passes structurally — no cast needed.
       result = applyMultiFilters(result, activeFilters, connectives);
-    }
-
-    if (_searchQuery.trim()) {
-      result = applyBrowseFilter(
-        result,
-        BrowseFilterType.CONTAINS_LETTERS,
-        _searchQuery
-      );
     }
 
     const sorted = browseSortSequences(result, sortMethod);
@@ -493,16 +502,24 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
     $effect(() => {
       const currentEffectiveUserId = authState.effectiveUserId;
-      if (currentEffectiveUserId === lastEffectiveUserId) return;
+      const currentFullAccount = authState.isFullAccount;
+      if (
+        currentEffectiveUserId === lastEffectiveUserId &&
+        currentFullAccount === lastFullAccount
+      )
+        return;
 
       // A preview switch can happen while this engine stays mounted. Empty the
       // previous account immediately, cancel its in-flight request, and load the
       // new account through the same path a fresh Library visit uses.
       lastEffectiveUserId = currentEffectiveUserId;
-      libraryLoadRevision += 1;
+      lastFullAccount = currentFullAccount;
       libraryCache = null;
       libraryCacheUserId = null;
       if (source === "my-library") {
+        // Public community requests are independent of account identity. Only
+        // invalidate a request here when replacing the account-owned pool.
+        poolLoadRevision += 1;
         allSequences = [];
         sectionsReady = false;
         if (initialized) void loadLibrarySequences();
@@ -515,20 +532,28 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
   // --- Internal: load sequences ---
 
-  async function loadCommunitySequences(): Promise<void> {
+  async function loadCommunitySequences(refresh = false): Promise<void> {
+    const requestRevision = ++poolLoadRevision;
+    const isCurrentRequest = (): boolean =>
+      requestRevision === poolLoadRevision && source === "community";
+
     try {
       isLoading = true;
       sectionsReady = false;
       error = null;
-      const sequences = await loaderService.loadSequenceMetadata();
+      const sequences = refresh
+        ? await loaderService.refreshFromFirestore()
+        : await loaderService.loadSequenceMetadata();
+      if (!isCurrentRequest()) return;
       allSequences = deduplicateById(sequences);
       sectionsReady = true;
-      appendExtraCommunitySequences();
+      appendExtraCommunitySequences(requestRevision);
     } catch (err) {
+      if (!isCurrentRequest()) return;
       console.error("[BrowseEngine] Failed to load community sequences:", err);
       error = err instanceof Error ? err.message : "Failed to load sequences";
     } finally {
-      isLoading = false;
+      if (isCurrentRequest()) isLoading = false;
     }
   }
 
@@ -536,28 +561,47 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
    * community pool without blocking first paint. Guarded on source so a
    * mid-resolve switch to my-library never pollutes the library view; the
    * next community load re-runs this (the provider caches its result). */
-  function appendExtraCommunitySequences(): void {
+  function appendExtraCommunitySequences(requestRevision: number): void {
     const provider = config.extraCommunitySequences;
     if (!provider) return;
     provider()
       .then((extra) => {
-        if (source !== "community" || extra.length === 0) return;
+        if (
+          requestRevision !== poolLoadRevision ||
+          source !== "community" ||
+          extra.length === 0
+        )
+          return;
         allSequences = deduplicateById([...allSequences, ...extra]);
       })
       .catch((err) => {
+        if (requestRevision !== poolLoadRevision || source !== "community")
+          return;
         console.error("[BrowseEngine] extraCommunitySequences failed:", err);
       });
   }
 
   async function loadLibrarySequences(): Promise<void> {
-    const requestRevision = ++libraryLoadRevision;
+    const requestRevision = ++poolLoadRevision;
     const requestedUserId = authState.effectiveUserId;
+    const requestedFullAccount = authState.isFullAccount;
     const requestedViewMode = { ..._viewMode };
     const isCurrentRequest = (): boolean =>
-      requestRevision === libraryLoadRevision &&
+      requestRevision === poolLoadRevision &&
       requestedUserId === authState.effectiveUserId &&
+      requestedFullAccount === authState.isFullAccount &&
       source === "my-library" &&
       sameViewMode(_viewMode, requestedViewMode);
+
+    if (!requestedUserId) {
+      allSequences = [];
+      libraryCache = null;
+      libraryCacheUserId = null;
+      error = null;
+      sectionsReady = true;
+      isLoading = false;
+      return;
+    }
 
     const soloLoader = config.loadSoloLibrarySequences;
     if (requestedViewMode.granularity === "solo" && soloLoader) {
@@ -599,24 +643,24 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       return;
     }
 
-    // Guests keep their library LOCALLY (Dexie). The Firestore sync on save is
-    // best-effort (anon session may be absent, offline, or still in flight), so
-    // reading Firestore would show an empty library even though the guest just
-    // saved. Read the local mirror directly instead. Full accounts read
-    // Firestore below — authoritative and cross-device — and must NOT read Dexie,
-    // which isn't uid-scoped and could surface another account's local cache on a
-    // shared device.
+    // The device cache survives sign-out and includes other sessions' work.
+    // Only ids recorded for this guest are their saves; an empty ledger must
+    // never fall back to showing the whole device cache.
     if (!authState.isFullAccount) {
       try {
         isLoading = true;
         sectionsReady = false;
         error = null;
-        const { getAllSequences } =
-          await import("$lib/shared/persistence/services/dexie-persistence-service");
+        const savedIds = new Set(getSavedSequenceIds(requestedUserId));
+        const rows = savedIds.size
+          ? await (
+              await import("$lib/shared/persistence/services/dexie-persistence-service")
+            ).getAllSequences()
+          : [];
         const local = deduplicateById(
-          ((await getAllSequences()) as SequenceData[]).map(
-            withLibraryBrowseDate
-          )
+          rows
+            .filter((sequence) => savedIds.has(sequence.id))
+            .map(withLibraryBrowseDate)
         );
         if (!isCurrentRequest()) return;
         allSequences = local;
@@ -806,6 +850,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     },
 
     setPool(sequences: readonly SequenceData[]): void {
+      poolLoadRevision += 1;
       const pool =
         source === "my-library"
           ? sequences.map(withLibraryBrowseDate)
@@ -822,26 +867,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       libraryCache = null;
       libraryCacheUserId = null;
       if (source === "my-library") await loadLibrarySequences();
-      else {
-        try {
-          isLoading = true;
-          sectionsReady = false;
-          error = null;
-          const sequences = await loaderService.refreshFromFirestore();
-          allSequences = deduplicateById(sequences);
-          sectionsReady = true;
-          appendExtraCommunitySequences();
-        } catch (err) {
-          console.error(
-            "[BrowseEngine] Failed to refresh community sequences:",
-            err
-          );
-          error =
-            err instanceof Error ? err.message : "Failed to refresh sequences";
-        } finally {
-          isLoading = false;
-        }
-      }
+      else await loadCommunitySequences(true);
     },
 
     // --- Search ---
@@ -950,15 +976,8 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       // Compose the ACTUAL result pipeline (filters AND search) — counts
       // are previews of results, and ignoring an active search let a
       // count>0 pick land on a zero-result grid.
-      const base = _searchQuery.trim()
-        ? applyBrowseFilter(
-            allSequences,
-            BrowseFilterType.CONTAINS_LETTERS,
-            _searchQuery
-          )
-        : allSequences;
       return getMultiFilteredCount(
-        base,
+        searchedPool,
         candidateType,
         candidateValue,
         activeFilters,
@@ -1050,7 +1069,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
         !!config.loadSoloLibrarySequences &&
         (_viewMode.granularity !== mode.granularity ||
           _viewMode.subject !== mode.subject ||
-          (_viewMode.granularity === "solo" && _viewMode.color !== mode.color));
+          (_viewMode.granularity === "solo" && _viewMode.hand !== mode.hand));
       _viewMode = mode;
       if (needsReload) {
         void loadLibrarySequences();
@@ -1065,7 +1084,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
     // --- Cleanup ---
     destroy(): void {
-      libraryLoadRevision += 1;
+      poolLoadRevision += 1;
       cleanupMutated();
       if (transitionTimeout) {
         clearTimeout(transitionTimeout);

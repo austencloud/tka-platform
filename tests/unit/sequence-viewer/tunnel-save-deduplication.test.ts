@@ -27,11 +27,11 @@ const snapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: true,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
   trailRender: { enabled: true },
 } as unknown as TunnelSnapshot;
 
@@ -232,5 +232,31 @@ describe("Tunnel save deduplication", () => {
     expect(createTunnelSaveFingerprint(sequence, snapshot, retimed)).not.toBe(
       createTunnelSaveFingerprint(sequence, snapshot, first)
     );
+  });
+
+  it("treats stage assignment as saved composition", () => {
+    const first = createTunnelComposition([
+      createIndependentTunnelPerformer(sequence, 0, "Performer 1"),
+      createIndependentTunnelPerformer(sequence, 1, "Performer 2"),
+    ]);
+    const reassigned = {
+      ...first,
+      stage: {
+        instances: [
+          {
+            ...first.stage.instances[0]!,
+            performerId: first.performers[1]!.id,
+          },
+          {
+            ...first.stage.instances[1]!,
+            performerId: first.performers[0]!.id,
+          },
+        ],
+      },
+    };
+
+    expect(
+      createTunnelSaveFingerprint(sequence, snapshot, reassigned)
+    ).not.toBe(createTunnelSaveFingerprint(sequence, snapshot, first));
   });
 });

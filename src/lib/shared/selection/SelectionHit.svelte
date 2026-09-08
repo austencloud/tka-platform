@@ -5,6 +5,7 @@
     groupId,
     isGroupStart = false,
     label = "",
+    href,
     onselect,
   }: {
     /** Sequence identity; units sharing it hover/select together. */
@@ -13,6 +14,8 @@
     isGroupStart?: boolean;
     /** aria-label for the focusable unit. */
     label?: string;
+    /** Navigation destinations stay links instead of imitating one with onclick. */
+    href?: string;
     /** Surface consequence — guide: emit+animate; choreo: toggle+reveal Remove. */
     onselect?: (groupId: string) => void;
   } = $props();
@@ -24,15 +27,27 @@
 </script>
 
 {#if scope}
-  <button
-    type="button"
-    class="tka-seq-hit"
-    aria-label={isGroupStart ? label : undefined}
-    aria-hidden={isGroupStart ? undefined : "true"}
-    aria-pressed={isGroupStart ? scope.isSelected(groupId) : undefined}
-    tabindex={isGroupStart ? undefined : -1}
-    onpointerenter={() => scope.hover(groupId)}
-    onpointerleave={() => scope.hover(null)}
-    onclick={() => onselect?.(groupId)}
-  ></button>
+  {#if href}
+    <a
+      class="tka-seq-hit"
+      {href}
+      aria-label={isGroupStart ? label : undefined}
+      aria-hidden={isGroupStart ? undefined : "true"}
+      tabindex={isGroupStart ? undefined : -1}
+      onpointerenter={() => scope.hover(groupId)}
+      onpointerleave={() => scope.hover(null)}
+    ></a>
+  {:else}
+    <button
+      type="button"
+      class="tka-seq-hit"
+      aria-label={isGroupStart ? label : undefined}
+      aria-hidden={isGroupStart ? undefined : "true"}
+      aria-pressed={isGroupStart ? scope.isSelected(groupId) : undefined}
+      tabindex={isGroupStart ? undefined : -1}
+      onpointerenter={() => scope.hover(groupId)}
+      onpointerleave={() => scope.hover(null)}
+      onclick={() => onselect?.(groupId)}
+    ></button>
+  {/if}
 {/if}

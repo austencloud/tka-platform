@@ -3,6 +3,8 @@
   Quick-access submenus for Effects, Efforts, Path Shape.
 -->
 <script lang="ts">
+  import VisualSavePrompt from "$lib/shared/library/components/VisualSavePrompt.svelte";
+  let savePrompt: VisualSavePrompt | undefined = $state();
   import { onDestroy } from "svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type {
@@ -21,8 +23,8 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   interface Props {
     sequence?: SequenceData | null;
-    bluePropType?: string | null;
-    redPropType?: string | null;
+    leftPropType?: string | null;
+    rightPropType?: string | null;
     showSettings?: boolean;
     onSaveToLibrary?: () => void | Promise<void>;
     disassembled?: boolean;
@@ -38,8 +40,8 @@
 
   const {
     sequence,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     showSettings = true,
     onSaveToLibrary,
     disassembled = false,
@@ -66,7 +68,8 @@
 
   const visibilityManager =
     visibilityManagerOverride ?? getAnimationVisibilityManager();
-  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
+  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null =
+    null;
   try {
     effectsConfigState = getEffectsConfigContext();
   } catch {
@@ -99,11 +102,17 @@
                 buildVisualSequenceSaveMenuItem(
                   sequence,
                   {
-                    bluePropType,
-                    redPropType,
+                    leftPropType,
+                    rightPropType,
                     pathShape: visibilityManager.getPathShape(),
                   },
-                  onSaveToLibrary
+                  onSaveToLibrary ??
+                    (() =>
+                      savePrompt?.request(sequence, {
+                        leftPropType,
+                        rightPropType,
+                        pathShape: visibilityManager.getPathShape(),
+                      }))
                 ),
               ]
             : []),
@@ -130,5 +139,7 @@
     menuState = { open: true, x, y };
   }
 </script>
+
+<VisualSavePrompt bind:this={savePrompt} />
 
 <ContextMenu {menuState} items={menuItems} onClose={closeContextMenu} />

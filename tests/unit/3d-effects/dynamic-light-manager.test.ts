@@ -9,7 +9,8 @@ function createManager(maxLights: number) {
     ...TIER_CONFIGS[QualityTier.HIGH],
     maxDynamicLights: maxLights,
   };
-  return { manager: new DynamicLightManager(scene, config), scene };
+  const manager = new DynamicLightManager(scene, config);
+  return { manager, scene };
 }
 
 describe("DynamicLightManager", () => {
@@ -103,5 +104,25 @@ describe("DynamicLightManager", () => {
   it("pre-allocates lights matching tier config", () => {
     const { scene } = createManager(4);
     expect(scene.children.length).toBe(4);
+  });
+
+  it("keeps every pooled light visible at zero intensity while idle", () => {
+    const { manager, scene } = createManager(4);
+    const handle = manager.requestLight(
+      new Vector3(1, 2, 3),
+      new Color("#ff7700"),
+      0.6,
+      3
+    );
+    expect(handle).not.toBeNull();
+    manager.releaseLight(handle!);
+
+    expect(scene.children).toHaveLength(4);
+    expect(scene.children.every((light) => light.visible)).toBe(true);
+    expect(
+      scene.children.every(
+        (light) => "intensity" in light && light.intensity === 0
+      )
+    ).toBe(true);
   });
 });

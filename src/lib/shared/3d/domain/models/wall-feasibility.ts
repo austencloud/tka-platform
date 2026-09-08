@@ -19,8 +19,21 @@ export interface WallFeasibilityMetadata {
   /** Keyed by step index, then hand. Only present for "withCheat". */
   wallPlaneOverrides?: Record<
     number,
-    { blue?: WallPlaneStepOverride; red?: WallPlaneStepOverride }
+    { left?: WallPlaneStepOverride; right?: WallPlaneStepOverride }
   >;
   /** Scanner version for invalidation when thresholds/model change. */
   scanVersion: number;
+}
+
+/**
+ * A caution preserved from an attributed external source. This is deliberately
+ * separate from WallFeasibilityMetadata: a source flag is evidence to review,
+ * not a positive scanner result and not a precise impossible/with-cheat verdict.
+ */
+export interface WallPlaneSourceAssessment {
+  status: "flagged-difficult-or-impossible";
+  source: string;
+  sourceRepository?: string;
+  sourceCommit?: string;
+  note: string;
 }

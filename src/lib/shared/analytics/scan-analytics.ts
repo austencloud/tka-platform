@@ -42,8 +42,8 @@ export interface ScanVisitContext {
   sequenceWord: string | null;
   deckId: string | null;
   deckName: string | null;
-  blueProp: string | null;
-  redProp: string | null;
+  leftProp: string | null;
+  rightProp: string | null;
   isAuthenticated: () => boolean;
 }
 
@@ -53,8 +53,8 @@ export interface ScanBaseProperties {
   sequence_word: string | null;
   deck_id: string | null;
   deck_name: string | null;
-  blue_prop: string | null;
-  red_prop: string | null;
+  left_prop: string | null;
+  right_prop: string | null;
   mixed_props: boolean | null;
   is_authenticated: boolean;
   device_id: string | null;
@@ -248,8 +248,8 @@ export function beginScanVisit(
     sequenceWord?: string | null;
     deckId?: string | null;
     deckName?: string | null;
-    blueProp?: string | null;
-    redProp?: string | null;
+    leftProp?: string | null;
+    rightProp?: string | null;
     isAuthenticated?: () => boolean;
   } = {}
 ): void {
@@ -268,8 +268,8 @@ export function beginScanVisit(
       sequenceWord: options.sequenceWord ?? visit.sequenceWord,
       deckId: options.deckId ?? visit.deckId,
       deckName: options.deckName ?? visit.deckName,
-      blueProp: options.blueProp ?? visit.blueProp,
-      redProp: options.redProp ?? visit.redProp,
+      leftProp: options.leftProp ?? visit.leftProp,
+      rightProp: options.rightProp ?? visit.rightProp,
       isAuthenticated: options.isAuthenticated ?? visit.isAuthenticated,
     };
     registerSuperProperties();
@@ -286,8 +286,8 @@ export function beginScanVisit(
     sequenceWord: options.sequenceWord ?? null,
     deckId: options.deckId ?? null,
     deckName: options.deckName ?? null,
-    blueProp: options.blueProp ?? null,
-    redProp: options.redProp ?? null,
+    leftProp: options.leftProp ?? null,
+    rightProp: options.rightProp ?? null,
     isAuthenticated: options.isAuthenticated ?? (() => false),
   };
   lastRegisteredSuperProperties = null;
@@ -310,7 +310,7 @@ export function updateScanAttribution(
   attribution: Partial<
     Pick<
       ScanVisitContext,
-      "sequenceWord" | "deckId" | "deckName" | "blueProp" | "redProp"
+      "sequenceWord" | "deckId" | "deckName" | "leftProp" | "rightProp"
     >
   >
 ): void {
@@ -320,8 +320,8 @@ export function updateScanAttribution(
     sequenceWord: attribution.sequenceWord ?? visit.sequenceWord,
     deckId: attribution.deckId ?? visit.deckId,
     deckName: attribution.deckName ?? visit.deckName,
-    blueProp: attribution.blueProp ?? visit.blueProp,
-    redProp: attribution.redProp ?? visit.redProp,
+    leftProp: attribution.leftProp ?? visit.leftProp,
+    rightProp: attribution.rightProp ?? visit.rightProp,
   };
   registerSuperProperties();
 }
@@ -365,7 +365,7 @@ function readScanBaseProperties(): ScanBaseProperties | null {
     sequence_word: visit.sequenceWord,
     deck_id: visit.deckId,
     deck_name: visit.deckName,
-    ...scanPropProperties(visit.blueProp, visit.redProp),
+    ...scanPropProperties(visit.leftProp, visit.rightProp),
     is_authenticated: visit.isAuthenticated(),
     device_id: deviceId,
     scan_session_id: visitScanSessionId,
@@ -453,10 +453,10 @@ export function captureScanSettingChanged(properties: {
   setting: string;
   previous_value: ScanAnalyticsValue;
   value: ScanAnalyticsValue;
-  previous_blue_prop?: ScanAnalyticsValue;
-  previous_red_prop?: ScanAnalyticsValue;
-  blue_prop?: ScanAnalyticsValue;
-  red_prop?: ScanAnalyticsValue;
+  previous_left_prop?: ScanAnalyticsValue;
+  previous_right_prop?: ScanAnalyticsValue;
+  left_prop?: ScanAnalyticsValue;
+  right_prop?: ScanAnalyticsValue;
   source?: string;
   coalesce?: boolean;
   count?: boolean;

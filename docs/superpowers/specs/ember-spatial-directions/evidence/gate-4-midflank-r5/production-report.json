@@ -1,0 +1,30 @@
+{
+  "revision": "midflank-r5",
+  "sourceBlendSha256": "5f10bdafd3eee0cbed724ba64172b3f35a4b881336148972b6208d9de8ae9c84",
+  "coordinateManifestSha256": "de8676a5b7945912dc8eae55bfab4ee5b0111fb92c396e1ea2cac060ed8d5275",
+  "preservedSourceMeshes": {
+    "EMBER_Terrain": "080223e1cfb8283021d0c72974dfa209e1c0f65e92274e755ed2af8e7a851585",
+    "EMBER_LavaSimulatorDeposit": "58a3aecba839d8cd0c73c92537f8342bbaa74ba186a4985c7e9da4362659a3e8"
+  },
+  "runtimeDatumShiftMeters": 0.32,
+  "talusFragments": 3810,
+  "clinkerFragments": 5947,
+  "simulatorCells": 2400,
+  "sourceGeometryUnchanged": true,
+  "maximumLavaTopFinishAdjustmentMeters": 0.38645362854003906,
+  "lavaFinish": "Shared top-corner averaging and interior jitter; boundary XZ unchanged; original scientific mesh retained in native file, excluded from delivery.",
+  "bakedObjects": [
+    "EMBER_Terrain",
+    "EMBER_LavaSimulatorDeposit",
+    "EMBER_FlankButtresses",
+    "EMBER_SourceFissure",
+    "EMBER_SourceRampart",
+    "EMBER_BakedTalus",
+    "EMBER_BakedBenchRib",
+    "EMBER_BakedLavaClinker"
+  ],
+  "excluded": "Review maquettes, diagram guides, cameras and lights",
+  "rawGlbSha256": "8c944d54afa8e787a266d0b7c1cb74eeb576a13363097b497104c267a36cbbc2",
+  "nativeBlendSha256": "97f653485820203fac7c02994b69d4ccbceaf1545f0ce57790e93b5ef07ef840",
+  "licensing": "Original procedural geometry; upstream Flowy provenance unchanged. Runtime detail reuses recorded CC0 Poly Haven scan and original R9 textures."
+}

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   toastWarning: vi.fn(),
   showToast: vi.fn(),
   authDrawerShow: vi.fn(),
+  offerGuestSaveNudge: vi.fn(),
   previewReadOnly: false,
   authState: {
     user: { uid: "admin" },
@@ -56,7 +57,10 @@ vi.mock("$lib/shared/debug/state/user-preview-state.svelte", () => ({
   isPreviewReadOnly: () => mocks.previewReadOnly,
 }));
 vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
-  authDrawerState: { show: mocks.authDrawerShow },
+  authDrawerState: {
+    show: mocks.authDrawerShow,
+    offerGuestSaveNudge: mocks.offerGuestSaveNudge,
+  },
 }));
 vi.mock("$lib/shared/auth/firebase", () => ({
   getFirestoreInstance: vi.fn().mockResolvedValue({}),
@@ -64,6 +68,28 @@ vi.mock("$lib/shared/auth/firebase", () => ({
 
 import { collectionsState } from "../collections-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+describe("collection prop details", () => {
+  it("persists the prop and explicitly clears it with a Firestore-safe null", async () => {
+    const details = { name: "Fans", description: "", credit: "" };
+    await collectionsState.saveDetails("fans", {
+      ...details,
+      propType: PropType.FAN,
+    });
+    expect(mocks.updateCollection).toHaveBeenLastCalledWith("fans", {
+      ...details,
+      propType: PropType.FAN,
+    });
+    await collectionsState.saveDetails("fans", { ...details, propType: null });
+    expect(mocks.updateCollection).toHaveBeenLastCalledWith("fans", {
+      ...details,
+      propType: null,
+    });
+    await collectionsState.saveDetails("fans", details);
+    expect(mocks.updateCollection).toHaveBeenLastCalledWith("fans", details);
+  });
+});
 
 // authState above is the vi.mock plain object; the production type marks the tier
 // flags readonly, so cast to a mutable view to reset/flip them between tests.
@@ -177,6 +203,37 @@ describe("collectionsState", () => {
     await collectionsState.toggle("s1", "c1");
     expect(mocks.removeSequenceFromCollection).toHaveBeenCalledWith("c1", "s1");
     expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
+  });
+
+  it("lets guests add public sequences and delegates optional prompts only after successful saves", async () => {
+    mutableAuth.isAnonymous = true;
+    collectionsState.collections = [col("c1", "Practice")];
+    mocks.addSequenceToCollection.mockRejectedValueOnce(new Error("offline"));
+
+    await collectionsState.toggle("public-sequence", "c1");
+    expect(mocks.offerGuestSaveNudge).not.toHaveBeenCalled();
+    expect(mocks.showToast).not.toHaveBeenCalled();
+    expect(mocks.authDrawerShow).not.toHaveBeenCalled();
+
+    await collectionsState.toggle("public-sequence", "c1");
+    await collectionsState.toggle("another-public-sequence", "c1");
+    expect(mocks.addSequenceToCollection).toHaveBeenLastCalledWith(
+      "c1",
+      "another-public-sequence"
+    );
+    expect(mocks.offerGuestSaveNudge).toHaveBeenCalledTimes(2);
+    expect(mocks.authDrawerShow).not.toHaveBeenCalled();
+    const nudge = mocks.offerGuestSaveNudge.mock.calls[0]![0];
+    expect(nudge.action.label).toBe("Create account");
+    nudge.action.onClick();
+    expect(mocks.authDrawerShow).toHaveBeenCalledWith("signup");
+  });
+
+  it("does not offer signup to full accounts after adding a sequence", async () => {
+    collectionsState.collections = [col("c1", "Practice")];
+    await collectionsState.toggle("public-sequence", "c1");
+    expect(mocks.showToast).not.toHaveBeenCalled();
+    expect(mocks.offerGuestSaveNudge).not.toHaveBeenCalled();
   });
 
   it("toggle blocks an add when the collection is full and toasts", async () => {
@@ -345,7 +402,7 @@ describe("collectionsState", () => {
     const ok = await collectionsState.setPublic("c1", true);
     expect(ok).toBe(false);
     expect(mocks.updateCollection).not.toHaveBeenCalled();
-    expect(mocks.toastInfo).toHaveBeenCalled();
+    expect(mocks.toastInfo).not.toHaveBeenCalled();
     expect(mocks.authDrawerShow).toHaveBeenCalledWith(
       "signup",
       "edit-community"

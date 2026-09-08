@@ -8,7 +8,7 @@
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
-  getSettings: () => ({ bluePropType: "staff", redPropType: "staff" }),
+  getSettings: () => ({ leftPropType: "staff", rightPropType: "staff" }),
 }));
 
 import { deriveCacheKey } from "$lib/shared/sequence-viewer/services/cell-cache-key-deriver";
@@ -17,7 +17,7 @@ import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/servi
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -33,42 +33,42 @@ import {
 const deriver = { deriveCacheKey };
 
 function makeStartPosition(overrides?: {
-  bluePropType?: PropType;
-  redPropType?: PropType;
-  blueStartLocation?: GridLocation;
-  redStartLocation?: GridLocation;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
+  leftStartLocation?: GridLocation;
+  rightStartLocation?: GridLocation;
 }): PictographData {
   return {
     id: "test-start",
     letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      [MotionColor.BLUE]: {
+      [HandSide.LEFT]: {
         motionType: MotionType.STATIC,
-        startLocation: overrides?.blueStartLocation ?? GridLocation.NORTH,
-        endLocation: overrides?.blueStartLocation ?? GridLocation.NORTH,
+        startLocation: overrides?.leftStartLocation ?? GridLocation.NORTH,
+        endLocation: overrides?.leftStartLocation ?? GridLocation.NORTH,
         startOrientation: "in",
         endOrientation: "in",
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
-        color: MotionColor.BLUE,
+        color: HandSide.LEFT,
         isVisible: true,
-        propType: overrides?.bluePropType ?? PropType.STAFF,
-        arrowLocation: overrides?.blueStartLocation ?? GridLocation.NORTH,
+        propType: overrides?.leftPropType ?? PropType.STAFF,
+        arrowLocation: overrides?.leftStartLocation ?? GridLocation.NORTH,
         gridMode: GridMode.DIAMOND,
       },
-      [MotionColor.RED]: {
+      [HandSide.RIGHT]: {
         motionType: MotionType.STATIC,
-        startLocation: overrides?.redStartLocation ?? GridLocation.SOUTH,
-        endLocation: overrides?.redStartLocation ?? GridLocation.SOUTH,
+        startLocation: overrides?.rightStartLocation ?? GridLocation.SOUTH,
+        endLocation: overrides?.rightStartLocation ?? GridLocation.SOUTH,
         startOrientation: "in",
         endOrientation: "in",
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
-        color: MotionColor.RED,
+        color: HandSide.RIGHT,
         isVisible: true,
-        propType: overrides?.redPropType ?? PropType.STAFF,
-        arrowLocation: overrides?.redStartLocation ?? GridLocation.SOUTH,
+        propType: overrides?.rightPropType ?? PropType.STAFF,
+        arrowLocation: overrides?.rightStartLocation ?? GridLocation.SOUTH,
         gridMode: GridMode.DIAMOND,
       },
     },
@@ -80,7 +80,7 @@ function makeOptions(
 ): PreviewCellRenderOptions {
   return {
     size: 240,
-    bluePropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
     showStepNumbers: false,
     showNonRadialPoints: true,
     handPointVisibility: "all",
@@ -91,36 +91,36 @@ function makeOptions(
 }
 
 function makeBoxBetaStep(
-  blueStartLocation: GridLocation,
-  redStartLocation: GridLocation,
+  leftStartLocation: GridLocation,
+  rightStartLocation: GridLocation,
   endLocation: GridLocation
 ): PictographData {
   return {
-    id: `beta-${blueStartLocation}-${endLocation}`,
+    id: `beta-${leftStartLocation}-${endLocation}`,
     letter: "K",
     gridMode: GridMode.BOX,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
-        startLocation: blueStartLocation,
+        startLocation: leftStartLocation,
         endLocation,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.COUNTER,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         turns: 0.5,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.BOX,
         propType: PropType.STAFF,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.FLOAT,
-        startLocation: redStartLocation,
+        startLocation: rightStartLocation,
         endLocation,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.COUNTER,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.BOX,
         propType: PropType.STAFF,
       }),
@@ -134,11 +134,24 @@ function makeQuarterTurnPictograph(turns = 0.25): PictographData {
     GridLocation.SOUTHWEST,
     GridLocation.SOUTHEAST
   );
-  pictograph.motions.blue.turns = turns;
+  pictograph.motions.left.turns = turns;
   return pictograph;
 }
 
 describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
+  it("rekeys visible-motion cells after canonical hand arrows are restored", () => {
+    const key = deriver.deriveCacheKey(
+      makeStartPosition(),
+      undefined,
+      false,
+      makeOptions()
+    );
+
+    expect(key).toContain(
+      '"arrowRenderRevision":"canonical-hand-arrows-v1"'
+    );
+  });
+
   it("preserves lsp11 keys for fully-visible pictographs", () => {
     const key = deriver.deriveCacheKey(
       makeStartPosition(),
@@ -153,7 +166,7 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
   it("separates invisible placeholders from visible static motions", () => {
     const visible = makeStartPosition();
     const hidden = makeStartPosition();
-    (hidden.motions.red as { isVisible: boolean }).isVisible = false;
+    (hidden.motions.right as { isVisible: boolean }).isVisible = false;
 
     const visibleKey = deriver.deriveCacheKey(
       visible,
@@ -179,19 +192,19 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
     it.each([
       {
         step: 1,
-        blueStart: GridLocation.SOUTHWEST,
-        redStart: GridLocation.NORTHEAST,
+        leftStart: GridLocation.SOUTHWEST,
+        rightStart: GridLocation.NORTHEAST,
         end: GridLocation.NORTHWEST,
       },
       {
         step: 3,
-        blueStart: GridLocation.NORTHWEST,
-        redStart: GridLocation.SOUTHEAST,
+        leftStart: GridLocation.NORTHWEST,
+        rightStart: GridLocation.SOUTHEAST,
         end: GridLocation.NORTHEAST,
       },
-    ])("rekeys supplied step $step", ({ blueStart, redStart, end }) => {
+    ])("rekeys supplied step $step", ({ leftStart, rightStart, end }) => {
       const key = deriver.deriveCacheKey(
-        makeBoxBetaStep(blueStart, redStart, end),
+        makeBoxBetaStep(leftStart, rightStart, end),
         undefined,
         false,
         makeOptions()
@@ -278,16 +291,16 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
   describe("motion-intrinsic propType differentiation (the original bug)", () => {
     it("HAND vs STAFF motion propType produces different keys even with same settings propType", () => {
       const staffStart = makeStartPosition({
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       });
       const handStart = makeStartPosition({
-        bluePropType: PropType.HAND,
-        redPropType: PropType.HAND,
+        leftPropType: PropType.HAND,
+        rightPropType: PropType.HAND,
       });
 
       // Both rendered with the same settings prop type
-      const options = makeOptions({ bluePropType: PropType.STAFF });
+      const options = makeOptions({ leftPropType: PropType.STAFF });
 
       const staffKey = deriver.deriveCacheKey(
         staffStart,
@@ -307,15 +320,15 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
 
     it("FAN vs STAFF motion propType produces different keys", () => {
       const staffStart = makeStartPosition({
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.STAFF,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.STAFF,
       });
       const fanStart = makeStartPosition({
-        bluePropType: PropType.FAN,
-        redPropType: PropType.FAN,
+        leftPropType: PropType.FAN,
+        rightPropType: PropType.FAN,
       });
 
-      const options = makeOptions({ bluePropType: PropType.STAFF });
+      const options = makeOptions({ leftPropType: PropType.STAFF });
 
       const staffKey = deriver.deriveCacheKey(
         staffStart,
@@ -341,13 +354,13 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
         data,
         undefined,
         true,
-        makeOptions({ bluePropType: PropType.CLUB })
+        makeOptions({ leftPropType: PropType.CLUB })
       );
       const staffKey = deriver.deriveCacheKey(
         data,
         undefined,
         true,
-        makeOptions({ bluePropType: PropType.STAFF })
+        makeOptions({ leftPropType: PropType.STAFF })
       );
 
       expect(clubKey).toContain('"propAppearanceRevision":"club-art-v2"');
@@ -360,8 +373,8 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
         undefined,
         true,
         makeOptions({
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.CLUB,
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.CLUB,
           catDogModeEnabled: true,
         })
       );
@@ -374,17 +387,17 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
         makeStartPosition(),
         undefined,
         true,
-        makeOptions({ bluePropType: PropType.CLUB })
+        makeOptions({ leftPropType: PropType.CLUB })
       );
       const classic = deriver.deriveCacheKey(
         makeStartPosition(),
         undefined,
         true,
-        makeOptions({ bluePropType: PropType.CLASSIC_CLUB })
+        makeOptions({ leftPropType: PropType.CLASSIC_CLUB })
       );
 
       expect(regular).not.toBe(classic);
-      expect(classic).toContain('"bluePropType":"classic_club"');
+      expect(classic).toContain('"leftPropType":"classic_club"');
     });
   });
 
@@ -433,13 +446,13 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
     it("diamond vs box mode produces different keys", () => {
       // Diamond mode: cardinal locations
       const diamondStart = makeStartPosition({
-        blueStartLocation: GridLocation.NORTH,
-        redStartLocation: GridLocation.SOUTH,
+        leftStartLocation: GridLocation.NORTH,
+        rightStartLocation: GridLocation.SOUTH,
       });
       // Box mode: intercardinal locations
       const boxStart = makeStartPosition({
-        blueStartLocation: GridLocation.NORTHEAST,
-        redStartLocation: GridLocation.SOUTHWEST,
+        leftStartLocation: GridLocation.NORTHEAST,
+        rightStartLocation: GridLocation.SOUTHWEST,
       });
 
       const options = makeOptions();
@@ -499,7 +512,7 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
       const plain = makeStartPosition();
       const reversed = {
         ...makeStartPosition(),
-        blueReversal: true,
+        leftReversal: true,
       } as PictographData;
       const options = makeOptions({ showReversals: true });
 
@@ -518,7 +531,7 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
       const plain = makeStartPosition();
       const reversed = {
         ...makeStartPosition(),
-        redReversal: true,
+        rightReversal: true,
       } as PictographData;
       const options = makeOptions({ showReversals: true });
 
@@ -537,8 +550,8 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
       const plain = makeStartPosition();
       const reversed = {
         ...makeStartPosition(),
-        blueReversal: true,
-        redReversal: true,
+        leftReversal: true,
+        rightReversal: true,
       } as PictographData;
       const options = makeOptions({ showReversals: false });
 

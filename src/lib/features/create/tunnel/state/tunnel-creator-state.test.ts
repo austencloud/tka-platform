@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { TunnelComposition } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import { createLegacyTunnelStage } from "$lib/shared/sequence-viewer/tunnel/tunnel-stage";
 import {
   TUNNEL_CREATOR_DRAFT_VERSION,
   type TunnelCreatorDraft,
@@ -30,7 +31,10 @@ const presentationSnapshot = {
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: true,
-    spectrum: false,
+    colors: {
+      mode: "hands",
+      custom: { left: "#2e8bf0", right: "#ed1c24" },
+    },
     section: "effects",
   },
   effects: { activeEffect: "none" },
@@ -38,15 +42,15 @@ const presentationSnapshot = {
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 108, playbackMode: "step" },
   props: {
-    bluePropType: "staff",
-    redPropType: "staff",
-    blueBuugengFlipped: false,
-    redBuugengFlipped: true,
+    leftPropType: "staff",
+    rightPropType: "staff",
+    leftBuugengFlipped: false,
+    rightBuugengFlipped: true,
   },
   trailRender: { mode: "trail" },
 } as unknown as TunnelSnapshot;
@@ -62,6 +66,7 @@ function createState(
 }
 
 function composition(): TunnelComposition {
+  const formation = { ...DEFAULT_CONFIG, fold: 3, speedOverrides: {} };
   return {
     version: 1,
     id: "composition-1",
@@ -94,10 +99,28 @@ function composition(): TunnelComposition {
         timing: { stepOffset: 0, speed: 1 },
       },
     ],
-    formation: { ...DEFAULT_CONFIG, fold: 3, speedOverrides: {} },
+    // A v1 composition predates authored stages, so the stage this fixture
+    // carries is the generated one the loader reconstructs for it — one
+    // instance per rendered arm, performers cycling. An explicit three-slot
+    // stage would be a different (and newer) kind of composition.
+    stage: createLegacyTunnelStage(["lead", "partner", "third"], formation),
+    formation,
     createdAt: 100,
     updatedAt: 200,
   };
+}
+
+/**
+ * Re-derive the generated stage after a test rewrites the fixture's cast or
+ * formation. For a v1 composition the stage is a pure function of those two,
+ * which is exactly what the loader reconstructs when it meets one.
+ */
+function restage(value: TunnelComposition): TunnelComposition {
+  value.stage = createLegacyTunnelStage(
+    value.performers.map((performer) => performer.id),
+    value.formation
+  );
+  return value;
 }
 
 describe("tunnel creator edit state", () => {
@@ -148,6 +171,7 @@ describe("tunnel creator edit state", () => {
       timing: { stepOffset: 0, speed: 1 },
     });
     initial.formation = { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} };
+    restage(initial);
 
     const state = createState({
       openComposition: vi.fn(),
@@ -171,6 +195,29 @@ describe("tunnel creator edit state", () => {
         ])
       )
     ).toEqual({ lead: 2, partner: 2, third: 2, fourth: 2 });
+  });
+
+  it("turns a legacy duplicate into a newly authored performer before growing the stage", () => {
+    const initial = composition();
+    initial.formation = { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} };
+    restage(initial);
+    const state = createState({
+      openComposition: vi.fn(),
+      initialComposition: initial,
+      createId: () => "fourth",
+    });
+
+    expect(
+      state.stageInstances.map((instance) => instance.performerId)
+    ).toEqual(["lead", "partner", "third", "lead"]);
+    expect(state.setPerformerCount(4)).toBe(true);
+    const fourthId = state.performerIdAt(3)!;
+
+    expect(state.renderedInstanceCount).toBe(4);
+    expect(
+      state.stageInstances.map((instance) => instance.performerId)
+    ).toEqual(["lead", "partner", "third", fourthId]);
+    expect(state.initialFormation.fold).toBe(4);
   });
 
   it("keeps normal authoring to four stable performer cards", () => {
@@ -218,6 +265,7 @@ describe("tunnel creator edit state", () => {
       });
     }
     initial.formation = { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} };
+    restage(initial);
 
     const state = createState({
       openComposition: vi.fn(),
@@ -266,6 +314,66 @@ describe("tunnel creator edit state", () => {
     expect(performers.map((performer) => performer.timing.stepOffset)).toEqual([
       0, 4, 8, 12,
     ]);
+  });
+
+  it("puts each newly authored performer on stage exactly once", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `exact-${++id}`;
+      })(),
+    });
+    const firstId = state.performerIdAt(0)!;
+    const secondId = state.performerIdAt(1)!;
+    state.setPerformerSequence(firstId, sequence);
+    state.setPerformerSequence(secondId, { ...sequence, id: "second" });
+    const thirdId = state.addPerformer()!;
+    state.setPerformerSequence(thirdId, { ...sequence, id: "third" });
+
+    const composition = state.compositionWithFormation(state.initialFormation)!;
+    const layers = resolveTunnelLayerPlans(composition);
+
+    expect(state.authoredPerformerCount).toBe(3);
+    expect(state.renderedInstanceCount).toBe(3);
+    expect(layers.map((layer) => layer.performerId)).toEqual([
+      firstId,
+      secondId,
+      thirdId,
+    ]);
+    expect(layers.map((layer) => layer.arm)).toEqual([0, 1, 3]);
+  });
+
+  it("makes repeated stage appearances explicit without losing cast coverage", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `appearance-${++id}`;
+      })(),
+    });
+    const firstId = state.performerIdAt(0)!;
+    const secondId = state.performerIdAt(1)!;
+    state.setPerformerSequence(firstId, sequence);
+    state.setPerformerSequence(secondId, { ...sequence, id: "second" });
+
+    expect(state.addStageInstance(firstId)).toBe(true);
+    expect(state.renderedInstanceCount).toBe(3);
+    const duplicate = state.stageInstances.at(-1)!;
+    expect(state.setStageInstancePerformer(duplicate.id, secondId)).toBe(true);
+    expect(
+      state.stageInstances.filter(
+        (instance) => instance.performerId === secondId
+      )
+    ).toHaveLength(2);
+    expect(state.removeStageInstance(duplicate.id)).toBe(true);
+    expect(state.stageInstances).toHaveLength(2);
+    expect(state.canRemoveStageInstance(state.stageInstances[0]!.id)).toBe(
+      false
+    );
+    expect(state.removeStageInstance(state.stageInstances[0]!.id)).toBe(false);
   });
 
   it("keeps derived lineage valid while reordering and removing cards", () => {
@@ -508,14 +616,14 @@ describe("tunnel creator edit state", () => {
       version: 1,
       baseSequenceId: "l1-tnd-AAAA",
       mode: "SS",
-      blueFlower: {
+      leftFlower: {
         style: "pro",
         turns: 1,
         ori: "in",
         grid: "diamond",
         petals: 2,
       },
-      redFlower: {
+      rightFlower: {
         style: "anti",
         turns: 2,
         ori: "out",
@@ -603,6 +711,20 @@ describe("tunnel creator edit state", () => {
 
     expect(restored.activePanel).toBe("generation");
     expect(restored.generationTargetId).toBe(performerId);
+    expect(restored.selectedPerformerId).toBe(performerId);
+  });
+
+  it("keeps the active performer selected when its tab is pressed again", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      createId: () => "selected-performer",
+    });
+    const performerId = state.performerIdAt(0);
+    if (!performerId) return;
+
+    expect(state.selectPerformer(performerId)).toBe(true);
+    expect(state.selectPerformer(performerId)).toBe(true);
+    expect(state.selectedPerformerId).toBe(performerId);
   });
 
   it("targets direct generation without opening the generation workspace", () => {
@@ -615,6 +737,7 @@ describe("tunnel creator edit state", () => {
 
     expect(state.selectGenerationTarget(performerId)).toBe(true);
     expect(state.generationTargetId).toBe(performerId);
+    expect(state.selectedPerformerId).toBe(performerId);
     expect(state.activePanel).toBeNull();
     expect(state.selectGenerationTarget("missing-performer")).toBe(false);
   });

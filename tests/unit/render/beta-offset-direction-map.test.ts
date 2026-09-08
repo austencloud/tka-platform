@@ -16,7 +16,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -59,20 +59,20 @@ const boxTransitions: ReadonlyArray<{
 const sequenceSteps: ReadonlyArray<{
   step: number;
   letter: string;
-  blue: Omit<BetaMotionInput, "color" | "propType">;
-  red: Omit<BetaMotionInput, "color" | "propType">;
+  left: Omit<BetaMotionInput, "color" | "propType">;
+  right: Omit<BetaMotionInput, "color" | "propType">;
   expectedBlue: DiagonalDirection | null;
 }> = [
   {
     step: 1,
     letter: "K",
-    blue: {
+    left: {
       startLocation: "sw",
       endLocation: "nw",
       endOrientation: "counter",
       motionType: "anti",
     },
-    red: {
+    right: {
       startLocation: "ne",
       endLocation: "nw",
       endOrientation: "counter",
@@ -83,13 +83,13 @@ const sequenceSteps: ReadonlyArray<{
   {
     step: 2,
     letter: "Φ",
-    blue: {
+    left: {
       startLocation: "nw",
       endLocation: "nw",
       endOrientation: "in",
       motionType: "static",
     },
-    red: {
+    right: {
       startLocation: "nw",
       endLocation: "se",
       endOrientation: "in",
@@ -100,13 +100,13 @@ const sequenceSteps: ReadonlyArray<{
   {
     step: 3,
     letter: "K",
-    blue: {
+    left: {
       startLocation: "nw",
       endLocation: "ne",
       endOrientation: "counter",
       motionType: "anti",
     },
-    red: {
+    right: {
       startLocation: "se",
       endLocation: "ne",
       endOrientation: "counter",
@@ -117,13 +117,13 @@ const sequenceSteps: ReadonlyArray<{
   {
     step: 4,
     letter: "Φ",
-    blue: {
+    left: {
       startLocation: "ne",
       endLocation: "ne",
       endOrientation: "in",
       motionType: "static",
     },
-    red: {
+    right: {
       startLocation: "ne",
       endLocation: "sw",
       endOrientation: "in",
@@ -134,13 +134,13 @@ const sequenceSteps: ReadonlyArray<{
   {
     step: 5,
     letter: "K",
-    blue: {
+    left: {
       startLocation: "ne",
       endLocation: "se",
       endOrientation: "counter",
       motionType: "anti",
     },
-    red: {
+    right: {
       startLocation: "sw",
       endLocation: "se",
       endOrientation: "counter",
@@ -151,13 +151,13 @@ const sequenceSteps: ReadonlyArray<{
   {
     step: 6,
     letter: "Φ",
-    blue: {
+    left: {
       startLocation: "se",
       endLocation: "se",
       endOrientation: "in",
       motionType: "static",
     },
-    red: {
+    right: {
       startLocation: "se",
       endLocation: "nw",
       endOrientation: "in",
@@ -168,13 +168,13 @@ const sequenceSteps: ReadonlyArray<{
   {
     step: 7,
     letter: "K",
-    blue: {
+    left: {
       startLocation: "se",
       endLocation: "sw",
       endOrientation: "counter",
       motionType: "anti",
     },
-    red: {
+    right: {
       startLocation: "nw",
       endLocation: "sw",
       endOrientation: "counter",
@@ -185,13 +185,13 @@ const sequenceSteps: ReadonlyArray<{
   {
     step: 8,
     letter: "Φ",
-    blue: {
+    left: {
       startLocation: "sw",
       endLocation: "sw",
       endOrientation: "in",
       motionType: "static",
     },
-    red: {
+    right: {
       startLocation: "sw",
       endLocation: "ne",
       endOrientation: "in",
@@ -219,24 +219,24 @@ function opposite(offset: Offset): Offset {
 }
 
 function withRenderFields(
-  motion: Omit<BetaMotionInput, "color" | "propType">,
-  color: "blue" | "red"
+  motion: Omit<BetaMotionInput, "hand" | "propType">,
+  hand: "left" | "right"
 ): BetaMotionInput {
-  return { ...motion, color, propType: "staff" };
+  return { ...motion, hand, propType: "staff" };
 }
 
 function createInput(
   letter: string,
-  blueMotion: BetaMotionInput,
-  redMotion: BetaMotionInput
+  leftMotion: BetaMotionInput,
+  rightMotion: BetaMotionInput
 ): BetaOffsetInput {
   return {
-    blueMotion,
-    redMotion,
+    leftMotion,
+    rightMotion,
     letter,
     gridMode: "box",
-    bluePropType: "staff",
-    redPropType: "staff",
+    leftPropType: "staff",
+    rightPropType: "staff",
   };
 }
 
@@ -244,44 +244,44 @@ describe.each(calculators)("$name beta-offset directions", ({ calculate }) => {
   it.each(boxTransitions)(
     "maps the $start → $end box shift to $expectedBlue for blue",
     ({ start, partnerStart, end, expectedBlue }) => {
-      const blueMotion = withRenderFields(
+      const leftMotion = withRenderFields(
         {
           startLocation: start,
           endLocation: end,
           endOrientation: "counter",
           motionType: "anti",
         },
-        "blue"
+        "left"
       );
-      const redMotion = withRenderFields(
+      const rightMotion = withRenderFields(
         {
           startLocation: partnerStart,
           endLocation: end,
           endOrientation: "counter",
           motionType: "float",
         },
-        "red"
+        "right"
       );
-      const input = createInput("K", blueMotion, redMotion);
+      const input = createInput("K", leftMotion, rightMotion);
       const expected = diagonalOffset(expectedBlue);
 
-      expect(calculate(input, blueMotion)).toEqual(expected);
-      expect(calculate(input, redMotion)).toEqual(opposite(expected));
+      expect(calculate(input, leftMotion)).toEqual(expected);
+      expect(calculate(input, rightMotion)).toEqual(opposite(expected));
     }
   );
 
   it.each(sequenceSteps)(
     "places both props correctly in supplied sequence step $step ($letter)",
-    ({ letter, blue, red, expectedBlue }) => {
-      const blueMotion = withRenderFields(blue, "blue");
-      const redMotion = withRenderFields(red, "red");
-      const input = createInput(letter, blueMotion, redMotion);
+    ({ letter, left, right, expectedBlue }) => {
+      const leftMotion = withRenderFields(left, "left");
+      const rightMotion = withRenderFields(right, "right");
+      const input = createInput(letter, leftMotion, rightMotion);
       const expected = expectedBlue
         ? diagonalOffset(expectedBlue)
         : { x: 0, y: 0 };
 
-      expect(calculate(input, blueMotion)).toEqual(expected);
-      expect(calculate(input, redMotion)).toEqual(
+      expect(calculate(input, leftMotion)).toEqual(expected);
+      expect(calculate(input, rightMotion)).toEqual(
         expectedBlue ? opposite(expected) : expected
       );
     }
@@ -292,68 +292,68 @@ describe("PropPlacer final coordinates for the supplied sequence", () => {
   it.each([
     {
       step: 1,
-      blueStart: GridLocation.SOUTHWEST,
-      redStart: GridLocation.NORTHEAST,
+      leftStart: GridLocation.SOUTHWEST,
+      rightStart: GridLocation.NORTHEAST,
       end: GridLocation.NORTHWEST,
       blueOffset: { x: -STAFF_BOX_OFFSET, y: -STAFF_BOX_OFFSET },
     },
     {
       step: 3,
-      blueStart: GridLocation.NORTHWEST,
-      redStart: GridLocation.SOUTHEAST,
+      leftStart: GridLocation.NORTHWEST,
+      rightStart: GridLocation.SOUTHEAST,
       end: GridLocation.NORTHEAST,
       blueOffset: { x: -STAFF_BOX_OFFSET, y: STAFF_BOX_OFFSET },
     },
   ])(
     "places step $step props on opposite sides of the shared hand point",
-    async ({ blueStart, redStart, end, blueOffset }) => {
-      const blue = createMotionData({
+    async ({ leftStart, rightStart, end, blueOffset }) => {
+      const left = createMotionData({
         motionType: MotionType.ANTI,
-        startLocation: blueStart,
+        startLocation: leftStart,
         endLocation: end,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.COUNTER,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         turns: 0.5,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         gridMode: GridMode.BOX,
         propType: PropType.STAFF,
       });
-      const red = createMotionData({
+      const right = createMotionData({
         motionType: MotionType.FLOAT,
-        startLocation: redStart,
+        startLocation: rightStart,
         endLocation: end,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.COUNTER,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         gridMode: GridMode.BOX,
         propType: PropType.STAFF,
       });
       const pictograph: PictographData = {
-        id: `k-beta-${blueStart}-${end}`,
+        id: `k-beta-${leftStart}-${end}`,
         letter: Letter.K,
         gridMode: GridMode.BOX,
-        motions: { blue, red },
+        motions: { left, right },
       };
       const base = DefaultPropPositioner.calculatePosition(end, GridMode.BOX);
 
-      const [bluePlacement, redPlacement] = await Promise.all([
-        propPlacer.calculatePlacement(pictograph, blue, undefined, {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.STAFF,
+      const [leftPlacement, rightPlacement] = await Promise.all([
+        propPlacer.calculatePlacement(pictograph, left, undefined, {
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.STAFF,
         }),
-        propPlacer.calculatePlacement(pictograph, red, undefined, {
-          bluePropType: PropType.STAFF,
-          redPropType: PropType.STAFF,
+        propPlacer.calculatePlacement(pictograph, right, undefined, {
+          leftPropType: PropType.STAFF,
+          rightPropType: PropType.STAFF,
         }),
       ]);
 
-      expect(bluePlacement.positionX).toBeCloseTo(base.x + blueOffset.x, 2);
-      expect(bluePlacement.positionY).toBeCloseTo(base.y + blueOffset.y, 2);
-      expect(redPlacement.positionX).toBeCloseTo(base.x - blueOffset.x, 2);
-      expect(redPlacement.positionY).toBeCloseTo(base.y - blueOffset.y, 2);
+      expect(leftPlacement.positionX).toBeCloseTo(base.x + blueOffset.x, 2);
+      expect(leftPlacement.positionY).toBeCloseTo(base.y + blueOffset.y, 2);
+      expect(rightPlacement.positionX).toBeCloseTo(base.x - blueOffset.x, 2);
+      expect(rightPlacement.positionY).toBeCloseTo(base.y - blueOffset.y, 2);
     }
   );
 });

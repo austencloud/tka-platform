@@ -8,7 +8,7 @@
  * data dumping because it prevents the problem at the source.
  */
 
-import type { DisplayOutput } from './types';
+import type { DisplayOutput } from "./types";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Fields to Strip
@@ -19,39 +19,41 @@ import type { DisplayOutput } from './types';
  * These contain internal data structures that the LLM tends to dump verbatim.
  */
 const INTERNAL_FIELDS = new Set([
-	'contextData',
-	'startPosition', // Position numbers like "alpha3"
-	'endPosition',
-	'letterType', // Raw type number
-	'blueMotion', // Full motion object
-	'redMotion',
-	'variationCount',
-	'allVariations'
+  "contextData",
+  "startPosition", // Position numbers like "alpha3"
+  "endPosition",
+  "letterType", // Raw type number
+  "leftMotion", // Full motion object
+  "rightMotion",
+  "blueMotion", // Legacy aliases remain filtered at this untrusted boundary.
+  "redMotion",
+  "variationCount",
+  "allVariations",
 ]);
 
 /**
  * Fields to keep in the output (allowlist approach for safety)
  */
 const DISPLAY_FIELDS = new Set([
-	'explanation',
-	'text',
-	'inlinePictograph',
-	'inlineGallery',
-	'inlineGalleries', // Multiple galleries (e.g., diamond + box mode)
-	'inlineSequencePlayer',
-	'inlineStepGrid',
-	'inlineQuiz',
-	// Sequence validation results (user-friendly)
-	'isValid',
-	'word',
-	'canBeInterpolated',
-	'interpolatedSequence',
-	// Term definitions (simple strings)
-	'position',
-	'definition',
-	'gridDescription',
-	'motionType',
-	'gridMovement'
+  "explanation",
+  "text",
+  "inlinePictograph",
+  "inlineGallery",
+  "inlineGalleries", // Multiple galleries (e.g., diamond + box mode)
+  "inlineSequencePlayer",
+  "inlineStepGrid",
+  "inlineQuiz",
+  // Sequence validation results (user-friendly)
+  "isValid",
+  "word",
+  "canBeInterpolated",
+  "interpolatedSequence",
+  // Term definitions (simple strings)
+  "position",
+  "definition",
+  "gridDescription",
+  "motionType",
+  "gridMovement",
 ]);
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -65,70 +67,77 @@ const DISPLAY_FIELDS = new Set([
  * @returns Sanitized output safe for LLM consumption
  */
 export function toDisplayOutput(result: unknown): DisplayOutput | string {
-	// Handle string results (canonical responses, error messages)
-	if (typeof result === 'string') {
-		return result;
-	}
+  // Handle string results (canonical responses, error messages)
+  if (typeof result === "string") {
+    return result;
+  }
 
-	// Handle null/undefined
-	if (result == null) {
-		return { explanation: 'No result available.' };
-	}
+  // Handle null/undefined
+  if (result == null) {
+    return { explanation: "No result available." };
+  }
 
-	// Handle non-objects
-	if (typeof result !== 'object') {
-		return { explanation: String(result) };
-	}
+  // Handle non-objects
+  if (typeof result !== "object") {
+    return { explanation: String(result) };
+  }
 
-	const input = result as Record<string, unknown>;
-	const output: DisplayOutput = {};
+  const input = result as Record<string, unknown>;
+  const output: DisplayOutput = {};
 
-	// Process each field
-	for (const [key, value] of Object.entries(input)) {
-		// Skip internal fields
-		if (INTERNAL_FIELDS.has(key)) {
-			continue;
-		}
+  // Process each field
+  for (const [key, value] of Object.entries(input)) {
+    // Skip internal fields
+    if (INTERNAL_FIELDS.has(key)) {
+      continue;
+    }
 
-		// Include display fields directly
-		if (DISPLAY_FIELDS.has(key)) {
-			(output as Record<string, unknown>)[key] = value;
-			continue;
-		}
+    // Include display fields directly
+    if (DISPLAY_FIELDS.has(key)) {
+      (output as Record<string, unknown>)[key] = value;
+      continue;
+    }
 
-		// For unknown fields, check if they contain internal data
-		if (typeof value === 'object' && value !== null) {
-			const nested = value as Record<string, unknown>;
-			// Skip if it has internal field patterns
-			if (
-				'contextData' in nested ||
-				'startPosition' in nested ||
-				'blueMotion' in nested
-			) {
-				continue;
-			}
-		}
-	}
+    // For unknown fields, check if they contain internal data
+    if (typeof value === "object" && value !== null) {
+      const nested = value as Record<string, unknown>;
+      // Skip if it has internal field patterns
+      if (
+        "contextData" in nested ||
+        "startPosition" in nested ||
+        "leftMotion" in nested ||
+        "rightMotion" in nested ||
+        "blueMotion" in nested ||
+        "redMotion" in nested
+      ) {
+        continue;
+      }
+    }
+  }
 
-	// Ensure at least explanation or text exists
-	if (!output.explanation && !output.text && Object.keys(output).length === 0) {
-		// Try to extract something useful
-		if ('explanation' in input && typeof input.explanation === 'string') {
-			output.explanation = input.explanation;
-		} else if (typeof input === 'object') {
-			// Last resort: stringify without internal fields
-			const safeKeys = Object.keys(input).filter((k) => !INTERNAL_FIELDS.has(k));
-			if (safeKeys.length > 0) {
-				output.explanation = 'See the pictograph for details.';
-			}
-		}
-	}
+  // Ensure at least explanation or text exists
+  if (!output.explanation && !output.text && Object.keys(output).length === 0) {
+    // Try to extract something useful
+    if ("explanation" in input && typeof input.explanation === "string") {
+      output.explanation = input.explanation;
+    } else if (typeof input === "object") {
+      // Last resort: stringify without internal fields
+      const safeKeys = Object.keys(input).filter(
+        (k) => !INTERNAL_FIELDS.has(k)
+      );
+      if (safeKeys.length > 0) {
+        output.explanation = "See the pictograph for details.";
+      }
+    }
+  }
 
-	return output;
+  return output;
 }
 
-export function filterToolResults(results: unknown[]): (DisplayOutput | string)[] {
-	return results.map(toDisplayOutput);
+export function filterToolResults(
+  results: unknown[]
+): (DisplayOutput | string)[] {
+  return results.map(toDisplayOutput);
 }
 
 /**
@@ -136,28 +145,28 @@ export function filterToolResults(results: unknown[]): (DisplayOutput | string)[
  * Useful for debugging and validation.
  */
 export function hasInternalData(result: unknown): boolean {
-	if (typeof result !== 'object' || result === null) {
-		return false;
-	}
+  if (typeof result !== "object" || result === null) {
+    return false;
+  }
 
-	const obj = result as Record<string, unknown>;
+  const obj = result as Record<string, unknown>;
 
-	for (const field of INTERNAL_FIELDS) {
-		if (field in obj) {
-			return true;
-		}
-	}
+  for (const field of INTERNAL_FIELDS) {
+    if (field in obj) {
+      return true;
+    }
+  }
 
-	// Check nested objects
-	for (const value of Object.values(obj)) {
-		if (typeof value === 'object' && value !== null) {
-			if (hasInternalData(value)) {
-				return true;
-			}
-		}
-	}
+  // Check nested objects
+  for (const value of Object.values(obj)) {
+    if (typeof value === "object" && value !== null) {
+      if (hasInternalData(value)) {
+        return true;
+      }
+    }
+  }
 
-	return false;
+  return false;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -168,21 +177,25 @@ export function hasInternalData(result: unknown): boolean {
  * Filter for letter explanation results.
  * Keeps only the explanation and inline pictograph.
  */
-export function filterLetterExplanation(result: unknown): DisplayOutput | string {
-	if (typeof result === 'string') {
-		return result;
-	}
+export function filterLetterExplanation(
+  result: unknown
+): DisplayOutput | string {
+  if (typeof result === "string") {
+    return result;
+  }
 
-	if (typeof result !== 'object' || result === null) {
-		return { explanation: 'Letter information not available.' };
-	}
+  if (typeof result !== "object" || result === null) {
+    return { explanation: "Letter information not available." };
+  }
 
-	const input = result as Record<string, unknown>;
+  const input = result as Record<string, unknown>;
 
-	return {
-		explanation: typeof input.explanation === 'string' ? input.explanation : undefined,
-		inlinePictograph: input.inlinePictograph as DisplayOutput['inlinePictograph']
-	};
+  return {
+    explanation:
+      typeof input.explanation === "string" ? input.explanation : undefined,
+    inlinePictograph:
+      input.inlinePictograph as DisplayOutput["inlinePictograph"],
+  };
 }
 
 /**
@@ -190,20 +203,21 @@ export function filterLetterExplanation(result: unknown): DisplayOutput | string
  * Keeps explanation and gallery, strips detailed contextData.
  */
 export function filterTypeList(result: unknown): DisplayOutput | string {
-	if (typeof result === 'string') {
-		return result;
-	}
+  if (typeof result === "string") {
+    return result;
+  }
 
-	if (typeof result !== 'object' || result === null) {
-		return { explanation: 'Type information not available.' };
-	}
+  if (typeof result !== "object" || result === null) {
+    return { explanation: "Type information not available." };
+  }
 
-	const input = result as Record<string, unknown>;
+  const input = result as Record<string, unknown>;
 
-	return {
-		explanation: typeof input.explanation === 'string' ? input.explanation : undefined,
-		inlineGallery: input.inlineGallery as DisplayOutput['inlineGallery']
-	};
+  return {
+    explanation:
+      typeof input.explanation === "string" ? input.explanation : undefined,
+    inlineGallery: input.inlineGallery as DisplayOutput["inlineGallery"],
+  };
 }
 
 /**
@@ -211,20 +225,21 @@ export function filterTypeList(result: unknown): DisplayOutput | string {
  * Keeps explanation and gallery for side-by-side display.
  */
 export function filterComparison(result: unknown): DisplayOutput | string {
-	if (typeof result === 'string') {
-		return result;
-	}
+  if (typeof result === "string") {
+    return result;
+  }
 
-	if (typeof result !== 'object' || result === null) {
-		return { explanation: 'Comparison not available.' };
-	}
+  if (typeof result !== "object" || result === null) {
+    return { explanation: "Comparison not available." };
+  }
 
-	const input = result as Record<string, unknown>;
+  const input = result as Record<string, unknown>;
 
-	return {
-		explanation: typeof input.explanation === 'string' ? input.explanation : undefined,
-		inlineGallery: input.inlineGallery as DisplayOutput['inlineGallery']
-	};
+  return {
+    explanation:
+      typeof input.explanation === "string" ? input.explanation : undefined,
+    inlineGallery: input.inlineGallery as DisplayOutput["inlineGallery"],
+  };
 }
 
 /**
@@ -232,44 +247,50 @@ export function filterComparison(result: unknown): DisplayOutput | string {
  * Keeps validation info and player/grid, strips internal step data.
  */
 export function filterSequence(result: unknown): DisplayOutput | string {
-	if (typeof result === 'string') {
-		return result;
-	}
+  if (typeof result === "string") {
+    return result;
+  }
 
-	if (typeof result !== 'object' || result === null) {
-		return { explanation: 'Sequence not available.' };
-	}
+  if (typeof result !== "object" || result === null) {
+    return { explanation: "Sequence not available." };
+  }
 
-	const input = result as Record<string, unknown>;
+  const input = result as Record<string, unknown>;
 
-	const output: DisplayOutput = {
-		explanation: typeof input.explanation === 'string' ? input.explanation : undefined
-	};
+  const output: DisplayOutput = {
+    explanation:
+      typeof input.explanation === "string" ? input.explanation : undefined,
+  };
 
-	// Include sequence player if present
-	if (input.inlineSequencePlayer) {
-		output.inlineSequencePlayer = input.inlineSequencePlayer as DisplayOutput['inlineSequencePlayer'];
-	}
+  // Include sequence player if present
+  if (input.inlineSequencePlayer) {
+    output.inlineSequencePlayer =
+      input.inlineSequencePlayer as DisplayOutput["inlineSequencePlayer"];
+  }
 
-	// Include step grid if present, but filter step internals
-	if (input.inlineStepGrid) {
-		const grid = input.inlineStepGrid as Record<string, unknown>;
-		output.inlineStepGrid = {
-			type: 'inline-step-grid',
-			word: grid.word as string,
-			steps: (grid.steps as Array<{ stepNumber: number; letter: string; label?: string }>).map(
-				(step) => ({
-					stepNumber: step.stepNumber,
-					letter: step.letter,
-					label: step.label
-					// Exclude variation, startPosition, endPosition
-				})
-			),
-			caption: grid.caption as string | undefined
-		};
-	}
+  // Include step grid if present, but filter step internals
+  if (input.inlineStepGrid) {
+    const grid = input.inlineStepGrid as Record<string, unknown>;
+    output.inlineStepGrid = {
+      type: "inline-step-grid",
+      word: grid.word as string,
+      steps: (
+        grid.steps as Array<{
+          stepNumber: number;
+          letter: string;
+          label?: string;
+        }>
+      ).map((step) => ({
+        stepNumber: step.stepNumber,
+        letter: step.letter,
+        label: step.label,
+        // Exclude variation, startPosition, endPosition
+      })),
+      caption: grid.caption as string | undefined,
+    };
+  }
 
-	return output;
+  return output;
 }
 
 /**
@@ -277,18 +298,19 @@ export function filterSequence(result: unknown): DisplayOutput | string {
  * Keeps quiz structure for client rendering.
  */
 export function filterQuiz(result: unknown): DisplayOutput | string {
-	if (typeof result === 'string') {
-		return result;
-	}
+  if (typeof result === "string") {
+    return result;
+  }
 
-	if (typeof result !== 'object' || result === null) {
-		return { explanation: 'Quiz not available.' };
-	}
+  if (typeof result !== "object" || result === null) {
+    return { explanation: "Quiz not available." };
+  }
 
-	const input = result as Record<string, unknown>;
+  const input = result as Record<string, unknown>;
 
-	return {
-		explanation: typeof input.explanation === 'string' ? input.explanation : undefined,
-		inlineQuiz: input.inlineQuiz as DisplayOutput['inlineQuiz']
-	};
+  return {
+    explanation:
+      typeof input.explanation === "string" ? input.explanation : undefined,
+    inlineQuiz: input.inlineQuiz as DisplayOutput["inlineQuiz"],
+  };
 }

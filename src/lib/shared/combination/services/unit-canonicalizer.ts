@@ -6,9 +6,9 @@
  *
  * Three quotients, applied in this order:
  *
- *   1. **Whole-unit symmetry.** The D4 x colour-swap group acting on both
+ *   1. **Whole-unit symmetry.** The D4 x hand-swap group acting on both
  *      hands' locations: four quarter rotations, an optional reflection, an
- *      optional blue/red swap. A loop and its rotated/mirrored/colour-swapped
+ *      optional left/right swap. A loop and its rotated/mirrored/hand-swapped
  *      selves are one idea.
  *   2. **Cyclic rotation.** A closed unit has no first step; entering it at a
  *      different step is the same loop. (Necklace-minimal string.)
@@ -82,16 +82,16 @@ function handFields(motion: MotionData): readonly [string, string] {
 /**
  * The eight-field tuple of one step under a symmetry.
  *
- * Under a colour swap the hands exchange wholesale: the new blue hand carries
- * the old red hand's motion type and rotation direction as well as its
+ * Under a hand swap the hands exchange wholesale: the new left hand carries
+ * the old right hand's motion type and rotation direction as well as its
  * locations. Transforming only the locations would describe a step nobody can
  * perform.
  */
 function stepKey(step: StepData, op: SymmetryOp): string {
-  const blue = step.motions.blue;
-  const red = step.motions.red;
-  const first = op.swap ? red : blue;
-  const second = op.swap ? blue : red;
+  const left = step.motions.left;
+  const right = step.motions.right;
+  const first = op.swap ? right : left;
+  const second = op.swap ? left : right;
   return [
     ...handFields(first),
     transformLocation(String(first.startLocation), op),
@@ -114,15 +114,15 @@ function necklace(keys: readonly string[]): string {
 
 /** The untransformed eight-field tuple — the index key into the dataframe. */
 export function motionTupleKey(step: StepData): string {
-  const blue = step.motions.blue;
-  const red = step.motions.red;
+  const left = step.motions.left;
+  const right = step.motions.right;
   return [
-    ...handFields(blue),
-    String(blue.startLocation),
-    String(blue.endLocation),
-    ...handFields(red),
-    String(red.startLocation),
-    String(red.endLocation),
+    ...handFields(left),
+    String(left.startLocation),
+    String(left.endLocation),
+    ...handFields(right),
+    String(right.startLocation),
+    String(right.endLocation),
   ].join("|");
 }
 
@@ -170,15 +170,15 @@ export function createUnitCanonicalizer(
         const rotated: StepData[] = [];
         let complete = true;
         for (const step of steps) {
-          const blue = step.motions.blue;
-          const red = step.motions.red;
+          const left = step.motions.left;
+          const right = step.motions.right;
           const key = [
-            ...handFields(blue),
-            String(blue.startLocation),
-            String(blue.endLocation),
-            ...handFields(red),
-            rotateLocation(String(red.startLocation), eighths),
-            rotateLocation(String(red.endLocation), eighths),
+            ...handFields(left),
+            String(left.startLocation),
+            String(left.endLocation),
+            ...handFields(right),
+            rotateLocation(String(right.startLocation), eighths),
+            rotateLocation(String(right.endLocation), eighths),
           ].join("|");
           const hit = byTuple.get(key);
           if (!hit) {

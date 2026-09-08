@@ -4,8 +4,8 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 interface HeadlessConfig {
-  bluePropType: PropType;
-  redPropType: PropType;
+  leftPropType: PropType;
+  rightPropType: PropType;
   effortPreset?: string;
   pathShape?: string;
 }
@@ -37,10 +37,10 @@ export class HeadlessAnimationOrchestrator extends SequenceAnimationOrchestrator
     this.setVisibilityManager(vm);
   }
 
-  protected override getDefaultPropConfig(): { bluePropType: PropType; redPropType: PropType } {
+  protected override getDefaultPropConfig(): { leftPropType: PropType; rightPropType: PropType } {
     return {
-      bluePropType: this.headlessConfig.bluePropType,
-      redPropType: this.headlessConfig.redPropType,
+      leftPropType: this.headlessConfig.leftPropType,
+      rightPropType: this.headlessConfig.rightPropType,
     };
   }
 }

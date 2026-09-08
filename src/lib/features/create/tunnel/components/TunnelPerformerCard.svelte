@@ -1,27 +1,32 @@
 <script lang="ts">
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { TunnelPerformer } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
   import { copyOpsLabel } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
+  import SequenceMetadataRail from "$lib/features/create/shared/workspace-panel/sequence-display/components/SequenceMetadataRail.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
+  import { tryGetLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { TunnelSourceOrigin } from "../domain/tunnel-creator-draft";
 
   let {
     performer,
     displaySequence = null,
+    activeStepIndex = null,
     stageTransformLabel = null,
     formationCopy = false,
     label,
     linked = false,
-    expanded = false,
-    selected = false,
+    short = false,
     generatedInstanceCount = 0,
     sourcePerformerLabel = null,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     stageColors = [],
     sourceOrigin = null,
     previousCount = 0,
@@ -31,7 +36,6 @@
     onEditGeneration,
     onPrevious,
     onEditPairing,
-    onSelect,
     onMoveUp,
     onMoveDown,
     onRemove,
@@ -42,18 +46,18 @@
   }: {
     performer: TunnelPerformer | null;
     displaySequence?: SequenceData | null;
+    activeStepIndex?: number | null;
     stageTransformLabel?: string | null;
     /** A reconstructed legacy arm: visible for performed-result inspection,
      * but absent from the authored composition until the user edits it. */
     formationCopy?: boolean;
     label: string;
     linked?: boolean;
-    expanded?: boolean;
-    selected?: boolean;
+    short?: boolean;
     generatedInstanceCount?: number;
     sourcePerformerLabel?: string | null;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
     stageColors?: Array<{ arm: number; left: string; right: string }>;
     sourceOrigin?: TunnelSourceOrigin | null;
     previousCount?: number;
@@ -63,7 +67,6 @@
     onEditGeneration?: () => void;
     onPrevious?: () => void;
     onEditPairing?: () => void;
-    onSelect?: () => void;
     onMoveUp?: () => void;
     onMoveDown?: () => void;
     onRemove?: () => void;
@@ -73,10 +76,17 @@
     removeBlockedReason?: string | null;
   } = $props();
 
+  const componentId = $props.id();
   const ownSequence = $derived(
     performer?.source.kind === "independent" ? performer.source.sequence : null
   );
   const previewSequence = $derived(displaySequence ?? ownSequence);
+  const activeStepNumber = $derived.by(() => {
+    if (activeStepIndex === null) return null;
+    return (
+      previewSequence?.steps[activeStepIndex]?.stepNumber ?? activeStepIndex + 1
+    );
+  });
   const displayWord = $derived(
     previewSequence
       ? simplifyRepeatedWord(
@@ -87,6 +97,10 @@
         )
       : ""
   );
+  const loopDisplay = $derived.by(() => {
+    if (!previewSequence) return null;
+    return tryGetLoopDisplayResolver()?.(previewSequence) ?? null;
+  });
   const sourceLabel = $derived(
     performer?.source.kind === "derived"
       ? copyOpsLabel(performer.source.transforms)
@@ -111,13 +125,75 @@
     return sourceOrigin === "generated" ? "Generated" : null;
   });
   const primaryStageColors = $derived(stageColors[0] ?? null);
+  const compactActions = $derived.by(() => {
+    const items: Array<{
+      label: string;
+      icon: string;
+      action: () => void;
+      variant?: "danger";
+      disabled?: boolean;
+      hint?: string;
+    }> = [];
 
-  let gridRef:
-    | {
-        prepareGenerationAnimation: (stepCount: number) => void;
-        clearGenerationAnimation: () => void;
-      }
-    | undefined = $state();
+    if (onEditPairing) {
+      items.push({
+        label: linked ? "Edit relationship" : `Link ${label}`,
+        icon: "fas fa-link",
+        action: onEditPairing,
+      });
+    }
+    if (previousCount > 0 && onPrevious) {
+      items.push({
+        label: "Previous sequence",
+        icon: "fas fa-clock-rotate-left",
+        action: onPrevious,
+      });
+    }
+    if (onEditGeneration) {
+      items.push({
+        label: "Change generation settings",
+        icon: "fas fa-sliders",
+        action: onEditGeneration,
+      });
+    }
+    items.push({
+      label: "Browse sequences",
+      icon: "fas fa-folder-open",
+      action: onChoose,
+    });
+    if (onChooseShapeMatrix) {
+      items.push({
+        label: "Use Shape Matrix",
+        icon: "fas fa-shapes",
+        action: onChooseShapeMatrix,
+      });
+    }
+    if (canMoveUp) {
+      items.push({
+        label: "Move earlier",
+        icon: "fas fa-arrow-up",
+        action: () => onMoveUp?.(),
+      });
+    }
+    if (canMoveDown) {
+      items.push({
+        label: "Move later",
+        icon: "fas fa-arrow-down",
+        action: () => onMoveDown?.(),
+      });
+    }
+    if (onRemove && canRemove) {
+      items.push({
+        label: `Remove ${label}`,
+        icon: "fas fa-user-minus",
+        action: onRemove,
+        variant: "danger",
+      });
+    }
+    return items;
+  });
+
+  let gridRef = $state<ReturnType<typeof StepGrid>>();
 
   export function prepareGenerationAnimation(stepCount: number): void {
     gridRef?.prepareGenerationAnimation(stepCount);
@@ -129,50 +205,54 @@
 </script>
 
 <section
-  class="source-card"
-  class:expanded
-  class:selected
+  class="source-card selected"
+  class:short
   aria-label={`${label} sequence`}
 >
   <header class="source-heading">
-    <button
-      type="button"
-      class="source-identity"
-      aria-expanded={expanded}
-      aria-pressed={selected}
-      onclick={onSelect}
-    >
-      <div>
-        <h3>{label}</h3>
-        <p>
-          {#if previewSequence}
-            {previewSequence.steps.length} steps{#if sourceDescriptor}
-              · {sourceDescriptor}
-            {/if}{#if linked && sourceLabel}
-              · Follows {sourcePerformerLabel ?? "earlier performer"} · {sourceLabel}
-            {/if}{#if linked && stageTransformLabel}
-              · On stage: {stageTransformLabel}
+    <div class="identity-transition">
+      <Crossfade key={performer?.id ?? label} duration={DURATION.fast}>
+        <div class="source-identity">
+          <div class="identity-row">
+            <h3>{label}</h3>
+            <SequenceMetadataRail
+              sequence={previewSequence}
+              {loopDisplay}
+              presentation="inline"
+            />
+          </div>
+          <p class="source-meta">
+            {#if previewSequence}
+              <span>{previewSequence.steps.length} steps</span>
+              {#if sourceDescriptor}<span>{sourceDescriptor}</span>{/if}
+              {#if linked && sourceLabel}
+                <span
+                  >Linked to {sourcePerformerLabel ?? "earlier performer"}</span
+                >
+              {/if}
+              {#if formationCopy}
+                <span>Formation copy (not authored)</span>
+              {/if}
+              {#if generatedInstanceCount > 0}
+                <span
+                  title={stageTransformLabel
+                    ? `Stage placement: ${stageTransformLabel}`
+                    : undefined}
+                >
+                  {generatedInstanceCount} on stage
+                </span>
+              {/if}
+            {:else if linked}
+              <span
+                >Follows {sourcePerformerLabel ?? "an earlier performer"}</span
+              >
+            {:else}
+              <span>Complete two-prop sequence</span>
             {/if}
-            {#if formationCopy}
-              · Formation copy (not authored)
-            {/if}
-            {#if generatedInstanceCount > 0}
-              · Drives {generatedInstanceCount} stage {generatedInstanceCount ===
-              1
-                ? "instance"
-                : "instances"}
-            {/if}
-          {:else if linked}
-            Follows {sourcePerformerLabel ?? "an earlier performer"}
-          {:else}
-            Complete two-prop sequence
-          {/if}
-        </p>
-      </div>
-      <span class="expand-indicator" aria-hidden="true">
-        <i class={`fas ${expanded ? "fa-chevron-up" : "fa-chevron-down"}`}></i>
-      </span>
-    </button>
+          </p>
+        </div>
+      </Crossfade>
+    </div>
 
     <div
       class="hand-key"
@@ -199,107 +279,49 @@
       {/if}
     </div>
 
-    {#if expanded}
-      <div class="source-actions" aria-label={`${label} source actions`}>
-        {#if onEditPairing}
-          <PanelButton
-            variant="secondary"
-            onclick={onEditPairing}
-            ariaLabel={linked
-              ? `${formationCopy ? "Author" : "Edit"} source relationship${sourceLabel ? `: ${sourceLabel}` : ""}`
-              : `Link ${label} to an earlier performer`}
-          >
-            <i class="fas fa-link" aria-hidden="true"></i>
-            <span class="action-label">{linked ? "Relationship" : "Link"}</span>
-          </PanelButton>
-        {/if}
-        {#if previousCount > 0 && onPrevious}
-          <PanelButton
-            variant="secondary"
-            onclick={onPrevious}
-            ariaLabel={`Show the previous ${label} sequence`}
-          >
-            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
-            <span class="action-label">Previous</span>
-          </PanelButton>
-        {/if}
-        {#if onGenerateNow}
-          <PanelButton
-            variant="primary"
-            onclick={onGenerateNow}
-            ariaLabel={`Generate a new ${label} sequence with the current settings`}
-          >
-            <i class="fas fa-dice" aria-hidden="true"></i>
-            <span class="action-label">Generate</span>
-          </PanelButton>
-        {/if}
-        {#if onEditGeneration}
-          <PanelButton
-            variant="secondary"
-            onclick={onEditGeneration}
-            ariaLabel={`Edit generation settings for ${label}`}
-          >
-            <i class="fas fa-sliders" aria-hidden="true"></i>
-            <span class="action-label">Recipe</span>
-          </PanelButton>
-        {/if}
+    <div
+      class="compact-source-actions"
+      aria-label={`${label} sequence actions`}
+    >
+      {#if onGenerateNow}
         <PanelButton
-          variant="secondary"
-          onclick={onChoose}
-          ariaLabel={`Choose an existing sequence for ${label}`}
+          variant="primary"
+          onclick={onGenerateNow}
+          ariaLabel={`Generate a new ${label} sequence with the current settings`}
         >
-          <i class="fas fa-folder-open" aria-hidden="true"></i>
-          <span class="action-label">Browse</span>
+          <i class="fas fa-dice" aria-hidden="true"></i>
+          <span class="compact-generate-label">Generate</span>
         </PanelButton>
-        {#if onChooseShapeMatrix}
-          <PanelButton
-            variant="secondary"
-            onclick={onChooseShapeMatrix}
-            ariaLabel={`Choose a Shape Matrix realization for ${label}`}
-          >
-            <i class="fas fa-shapes" aria-hidden="true"></i>
-            <span class="action-label">Matrix</span>
-          </PanelButton>
-        {/if}
-        <span class="action-spacer" aria-hidden="true"></span>
-        <div class="roster-actions" aria-label={`${label} roster controls`}>
-          <PanelButton
-            variant="secondary"
-            disabled={!canMoveUp}
-            onclick={onMoveUp}
-            ariaLabel={`Move ${label} earlier`}
-          >
-            <i class="fas fa-arrow-up" aria-hidden="true"></i>
-          </PanelButton>
-          <PanelButton
-            variant="secondary"
-            disabled={!canMoveDown}
-            onclick={onMoveDown}
-            ariaLabel={`Move ${label} later`}
-          >
-            <i class="fas fa-arrow-down" aria-hidden="true"></i>
-          </PanelButton>
-          {#if onRemove}
-            <span title={removeBlockedReason ?? undefined}>
-              <PanelButton
-                variant="secondary"
-                disabled={!canRemove}
-                onclick={onRemove}
-                ariaLabel={removeBlockedReason ?? `Remove ${label}`}
-              >
-                <i class="fas fa-user-minus" aria-hidden="true"></i>
-              </PanelButton>
-            </span>
-          {/if}
-        </div>
-      </div>
-    {/if}
+      {/if}
+      <OverflowMenu
+        items={compactActions}
+        placement="bottom"
+        ariaLabel={`More ${label} actions`}
+        triggerPresentation="labelled"
+      >
+        {#snippet trigger()}
+          <span class="compact-more-label">More</span>
+          <i class="fas fa-chevron-down compact-more-chevron" aria-hidden="true"
+          ></i>
+          <i
+            class="fas fa-ellipsis-vertical compact-more-icon"
+            aria-hidden="true"
+          ></i>
+        {/snippet}
+      </OverflowMenu>
+    </div>
   </header>
 
   <div class="workbench-stage">
     {#if displayWord}
       <div class="word-rail">
-        <WordLabel word={displayWord} scrollMode={false} />
+        <Crossfade
+          key={`${performer?.id ?? label}:${displayWord}`}
+          duration={DURATION.fast}
+          fill
+        >
+          <WordLabel word={displayWord} scrollMode={false} />
+        </Crossfade>
       </div>
     {/if}
     <div class="live-grid">
@@ -309,15 +331,20 @@
         startPosition={previewSequence?.startPosition ??
           previewSequence?.startingPosition ??
           null}
+        selectedStepNumber={activeStepNumber}
+        autoFocusSelectedStep={false}
         activeMode={null}
         isTimelineMode={false}
         fitAllSteps={true}
+        sizingProfile="preview"
+        stepIdentityMode="slot"
+        stepIdentityPrefix={`${componentId}-selected-performer`}
         narrowMaxColumns={3}
         preferWidthSizingOnNarrow={true}
-        bluePropTypeOverride={bluePropType}
-        redPropTypeOverride={redPropType}
-        blueColorOverride={primaryStageColors?.left}
-        redColorOverride={primaryStageColors?.right}
+        leftPropTypeOverride={leftPropType}
+        rightPropTypeOverride={rightPropType}
+        leftColorOverride={primaryStageColors?.left}
+        rightColorOverride={primaryStageColors?.right}
         sequenceWord={displayWord}
       />
     </div>
@@ -347,7 +374,7 @@
     container-type: inline-size;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    flex: 0 0 9.5rem;
+    height: 100%;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
@@ -356,25 +383,16 @@
     background: var(--theme-panel-bg);
   }
 
-  .source-card.expanded {
-    flex-basis: clamp(22rem, 58cqh, 34rem);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
   .source-card.selected {
     border-color: color-mix(in srgb, var(--theme-accent) 70%, white 10%);
     box-shadow: 0 0 0 1px
       color-mix(in srgb, var(--theme-accent) 35%, transparent);
   }
 
-  .source-heading,
-  .source-identity {
-    display: flex;
-    align-items: center;
-  }
-
   .source-heading {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
     justify-content: space-between;
     gap: var(--settings-spacing-sm, 8px);
     min-height: 3.5rem;
@@ -383,57 +401,28 @@
   }
 
   .source-identity {
-    flex: 1 1 11rem;
-    min-width: 0;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .source-identity:focus-visible {
-    border-radius: var(--settings-radius-sm, 8px);
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 3px;
-  }
-
-  .expand-indicator {
     display: grid;
-    flex: 0 0 var(--min-touch-target, 44px);
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    place-items: center;
-    color: var(--theme-text-dim);
+    align-content: center;
+    gap: 2px;
+    min-width: 0;
   }
 
-  .source-actions,
-  .roster-actions,
+  .identity-transition {
+    min-width: 0;
+  }
+
+  .identity-row {
+    display: flex;
+    align-items: center;
+    gap: var(--settings-spacing-xs, 6px);
+    min-width: 0;
+    min-height: 20px;
+  }
+
   .hand-key {
     display: flex;
     align-items: center;
     gap: var(--settings-spacing-xs, 6px);
-  }
-
-  .source-actions {
-    flex: 1 1 100%;
-    flex-wrap: wrap;
-  }
-
-  .action-spacer {
-    flex: 1 1 auto;
-  }
-
-  .roster-actions {
-    flex: 0 0 auto;
-  }
-
-  .roster-actions :global(.panel-btn) {
-    width: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
-    padding-inline: 0;
   }
 
   .hand-key {
@@ -473,10 +462,6 @@
     white-space: nowrap;
   }
 
-  .source-identity > div {
-    min-width: 0;
-  }
-
   h3,
   p {
     margin: 0;
@@ -489,11 +474,26 @@
   }
 
   p {
-    overflow: hidden;
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 12px);
-    text-overflow: ellipsis;
+  }
+
+  .source-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px 10px;
+    line-height: 1.25;
+  }
+
+  .source-meta span {
+    position: relative;
     white-space: nowrap;
+  }
+
+  .source-meta span + span::before {
+    position: absolute;
+    left: -7px;
+    content: "·";
   }
 
   .workbench-stage {
@@ -506,39 +506,13 @@
     background: color-mix(in srgb, var(--theme-card-bg) 72%, black);
   }
 
-  .source-card:not(.expanded) .word-rail {
-    display: none;
-  }
-
-  .source-card:not(.expanded) .live-grid {
-    padding: 4px;
-  }
-
-  .source-card:not(.expanded) .source-empty {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    align-content: center;
-    justify-items: start;
-    min-height: 0;
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 14px);
-    text-align: left;
-  }
-
-  .source-card:not(.expanded) .source-empty > i {
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .source-card:not(.expanded) .source-empty span {
-    display: none;
-  }
-
   .word-rail {
     display: flex;
     align-items: center;
     justify-content: center;
     min-width: 0;
-    min-height: 2.75rem;
-    padding: 4px var(--settings-spacing-md, 14px);
+    min-height: 2.25rem;
+    padding: 2px var(--settings-spacing-sm, 8px);
     border-bottom: 1px solid var(--theme-stroke);
   }
 
@@ -551,6 +525,29 @@
     min-height: 0;
     padding: var(--settings-spacing-xs, 6px);
     overflow: hidden;
+  }
+
+  .compact-source-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--settings-spacing-xs, 6px);
+    width: auto;
+  }
+
+  .compact-source-actions :global(.panel-btn),
+  .compact-source-actions :global(.overflow-trigger) {
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  .compact-source-actions :global(.overflow-trigger) {
+    width: auto;
+    height: auto;
+    padding: 10px 14px;
+    color: var(--theme-text);
+  }
+
+  .compact-more-icon {
+    display: none;
   }
 
   .source-empty {
@@ -604,10 +601,6 @@
       padding-inline: 12px;
     }
 
-    .source-actions .action-label {
-      display: none;
-    }
-
     .hand {
       padding-inline: 6px;
     }
@@ -622,9 +615,146 @@
     }
   }
 
+  /* Width may rearrange the toolbar, but it must never introduce a different
+     action inventory. Generate stays primary and the labelled More menu owns
+     every secondary sequence action at every size, matching Fuse's source
+     cards instead of turning a wide Tunnel card into a second settings rail. */
   @container (max-width: 56rem) {
-    .source-actions .action-label {
+    .source-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 4px 6px;
+      min-height: 3.5rem;
+      padding: 3px var(--settings-spacing-sm, 8px);
+    }
+
+    .source-identity {
+      min-height: var(--min-touch-target, 48px);
+      overflow: hidden;
+    }
+
+    .source-meta {
+      max-height: 1.25em;
+      overflow: hidden;
+      flex-wrap: nowrap;
+    }
+
+    .compact-source-actions :global(.panel-btn) {
+      flex: 0 0 auto;
+    }
+
+    .compact-source-actions :global(.overflow-dropdown) {
+      max-height: min(12rem, 34dvh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+  }
+
+  @container (max-width: 22rem) {
+    .identity-row h3 {
+      white-space: nowrap;
+    }
+
+    /* The prop colors are already visible in every pictograph. On a phone the
+       L/R chips compete with the performer name, difficulty, LOOP state, and
+       primary actions, so the action menu remains the compact source of truth. */
+    .hand-key {
       display: none;
     }
+
+    .source-meta span:not(:first-child) {
+      display: none;
+    }
+
+    .compact-source-actions :global(.panel-btn) {
+      width: var(--min-touch-target, 48px);
+      padding-inline: 0;
+    }
+
+    .compact-source-actions :global(.overflow-trigger) {
+      width: var(--min-touch-target, 48px);
+      padding-inline: 0;
+    }
+
+    .compact-more-label,
+    .compact-more-chevron {
+      display: none;
+    }
+
+    .compact-more-icon {
+      display: inline-block;
+    }
+
+    .compact-generate-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+  }
+
+  .source-card.short .source-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--min-touch-target, 48px);
+    padding: 3px 6px;
+  }
+
+  .source-card.short .source-identity {
+    flex-basis: auto;
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  .source-card.short .source-meta {
+    max-height: 1.25em;
+    overflow: hidden;
+  }
+
+  .source-card.short .word-rail {
+    display: none;
+  }
+
+  .source-card.short .compact-source-actions {
+    width: auto;
+  }
+
+  .source-card.short .compact-source-actions :global(.panel-btn) {
+    flex: 0 0 var(--min-touch-target, 48px);
+    width: var(--min-touch-target, 48px);
+    padding-inline: 0;
+  }
+
+  .source-card.short .compact-source-actions :global(.overflow-trigger) {
+    width: var(--min-touch-target, 48px);
+    padding-inline: 0;
+  }
+
+  .source-card.short .compact-more-label,
+  .source-card.short .compact-more-chevron {
+    display: none;
+  }
+
+  .source-card.short .compact-more-icon {
+    display: inline-block;
+  }
+
+  .source-card.short .compact-generate-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .source-card.short .workbench-stage {
+    grid-template-rows: minmax(0, 1fr);
   }
 </style>

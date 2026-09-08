@@ -181,7 +181,8 @@ describe("TipPositionBridge3D", () => {
 				{ x: 0, y: 0, z: 0 },
 				0.5,
 				1 / 60,
-				PropType.FAN
+				PropType.FAN,
+				propFinishState.build
 			);
 
 			expect(result.tips).toHaveLength(5);

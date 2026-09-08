@@ -5,6 +5,8 @@ import {
   type CollectedTunnel,
 } from "../tunnel-collection-types";
 import { SNAPSHOT_VERSION } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -13,6 +15,11 @@ import {
   createIndependentTunnelPerformer,
   createTunnelComposition,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  HandSide,
+  Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   createTunnelRevision,
   prepareTunnelRevision,
@@ -22,25 +29,29 @@ import {
   needsTunnelPosterRefresh,
 } from "../tunnel-artifact-migration";
 
-const snapshot = {
+const snapshot: CollectedTunnel["snapshot"] = {
   version: SNAPSHOT_VERSION,
   tunnel: {
     config: DEFAULT_CONFIG,
     gridVisible: false,
-    spectrum: true,
+    colors: {
+      mode: "custom",
+      custom: { left: "#123456", right: "#abcdef" },
+    },
     section: "tunnel",
+    presetRecipe: null,
   },
-  effects: { activeEffect: "none" },
+  effects: DEFAULT_EFFECTS_CONFIG,
   effort: "linear",
   paths: {
     pathShape: "arc",
     motionAwarePaths: false,
-    bluePathLines: false,
-    redPathLines: false,
+    leftPathLines: false,
+    rightPathLines: false,
   },
   playback: { bpm: 60, playbackMode: "continuous" },
-  props: { bluePropType: "staff", redPropType: "staff" },
-  trailRender: { mode: "none" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
+  trailRender: DEFAULT_TRAIL_SETTINGS,
 };
 
 const valid = {
@@ -109,6 +120,46 @@ describe("CollectedTunnelSchema", () => {
     expect(parsed.data.composition?.performers[1]).toEqual(partner);
   });
 
+  it("preserves each hand's exact orientations across the storage boundary", () => {
+    const orientedStep = {
+      id: "step-1",
+      letter: null,
+      startPosition: null,
+      endPosition: null,
+      stepNumber: 1,
+      duration: 1,
+      leftReversal: false,
+      rightReversal: false,
+      isBlank: false,
+      motions: {
+        [HandSide.LEFT]: createMotionData({
+          hand: HandSide.LEFT,
+          startOrientation: Orientation.CLOCK_IN,
+          endOrientation: Orientation.COUNTER_OUT,
+        }),
+        [HandSide.RIGHT]: createMotionData({
+          hand: HandSide.RIGHT,
+          startOrientation: Orientation.CENTER_NE,
+          endOrientation: Orientation.CENTER_SW,
+        }),
+      },
+    };
+
+    const parsed = CollectedTunnelSchema.parse({
+      ...valid,
+      steps: [orientedStep],
+    });
+
+    expect(parsed.steps[0]?.motions[HandSide.LEFT]).toMatchObject({
+      startOrientation: Orientation.CLOCK_IN,
+      endOrientation: Orientation.COUNTER_OUT,
+    });
+    expect(parsed.steps[0]?.motions[HandSide.RIGHT]).toMatchObject({
+      startOrientation: Orientation.CENTER_NE,
+      endOrientation: Orientation.CENTER_SW,
+    });
+  });
+
   it("stores choreography transforms in the immutable tunnel revision", async () => {
     const sequence = createSequenceData({
       id: "sequence-1",
@@ -172,7 +223,11 @@ describe("CollectedTunnelSchema", () => {
   it("does not mint a v2 choreography revision when only a canonical poster refreshes", async () => {
     const first = await prepareTunnelRevision(valid as CollectedTunnel);
     const refreshed = await prepareTunnelRevision(
-      { ...first, poster: "data:image/webp;base64,CANONICAL", posterRenderVersion: 1 },
+      {
+        ...first,
+        poster: "data:image/webp;base64,CANONICAL",
+        posterRenderVersion: 1,
+      },
       first
     );
 
@@ -182,11 +237,17 @@ describe("CollectedTunnelSchema", () => {
   });
 
   it("retains a v1 revision when legacy presentation changes, then advances to v2 only for choreography", async () => {
-    const legacyPayload = { ...valid, poster: "data:image/webp;base64,old" } as CollectedTunnel;
-    const legacyDigest = await createTunnelRevision({
-      ...legacyPayload,
-      currentRevisionSchemaVersion: 1,
-    }, 123);
+    const legacyPayload = {
+      ...valid,
+      poster: "data:image/webp;base64,old",
+    } as CollectedTunnel;
+    const legacyDigest = await createTunnelRevision(
+      {
+        ...legacyPayload,
+        currentRevisionSchemaVersion: 1,
+      },
+      123
+    );
     const previous = {
       ...legacyPayload,
       currentRevisionId: legacyDigest.revisionId,
@@ -195,11 +256,21 @@ describe("CollectedTunnelSchema", () => {
       currentRevisionSchemaVersion: 1 as const,
     };
     const posterOnly = await prepareTunnelRevision(
-      { ...previous, poster: "data:image/webp;base64,new", posterRenderVersion: 1 },
+      {
+        ...previous,
+        poster: "data:image/webp;base64,new",
+        posterRenderVersion: 1,
+      },
       previous
     );
     const changed = await prepareTunnelRevision(
-      { ...posterOnly, snapshot: { ...posterOnly.snapshot, playback: { ...posterOnly.snapshot.playback, bpm: 90 } } },
+      {
+        ...posterOnly,
+        snapshot: {
+          ...posterOnly.snapshot,
+          playback: { ...posterOnly.snapshot.playback, bpm: 90 },
+        },
+      },
       posterOnly
     );
 
@@ -212,7 +283,10 @@ describe("CollectedTunnelSchema", () => {
   });
 
   it("migrates the envelope without inventing a cast or calling an unknown poster current", () => {
-    const legacy = { ...valid, snapshot: { ...snapshot, version: 1 } } as CollectedTunnel;
+    const legacy = {
+      ...valid,
+      snapshot: { ...snapshot, version: 1 },
+    } as CollectedTunnel;
     const migrated = migrateTunnelArtifact(legacy);
 
     expect(migrated.changed).toBe(true);

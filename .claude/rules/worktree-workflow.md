@@ -1,71 +1,47 @@
-# Worktree-First Workflow (ENFORCED)
+# Worktree Lifecycle
 
-## The rule
+Apply this to repository-modifying tasks. Read-only work may remain in the
+primary checkout.
 
-**Every task that may modify repository files works in one dedicated Git
-worktree. The primary checkout (`E:/tka-platform`) stays on `main` and is
-reserved for Austen's dev server, final integration, and explicitly requested
-local work.**
+## Start
 
-Read-only investigation may run in the primary checkout. Direct edits there are
-an exception and require Austen to request that exact workflow in the current
-conversation.
+1. Use one task-owned worktree based on current local `main`. The primary
+   checkout at `E:/tka-platform` is reserved for the dev server and integration
+   unless Austen explicitly requests direct edits there.
+2. Prefer Codex Handoff. If unavailable, create one resolved,
+   repository-adjacent worktree. Never nest or repurpose a worktree.
+3. Create a unique `codex/<task-slug>` branch before committing.
+4. Check status before editing and before every commit. Preserve unrelated work
+   and follow `commit-only-your-own-changes.md`.
 
-## Operating pattern
+## Verify and Finish
 
-1. Classify the task as read-only or modifying before the first edit.
-2. Start modifying chats in the Codex app's Worktree environment based on
-   `main`. The app may begin on a detached HEAD.
-3. If a modifying chat starts in the primary checkout, use Handoff to move it
-   to a worktree before editing. When product-managed Handoff is unavailable,
-   create exactly one task-owned worktree at a resolved, repository-adjacent
-   path. Never nest worktrees or reuse one for unrelated work.
-4. Create a unique task branch before the first commit (`codex/<task-slug>` for
-   Codex; use the current client's configured agent prefix elsewhere).
-5. Run all edits, commands, and verification from the task worktree. Check
-   `git status --short` before editing and before every commit. Do not touch
-   paths owned by another task.
-6. Commit only files owned by the task, using explicit pathspecs. Push completed
-   units when remote backup or cross-session synchronization is useful.
+1. Run proportionate verification in the task worktree. Documentation-only
+   branches do not require the full Svelte check; code branches use the nearest
+   tests and relevant type/build gate. Visual work also follows
+   `visual-verification-mandatory.md`.
+2. Commit only task-owned paths with explicit pathspecs.
+3. Bring the task branch current with local `main`. Repeat only checks invalidated
+   by that update.
+4. Leave the worktree before invoking the guarded finish command:
 
-## Integration and cleanup
+```powershell
+Set-Location E:/tka-platform
+npm run wt:finish -- codex/<task-slug> --route /real-shipping-route
+npm run wt:finish -- codex/<task-slug> --nonvisual
+```
 
-1. Complete proportionate verification in the worktree before integration.
-2. Fetch remote state and bring the task branch current with `main` without
-   rewriting a branch shared by another task.
-3. Inspect the primary checkout. Integrate the completed branch only when its
-   uncommitted paths do not overlap this task. If integration is unsafe, leave
-   the branch and worktree intact and report the exact conflict.
-4. Confirm the integrated commit and paths are present on `main`.
-5. Remove the task worktree and branch after integration. Never delete a dirty
-   worktree until every uncommitted path is proven landed, intentionally
-   discarded by Austen, or preserved elsewhere.
+Use `--route` when a real app surface exists and `--nonvisual` otherwise. The
+command checks cleanliness, ancestry, overlap with primary-checkout changes,
+concurrent `main` movement, and the appropriate project gate. It merges to local
+`main`, verifies ancestry, removes the clean worktree, and deletes the merged
+local branch.
 
-If the task depends on uncommitted primary-checkout changes, use the Codex app's
-working-tree starting state or Handoff. Do not copy the files manually between
-checkouts.
+Implementation approval includes this guarded local integration and cleanup.
+Stop with branch and worktree intact when a gate fails or integration is unsafe;
+report the exact blocker. Never delete a dirty worktree, another task's branch,
+or a `node_modules` path that may be a junction into the primary checkout.
 
-## Still true
-
-- `:5173` is Austen's dev server on the primary checkout. Never run, restart,
-  or kill it (`CLAUDE.md` -> Dev Server). Use `vite --port <free>` for a
-  worktree that needs its own server, and obey `resource-budget.md`.
-- Each worktree has its own index, while Git objects and refs are shared.
-  **Scoped commits are still mandatory** (`commit-only-your-own-changes.md`):
-  use `git commit -- <paths>`, never broad staging or a bare commit.
-- Never recursively delete a worktree `node_modules` path until it is proven not
-  to be a junction into the primary checkout.
-
-## Explicit exceptions
-
-- When Austen explicitly requests work in the primary checkout, follow that
-  exact request without creating an extra worktree.
-- When Austen specifies a branch, worktree, or starting state, follow the named
-  target instead of the defaults above.
-- Non-Git projects cannot use Git worktrees and may be edited in their designated
-  local directory.
-
-## Related
-
-- `commit-only-your-own-changes.md`, `fast-iteration-loop.md`, `resource-budget.md`
-- Root `AGENTS.md` -> Git Branches and Worktrees
+`wt:status` and `wt:automerge` are diagnostic only. Do not use retired batch
+apply/prune workflows. If the task depends on uncommitted primary-checkout state,
+use Handoff or a working-tree starting state instead of copying files manually.

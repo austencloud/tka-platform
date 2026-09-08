@@ -4,22 +4,34 @@
   import { Canvas, T } from "@threlte/core";
   import { AgXToneMapping, Color, PCFSoftShadowMap } from "three";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import BakeoffEnvironment from "./BakeoffEnvironment.svelte";
   import CandidateAvatarStage from "./CandidateAvatarStage.svelte";
   import type { AvatarBakeoffDiagnostics } from "./CandidateAvatarStage.svelte";
   import {
-    BAKEOFF_CANDIDATES,
-    CANDIDATE_IDS,
+    LIGHTING_IDS,
+    LIGHTING_OPTIONS,
     formatMegabytes,
-    parseCandidateId,
+    loadAvailableCandidates,
+    parseLightingId,
     parseStressPoseId,
+    resolveCandidate,
     STRESS_POSE_IDS,
+    type BakeoffCandidate,
   } from "./avatar-bakeoff-data";
 
-  const candidateId = $derived(
-    parseCandidateId(page.url.searchParams.get("candidate"))
-  );
+  let available = $state<BakeoffCandidate[]>([]);
+  let manifestReady = $state(false);
+  let environmentApplied = $state(false);
+
   const poseId = $derived(parseStressPoseId(page.url.searchParams.get("pose")));
-  const candidate = $derived(BAKEOFF_CANDIDATES[candidateId]);
+  const lightingId = $derived(
+    parseLightingId(page.url.searchParams.get("lighting"))
+  );
+  const candidate = $derived(
+    resolveCandidate(page.url.searchParams.get("candidate"), available)
+  );
+  const candidateId = $derived(candidate?.id ?? "");
+  const lighting = $derived(LIGHTING_OPTIONS[lightingId]);
   const background = new Color("#171a20");
 
   let diagnostics = $state<AvatarBakeoffDiagnostics>({
@@ -42,8 +54,12 @@
     error: null,
   });
 
-  function href(nextCandidate: string, nextPose: string): string {
-    return `?candidate=${nextCandidate}&pose=${nextPose}`;
+  function href(
+    nextCandidate: string,
+    nextPose: string,
+    nextLighting: string = lightingId
+  ): string {
+    return `?candidate=${nextCandidate}&pose=${nextPose}&lighting=${nextLighting}`;
   }
 
   function yesNo(value: boolean): string {
@@ -58,118 +74,233 @@
     return value === null ? "Pending" : `${value.toFixed(0)} ms`;
   }
 
-  onMount(() => {
+  onMount(async () => {
     Object.assign(window, {
-      __avatarBakeoff: () => ({ candidateId, poseId, candidate, diagnostics }),
+      __avatarBakeoff: () => ({
+        candidateId,
+        poseId,
+        lightingId,
+        environmentApplied,
+        availableCount: available.length,
+        candidate,
+        diagnostics,
+      }),
     });
+    available = await loadAvailableCandidates();
+    manifestReady = true;
   });
 </script>
 
 <svelte:head>
-  <title>Avatar bake-off · {candidate.label}</title>
+  <title>Avatar bake-off · {candidate?.label ?? "Avatar comparison"}</title>
 </svelte:head>
 
-<main class="bakeoff-shell">
-  <header class="toolbar">
-    <div class="title-block">
-      <p class="eyebrow">TKA avatar bake-off</p>
-      <h1>{candidate.label}</h1>
-      <p>{candidate.source} · {formatMegabytes(candidate.bytes)}</p>
-    </div>
+{#if candidate}
+  <main class="bakeoff-shell">
+    <header class="toolbar">
+      <div class="title-block">
+        <p class="eyebrow">TKA avatar bake-off</p>
+        <h1>{candidate.label}</h1>
+        <p>
+          {candidate.source} · {formatMegabytes(candidate.bytes)} · {lighting.label}
+        </p>
+      </div>
 
-    <nav class="candidate-nav" aria-label="Avatar candidate">
-      {#each CANDIDATE_IDS as id}
-        <a
-          href={href(id, poseId)}
-          class:active={id === candidateId}
-          aria-current={id === candidateId ? "page" : undefined}
-        >
-          {BAKEOFF_CANDIDATES[id].label}
-        </a>
-      {/each}
-    </nav>
+      <div class="nav-stack">
+        <nav class="candidate-nav" aria-label="Avatar candidate">
+          {#each available as entry (entry.id)}
+            <a
+              href={href(entry.id, poseId)}
+              class:active={entry.id === candidateId}
+              aria-current={entry.id === candidateId ? "page" : undefined}
+              >{entry.label}</a
+            >
+          {/each}
+        </nav>
 
-    <nav class="pose-nav" aria-label="Stress pose">
-      {#each STRESS_POSE_IDS as id}
-        <a
-          href={href(candidateId, id)}
-          class:active={id === poseId}
-          aria-current={id === poseId ? "page" : undefined}
-        >
-          {id}
-        </a>
-      {/each}
-    </nav>
-  </header>
+        <nav class="pose-nav" aria-label="Stress pose">
+          {#each STRESS_POSE_IDS as id (id)}
+            <a
+              href={href(candidateId, id)}
+              class:active={id === poseId}
+              aria-current={id === poseId ? "page" : undefined}
+            >
+              {id}
+            </a>
+          {/each}
+        </nav>
 
-  <section class="stage" aria-label="Avatar deformation stage">
-    <Canvas
-      dpr={1}
-      shadows={PCFSoftShadowMap}
-      toneMapping={AgXToneMapping}
-      toneMappingExposure={1.22}
-    >
-      <T is={background} attach="background" />
-      <T.PerspectiveCamera makeDefault position={[0, 1.08, 4]} fov={31}>
-        <OrbitControls
-          target={[0, 1, 0]}
-          minDistance={1.8}
-          maxDistance={7}
-          minPolarAngle={0.3}
-          maxPolarAngle={Math.PI * 0.72}
-          enableDamping
-          enablePan={false}
+        <nav class="lighting-nav" aria-label="Lighting">
+          <span class="nav-label">Lighting</span>
+          {#each LIGHTING_IDS as id (id)}
+            <a
+              href={href(candidateId, poseId, id)}
+              class:active={id === lightingId}
+              aria-current={id === lightingId ? "page" : undefined}
+            >
+              {LIGHTING_OPTIONS[id].label}
+            </a>
+          {/each}
+        </nav>
+      </div>
+    </header>
+
+    <section class="stage" aria-label="Avatar deformation stage">
+      <Canvas
+        dpr={1}
+        shadows={PCFSoftShadowMap}
+        toneMapping={AgXToneMapping}
+        toneMappingExposure={1.22}
+      >
+        <T is={background} attach="background" />
+        <T.PerspectiveCamera makeDefault position={[0, 1.08, 4]} fov={31}>
+          <OrbitControls
+            target={[0, 1, 0]}
+            minDistance={1.8}
+            maxDistance={7}
+            minPolarAngle={0.3}
+            maxPolarAngle={Math.PI * 0.72}
+            enableDamping
+            enablePan={false}
+          />
+        </T.PerspectiveCamera>
+        <T.HemisphereLight
+          color="#ffffff"
+          groundColor="#3a414d"
+          intensity={1.8}
         />
-      </T.PerspectiveCamera>
-      <T.HemisphereLight color="#ffffff" groundColor="#3a414d" intensity={1.8} />
-      <T.DirectionalLight position={[3.5, 5.5, 4]} intensity={2.8} castShadow />
-      <T.DirectionalLight position={[-4, 3, 2]} intensity={1.55} color="#dbeafe" />
-      <T.DirectionalLight position={[0, 3, -4]} intensity={1.6} color="#fef3c7" />
-
-      {#key `${candidateId}:${poseId}`}
-        <CandidateAvatarStage
-          modelUrl={candidate.modelUrl}
-          pose={poseId}
-          onDiagnostics={(next) => (diagnostics = next)}
+        <T.DirectionalLight
+          position={[3.5, 5.5, 4]}
+          intensity={2.8}
+          castShadow
         />
-      {/key}
+        <T.DirectionalLight
+          position={[-4, 3, 2]}
+          intensity={1.55}
+          color="#dbeafe"
+        />
+        <T.DirectionalLight
+          position={[0, 3, -4]}
+          intensity={1.6}
+          color="#fef3c7"
+        />
+        <BakeoffEnvironment
+          lighting={lightingId}
+          onApplied={(applied) => (environmentApplied = applied)}
+        />
 
-      <T.Mesh rotation.x={-Math.PI / 2} receiveShadow>
-        <T.CircleGeometry args={[2.15, 72]} />
-        <T.MeshStandardMaterial color="#272c35" roughness={0.82} />
-      </T.Mesh>
-    </Canvas>
+        {#if manifestReady}
+          {#key `${candidateId}:${poseId}`}
+            <CandidateAvatarStage
+              modelUrl={candidate.modelUrl}
+              pose={poseId}
+              onDiagnostics={(next) => (diagnostics = next)}
+            />
+          {/key}
+        {/if}
 
-    <p class="stage-help">Drag to orbit · wheel or pinch to zoom</p>
-  </section>
+        <T.Mesh rotation.x={-Math.PI / 2} receiveShadow>
+          <T.CircleGeometry args={[2.15, 72]} />
+          <T.MeshStandardMaterial color="#272c35" roughness={0.82} />
+        </T.Mesh>
+      </Canvas>
 
-  <aside class="diagnostics" aria-live="polite">
-    <div class="status-row">
-      <span class:ready={diagnostics.status === "ready"}>{diagnostics.status}</span>
-      <strong>Static · {poseId}</strong>
-    </div>
+      <p class="stage-help">Drag to orbit · wheel or pinch to zoom</p>
+    </section>
 
-    <p class="candidate-note">{candidate.note}</p>
+    <aside class="diagnostics" aria-live="polite">
+      <div class="status-row">
+        <span class:ready={diagnostics.status === "ready"}
+          >{diagnostics.status}</span
+        >
+        <strong>Static · {poseId}</strong>
+      </div>
 
-    <dl>
-      <div><dt>Mapped body bones</dt><dd>{diagnostics.mappedBoneCount}/22</dd></div>
-      <div><dt>Arm chains</dt><dd>{yesNo(diagnostics.leftArmChain && diagnostics.rightArmChain)}</dd></div>
-      <div><dt>Leg chains</dt><dd>{yesNo(diagnostics.leftLegChain && diagnostics.rightLegChain)}</dd></div>
-      <div><dt>30-bone fingers</dt><dd>{yesNo(diagnostics.fingerChains)}</dd></div>
-      <div><dt>Skinned meshes</dt><dd>{diagnostics.skinnedMeshCount}</dd></div>
-      <div><dt>Rig bones</dt><dd>{diagnostics.skeletonBoneCount}</dd></div>
-      <div><dt>Source Y height</dt><dd>{meters(diagnostics.sourceHeightMeters)}</dd></div>
-      <div><dt>Normalized height</dt><dd>{meters(diagnostics.normalizedHeightMeters)}</dd></div>
-      <div><dt>Left reach error</dt><dd>{meters(diagnostics.leftHandErrorMeters)}</dd></div>
-      <div><dt>Right reach error</dt><dd>{meters(diagnostics.rightHandErrorMeters)}</dd></div>
-      <div><dt>Cold load</dt><dd>{milliseconds(diagnostics.loadMs)}</dd></div>
-    </dl>
+      <p class="candidate-note">{candidate.note}</p>
+      <p class="candidate-note">{lighting.note}</p>
 
-    {#if diagnostics.error}
-      <p class="error">{diagnostics.error}</p>
-    {/if}
-  </aside>
-</main>
+      <dl>
+        <div>
+          <dt>Mapped body bones</dt>
+          <dd>{diagnostics.mappedBoneCount}/22</dd>
+        </div>
+        <div>
+          <dt>Arm chains</dt>
+          <dd>
+            {yesNo(diagnostics.leftArmChain && diagnostics.rightArmChain)}
+          </dd>
+        </div>
+        <div>
+          <dt>Leg chains</dt>
+          <dd>
+            {yesNo(diagnostics.leftLegChain && diagnostics.rightLegChain)}
+          </dd>
+        </div>
+        <div>
+          <dt>Finger bones mapped</dt>
+          <dd>{diagnostics.fingerChains ? "30/30" : "Incomplete"}</dd>
+        </div>
+        <div>
+          <dt>Skinned meshes</dt>
+          <dd>{diagnostics.skinnedMeshCount}</dd>
+        </div>
+        <div>
+          <dt>Rig bones</dt>
+          <dd>{diagnostics.skeletonBoneCount}</dd>
+        </div>
+        <div>
+          <dt>Environment map</dt>
+          <dd>{environmentApplied ? "Room" : "None"}</dd>
+        </div>
+        <div>
+          <dt>Source Y height</dt>
+          <dd>{meters(diagnostics.sourceHeightMeters)}</dd>
+        </div>
+        <div>
+          <dt>Normalized height</dt>
+          <dd>{meters(diagnostics.normalizedHeightMeters)}</dd>
+        </div>
+        <div>
+          <dt>Left palm target error</dt>
+          <dd>
+            {diagnostics.status === "ready" && !diagnostics.fingerChains
+              ? "No finger rig"
+              : meters(diagnostics.leftHandErrorMeters)}
+          </dd>
+        </div>
+        <div>
+          <dt>Right palm target error</dt>
+          <dd>
+            {diagnostics.status === "ready" && !diagnostics.fingerChains
+              ? "No finger rig"
+              : meters(diagnostics.rightHandErrorMeters)}
+          </dd>
+        </div>
+        <div>
+          <dt>Cold load</dt>
+          <dd>{milliseconds(diagnostics.loadMs)}</dd>
+        </div>
+      </dl>
+
+      {#if diagnostics.error}
+        <p class="error">{diagnostics.error}</p>
+      {/if}
+    </aside>
+  </main>
+{:else}
+  <main class="bakeoff-shell">
+    <header class="toolbar">
+      <div class="title-block">
+        <h1>Avatar bake-off</h1>
+        <p role="status">
+          {manifestReady
+            ? "No usable avatars are available. Add a local model with a complete finger rig to compare it here."
+            : "Checking available avatars…"}
+        </p>
+      </div>
+    </header>
+  </main>
+{/if}
 
 <style>
   :global(html),
@@ -195,9 +326,8 @@
 
   .toolbar {
     z-index: 2;
-    display: grid;
+    display: flex;
     grid-column: 1 / -1;
-    grid-template-columns: minmax(15rem, 1fr) auto;
     gap: 0.85rem 1.5rem;
     align-items: center;
     min-height: 7.25rem;
@@ -207,7 +337,16 @@
   }
 
   .title-block {
-    grid-row: 1 / 3;
+    flex: 1 1 15rem;
+    min-width: 0;
+  }
+
+  .nav-stack {
+    display: grid;
+    flex: 0 1 auto;
+    gap: 0.5rem;
+    justify-items: end;
+    min-width: 0;
   }
 
   .title-block h1,
@@ -235,15 +374,26 @@
   }
 
   .candidate-nav,
-  .pose-nav {
+  .pose-nav,
+  .lighting-nav {
     display: flex;
     flex-wrap: wrap;
     gap: 0.42rem;
+    align-items: center;
     justify-content: flex-end;
   }
 
+  .nav-label {
+    color: #8ea3c2;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
   .candidate-nav a,
-  .pose-nav a {
+  .pose-nav a,
+  .lighting-nav a {
     display: inline-flex;
     align-items: center;
     min-height: 2.1rem;
@@ -263,14 +413,17 @@
 
   .candidate-nav a:hover,
   .pose-nav a:hover,
+  .lighting-nav a:hover,
   .candidate-nav a:focus-visible,
-  .pose-nav a:focus-visible {
+  .pose-nav a:focus-visible,
+  .lighting-nav a:focus-visible {
     border-color: #8191aa;
     color: #fff;
   }
 
   .candidate-nav a.active,
-  .pose-nav a.active {
+  .pose-nav a.active,
+  .lighting-nav a.active {
     border-color: #6498ff;
     color: #fff;
     background: #274a83;
@@ -394,20 +547,29 @@
     }
 
     .toolbar {
-      grid-template-columns: 1fr;
+      flex-direction: column;
+      align-items: stretch;
     }
 
     .title-block {
-      grid-row: auto;
+      flex-basis: auto;
+    }
+
+    .nav-stack {
+      justify-items: start;
     }
 
     .candidate-nav,
-    .pose-nav {
+    .pose-nav,
+    .lighting-nav {
       justify-content: flex-start;
     }
   }
 
-  @media (max-width: 45rem) {
+  /* Narrow phones and short landscape panes both scroll: the toolbar's
+     four control rows would otherwise squeeze the stage out of a fixed
+     viewport. */
+  @media (max-width: 45rem), (max-height: 40rem) {
     :global(html),
     :global(body) {
       overflow: auto;
@@ -415,7 +577,9 @@
 
     .bakeoff-shell {
       grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto 70svh auto;
+      /* The stage track never drops below its own minimum; a fixed 70svh
+         track overlapped the diagnostics on short panes. */
+      grid-template-rows: auto minmax(30rem, 70svh) auto;
       height: auto;
       min-height: 100svh;
     }

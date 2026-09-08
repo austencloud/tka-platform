@@ -79,7 +79,7 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -96,7 +96,7 @@ const CYCLE: readonly GridLocation[] = [
   GridLocation.WEST,
 ];
 
-function motionAt(from: GridLocation, to: GridLocation, color: MotionColor) {
+function motionAt(from: GridLocation, to: GridLocation, color: HandSide) {
   return createMotionData({
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
@@ -106,7 +106,7 @@ function motionAt(from: GridLocation, to: GridLocation, color: MotionColor) {
     endOrientation: Orientation.IN,
     turns: 0,
     propType: PropType.STAFF,
-    color,
+    hand: color,
   });
 }
 
@@ -115,22 +115,22 @@ function makeStep(index: number, letter: string | null): StepData {
     id: `step-${index + 1}`,
     stepNumber: index + 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: letter as StepData["letter"],
     startPosition: null,
     endPosition: null,
     motions: {
-      blue: motionAt(
+      left: motionAt(
         CYCLE[index % 4] as GridLocation,
         CYCLE[(index + 1) % 4] as GridLocation,
-        MotionColor.BLUE
+        HandSide.LEFT
       ),
-      red: motionAt(
+      right: motionAt(
         CYCLE[(index + 2) % 4] as GridLocation,
         CYCLE[(index + 3) % 4] as GridLocation,
-        MotionColor.RED
+        HandSide.RIGHT
       ),
     },
   };
@@ -274,8 +274,8 @@ describe("syncToPublicIndex — first publication", () => {
     expect(written["encoderHash"]).toBe("encoder-hash-test");
     expect(written["ownerDisplayName"]).toBe("Austen");
     // Self-containment payload present.
-    expect(written["blueSoloProp"]).toBeTruthy();
-    expect(written["redSoloProp"]).toBeTruthy();
+    expect(written["leftSoloProp"]).toBeTruthy();
+    expect(written["rightSoloProp"]).toBeTruthy();
     expect(written["stepPairings"]).toHaveLength(4);
     expect(written["startPosition"]).toBeTruthy();
     const retained = revisionWrite();

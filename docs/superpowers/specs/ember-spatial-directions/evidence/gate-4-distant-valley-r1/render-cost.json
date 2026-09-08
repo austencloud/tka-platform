@@ -1,0 +1,15 @@
+{
+  "camera": [
+    -5.721,
+    14.686,
+    19.908
+  ],
+  "target": [
+    0,
+    0.688,
+    0
+  ],
+  "on": "- complementary:\n  - button \"Pause flow\"\n  - button \"Hide valley\"\n  - status: Ready · 25.10 s · 28 draws · 499385 triangles · CPU submit 1.20 ms · frame 16.70 ms · 120 samples",
+  "off": "- complementary:\n  - button \"Pause flow\"\n  - button \"Show valley\" [active]\n  - status: Ready · 84.67 s · 26 draws · 489417 triangles · CPU submit 1.20 ms · frame 16.70 ms · 120 samples",
+  "note": "Actual shared-world preview, 120-sample median; CPU submit is not GPU execution time. Shared-machine development run, not a cold-boot or mobile benchmark."
+}

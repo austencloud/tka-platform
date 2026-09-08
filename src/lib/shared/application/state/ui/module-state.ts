@@ -5,6 +5,7 @@ import { isStandaloneAppSurface } from "$lib/shared/navigation/services/app-shel
 import type { ModuleId } from "../../../navigation/domain/types";
 import { featureFlagService } from "../../../auth/services/post-hog-feature-flag-service.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
+import type { CreateFrontDoorSource } from "../../../navigation/state/navigation-state.svelte";
 import { normalizeModuleId } from "../../../navigation/config/module-definitions";
 import {
   saveActiveTab as persistSaveActiveTab,
@@ -44,11 +45,15 @@ function canApplyAutomaticRestore(startEpoch: number): boolean {
  * Sync both UI state and navigation state to the same module.
  * This ensures the navigation bar and content display are always in agreement.
  */
-function syncBothStateSystems(moduleId: ModuleId, targetTab?: string): void {
+function syncBothStateSystems(
+  moduleId: ModuleId,
+  targetTab?: string,
+  entrySource: CreateFrontDoorSource = "navigation"
+): void {
   setActiveModule(moduleId);
   // Also sync navigationState to prevent navigation bar showing different module than content
   // Pass targetTab if provided (for deep linking via URL)
-  navigationState.setCurrentModule(moduleId, targetTab);
+  navigationState.setCurrentModule(moduleId, targetTab, entrySource);
 }
 
 /**
@@ -370,7 +375,10 @@ export async function initializeModulePersistence(): Promise<void> {
       if (!canApplyAutomaticRestore(restoreStartEpoch)) return;
       syncBothStateSystems(
         moduleId,
-        isUrlNavigation ? (urlTab ?? undefined) : undefined
+        isUrlNavigation ? (urlTab ?? undefined) : undefined,
+        isUrlNavigation && moduleId === "create" && !urlTab
+          ? "direct"
+          : "navigation"
       );
 
       // Clean up localStorage if we normalized the value
@@ -403,7 +411,7 @@ export async function initializeModulePersistence(): Promise<void> {
         );
         // Fix the URL if it had an invalid module
         if (rawEffectiveModule) {
-          const correctedPath = `/create/construct`;
+          const correctedPath = `/create`;
           writeUrl(correctedPath, {
             state: { moduleId: "create", sectionId: "construct" },
           });

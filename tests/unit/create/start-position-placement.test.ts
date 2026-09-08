@@ -8,7 +8,7 @@ import {
 import { getPlacementGridPoints } from "$lib/shared/pictograph/grid/services/placement-grid-points";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -23,8 +23,8 @@ describe("direct start-position placement", () => {
     expect(preset).toBeDefined();
 
     const built = manager.createStartPositionFromLocations({
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.WEST,
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.WEST,
       gridMode: GridMode.DIAMOND,
       id: preset!.id,
     });
@@ -34,26 +34,26 @@ describe("direct start-position placement", () => {
 
   it("keeps independent prop types and orientations", () => {
     const built = manager.createStartPositionFromLocations({
-      blueLocation: GridLocation.WEST,
-      redLocation: GridLocation.WEST,
+      leftLocation: GridLocation.WEST,
+      rightLocation: GridLocation.WEST,
       gridMode: GridMode.DIAMOND,
-      blueOrientation: Orientation.OUT,
-      redOrientation: Orientation.CLOCK,
-      bluePropType: PropType.TORCH,
-      redPropType: PropType.BIGTORCH,
+      leftOrientation: Orientation.OUT,
+      rightOrientation: Orientation.CLOCK,
+      leftPropType: PropType.TORCH,
+      rightPropType: PropType.BIGTORCH,
       id: "built-pose",
     });
 
     expect(built.startPosition).toBe(GridPosition.BETA7);
     expect(built.endPosition).toBe(GridPosition.BETA7);
-    expect(built.motions[MotionColor.BLUE]).toMatchObject({
+    expect(built.motions[HandSide.LEFT]).toMatchObject({
       startLocation: GridLocation.WEST,
       endLocation: GridLocation.WEST,
       startOrientation: Orientation.OUT,
       endOrientation: Orientation.OUT,
       propType: PropType.TORCH,
     });
-    expect(built.motions[MotionColor.RED]).toMatchObject({
+    expect(built.motions[HandSide.RIGHT]).toMatchObject({
       startLocation: GridLocation.WEST,
       endLocation: GridLocation.WEST,
       startOrientation: Orientation.CLOCK,
@@ -64,23 +64,23 @@ describe("direct start-position placement", () => {
 
   it("builds Nick's two-torch outward horizontal pose directly", () => {
     const built = manager.createStartPositionFromLocations({
-      blueLocation: GridLocation.EAST,
-      redLocation: GridLocation.WEST,
+      leftLocation: GridLocation.EAST,
+      rightLocation: GridLocation.WEST,
       gridMode: GridMode.DIAMOND,
-      blueOrientation: Orientation.OUT,
-      redOrientation: Orientation.OUT,
-      bluePropType: PropType.TORCH,
-      redPropType: PropType.TORCH,
+      leftOrientation: Orientation.OUT,
+      rightOrientation: Orientation.OUT,
+      leftPropType: PropType.TORCH,
+      rightPropType: PropType.TORCH,
       id: "nick-horizontal-torches",
     });
 
     expect(built.startPosition).toBe(GridPosition.ALPHA7);
-    expect(built.motions[MotionColor.BLUE]).toMatchObject({
+    expect(built.motions[HandSide.LEFT]).toMatchObject({
       startLocation: GridLocation.EAST,
       startOrientation: Orientation.OUT,
       propType: PropType.TORCH,
     });
-    expect(built.motions[MotionColor.RED]).toMatchObject({
+    expect(built.motions[HandSide.RIGHT]).toMatchObject({
       startLocation: GridLocation.WEST,
       startOrientation: Orientation.OUT,
       propType: PropType.TORCH,
@@ -89,13 +89,13 @@ describe("direct start-position placement", () => {
 
   it("names merged-grid zeta and eta placements", () => {
     const zeta = manager.createStartPositionFromLocations({
-      blueLocation: GridLocation.SOUTHWEST,
-      redLocation: GridLocation.NORTH,
+      leftLocation: GridLocation.SOUTHWEST,
+      rightLocation: GridLocation.NORTH,
       gridMode: GridMode.SKEWED,
     });
     const eta = manager.createStartPositionFromLocations({
-      blueLocation: GridLocation.NORTH,
-      redLocation: GridLocation.NORTHEAST,
+      leftLocation: GridLocation.NORTH,
+      rightLocation: GridLocation.NORTHEAST,
       gridMode: GridMode.SKEWED,
     });
 

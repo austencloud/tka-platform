@@ -38,7 +38,7 @@ export function buildAppendedOptionSequence(
   }: BuildOptionApplicationOptions = {}
 ): BuiltAppendedOption {
   const stepNumber = currentSequence.steps.length + 1;
-  let reversalInfo = { blueReversal: false, redReversal: false };
+  let reversalInfo = { leftReversal: false, rightReversal: false };
 
   if (detector && currentSequence.steps.length > 0) {
     try {
@@ -55,8 +55,8 @@ export function buildAppendedOptionSequence(
     ...option,
     stepNumber,
     isBlank: false,
-    blueReversal: reversalInfo.blueReversal,
-    redReversal: reversalInfo.redReversal,
+    leftReversal: reversalInfo.leftReversal,
+    rightReversal: reversalInfo.rightReversal,
   });
 
   const previousStep = currentSequence.steps.at(-1);

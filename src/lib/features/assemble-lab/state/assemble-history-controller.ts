@@ -74,8 +74,8 @@ export function createAssembleHistoryController({
       gridMode: document.gridMode,
       showCenter: document.showCenter,
       startPoses: cloneStartPoses(document.startPoses),
-      blueSteps: cloneBuilderSteps(document.blueSteps),
-      redSteps: cloneBuilderSteps(document.redSteps),
+      leftSteps: cloneBuilderSteps(document.leftSteps),
+      rightSteps: cloneBuilderSteps(document.rightSteps),
       currentPosition: document.currentPosition,
       currentOrientation: document.currentOrientation,
       rotationDirection: document.rotationDirection,
@@ -94,8 +94,8 @@ export function createAssembleHistoryController({
     document.gridMode = snapshot.gridMode;
     document.showCenter = snapshot.showCenter;
     document.startPoses = cloneStartPoses(snapshot.startPoses);
-    document.blueSteps = cloneBuilderSteps(snapshot.blueSteps);
-    document.redSteps = cloneBuilderSteps(snapshot.redSteps);
+    document.leftSteps = cloneBuilderSteps(snapshot.leftSteps);
+    document.rightSteps = cloneBuilderSteps(snapshot.rightSteps);
     document.currentPosition = snapshot.currentPosition;
     document.currentOrientation = snapshot.currentOrientation;
     document.rotationDirection = snapshot.rotationDirection;

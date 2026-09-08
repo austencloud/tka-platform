@@ -12,12 +12,12 @@ export function withPostStudioPropType(
   return {
     ...(options ?? {}),
     propTypeOverride: propType,
-    bluePropTypeOverride: propType,
-    redPropTypeOverride: propType,
+    leftPropTypeOverride: propType,
+    rightPropTypeOverride: propType,
     visibilityOverrides: {
       ...(options?.visibilityOverrides ?? {}),
-      bluePropType: propType,
-      redPropType: propType,
+      leftPropType: propType,
+      rightPropType: propType,
     },
   };
 }

@@ -6,7 +6,7 @@ import type {
 } from "../../../../src/generation/constraints/types.js";
 
 const EMPTY_MOTION = {
-  color: "",
+  hand: "",
   startLocation: "",
   endLocation: "",
   motionType: "",
@@ -24,8 +24,8 @@ function makePictograph(
     endPosition: "alpha1",
     timing: "together",
     direction: "same",
-    blueMotion: EMPTY_MOTION,
-    redMotion: EMPTY_MOTION,
+    leftMotion: EMPTY_MOTION,
+    rightMotion: EMPTY_MOTION,
     ...overrides,
   };
 }

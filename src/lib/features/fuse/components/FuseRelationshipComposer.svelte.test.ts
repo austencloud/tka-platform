@@ -8,7 +8,7 @@ import FuseRelationshipComposerTestHarness from "./FuseRelationshipComposerTestH
 function relationshipState(): FuseState {
   return {
     mode: "symmetry",
-    driverSide: "blue",
+    driverSide: "left",
     rule: createFuseRule({ reflect: "mirror" }),
     isLoadingLength: false,
     pendingSide: null,
@@ -44,12 +44,12 @@ describe("FuseRelationshipComposer", () => {
       reflect: "mirror",
     });
     expect(state.previewRelationship).toHaveBeenLastCalledWith(
-      "blue",
+      "left",
       rotatedMirror
     );
 
     await page.getByRole("button", { name: "Use this relationship" }).click();
-    expect(state.setRelationship).toHaveBeenCalledWith("blue", rotatedMirror);
+    expect(state.setRelationship).toHaveBeenCalledWith("left", rotatedMirror);
 
     await page.getByRole("button", { name: "Cancel" }).click();
     expect(state.cancelRelationshipPreview).toHaveBeenCalled();
@@ -63,7 +63,7 @@ describe("FuseRelationshipComposer", () => {
     await page.getByRole("button", { name: /^Invert/ }).click();
 
     expect(state.previewRelationship).toHaveBeenLastCalledWith(
-      "blue",
+      "left",
       createFuseRule({ reflect: "flip", invert: true })
     );
   });

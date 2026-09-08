@@ -47,13 +47,13 @@ function step(
     id: `s${stepNumber}`,
     stepNumber,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter,
     startPosition: null,
     endPosition: null,
-    motions: { blue: motion(), red: motion() },
+    motions: { left: motion(), right: motion() },
     ...extra,
   } as StepData;
 }
@@ -64,8 +64,8 @@ const startStep = () => step(0, null);
 function pairing(letter: string | null): StepPairingData {
   return {
     letter: letter as StepPairingData["letter"],
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     startPosition: null,
     endPosition: null,
   };

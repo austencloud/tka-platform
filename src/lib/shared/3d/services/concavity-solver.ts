@@ -16,7 +16,7 @@ export interface ConcavitySolveResult {
   cleared: boolean;
   /** Minimum clearing depth, null when no cheat was needed or possible. */
   k: number | null;
-  hands: Array<"blue" | "red">;
+  hands: Array<"left" | "right">;
 }
 
 function concaveEligible(m: MotionConfig3D): boolean {
@@ -28,19 +28,19 @@ function withDepth(m: MotionConfig3D, k: number): MotionConfig3D {
 }
 
 export function solveStepConcavity(
-  blue: MotionConfig3D,
-  red: MotionConfig3D
+  left: MotionConfig3D,
+  right: MotionConfig3D
 ): ConcavitySolveResult {
-  if (scanStepPair(blue, red).clean) {
+  if (scanStepPair(left, right).clean) {
     return { cleared: true, k: null, hands: [] };
   }
-  const hands: Array<"blue" | "red"> = [];
-  if (concaveEligible(blue)) hands.push("blue");
-  if (concaveEligible(red)) hands.push("red");
+  const hands: Array<"left" | "right"> = [];
+  if (concaveEligible(left)) hands.push("left");
+  if (concaveEligible(right)) hands.push("right");
   if (hands.length === 0) return { cleared: false, k: null, hands: [] };
 
   // Feasibility probe at max depth — if k=1 doesn't clear, bail.
-  if (!scanStepPair(withDepth(blue, 1), withDepth(red, 1)).clean) {
+  if (!scanStepPair(withDepth(left, 1), withDepth(right, 1)).clean) {
     return { cleared: false, k: null, hands };
   }
 
@@ -48,7 +48,7 @@ export function solveStepConcavity(
     hi = 1;
   for (let i = 0; i < MAX_ITERATIONS && hi - lo > K_TOLERANCE; i++) {
     const mid = (lo + hi) / 2;
-    if (scanStepPair(withDepth(blue, mid), withDepth(red, mid)).clean) hi = mid;
+    if (scanStepPair(withDepth(left, mid), withDepth(right, mid)).clean) hi = mid;
     else lo = mid;
   }
   return { cleared: true, k: hi, hands };

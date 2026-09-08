@@ -29,7 +29,7 @@
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -44,7 +44,7 @@ type LooseMotion = {
 
 type LooseStep = {
   letter?: unknown;
-  motions?: Partial<Record<MotionColor, LooseMotion>>;
+  motions?: Partial<Record<HandSide, LooseMotion>>;
 };
 
 function isRealPrefloat(motion: LooseMotion): boolean {
@@ -66,7 +66,7 @@ function isPrefloatlessFloat(motion: LooseMotion): boolean {
 /** Both channels agree on motion identity (type + start→end path) — the
  *  step-level alignment proof required before trusting the embedded letter. */
 function stepMotionsMatch(dec: LooseStep, emb: LooseStep): boolean {
-  for (const color of [MotionColor.BLUE, MotionColor.RED]) {
+  for (const color of [HandSide.LEFT, HandSide.RIGHT]) {
     const d = dec.motions?.[color];
     const e = emb.motions?.[color];
     if (!d && !e) continue;
@@ -110,7 +110,7 @@ export function graftPrefloatFromEmbedded<T extends SequenceData>(
     const dec = decodedSteps[decodedSteps.length - tail + i];
     const emb = embSteps[embSteps.length - tail + i];
     if (!dec || !emb) continue;
-    for (const color of [MotionColor.BLUE, MotionColor.RED]) {
+    for (const color of [HandSide.LEFT, HandSide.RIGHT]) {
       const decMotion = dec.motions?.[color];
       const embMotion = emb.motions?.[color];
       if (!decMotion || !embMotion) continue;

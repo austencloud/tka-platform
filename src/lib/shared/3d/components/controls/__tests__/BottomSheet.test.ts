@@ -23,6 +23,20 @@ describe("createSheetDismiss", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it("leaves an already-owned Escape press to the nested surface", () => {
+    const onClose = vi.fn();
+    const d = createSheetDismiss(onClose);
+    const event = new KeyboardEvent("keydown", {
+      key: "Escape",
+      cancelable: true,
+    });
+    event.preventDefault();
+
+    d.onKeydown(event);
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("calls onClose when a pointerdown lands outside the panel", () => {
     const onClose = vi.fn();
     const panel = el("div");
@@ -78,10 +92,7 @@ describe("createSheetDismiss", () => {
       const panel = el("div");
       const outside = el("div");
       const d = createSheetDismiss(onClose, () => panel, () => false);
-      d.onKeydown({
-        key: "Escape",
-        target: outside,
-      } as unknown as KeyboardEvent);
+      d.onKeydown({ key: "Escape", target: outside } as unknown as KeyboardEvent);
       expect(onClose).toHaveBeenCalledOnce();
     });
 
@@ -91,7 +102,10 @@ describe("createSheetDismiss", () => {
       const outside = el("div");
       const d = createSheetDismiss(onClose, () => panel);
       d.onBackdropPointerDown({ target: outside } as unknown as PointerEvent);
-      d.onKeydown({ key: "Escape", target: outside } as unknown as KeyboardEvent);
+      d.onKeydown({
+        key: "Escape",
+        target: outside,
+      } as unknown as KeyboardEvent);
       expect(onClose).toHaveBeenCalledTimes(2);
     });
   });

@@ -19,6 +19,7 @@ import {
   LAB_GROUPS,
   ARENA_TABS,
   CHOREO_CARD_TABS,
+  CHOREO_CARD_SCAN_ATLAS_TAB_ID,
   FESTIVAL_TABS,
   RETRO_TABS,
   LEVELS_TABS,
@@ -91,6 +92,23 @@ export function normalizeModuleId(rawModuleId: string): ModuleId | undefined {
   return undefined;
 }
 
+const SECTION_ID_MIGRATIONS: Readonly<
+  Record<string, Readonly<Record<string, string>>>
+> = {
+  choreo_card: {
+    "scan-activity": CHOREO_CARD_SCAN_ATLAS_TAB_ID,
+  },
+};
+
+/** Keep bookmarks and persisted navigation valid when a tab gets a clearer name. */
+export function normalizeSectionId(
+  moduleId: string,
+  rawSectionId: string | null | undefined
+): string | undefined {
+  if (!rawSectionId) return undefined;
+  return SECTION_ID_MIGRATIONS[moduleId]?.[rawSectionId] ?? rawSectionId;
+}
+
 // Module definitions for the new navigation system
 // NOTE: Dashboard removed - it was a redundant launcher. Create is now the default landing.
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
@@ -104,6 +122,13 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Construct and generate sequences",
     isMain: true,
     sections: CREATE_TABS,
+    home: {
+      label: "Create",
+      optionLabel: "All methods",
+      ariaLabel: "All creation methods",
+      description: "Choose how you want to build your next sequence.",
+      icon: '<i class="fas fa-border-all" aria-hidden="true"></i>',
+    },
   },
   {
     id: "browse",

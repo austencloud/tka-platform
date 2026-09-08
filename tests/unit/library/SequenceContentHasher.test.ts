@@ -12,7 +12,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -25,12 +25,12 @@ function makeStep(overrides: Partial<StepData> = {}): StepData {
     endPosition: null,
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     gridMode: GridMode.DIAMOND,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
         startLocation: GridLocation.NORTH,
@@ -39,9 +39,9 @@ function makeStep(overrides: Partial<StepData> = {}): StepData {
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
         gridMode: GridMode.DIAMOND,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.ANTI,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         startLocation: GridLocation.SOUTH,
@@ -50,7 +50,7 @@ function makeStep(overrides: Partial<StepData> = {}): StepData {
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.IN,
         gridMode: GridMode.DIAMOND,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
       }),
     },
     ...overrides,
@@ -77,7 +77,7 @@ describe("SequenceContentHasher", () => {
     const step1Turn = makeStep();
     const step2Turns = makeStep({
       motions: {
-        [MotionColor.BLUE]: createMotionData({
+        [HandSide.LEFT]: createMotionData({
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.CLOCKWISE,
           startLocation: GridLocation.NORTH,
@@ -86,9 +86,9 @@ describe("SequenceContentHasher", () => {
           startOrientation: Orientation.IN,
           endOrientation: Orientation.OUT,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.BLUE,
+          hand: HandSide.LEFT,
         }),
-        [MotionColor.RED]: createMotionData({
+        [HandSide.RIGHT]: createMotionData({
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
           startLocation: GridLocation.SOUTH,
@@ -97,7 +97,7 @@ describe("SequenceContentHasher", () => {
           startOrientation: Orientation.OUT,
           endOrientation: Orientation.IN,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
         }),
       },
     });
@@ -143,7 +143,7 @@ describe("SequenceContentHasher", () => {
     const stepB = makeStep({
       stepNumber: 2,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
+        [HandSide.LEFT]: createMotionData({
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.NO_ROTATION,
           startLocation: GridLocation.EAST,
@@ -152,9 +152,9 @@ describe("SequenceContentHasher", () => {
           startOrientation: Orientation.CLOCK,
           endOrientation: Orientation.COUNTER,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.BLUE,
+          hand: HandSide.LEFT,
         }),
-        [MotionColor.RED]: createMotionData({
+        [HandSide.RIGHT]: createMotionData({
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
           startLocation: GridLocation.NORTH,
@@ -163,7 +163,7 @@ describe("SequenceContentHasher", () => {
           startOrientation: Orientation.IN,
           endOrientation: Orientation.IN,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
         }),
       },
     });
@@ -182,12 +182,12 @@ describe("SequenceContentHasher", () => {
     const boxStep = makeStep({
       gridMode: GridMode.BOX,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
-          ...((makeStep().motions[MotionColor.BLUE]) as ReturnType<typeof createMotionData>),
+        [HandSide.LEFT]: createMotionData({
+          ...((makeStep().motions[HandSide.LEFT]) as ReturnType<typeof createMotionData>),
           gridMode: GridMode.BOX,
         }),
-        [MotionColor.RED]: createMotionData({
-          ...((makeStep().motions[MotionColor.RED]) as ReturnType<typeof createMotionData>),
+        [HandSide.RIGHT]: createMotionData({
+          ...((makeStep().motions[HandSide.RIGHT]) as ReturnType<typeof createMotionData>),
           gridMode: GridMode.BOX,
         }),
       },

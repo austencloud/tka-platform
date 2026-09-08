@@ -40,13 +40,13 @@
       label: "Explore",
       links: [
         {
-          href: "/notation/shape-matrix",
+          href: "/shape-engine",
           section: "Live table",
           title: "The 144 shape matrix",
           copy: "Lorq Nichols charted it in 2012. TKA draws every cell live.",
         },
         {
-          href: "/glossary",
+          href: "/atlas",
           section: "Reference",
           title: "Glossary",
           copy: "The vocabulary behind the notation and the app.",

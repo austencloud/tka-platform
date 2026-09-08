@@ -49,7 +49,8 @@ export class ReversalConstraint implements IVariationConstraint {
       };
     }
 
-    const previousStep = context.previousSteps[context.previousSteps.length - 1];
+    const previousStep =
+      context.previousSteps[context.previousSteps.length - 1];
     if (!previousStep) {
       return {
         score: 0.5,
@@ -58,25 +59,25 @@ export class ReversalConstraint implements IVariationConstraint {
       };
     }
 
-    const blueReversal = isReversal(
-      previousStep.blueMotion.rotationDirection,
-      context.candidate.blueMotion.rotationDirection
+    const leftReversal = isReversal(
+      previousStep.leftMotion.rotationDirection,
+      context.candidate.leftMotion.rotationDirection
     );
-    const redReversal = isReversal(
-      previousStep.redMotion.rotationDirection,
-      context.candidate.redMotion.rotationDirection
+    const rightReversal = isReversal(
+      previousStep.rightMotion.rotationDirection,
+      context.candidate.rightMotion.rotationDirection
     );
 
-    const blueStatic =
-      previousStep.blueMotion.motionType === "static" ||
-      context.candidate.blueMotion.motionType === "static";
-    const redStatic =
-      previousStep.redMotion.motionType === "static" ||
-      context.candidate.redMotion.motionType === "static";
+    const leftStatic =
+      previousStep.leftMotion.motionType === "static" ||
+      context.candidate.leftMotion.motionType === "static";
+    const rightStatic =
+      previousStep.rightMotion.motionType === "static" ||
+      context.candidate.rightMotion.motionType === "static";
 
-    const hasReversal = blueReversal || redReversal;
-    const bothReversed = blueReversal && redReversal;
-    const bothStatic = blueStatic && redStatic;
+    const hasReversal = leftReversal || rightReversal;
+    const bothReversed = leftReversal && rightReversal;
+    const bothStatic = leftStatic && rightStatic;
 
     let score: number;
     let reason: string;
@@ -91,7 +92,7 @@ export class ReversalConstraint implements IVariationConstraint {
           reason = "Both hands reversed";
         } else if (hasReversal) {
           score = 0.75;
-          reason = blueReversal ? "Blue hand reversed" : "Red hand reversed";
+          reason = leftReversal ? "Left hand reversed" : "Right hand reversed";
         } else {
           score = 0;
           reason = "No reversal (want reversal every beat)";

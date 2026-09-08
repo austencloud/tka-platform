@@ -30,7 +30,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -62,7 +62,7 @@
   type HandStep = { anti?: boolean; still?: boolean; from: GridLocation; to: GridLocation; so: Orientation };
   const h = (anti: boolean, from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ anti, from, to, so });
   const sh = (loc: GridLocation, so: Orientation = IN): HandStep => ({ still: true, from: loc, to: loc, so });
-  const handMotion = (color: MotionColor, x: HandStep) => {
+  const handMotion = (color: HandSide, x: HandStep) => {
     if (x.still) {
       return createMotionData({
         motionType: MotionType.STATIC,
@@ -90,8 +90,8 @@
     });
   };
 
-  type Step = { letter: Letter; blue: HandStep; red: HandStep };
-  const st = (letter: Letter, blue: HandStep, red: HandStep): Step => ({ letter, blue, red });
+  type Step = { letter: Letter; left: HandStep; right: HandStep };
+  const st = (letter: Letter, left, right): Step => ({ letter, left, right });
   const { G, O, Q, Y, Z } = Letter;
   const EL = Letter.E;
   const DEL = Letter.DELTA;
@@ -160,12 +160,12 @@
       id: `${q.key}-${i + 1}`,
       letter: s.letter,
       gridMode: GridMode.DIAMOND,
-      startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-      endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+      startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+      endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
       stepNumber: i + 1,
       motions: {
-        blue: handMotion(MotionColor.BLUE, s.blue),
-        red: handMotion(MotionColor.RED, s.red),
+        left: handMotion(HandSide.LEFT, s.left),
+        right: handMotion(HandSide.RIGHT, s.right),
       },
     } as unknown as StepData;
   };
@@ -179,8 +179,8 @@
       startPosition: getGridPositionFromLocations(SO_, SO_),
       endPosition: getGridPositionFromLocations(SO_, SO_),
       motions: {
-        blue: handMotion(MotionColor.BLUE, sh(SO_)),
-        red: handMotion(MotionColor.RED, sh(SO_)),
+        left: handMotion(HandSide.LEFT, sh(SO_)),
+        right: handMotion(HandSide.RIGHT, sh(SO_)),
       },
     }) as unknown as StepData;
 
@@ -284,8 +284,8 @@
         <PictographContainer
           pictographData={RESOLVED[q.key]![0]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           stepNumberOverride={true}
           {...PICTO_FLAGS}
         />
@@ -299,8 +299,8 @@
           <PictographContainer
             pictographData={sd}
             gridMode={GridMode.DIAMOND}
-            bluePropTypeOverride={PropType.STAFF}
-            redPropTypeOverride={PropType.STAFF}
+            leftPropTypeOverride={PropType.STAFF}
+            rightPropTypeOverride={PropType.STAFF}
             stepNumberOverride={true}
             {...PICTO_FLAGS}
           />

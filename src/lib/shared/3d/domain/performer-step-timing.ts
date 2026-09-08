@@ -41,3 +41,32 @@ export function resolvePerformerStepSource(
   }
   return resolvePerformerPlaybackStep(sharedStep, beatOffset, totalSteps);
 }
+
+export interface PerformerPlaybackTarget {
+  totalSteps: number;
+  goToStep(step: number): void;
+  setProgress(progress: number): void;
+}
+
+/**
+ * Put one performer at the exact beat and in-between-beat progress chosen by
+ * the app's shared clock. Both renderer backends call this owner so moving the
+ * expensive drawing work into a worker cannot change what a Choreo Card means.
+ */
+export function synchronizePerformerPlayback(
+  performer: PerformerPlaybackTarget,
+  hostStep: number | null | undefined,
+  sharedStep: number,
+  beatOffset: number
+): number {
+  const performerStep = resolvePerformerStepSource(
+    hostStep,
+    sharedStep,
+    beatOffset,
+    performer.totalSteps
+  );
+  const performerBeat = Math.floor(performerStep);
+  performer.goToStep(performerBeat);
+  performer.setProgress(performerStep - performerBeat);
+  return performerStep;
+}

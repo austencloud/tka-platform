@@ -15,12 +15,21 @@ import type { MotionData } from "../../shared/domain/models/motion-data";
 import type { PropPlacementData } from "../domain/models/prop-placement-data";
 import type { PropRenderData } from "../domain/models/prop-render-data";
 import type { PropSvgLoadOptions } from "./types";
-import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
+import { HandSide } from "../../shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
   SELECTIVE_COLOR_PROP_TYPES,
   type ThemeMode,
 } from "../../../utils/svg-color-utils";
+import { applyTorchContrastPalette } from "../domain/torch-contrast";
+import {
+  applyFanFrameColor,
+  fanAppearanceArtwork,
+  isFanPropType,
+  normalizeFanAppearance,
+  scaleFanAppearanceForBigFan,
+} from "../domain/fan-appearance";
+import { getMotionColor } from "../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { assetFetch } from "../../../net/asset-fetch";
 
@@ -90,19 +99,35 @@ export class PropSvgLoader {
     try {
       // Get prop type and color
       const propType = motionData.propType || "staff";
-      const color = motionData.color || MotionColor.BLUE;
+      const color = motionData.hand || HandSide.LEFT;
 
       // Use explicit theme mode if provided, otherwise fall back to global state
       const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
+
+      // A fan-family prop draws the physical build the user picked (the same
+      // artwork the animator and 3D scene show). The appearance files share
+      // the pictograph fan's 260x207 box, so placement rules stay intact.
+      const fanAppearance =
+        options?.fanAppearance && isFanPropType(propType)
+          ? normalizeFanAppearance(options.fanAppearance)
+          : null;
+      const fanArtworkPath =
+        fanAppearance && fanAppearance.build !== "pictograph"
+          ? fanAppearanceArtwork(fanAppearance.build, fanAppearance.cover)
+          : null;
 
       // Create cache key including color AND theme mode for transformed prop cache
       // Two prop SVG folders:
       //   /images/props/animated/    → animation canvas (wider viewBox for rotation)
       //   /images/props/pictograph/  → pictograph grid rendering
-      const path = useGridVersion
-        ? `/images/props/animated/${propType}.svg`
-        : `/images/props/pictograph/${propType}.svg`;
-      const transformedCacheKey = `${path}:${color}:${themeMode}`;
+      const path =
+        fanArtworkPath ??
+        (useGridVersion
+          ? `/images/props/animated/${propType}.svg`
+          : `/images/props/pictograph/${propType}.svg`);
+      // The prop type is part of the key because fan and bigfan share one
+      // appearance file and differ only in the sizing applied below.
+      const transformedCacheKey = `${path}:${propType}:${color}:${themeMode}`;
 
       // 🚀 OPTIMIZATION: Check transformed cache first (fastest path)
       if (this.transformedSvgCache.has(transformedCacheKey)) {
@@ -121,22 +146,37 @@ export class PropSvgLoader {
       // Fetch raw SVG (uses raw cache + deduplication)
       const originalSvgText = await this.fetchSvgContentCached(path);
 
-      // Parse SVG for viewBox and center (uses metadata cache)
-      const { viewBox, center } = this.parsePropSvgCached(
-        originalSvgText,
-        path
-      );
+      // Apply color transformation with current theme mode. Physical fan
+      // builds own their material colors, so only the marked frame group
+      // takes the hand color; the generic recolor would paint the wicks too.
+      const coloredSvgText = fanArtworkPath
+        ? applyFanFrameColor(originalSvgText, getMotionColor(color, themeMode))
+        : this.applyColorToSvg(originalSvgText, color, themeMode, propType);
+      const sizedSvgText =
+        fanArtworkPath && propType.toLowerCase() === "bigfan"
+          ? scaleFanAppearanceForBigFan(coloredSvgText)
+          : coloredSvgText;
 
-      // Apply color transformation with current theme mode
-      const coloredSvgText = this.applyColorToSvg(
-        originalSvgText,
-        color,
-        themeMode,
-        propType
-      );
+      // Torch artwork is a near-black shaft with no flame, so it disappears on
+      // a dark pictograph. Baking the contrast palette in here means every
+      // consumer of this loader inherits it — the live DOM, the worker raster
+      // behind choreo cards, image export and print. The animated artwork
+      // carries its own flame and is handled by the animation svg-generator.
+      const contrastAdjustedSvgText = useGridVersion
+        ? sizedSvgText
+        : applyTorchContrastPalette(sizedSvgText, propType, themeMode);
+
+      // Parse viewBox and center from the artwork that actually ships. The
+      // torch treatment grows the box around the flame, and Big Fan sizing
+      // swaps the box entirely; the shared path-keyed metadata cache would
+      // hand back the pre-treatment box.
+      const treated = contrastAdjustedSvgText !== coloredSvgText;
+      const { viewBox, center } = treated
+        ? this.parsePropSvg(contrastAdjustedSvgText)
+        : this.parsePropSvgCached(originalSvgText, path);
 
       // Extract SVG content
-      const svgContent = this.extractSvgContent(coloredSvgText);
+      const svgContent = this.extractSvgContent(contrastAdjustedSvgText);
 
       const result: PropRenderData = {
         position: { x: propData.positionX, y: propData.positionY },
@@ -269,7 +309,7 @@ export class PropSvgLoader {
    */
   private applyColorToSvg(
     svgText: string,
-    color: MotionColor,
+    color: HandSide,
     themeMode: ThemeMode,
     propType?: string
   ): string {

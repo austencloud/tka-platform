@@ -6,7 +6,7 @@ import { createPictographData } from "../../shared/domain/factories/create-picto
 import { Letter } from "../../../foundation/domain/models/letter";
 import { GridLocation, GridMode } from "../../grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -23,27 +23,27 @@ import {
 // (bilateral) type and wrongly applied the 21.11px offset even though clubs render.
 // The fix threads per-call propSettings through calculatePlacement → calculateBetaOffset.
 describe("PropPlacer beta offset — unilateral radial-but-different (letter Y)", () => {
-  const blue = createMotionData({
+  const left = createMotionData({
     motionType: MotionType.PRO,
     startLocation: GridLocation.NORTH,
     endLocation: GridLocation.WEST,
     startOrientation: Orientation.OUT,
     endOrientation: Orientation.OUT,
     rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
-    color: MotionColor.BLUE,
+    hand: HandSide.LEFT,
   });
-  const red = createMotionData({
+  const right = createMotionData({
     motionType: MotionType.STATIC,
     startLocation: GridLocation.WEST,
     endLocation: GridLocation.WEST,
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
     rotationDirection: RotationDirection.NO_ROTATION,
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
   });
   const pictograph = createPictographData({
     letter: Letter.Y,
-    motions: { blue, red },
+    motions: { left, right },
   });
 
   const def = DefaultPropPositioner.calculatePosition(
@@ -54,9 +54,9 @@ describe("PropPlacer beta offset — unilateral radial-but-different (letter Y)"
   it("skips the offset when the actual props are unilateral clubs", async () => {
     const placement = await propPlacer.calculatePlacement(
       pictograph,
-      blue,
+      left,
       undefined,
-      { bluePropType: "club", redPropType: "club" }
+      { leftPropType: "club", rightPropType: "club" }
     );
     // No beta offset → prop sits at the default hand point.
     expect(placement.positionX).toBeCloseTo(def.x, 1);
@@ -66,9 +66,9 @@ describe("PropPlacer beta offset — unilateral radial-but-different (letter Y)"
   it("still applies the offset for bilateral staffs", async () => {
     const placement = await propPlacer.calculatePlacement(
       pictograph,
-      blue,
+      left,
       undefined,
-      { bluePropType: "staff", redPropType: "staff" }
+      { leftPropType: "staff", rightPropType: "staff" }
     );
     const moved =
       Math.abs(placement.positionX - def.x) > 0.5 ||
@@ -80,15 +80,15 @@ describe("PropPlacer beta offset — unilateral radial-but-different (letter Y)"
     const soloPictograph = createPictographData({
       letter: null,
       motions: {
-        blue,
-        red: { ...red, isVisible: false },
+        left,
+        right: { ...right, isVisible: false },
       },
     });
     const placement = await propPlacer.calculatePlacement(
       soloPictograph,
-      blue,
+      left,
       undefined,
-      { bluePropType: "staff", redPropType: "staff" }
+      { leftPropType: "staff", rightPropType: "staff" }
     );
 
     expect(placement.positionX).toBeCloseTo(def.x, 1);
@@ -98,9 +98,9 @@ describe("PropPlacer beta offset — unilateral radial-but-different (letter Y)"
   it("removes beta separation when the partner is presentation-hidden", async () => {
     const placement = await propPlacer.calculatePlacement(
       pictograph,
-      blue,
-      { showBlue: true, showRed: false },
-      { bluePropType: "staff", redPropType: "staff" }
+      left,
+      { showLeft: true, showRight: false },
+      { leftPropType: "staff", rightPropType: "staff" }
     );
 
     expect(placement.positionX).toBeCloseTo(def.x, 1);

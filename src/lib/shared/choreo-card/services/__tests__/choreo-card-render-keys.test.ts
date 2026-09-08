@@ -32,8 +32,10 @@ const SEQ: SequenceData = {
 function baseInputs(): ChoreoCardRenderKeyInputs {
   return {
     sequence: SEQ,
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
+    leftPropType: PropType.STAFF,
+    rightPropType: PropType.STAFF,
+    leftBuugengFlipped: false,
+    rightBuugengFlipped: false,
     catDogModeEnabled: false,
     showStepNumbers: true,
     showNonRadial: false,
@@ -44,8 +46,8 @@ function baseInputs(): ChoreoCardRenderKeyInputs {
     showElemental: false,
     showPositions: false,
     showGrid: true,
-    showBlueMotion: true,
-    showRedMotion: true,
+    showLeftMotion: true,
+    showRightMotion: true,
     includeStartPosition: true,
     startPositionLayout: "row",
     effectiveColumns: 4,
@@ -65,6 +67,13 @@ function routeMode(
 }
 
 describe("buildChoreoCardRenderKeys — overlay vs structural routing", () => {
+  it("repaints a changed palette without moving the card cells", () => {
+    const before = baseInputs();
+    const after = { ...before, primaryPropColors: { left: "#00ff88", right: "#ff8800" } };
+    expect(buildChoreoCardRenderKeys(after).imageKey).not.toBe(buildChoreoCardRenderKeys(before).imageKey);
+    expect(routeMode(before, after)).toBe("crossfade");
+    expect(buildChoreoCardRenderKeys({ ...after, primaryPropColors: null })).toEqual(buildChoreoCardRenderKeys(before));
+  });
   it("non-radial toggle is overlay-only → crossfade (the bug: it used to swap)", () => {
     const before = baseInputs();
     const after = { ...before, showNonRadial: true };
@@ -96,11 +105,11 @@ describe("buildChoreoCardRenderKeys — overlay vs structural routing", () => {
   it("structural flags (geometry differs → ghost risk) route to swap", () => {
     const before = baseInputs();
     const structural: Partial<ChoreoCardRenderKeyInputs>[] = [
-      { bluePropType: PropType.CLUB }, // different prop → different arrows
-      { redPropType: PropType.CLUB },
+      { leftPropType: PropType.CLUB }, // different prop → different arrows
+      { rightPropType: PropType.CLUB },
       { catDogModeEnabled: true },
-      { showBlueMotion: false }, // motion visibility changes which arrows show
-      { showRedMotion: false },
+      { showLeftMotion: false }, // motion visibility changes which arrows show
+      { showRightMotion: false },
       {
         sequence: {
           id: "seq-2",
@@ -128,7 +137,7 @@ describe("buildChoreoCardRenderKeys — overlay vs structural routing", () => {
           ...step,
           motions: {
             ...step.motions,
-            blue: {
+            left: {
               motionType: "pro",
               rotationDirection: "cw",
               startLocation: index === 0 ? "n" : "e",

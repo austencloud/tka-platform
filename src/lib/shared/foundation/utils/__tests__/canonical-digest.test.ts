@@ -159,14 +159,14 @@ describe("canonicalDigest array and nesting stability", () => {
   it("is stable for an array of objects whose keys are written in any order", async () => {
     const a = {
       stepPairings: [
-        { letter: "I", blue: "pro", red: "anti" },
-        { red: "pro", letter: "E", blue: "anti" },
+        { letter: "I", left: "pro", right: "anti" },
+        { right: "pro", letter: "E", left: "anti" },
       ],
     };
     const b = {
       stepPairings: [
-        { red: "anti", blue: "pro", letter: "I" },
-        { blue: "anti", letter: "E", red: "pro" },
+        { right: "anti", left: "pro", letter: "I" },
+        { left: "anti", letter: "E", right: "pro" },
       ],
     };
     expect(await canonicalDigest(a)).toBe(await canonicalDigest(b));

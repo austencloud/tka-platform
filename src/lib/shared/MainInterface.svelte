@@ -27,6 +27,7 @@
     currentModule,
     currentModuleName,
     currentSection,
+    handleModuleHome,
     handleModuleChange,
     handleSectionChange,
     initializeNavigationHistory,
@@ -51,12 +52,13 @@
   import { deepLinker } from "./navigation/services/deep-linker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
-  import type { ModuleId } from "./navigation/domain/types";
+  import type {
+    ModuleId,
+    SectionHomeDestination,
+  } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
   import { hasOpenDrawers } from "./foundation/ui/drawer/drawer-stack";
-  import { keyboardShortcutState } from "./keyboard/state/keyboard-shortcut-state.svelte";
   import CommandPalette from "./keyboard/components/CommandPalette.svelte";
-  import ShortcutCenter from "./keyboard/components/ShortcutCenter.svelte";
   import KeyboardShortcutCoordinator from "./keyboard/coordinators/KeyboardShortcutCoordinator.svelte";
 
   // My Props drawer - rendered here (outside sidebar) because the sidebar's
@@ -81,6 +83,22 @@
   import { adminToolbarState } from "./debug/state/admin-toolbar-state.svelte";
   import { featureFlagService } from "./auth/services/post-hog-feature-flag-service.svelte";
   import ToastContainer from "./toast/components/ToastContainer.svelte";
+
+  const sectionHome = $derived.by<SectionHomeDestination | null>(() => {
+    const moduleId = currentModule();
+    const moduleDefinition = moduleDefinitions.find(
+      (definition) => definition.id === moduleId
+    );
+    if (!moduleDefinition?.home) return null;
+
+    return {
+      ...moduleDefinition.home,
+      icon: moduleDefinition.home.icon ?? moduleDefinition.icon,
+      color: moduleDefinition.color,
+      gradient: moduleDefinition.color,
+      active: navigationState.isModuleHomeOpen(moduleId),
+    };
+  });
 
   // LAN Sync
   import NearbySyncBanner from "./lan-sync/components/NearbySyncBanner.svelte";
@@ -167,6 +185,10 @@
   // Handle reveal navigation from peek indicator
   function handleRevealNav() {
     browseScrollState.forceShowUI();
+  }
+
+  function handleSectionHomeSelect() {
+    handleModuleHome(currentModule(), "navigation");
   }
 
   // 🚀 Prefetch likely next modules when current module changes
@@ -262,6 +284,8 @@
       currentSection={currentSection()}
       modules={moduleDefinitions}
       onModuleChange={handleModuleChange}
+      onModuleHomeSelect={(moduleId) =>
+        handleModuleHome(moduleId, "navigation")}
       onSectionChange={handleSectionChange}
       {isEntryAnimating}
     />
@@ -300,6 +324,8 @@
         sections={moduleSections()}
         currentSection={currentSection()}
         onSectionChange={handleSectionChange}
+        {sectionHome}
+        onSectionHomeSelect={handleSectionHomeSelect}
         onModuleSwitcherTap={() => {
           // Open module switcher drawer directly
           window.dispatchEvent(new CustomEvent("module-switcher-toggle"));
@@ -322,11 +348,11 @@
     currentModuleName={currentModuleName()}
     modules={moduleDefinitions}
     onModuleChange={handleModuleChange}
+    onModuleHomeSelect={(moduleId) => handleModuleHome(moduleId, "navigation")}
   />
   <!-- Keyboard Shortcuts -->
   <KeyboardShortcutCoordinator />
   <CommandPalette />
-  <ShortcutCenter />
   <!-- Toast Notifications -->
   <ToastContainer />
 </div>

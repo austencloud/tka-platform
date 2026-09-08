@@ -53,28 +53,28 @@ export function filterByContinuity(
  */
 export function filterByRotation(
   options: PictographData[],
-  blueRotDir: string,
-  redRotDir: string
+  leftRotDir: string,
+  rightRotDir: string
 ): PictographData[] {
   const filtered = options.filter((option: PictographData) => {
-    const blueMotion = option.motions.blue;
-    const redMotion = option.motions.red;
+    const leftMotion = option.motions.left;
+    const rightMotion = option.motions.right;
 
     // Invisible placeholder = hand not really there (both-required Step shape).
-    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return false;
+    if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) return false;
 
-    const blueMotionRotDir = blueMotion.rotationDirection;
-    const redMotionRotDir = redMotion.rotationDirection;
+    const leftMotionRotDir = leftMotion.rotationDirection;
+    const rightMotionRotDir = rightMotion.rotationDirection;
 
-    const blueMatches =
-      blueMotionRotDir === blueRotDir ||
-      blueMotionRotDir === ROTATION_DIRS.noRotation;
+    const leftMatches =
+      leftMotionRotDir === leftRotDir ||
+      leftMotionRotDir === ROTATION_DIRS.noRotation;
 
-    const redMatches =
-      redMotionRotDir === redRotDir ||
-      redMotionRotDir === ROTATION_DIRS.noRotation;
+    const rightMatches =
+      rightMotionRotDir === rightRotDir ||
+      rightMotionRotDir === ROTATION_DIRS.noRotation;
 
-    return blueMatches && redMatches;
+    return leftMatches && rightMatches;
   });
 
   return filtered.length > 0 ? filtered : options;
@@ -116,14 +116,14 @@ export function filterStaticType6(
     if (letterType !== LetterType.TYPE6) return true;
     if (level === 1) return false;
 
-    const blueMotion = option.motions.blue;
-    const redMotion = option.motions.red;
-    const blueTurns = blueMotion?.turns ?? 0;
-    const redTurns = redMotion?.turns ?? 0;
-    const blueHasTurns = blueTurns === "fl" || blueTurns > 0;
-    const redHasTurns = redTurns === "fl" || redTurns > 0;
+    const leftMotion = option.motions.left;
+    const rightMotion = option.motions.right;
+    const leftTurns = leftMotion?.turns ?? 0;
+    const rightTurns = rightMotion?.turns ?? 0;
+    const leftHasTurns = leftTurns === "fl" || leftTurns > 0;
+    const rightHasTurns = rightTurns === "fl" || rightTurns > 0;
 
-    return blueHasTurns || redHasTurns;
+    return leftHasTurns || rightHasTurns;
   });
 }
 
@@ -158,13 +158,13 @@ export function filterByPropType(
   propType: string
 ): PictographData[] {
   const filtered = options.filter((option: PictographData) => {
-    const blueMotion = option.motions.blue;
-    const redMotion = option.motions.red;
+    const leftMotion = option.motions.left;
+    const rightMotion = option.motions.right;
 
-    if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return false;
+    if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion)) return false;
 
     return (
-      blueMotion.propType === propType && redMotion.propType === propType
+      leftMotion.propType === propType && rightMotion.propType === propType
     );
   });
 

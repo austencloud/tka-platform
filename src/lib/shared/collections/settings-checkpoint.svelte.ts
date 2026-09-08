@@ -35,6 +35,8 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { BackgroundType } from "@austencloud/backgrounds";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+import { normalizeLegacyPropConfig } from "@tka/tka-types";
+import { normalizeLegacyTrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 const CHECKPOINT_STORAGE_KEY = "tka_settings_checkpoint";
 
@@ -54,11 +56,11 @@ export interface SettingsCheckpoint {
     effortPreset: EffortId;
     pathShape: "arc" | "linear" | "concave";
     motionAwarePaths: boolean;
-    bluePathLines: boolean;
-    redPathLines: boolean;
+    leftPathLines: boolean;
+    rightPathLines: boolean;
     trail: TrailSettings;
-    bluePropType: PropType;
-    redPropType: PropType;
+    leftPropType: PropType;
+    rightPropType: PropType;
     backgroundType: BackgroundType;
   };
   raw: {
@@ -71,6 +73,31 @@ export interface SettingsCheckpoint {
      *  so revert deletes it rather than writing back a value it never had. */
     viewer3d: Record<string, string>;
   };
+}
+
+export function normalizeLegacySettingsCheckpoint<T>(value: T): T {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const source = value as Record<string, unknown>;
+  if (
+    !source.semantic ||
+    typeof source.semantic !== "object" ||
+    Array.isArray(source.semantic)
+  ) {
+    return value;
+  }
+  const legacySemantic = source.semantic as Record<string, unknown>;
+  const semantic = normalizeLegacyPropConfig({ ...legacySemantic }) as Record<
+    string,
+    unknown
+  >;
+  semantic.leftPathLines ??= legacySemantic.bluePathLines;
+  semantic.rightPathLines ??= legacySemantic.redPathLines;
+  delete semantic.bluePathLines;
+  delete semantic.redPathLines;
+  if (legacySemantic.trail !== undefined) {
+    semantic.trail = normalizeLegacyTrailSettings(legacySemantic.trail);
+  }
+  return { ...source, semantic } as T;
 }
 
 function readViewer3DKeys(): Record<string, string> {
@@ -129,11 +156,11 @@ export function captureSettingsCheckpoint(label: string): void {
       effortPreset: vm.getEffortPreset(),
       pathShape: vm.getPathShape(),
       motionAwarePaths: vm.getMotionAwarePaths(),
-      bluePathLines: vm.getVisibility("bluePathLines"),
-      redPathLines: vm.getVisibility("redPathLines"),
+      leftPathLines: vm.getVisibility("leftPathLines"),
+      rightPathLines: vm.getVisibility("rightPathLines"),
       trail: $state.snapshot(animationSettings.trail) as TrailSettings,
-      bluePropType: settings.bluePropType ?? PropType.STAFF,
-      redPropType: settings.redPropType ?? PropType.STAFF,
+      leftPropType: settings.leftPropType ?? PropType.STAFF,
+      rightPropType: settings.rightPropType ?? PropType.STAFF,
       backgroundType: settings.backgroundType ?? BackgroundType.COSMIC,
     },
     raw: {
@@ -167,7 +194,9 @@ export function revertSettingsCheckpoint(): string | null {
   try {
     const raw = localStorage.getItem(CHECKPOINT_STORAGE_KEY);
     if (!raw) return null;
-    checkpoint = JSON.parse(raw) as SettingsCheckpoint;
+    checkpoint = normalizeLegacySettingsCheckpoint(
+      JSON.parse(raw) as SettingsCheckpoint
+    );
   } catch {
     return null;
   }
@@ -176,12 +205,12 @@ export function revertSettingsCheckpoint(): string | null {
   vm.setEffortPreset(checkpoint.semantic.effortPreset);
   vm.setPathShape(checkpoint.semantic.pathShape);
   vm.setMotionAwarePaths(checkpoint.semantic.motionAwarePaths);
-  vm.setVisibility("bluePathLines", checkpoint.semantic.bluePathLines);
-  vm.setVisibility("redPathLines", checkpoint.semantic.redPathLines);
+  vm.setVisibility("leftPathLines", checkpoint.semantic.leftPathLines);
+  vm.setVisibility("rightPathLines", checkpoint.semantic.rightPathLines);
   animationSettings.updateSettings({ trail: checkpoint.semantic.trail });
   void settingsService.updateSettings({
-    bluePropType: checkpoint.semantic.bluePropType,
-    redPropType: checkpoint.semantic.redPropType,
+    leftPropType: checkpoint.semantic.leftPropType,
+    rightPropType: checkpoint.semantic.rightPropType,
     backgroundType: checkpoint.semantic.backgroundType,
   });
 

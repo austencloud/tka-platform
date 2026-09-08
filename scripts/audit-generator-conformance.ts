@@ -77,8 +77,8 @@ interface StepSignature {
   letter: string;
   start: string;
   end: string;
-  blue: string;
-  red: string;
+  left: string;
+  right: string;
 }
 
 interface DetectionSummary {
@@ -415,8 +415,8 @@ function* loopOrientationCases(): Generator<AuditCase> {
   for (const loopType of LOOP_TYPES) {
     for (const period of PERIODS) {
       for (const gridMode of GRID_MODES) {
-        for (const blueStartOrientation of START_ORIENTATIONS) {
-          for (const redStartOrientation of START_ORIENTATIONS) {
+        for (const leftStartOrientation of START_ORIENTATIONS) {
+          for (const rightStartOrientation of START_ORIENTATIONS) {
             yield makeCase("loop-orientations", ordinal++, {
               length: 16,
               loopType,
@@ -427,8 +427,8 @@ function* loopOrientationCases(): Generator<AuditCase> {
               turnIntensity: 3,
               constraintPreset: "smooth",
               handPathMode: "mixed",
-              blueStartOrientation,
-              redStartOrientation,
+              leftStartOrientation,
+              rightStartOrientation,
             });
           }
         }
@@ -681,7 +681,7 @@ function sameStrings(left: string[], right: string[]): boolean {
 }
 
 function motionSignature(
-  motion: SequenceStep["blueMotion"] | SequenceStep["redMotion"]
+  motion: SequenceStep["leftMotion"] | SequenceStep["rightMotion"]
 ): string {
   return [
     motion?.motionType ?? "",
@@ -698,14 +698,14 @@ function stepSignatures(steps: SequenceStep[]): StepSignature[] {
     letter: step.letter ?? "",
     start: step.startPosition ?? "",
     end: step.endPosition ?? "",
-    blue: motionSignature(step.blueMotion),
-    red: motionSignature(step.redMotion),
+    left: motionSignature(step.leftMotion),
+    right: motionSignature(step.rightMotion),
   }));
 }
 
 function motionForLetterLookup(
-  motion: SequenceStep["blueMotion"]
-): SequenceStep["blueMotion"] {
+  motion: SequenceStep["leftMotion"]
+): SequenceStep["leftMotion"] {
   if (motion.motionType !== "float") return motion;
   return {
     ...motion,
@@ -730,8 +730,8 @@ function checkMotionTypePreset(
 ): void {
   const letterSteps = steps.slice(1);
   const motions = letterSteps.flatMap((step) => [
-    step.blueMotion,
-    step.redMotion,
+    step.leftMotion,
+    step.rightMotion,
   ]);
 
   if (
@@ -807,7 +807,7 @@ function checkTurns(
 ): void {
   const turns = steps
     .slice(1)
-    .flatMap((step) => [step.blueMotion?.turns, step.redMotion?.turns])
+    .flatMap((step) => [step.leftMotion?.turns, step.rightMotion?.turns])
     .map((turn) => Math.abs(Number(turn ?? 0)));
   const maxAllowed = params.turnIntensity;
 
@@ -961,8 +961,8 @@ function validateSequence(
     }
 
     for (const [side, motion] of [
-      ["blue", step.blueMotion],
-      ["red", step.redMotion],
+      ["blue", step.leftMotion],
+      ["red", step.rightMotion],
     ] as const) {
       if (!motion) {
         addViolation(
@@ -973,15 +973,15 @@ function validateSequence(
       }
     }
 
-    if (step.blueMotion && step.redMotion) {
+    if (step.leftMotion && step.rightMotion) {
       try {
         const derivedStart = gridPositionDeriver.getGridPositionFromLocations(
-          String(step.blueMotion.startLocation),
-          String(step.redMotion.startLocation)
+          String(step.leftMotion.startLocation),
+          String(step.rightMotion.startLocation)
         );
         const derivedEnd = gridPositionDeriver.getGridPositionFromLocations(
-          String(step.blueMotion.endLocation),
-          String(step.redMotion.endLocation)
+          String(step.leftMotion.endLocation),
+          String(step.rightMotion.endLocation)
         );
         if (derivedStart !== step.startPosition) {
           addViolation(
@@ -1006,17 +1006,17 @@ function validateSequence(
       }
 
       if (index > 0) {
-        const blueLookupMotion = motionForLetterLookup(step.blueMotion);
-        const redLookupMotion = motionForLetterLookup(step.redMotion);
+        const leftLookupMotion = motionForLetterLookup(step.leftMotion);
+        const rightLookupMotion = motionForLetterLookup(step.rightMotion);
         const emittedLetterMatch = findLetterByMotions(
-          blueLookupMotion,
-          redLookupMotion,
+          leftLookupMotion,
+          rightLookupMotion,
           pictographsByLetter.get(step.letter) ?? []
         );
         if (emittedLetterMatch === null) {
           const derivedLetter = findLetterByMotions(
-            blueLookupMotion,
-            redLookupMotion,
+            leftLookupMotion,
+            rightLookupMotion,
             allPictographs
           );
           if (derivedLetter === null) {
@@ -1048,8 +1048,8 @@ function validateSequence(
     }
 
     for (const [side, previousMotion, motion] of [
-      ["blue", previous.blueMotion, step.blueMotion],
-      ["red", previous.redMotion, step.redMotion],
+      ["blue", previous.leftMotion, step.leftMotion],
+      ["red", previous.rightMotion, step.rightMotion],
     ] as const) {
       if (!previousMotion || !motion) continue;
       if (previousMotion.endLocation !== motion.startLocation) {
@@ -1071,23 +1071,23 @@ function validateSequence(
 
   const start = steps[0];
   if (
-    params.blueStartOrientation &&
-    start?.blueMotion?.startOrientation !== params.blueStartOrientation
+    params.leftStartOrientation &&
+    start?.leftMotion?.startOrientation !== params.leftStartOrientation
   ) {
     addViolation(
       violations,
       "blue-start-orientation",
-      `requested ${params.blueStartOrientation}, received ${start?.blueMotion?.startOrientation ?? "?"}`
+      `requested ${params.leftStartOrientation}, received ${start?.leftMotion?.startOrientation ?? "?"}`
     );
   }
   if (
-    params.redStartOrientation &&
-    start?.redMotion?.startOrientation !== params.redStartOrientation
+    params.rightStartOrientation &&
+    start?.rightMotion?.startOrientation !== params.rightStartOrientation
   ) {
     addViolation(
       violations,
       "red-start-orientation",
-      `requested ${params.redStartOrientation}, received ${start?.redMotion?.startOrientation ?? "?"}`
+      `requested ${params.rightStartOrientation}, received ${start?.rightMotion?.startOrientation ?? "?"}`
     );
   }
 
@@ -1098,7 +1098,7 @@ function validateSequence(
   const functional = detectLOOPFromSteps(engineSteps);
   const classResult = loopDetectorClass.detectLOOPType(engineSteps);
   const classComponents = normalizeComponents(
-    classResult.spec?.blue?.components.keys() ?? []
+    classResult.spec?.left?.components.keys() ?? []
   );
   const detection: DetectionSummary = {
     functional: normalizeComponents(functional.components),
@@ -1118,8 +1118,8 @@ function validateSequence(
     }
 
     for (const [side, startMotion, endMotion] of [
-      ["blue", first?.blueMotion, last?.blueMotion],
-      ["red", first?.redMotion, last?.redMotion],
+      ["blue", first?.leftMotion, last?.leftMotion],
+      ["red", first?.rightMotion, last?.rightMotion],
     ] as const) {
       if (
         startMotion &&

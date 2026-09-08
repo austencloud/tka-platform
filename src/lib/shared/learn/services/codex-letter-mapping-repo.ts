@@ -27,8 +27,8 @@ interface LetterMappingsJson {
     {
       startPosition: string;
       endPosition: string;
-      blueMotion: string;
-      redMotion: string;
+      leftMotion: string;
+      rightMotion: string;
     }
   >;
   rows: Array<{ index: number; category: string; letters: string[] }>;
@@ -118,8 +118,8 @@ export class CodexLetterMappingRepo {
         letters[letter] = createLetterMapping({
           startPosition: mapping.startPosition,
           endPosition: mapping.endPosition,
-          blueMotionType: this.mapMotionString(mapping.blueMotion),
-          redMotionType: this.mapMotionString(mapping.redMotion),
+          leftMotionType: this.mapMotionString(mapping.leftMotion),
+          rightMotionType: this.mapMotionString(mapping.rightMotion),
         });
       }
 

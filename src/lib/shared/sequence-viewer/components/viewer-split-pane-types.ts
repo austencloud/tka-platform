@@ -1,5 +1,6 @@
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ArtExportEventSink } from "../domain/art-export-analytics";
@@ -21,6 +22,7 @@ import type {
   TunnelSaveTarget,
 } from "../tunnel/tunnel-composition";
 import type { TunnelSavedCallback } from "../tunnel/tunnel-snapshot";
+import type { ViewerPaneBox } from "./viewer-panel-layout";
 
 export type ViewerPaneSide = "left" | "right";
 
@@ -35,6 +37,7 @@ export interface ViewerSplitPaneProps {
   onBpmChange?: (bpm: number) => void;
   onSaveToLibrary?: () => void | Promise<void>;
   onPropChange?: (propType: PropType) => void;
+  onFanAppearanceChange?: (appearance: FanAppearance) => void;
   onRenderProgress?: (loaded: number, total: number) => void;
   onFocusPane: (pane: "animation" | "image") => void;
   onUnfocusPane: () => void;
@@ -42,7 +45,13 @@ export interface ViewerSplitPaneProps {
   onQrPlayClick?: () => void;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
   onChoreoCardContextMenu?: (x: number, y: number) => void;
-  onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
+  cardAutoLayoutOverride?: ResolvedAutoLayout | null;
+  cardContainSizeMotion?: "focus" | "return" | "restore" | null;
+  onAutoLayoutResolved?: (
+    layout: ResolvedAutoLayout | null,
+    width: number,
+    height: number
+  ) => void;
   onPlaybackToggle?: () => void;
   onSystemPlaybackChange?: (
     playing: boolean,
@@ -55,7 +64,8 @@ export interface ViewerSplitPaneProps {
   onPlaybackModeChange?: (mode: "continuous" | "step") => void;
   onSceneReadyChange?: (ready: boolean) => void;
   rerenderTrigger?: number;
-  isExporting?: boolean;
+  /** Force a renderer-handle-capable 3D backend for recording/export. */
+  rendererHandleRequired?: boolean;
   splitConfig?: SplitConfig;
   isLoggedIn?: boolean;
   onVideoUpload?: () => void;
@@ -114,6 +124,8 @@ export interface ViewerMotionSurfaceProps {
   onSaveToLibrary?: () => void | Promise<void>;
   onUnfocusPane: () => void;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
+  /** Force a renderer-handle-capable 3D backend for recording/export. */
+  rendererHandleRequired: boolean;
   onPlaybackToggle?: () => void;
   onSystemPlaybackChange?: ViewerSplitPaneProps["onSystemPlaybackChange"];
   onProgressBarSeek?: (targetStep: number) => void;
@@ -142,12 +154,24 @@ export interface ViewerCompanionSurfaceProps {
   onBpmChange: (bpm: number) => void;
   onSaveToLibrary?: () => void | Promise<void>;
   onPropChange?: (propType: PropType) => void;
+  onFanAppearanceChange?: (appearance: FanAppearance) => void;
   onRenderProgress?: (loaded: number, total: number) => void;
   onUnfocusPane: () => void;
   onStepClick: (stepIndex: number) => void;
   onQrPlayClick?: () => void;
   onChoreoCardContextMenu?: (x: number, y: number) => void;
-  onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
+  cardAutoLayoutOverride?: ResolvedAutoLayout | null;
+  cardContainSizeMotion?: "focus" | "return" | "restore" | null;
+  /**
+   * The box the Card's pane is heading toward during a structural change.
+   *
+   * Solving the Card against its live container while the pane is still
+   * opening paints it at every intermediate size, so it appears to inflate
+   * from nothing. The destination is already decided before the motion
+   * starts; handing it down lets the Card render at final size throughout.
+   */
+  cardContainMotionBox?: ViewerPaneBox | null;
+  onAutoLayoutResolved?: ViewerSplitPaneProps["onAutoLayoutResolved"];
   onPlaybackToggle?: () => void;
   playbackMode?: "continuous" | "step";
   onPlaybackModeChange?: (mode: "continuous" | "step") => void;

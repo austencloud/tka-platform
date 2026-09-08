@@ -12,12 +12,12 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 /** A seam is the total position between steps — a GridPosition value ("beta5"). */
 export type SeamState = GridPosition;
 
-/** Spatial/color/invert variant applied to card B (or the invert twin of A). */
+/** Spatial/hand-role/invert variant applied to card B (or the invert twin of A). */
 export interface VariantDescriptor {
   /** 45°-step rotation, even values only in v1 (grid mode preserved). */
   readonly rotation: 0 | 2 | 4 | 6;
   readonly mirrored: boolean;
-  readonly colorSwapped: boolean;
+  readonly handsSwapped: boolean;
   /**
    * Rotation-faithful twin: the card traversed BACKWARDS while every prop keeps
    * rotating the way it already was. Step order reverses, each step's
@@ -79,7 +79,7 @@ export interface CombinationResult {
    * Every DISTINCT card-B variant the result draws on, in order of first
    * appearance. A list, not a single descriptor: mixing variants inside one
    * combination is canon, not an edge case — Austen's own FALG card is the
-   * identity half of its material followed by the colour-mirrored half, and a
+   * identity half of its material followed by the hand-role-mirrored half, and a
    * single-variant field could not express it.
    *
    * Empty only for a result with no card-B block, which the search never emits.
@@ -116,7 +116,7 @@ export interface CombinationSearchReport {
    *
    * **The claim is CAP-RELATIVE, and callers must say so.** The graph the proof
    * runs on is the one the OPTIONS built: card B's variants exist only as
-   * `allowMirror`/`allowRotation`/`allowColorSwap`/`exploreRotationFaithful`
+   * `allowMirror`/`allowRotation`/`allowHandSwap`/`exploreRotationFaithful`
    * admit them, and bridge edges exist only as far as `ambientRunCap` reaches.
    * Turning a liberty on, raising the run cap, or supplying a richer provider
    * can all turn a true `impossible` into results. The honest sentence is
@@ -261,7 +261,7 @@ export interface CombinatorTunables {
   readonly maxAmbientRun: number;
   readonly allowMirror: boolean;
   readonly allowRotation: boolean;
-  readonly allowColorSwap: boolean;
+  readonly allowHandSwap: boolean;
   readonly exploreRotationFaithful: boolean;
   readonly searchBudget: number;
 }
@@ -276,7 +276,7 @@ export const COMBINATOR_DEFAULTS: CombinatorTunables = {
   maxAmbientRun: 2,
   allowMirror: true,
   allowRotation: true,
-  allowColorSwap: true,
+  allowHandSwap: true,
   exploreRotationFaithful: true,
   searchBudget: 200_000,
 };

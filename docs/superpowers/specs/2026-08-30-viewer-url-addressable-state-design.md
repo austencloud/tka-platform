@@ -97,15 +97,21 @@ explicitly requests post-studio is **explicit intent** and IS honored. Do not
 ## URL Format
 
 ```
-/sequence/EHWE?vm=split&fx=sparkles&bp=staff&bpm=92&dark=1&cols=4&s=d1:<deflate>
+/sequence/EHWE?pane=split&fx=sparkles&bp=staff&bpm=92&dark=1&cols=4&s=d1:<deflate>
 ```
 
 - **Identity:** `?v=` / route id remain sequence identity **only**. Visual
   state never bakes into the shortcode record (protects the shortcode dedup
   invariant and printed QR cards).
-- **Headline params (readable, hand-editable):** existing `vm`, `view`, `bpm`,
-  `bp`, `rp`, `dark`, `t` keep their names and behavior; new `fx` (active
-  effect id), `cols` (choreo-card column count), `split` (`left,right` panes).
+- **Headline params (readable, hand-editable):** existing `view`, `bpm`,
+  `bp`, `rp`, `dark`, `t` keep their names and behavior; new `pane` (viewer
+  mode), `fx` (active effect id), `cols` (choreo-card column count), `split`
+  (`left,right` panes). **Corrected during implementation:** the design
+  originally reused `vm`, but `vm` is already owned by printed QR cards as the
+  BROWSE view-mode code (`short-code-manager.ts` prints `vm=hsb`;
+  `SequenceViewerPage` decodes it into hand-path mode and prop visibility).
+  Physical artifacts cannot be re-parameterized, so viewer mode rides on
+  `pane` and the session never reads or writes `vm`.
 - **Blob `s`:** `{ sv: 1, fx: {...}, an: {...}, ex: {...}, t3: {...},
   cd: {...}, tn: {...}, ps: {...} }` through the existing `compressForURL`
   (`src/lib/shared/navigation/services/sequence-codec.ts:86`, fflate deflate +
@@ -125,7 +131,8 @@ explicitly requests post-studio is **explicit intent** and IS honored. Do not
    `create<X>State(session.getSeed(id) ?? undefined, { persist: !session.isOverride(id) })`.
 3. Viewer mode: reuse the existing `initialViewerMode` →
    `viewerState.setViewerMode()` seam
-   (`SequenceViewerOrchestrator.svelte:219`); `vm` already reaches the page
+   (`SequenceViewerOrchestrator.svelte:219`); the session reads `pane` from the
+   inbound URL
    (`SequenceViewerPage.svelte:137`). Extend, don't duplicate.
 
 ## Capture / Write Path
@@ -143,7 +150,7 @@ explicitly requests post-studio is **explicit intent** and IS honored. Do not
 
 | Slice | Blob key / params | Backing state | Seam status |
 | --- | --- | --- | --- |
-| View + split | `vm`, `view`, `split` (headline) | `tka-viewer-mode`, `tka-viewer-split-config` | `initial*` props exist; plumb through session |
+| View + split | `pane`, `view`, `split` (headline) | `tka-viewer-mode`, `tka-viewer-split-config` | `initial*` props exist; plumb through session |
 | Effects | `fx` headline + `fx` blob (preset + tuning) | `tka_effects_config` | **Done** — factory has `initial` + `persist` |
 | Props | `bp`, `rp` (headline) | existing `parsePropsFromURL` | Exists; unchanged |
 | Speed / time | `bpm`, `t` (headline) | existing params | Exists; unchanged |

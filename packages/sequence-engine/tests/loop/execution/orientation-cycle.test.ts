@@ -29,8 +29,8 @@ function motion(
 }
 
 function closedPositionPattern(
-  blueTurns: number,
-  redTurns = blueTurns
+  leftTurns: number,
+  rightTurns = leftTurns
 ): SequenceStep[] {
   return [
     {
@@ -40,8 +40,8 @@ function closedPositionPattern(
       startPosition: "beta1",
       endPosition: "beta1",
       motions: {
-        blue: motion(0),
-        red: motion(0),
+        left: motion(0),
+        right: motion(0),
       },
     },
     {
@@ -51,8 +51,8 @@ function closedPositionPattern(
       startPosition: "beta1",
       endPosition: "beta1",
       motions: {
-        blue: motion(blueTurns),
-        red: motion(redTurns),
+        left: motion(leftTurns),
+        right: motion(rightTurns),
       },
     },
   ] as SequenceStep[];
@@ -63,17 +63,17 @@ describe("orientation cycle ownership", () => {
     const result = analyzeOrientationCycle(closedPositionPattern(1, 0.5));
 
     expect(result.cycleCount).toBe(4);
-    expect(result.blueOrientations.at(-1)).toBe("in");
-    expect(result.redOrientations.at(-1)).toBe("in");
+    expect(result.leftOrientations.at(-1)).toBe("in");
+    expect(result.rightOrientations.at(-1)).toBe("in");
   });
 
   it("supports all eight radial orientation states", () => {
     const result = analyzeOrientationCycle(closedPositionPattern(0.25));
 
     expect(result.cycleCount).toBe(8);
-    expect(result.blueOrientations).toHaveLength(9);
-    expect(result.blueOrientations.at(-1)).toBe("in");
-    expect(result.redOrientations.at(-1)).toBe("in");
+    expect(result.leftOrientations).toHaveLength(9);
+    expect(result.leftOrientations.at(-1)).toBe("in");
+    expect(result.rightOrientations.at(-1)).toBe("in");
   });
 
   it("emits repeated steps until orientations close", () => {
@@ -86,9 +86,9 @@ describe("orientation cycle ownership", () => {
     expect(result.patternRepetitions).toBe(2);
     expect(result.expansionMultiplier).toBe(2);
     expect(result.steps[2]!.stepNumber).toBe(2);
-    expect(result.steps[2]!.motions.blue.startOrientation).toBe("out");
-    expect(result.steps[2]!.motions.blue.endOrientation).toBe("in");
-    expect(result.steps[2]!.motions.red.endOrientation).toBe("in");
+    expect(result.steps[2]!.motions.left.startOrientation).toBe("out");
+    expect(result.steps[2]!.motions.left.endOrientation).toBe("in");
+    expect(result.steps[2]!.motions.right.endOrientation).toBe("in");
     expect(new Set(result.steps.map((step) => step.id)).size).toBe(3);
   });
 
@@ -102,8 +102,8 @@ describe("orientation cycle ownership", () => {
     expect(result.orientationCycleCount).toBe(2);
     expect(result.patternRepetitions).toBe(4);
     expect(result.expansionMultiplier).toBe(4);
-    expect(result.steps[4]!.motions.blue.endOrientation).toBe("in");
-    expect(result.steps[4]!.motions.red.endOrientation).toBe("in");
+    expect(result.steps[4]!.motions.left.endOrientation).toBe("in");
+    expect(result.steps[4]!.motions.right.endOrientation).toBe("in");
   });
 
   it("refuses to repeat a position pattern that is still open", () => {

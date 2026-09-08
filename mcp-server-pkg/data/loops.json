@@ -29,8 +29,8 @@
       "note": "Same concept as mirrored but along perpendicular axis"
     },
     "swapped": {
-      "description": "Blue and Red hands swap roles",
-      "effect": "What blue hand did, red hand now does (and vice versa)",
+      "description": "Left and right hands swap roles",
+      "effect": "What the left hand did, the right hand now does (and vice versa)",
       "note": "Changes body motion significantly"
     },
     "inverted": {
@@ -116,7 +116,12 @@
   "applications": {
     "soloPractice": "Extended sequences with built-in structure",
     "groupChoreography": {
-      "variations": ["tunnel", "side by side", "staggered", "mirrored/rotated variations"],
+      "variations": [
+        "tunnel",
+        "side by side",
+        "staggered",
+        "mirrored/rotated variations"
+      ],
       "potential": "Dynamic and engaging when applied by multiple performers"
     },
     "musicalIntegration": "LOOP lengths often align with musical phrasing and repetition"

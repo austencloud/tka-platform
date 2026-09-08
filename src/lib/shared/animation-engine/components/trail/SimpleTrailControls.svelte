@@ -24,35 +24,35 @@
   const settingsState = settingsService;
 
   interface Props {
-    /** @deprecated Use bluePropType and redPropType instead */
+    /** @deprecated Use leftPropType and rightPropType instead */
     propType?: PropType | string | null;
-    bluePropType?: PropType | string | null;
-    redPropType?: PropType | string | null;
+    leftPropType?: PropType | string | null;
+    rightPropType?: PropType | string | null;
   }
 
   let {
     propType = null,
-    bluePropType = null,
-    redPropType = null,
+    leftPropType = null,
+    rightPropType = null,
   }: Props = $props();
 
   // Fall back to user's global settings when props not explicitly provided
-  const effectiveBluePropType = $derived(
-    bluePropType ?? propType ?? settingsState.settings.bluePropType ?? null
+  const effectiveLeftPropType = $derived(
+    leftPropType ?? propType ?? settingsState.settings.leftPropType ?? null
   );
-  const effectiveRedPropType = $derived(
-    redPropType ?? propType ?? settingsState.settings.redPropType ?? null
+  const effectiveRightPropType = $derived(
+    rightPropType ?? propType ?? settingsState.settings.rightPropType ?? null
   );
 
   // Check if ANY selected prop is bilateral (staff, buugeng, etc.)
   // Toggle shown when at least one prop has trackable ends
   const showBilateralToggle = $derived.by(() => {
-    const blueIsBilateral = effectiveBluePropType != null && isBilateralProp(effectiveBluePropType);
-    const redIsBilateral = effectiveRedPropType != null && isBilateralProp(effectiveRedPropType);
+    const leftIsBilateral = effectiveLeftPropType != null && isBilateralProp(effectiveLeftPropType);
+    const rightIsBilateral = effectiveRightPropType != null && isBilateralProp(effectiveRightPropType);
 
     // Show toggle if ANY prop is bilateral
     // (applies to whichever prop has trackable ends)
-    return blueIsBilateral || redIsBilateral;
+    return leftIsBilateral || rightIsBilateral;
   });
 
   // Check tracking mode states
@@ -70,7 +70,7 @@
 
   // Get prop-specific labels for the ends (e.g., "Thumb"/"Pinky" for staff)
   const endLabels = $derived.by(() => {
-    const propToCheck = effectiveBluePropType ?? effectiveRedPropType;
+    const propToCheck = effectiveLeftPropType ?? effectiveRightPropType;
     if (propToCheck && isBilateralProp(propToCheck)) {
       return getBilateralEndLabels(propToCheck);
     }

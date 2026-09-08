@@ -16,6 +16,7 @@ vi.mock("$lib/shared/library/get-library-repository", () => ({
 
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
   authState: {
+    effectiveUserId: "owner",
     isAuthenticated: true,
     isFullAccount: true,
   },
@@ -80,17 +81,17 @@ describe("BrowseEngine solo library loads", () => {
     engine.setViewMode({
       subject: "props",
       granularity: "solo",
-      color: "blue",
+      hand: "left",
     });
     engine.setViewMode({
       subject: "props",
       granularity: "solo",
-      color: "red",
+      hand: "right",
     });
 
-    expect(pending.map((request) => request.viewMode.color)).toEqual([
-      "blue",
-      "red",
+    expect(pending.map((request) => request.viewMode.hand)).toEqual([
+      "left",
+      "right",
     ]);
 
     pending[1]!.resolve([sequence("right-hand")]);

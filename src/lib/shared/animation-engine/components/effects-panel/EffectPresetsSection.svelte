@@ -15,7 +15,7 @@
     /** Render the Custom chip disabled (no custom captured yet). */
     customDisabled?: boolean;
     /** Trail's captured custom blue/red for the Custom chip preview (else null). */
-    customColors?: { blue: string; red: string } | null;
+    customColors?: { left: string; right: string } | null;
     onSelectPreset: (presetId: string) => void;
     onCustomize?: () => void;
     effectLabel: string;
@@ -49,8 +49,8 @@
   const trailDefaultColors = $derived(
     presetGroup.effectType === "trails"
       ? {
-          blue: DEFAULT_EFFECTS_CONFIG.trails.blueColor,
-          red: DEFAULT_EFFECTS_CONFIG.trails.redColor,
+          left: DEFAULT_EFFECTS_CONFIG.trails.leftColor,
+          right: DEFAULT_EFFECTS_CONFIG.trails.rightColor,
         }
       : null
   );
@@ -136,9 +136,9 @@
             <span class="anchor-mark" aria-hidden="true">
               {#if trailDefaultColors}
                 <span class="dual-dots">
-                  <span class="dot" style:background={trailDefaultColors.blue}
+                  <span class="dot" style:background={trailDefaultColors.left}
                   ></span>
-                  <span class="dot" style:background={trailDefaultColors.red}
+                  <span class="dot" style:background={trailDefaultColors.right}
                   ></span>
                 </span>
               {:else}
@@ -168,8 +168,8 @@
             <span class="anchor-mark" aria-hidden="true">
               {#if customColors}
                 <span class="dual-dots">
-                  <span class="dot" style:background={customColors.blue}></span>
-                  <span class="dot" style:background={customColors.red}></span>
+                  <span class="dot" style:background={customColors.left}></span>
+                  <span class="dot" style:background={customColors.right}></span>
                 </span>
               {:else}
                 <i class="fas fa-wand-magic-sparkles"></i>

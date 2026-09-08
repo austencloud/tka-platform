@@ -12,7 +12,9 @@
 
 import { browser } from "$app/environment";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { normalizeLegacySequence } from "@tka/tka-types";
 import type { DeckReleaseCard } from "../domain/models/DeckRelease";
+import { normalizeDeckReleaseCard } from "../domain/normalize-deck-release";
 
 const DB_NAME = "deck-archive";
 const DB_VERSION = 1;
@@ -67,7 +69,7 @@ function getDB(): Promise<IDBDatabase> {
 /** Persist a generated deck (meta + heavy payload). Best-effort. */
 export async function archiveDeck(
   meta: ArchivedDeckMeta,
-  payload: ArchivedDeckPayload,
+  payload: ArchivedDeckPayload
 ): Promise<void> {
   if (!browser) return;
   try {
@@ -93,7 +95,8 @@ export async function listArchivedDecks(): Promise<ArchivedDeckMeta[]> {
       const tx = db.transaction(META_STORE, "readonly");
       const request = tx.objectStore(META_STORE).getAll();
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve((request.result as ArchivedDeckMeta[]) ?? []);
+      request.onsuccess = () =>
+        resolve((request.result as ArchivedDeckMeta[]) ?? []);
     });
     return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   } catch (err) {
@@ -103,7 +106,9 @@ export async function listArchivedDecks(): Promise<ArchivedDeckMeta[]> {
 }
 
 /** The full payload for one deck, or null if absent. */
-export async function getArchivedDeck(refNumber: number): Promise<ArchivedDeckPayload | null> {
+export async function getArchivedDeck(
+  refNumber: number
+): Promise<ArchivedDeckPayload | null> {
   if (!browser) return null;
   try {
     const db = await getDB();
@@ -111,7 +116,18 @@ export async function getArchivedDeck(refNumber: number): Promise<ArchivedDeckPa
       const tx = db.transaction(DECKS_STORE, "readonly");
       const request = tx.objectStore(DECKS_STORE).get(refNumber);
       request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve((request.result as ArchivedDeckPayload) ?? null);
+      request.onsuccess = () => {
+        const payload = request.result as ArchivedDeckPayload | undefined;
+        resolve(
+          payload
+            ? {
+                ...payload,
+                cards: payload.cards.map(normalizeDeckReleaseCard),
+                sequences: payload.sequences.map(normalizeLegacySequence),
+              }
+            : null
+        );
+      };
     });
   } catch (err) {
     console.warn("[deck-archive] getArchivedDeck failed:", err);

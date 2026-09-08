@@ -290,27 +290,27 @@ export const entries: CorpusEntry[] = [
     },
   },
   {
-    id: "pin-avatar-no-substitutes",
+    id: "pin-character-no-substitutes",
     utterance: "Performer 1 has to be Y-Bot — no substitutes.",
-    film: corpusFilm("pin-avatar-no-substitutes", {
-      performance: { cast: { count: 1, performers: [{ avatarId: "y-bot" }] } },
+    film: corpusFilm("pin-character-no-substitutes", {
+      performance: { cast: { count: 1, performers: [{ characterId: "y-bot" }] } },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.scenes[0]!.performance.performers[0]!.avatarId !== "y-bot")
+        if (spec.scenes[0]!.performance.performers[0]!.characterId !== "y-bot")
           throw new Error("performer-1 must be y-bot");
       },
     },
   },
   {
-    id: "sameas-avatar-look-identical",
+    id: "sameas-character-look-identical",
     utterance: "Make performer 2 look identical to performer 1.",
-    film: corpusFilm("sameas-avatar-look-identical", {
+    film: corpusFilm("sameas-character-look-identical", {
       performance: {
         cast: {
           count: 2,
-          performers: [{ id: "performer-1", avatarId: { pick: "any" } }, { id: "performer-2", avatarId: { sameAs: "performer-1" } }],
+          performers: [{ id: "performer-1", characterId: { pick: "any" } }, { id: "performer-2", characterId: { sameAs: "performer-1" } }],
         },
       },
     }),
@@ -318,8 +318,8 @@ export const entries: CorpusEntry[] = [
       outcome: "resolves",
       assert: (spec) => {
         const performers = spec.scenes[0]!.performance.performers;
-        if (performers[0]!.avatarId !== performers[1]!.avatarId)
-          throw new Error("performer-2 must match performer-1's avatar");
+        if (performers[0]!.characterId !== performers[1]!.characterId)
+          throw new Error("performer-2 must match performer-1's character");
       },
     },
   },
@@ -503,15 +503,15 @@ export const entries: CorpusEntry[] = [
     },
   },
   {
-    id: "exclude-avatar-from-defaults",
+    id: "exclude-character-from-defaults",
     utterance: "Nobody in this cast can be X-Bot.",
-    film: corpusFilm("exclude-avatar-from-defaults", {
-      performance: { cast: { count: 5, defaults: { avatarId: { not: "x-bot" } } } },
+    film: corpusFilm("exclude-character-from-defaults", {
+      performance: { cast: { count: 5, defaults: { characterId: { not: "x-bot" } } } },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.scenes[0]!.performance.performers.some((p) => p.avatarId === "x-bot"))
+        if (spec.scenes[0]!.performance.performers.some((p) => p.characterId === "x-bot"))
           throw new Error("x-bot was excluded from the whole cast");
       },
     },

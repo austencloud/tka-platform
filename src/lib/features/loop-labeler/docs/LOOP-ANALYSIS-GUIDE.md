@@ -30,11 +30,11 @@ The same letter combination (e.g., "AB" vs "BA") can have completely different L
 
 ### Other Transformations
 
-| Transform    | Description                                                                          |
-| ------------ | ------------------------------------------------------------------------------------ |
-| **SWAPPED**  | Blue and red props exchange roles (positions AND motion types must match after swap) |
-| **INVERTED** | Motion types swap: pro↔anti                                                          |
-| **SAME**     | Beats are identical (no transformation)                                              |
+| Transform    | Description                                                                            |
+| ------------ | -------------------------------------------------------------------------------------- |
+| **SWAPPED**  | Left and right props exchange roles (positions AND motion types must match after swap) |
+| **INVERTED** | Motion types swap: pro↔anti                                                            |
+| **SAME**     | Beats are identical (no transformation)                                                |
 
 ---
 

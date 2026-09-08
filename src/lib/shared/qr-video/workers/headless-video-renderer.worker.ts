@@ -176,12 +176,12 @@ async function handleRender(msg: RenderRequest): Promise<void> {
       ctx,
       canvasSize,
       assets.gridImage,
-      assets.bluePropImage,
-      assets.redPropImage,
-      frame.blue,
-      frame.red,
-      assets.bluePropViewBox,
-      assets.redPropViewBox,
+      assets.leftPropImage,
+      assets.rightPropImage,
+      frame.left,
+      frame.right,
+      assets.leftPropViewBox,
+      assets.rightPropViewBox,
       overlay,
       renderState,
     );
@@ -189,13 +189,13 @@ async function handleRender(msg: RenderRequest): Promise<void> {
     if (effectRenderer) {
       effectRenderer.renderFrame(
         ctx, canvasSize,
-        frame.blue, frame.red,
-        assets.bluePropViewBox, assets.redPropViewBox,
+        frame.left, frame.right,
+        assets.leftPropViewBox, assets.rightPropViewBox,
         i, dt,
         frame.stepIndex, frame.isStartPosition,
         {
-          blue: assets.bluePropImage,
-          red: assets.redPropImage,
+          left: assets.leftPropImage,
+          right: assets.rightPropImage,
         }
       );
     }

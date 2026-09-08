@@ -38,8 +38,8 @@
   let {
     speed = 1,
     isPlaying = false,
-    blueMotionVisible = true,
-    redMotionVisible = true,
+    leftMotionVisible = true,
+    rightMotionVisible = true,
     playbackMode = "continuous",
     stepPlaybackPauseMs = 300,
     stepPlaybackStepSize = 1,
@@ -62,8 +62,8 @@
     onStepHalfBeatForward = () => {},
     onStepFullBeatBackward = () => {},
     onStepFullBeatForward = () => {},
-    onToggleBlue = () => {},
-    onToggleRed = () => {},
+    onToggleLeft = () => {},
+    onToggleRight = () => {},
     onToggleExpanded = () => {},
     onToggleToolView = () => {},
     onExportVideo = () => {},
@@ -76,8 +76,8 @@
   }: {
     speed?: number;
     isPlaying?: boolean;
-    blueMotionVisible?: boolean;
-    redMotionVisible?: boolean;
+    leftMotionVisible?: boolean;
+    rightMotionVisible?: boolean;
     playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
     stepPlaybackPauseMs?: number;
     stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
@@ -104,8 +104,8 @@
     onStepHalfBeatForward?: () => void;
     onStepFullBeatBackward?: () => void;
     onStepFullBeatForward?: () => void;
-    onToggleBlue?: () => void;
-    onToggleRed?: () => void;
+    onToggleLeft?: () => void;
+    onToggleRight?: () => void;
     onToggleExpanded?: () => void;
     onToggleToolView?: () => void;
     onExportVideo?: () => void;
@@ -178,26 +178,26 @@
   );
 
   // Get prop types from SETTINGS (not sequence data)
-  const bluePropType = $derived.by(() => {
+  const leftPropType = $derived.by(() => {
     if (!settingsService) return null;
     return (
-      settingsService.settings.bluePropType ??
+      settingsService.settings.leftPropType ??
       settingsService.settings.propType ??
       null
     );
   });
 
-  const redPropType = $derived.by(() => {
+  const rightPropType = $derived.by(() => {
     if (!settingsService) return null;
     return (
-      settingsService.settings.redPropType ??
+      settingsService.settings.rightPropType ??
       settingsService.settings.propType ??
       null
     );
   });
 
   const currentPropType = $derived.by(() => {
-    return bluePropType ?? redPropType ?? null;
+    return leftPropType ?? rightPropType ?? null;
   });
 </script>
 
@@ -252,8 +252,8 @@
     {#if !useCompactControls}
       <SettingsTogglePanel
         propType={currentPropType}
-        {bluePropType}
-        {redPropType}
+        {leftPropType}
+        {rightPropType}
         bind:bpm
         {playbackMode}
         {stepPlaybackStepSize}
@@ -299,16 +299,16 @@
   <mod.default
     bind:isOpen={isSettingsSheetOpen}
     bind:bpm
-    {blueMotionVisible}
-    {redMotionVisible}
+    {leftMotionVisible}
+    {rightMotionVisible}
     {currentPropType}
     {playbackMode}
     {stepPlaybackPauseMs}
     {stepPlaybackStepSize}
     {isPlaying}
     onBpmChange={handleBpmChange}
-    {onToggleBlue}
-    {onToggleRed}
+    {onToggleLeft}
+    {onToggleRight}
     {onPlaybackModeChange}
     {onStepPlaybackPauseMsChange}
     {onStepPlaybackStepSizeChange}

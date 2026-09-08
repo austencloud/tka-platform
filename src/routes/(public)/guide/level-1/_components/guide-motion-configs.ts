@@ -13,14 +13,20 @@
  * import this module - the runtime guide page imports nothing from here.
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  GridLocation,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createSequenceData, type SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  createSequenceData,
+  type SequenceData,
+} from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -35,12 +41,12 @@ export interface GuideMotionLeg {
 export interface GuideMotionConfig {
   id: string;
   label: string;
-  red: GuideMotionLeg;
-  blue?: GuideMotionLeg;
-  /** Renderer visibility flag - threaded into `renderScene`'s `visibility.blueMotionVisible`
+  right: GuideMotionLeg;
+  left?: GuideMotionLeg;
+  /** Renderer visibility flag - threaded into `renderScene`'s `visibility.leftMotionVisible`
    *  by the bake helper. NOT reflected in the `SequenceData` output of `buildGuideMotionSequence`
-   *  (the blue motion is always present in the data; this flag controls whether it is drawn). */
-  showBlue: boolean;
+   *  (the left motion is always present in the data; this flag controls whether it is drawn). */
+  showLeft: boolean;
 }
 
 export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
@@ -48,74 +54,135 @@ export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
   {
     id: "hm-start",
     label: "Hand resting static at west (starting position)",
-    showBlue: false,
-    red: { start: GridLocation.WEST, end: GridLocation.WEST, motionType: MotionType.STATIC },
+    showLeft: false,
+    right: {
+      start: GridLocation.WEST,
+      end: GridLocation.WEST,
+      motionType: MotionType.STATIC,
+    },
   },
   {
     id: "hm-shift-wn",
     label: "Hand shifts from west to north",
-    showBlue: false,
-    red: { start: GridLocation.WEST, end: GridLocation.NORTH, motionType: MotionType.PRO },
+    showLeft: false,
+    right: {
+      start: GridLocation.WEST,
+      end: GridLocation.NORTH,
+      motionType: MotionType.PRO,
+    },
   },
   {
     id: "hm-shift-ws",
     label: "Hand shifts from west to south",
-    showBlue: false,
-    red: { start: GridLocation.WEST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
+    showLeft: false,
+    right: {
+      start: GridLocation.WEST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
   },
   {
     id: "hm-dash-we",
     label: "Hand dashes straight across from west to east",
-    showBlue: false,
-    red: { start: GridLocation.WEST, end: GridLocation.EAST, motionType: MotionType.DASH },
+    showLeft: false,
+    right: {
+      start: GridLocation.WEST,
+      end: GridLocation.EAST,
+      motionType: MotionType.DASH,
+    },
   },
   {
     id: "hm-static-w", // Same motion as hm-start; separate baked asset for the static-branch cell in HandMotions.svelte (two distinct positions in the guide → two stable filenames).
     label: "Hand stays static at west",
-    showBlue: false,
-    red: { start: GridLocation.WEST, end: GridLocation.WEST, motionType: MotionType.STATIC },
+    showLeft: false,
+    right: {
+      start: GridLocation.WEST,
+      end: GridLocation.WEST,
+      motionType: MotionType.STATIC,
+    },
   },
 
   // --- Type1AlphaBeta.svelte (4) ---
   {
     id: "t1-split-same",
     label: "Dual-shift: both hands shift in parallel, alpha to alpha",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.NORTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.WEST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.NORTH,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
   },
   {
     // Genuine beta->beta (Together-Same). Both hands start together at east,
     // shift together to south. Canonical letter G (beta3->beta5), MCP-verified.
     // (Previously red S->E / blue S->W, which ends APART at alpha - wrong.)
     id: "t1-together-same",
-    label: "Dual-shift: both hands shift together from east to south, beta to beta",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
+    label:
+      "Dual-shift: both hands shift together from east to south, beta to beta",
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.EAST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
   },
   {
     id: "t1-split-to-together",
     label: "Dual-shift: hands start apart and end together",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.WEST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
   },
   {
     id: "t1-together-to-split",
     label: "Dual-shift: hands start together and end apart",
-    showBlue: true,
-    red: { start: GridLocation.SOUTH, end: GridLocation.EAST, motionType: MotionType.PRO },
-    blue: { start: GridLocation.SOUTH, end: GridLocation.WEST, motionType: MotionType.PRO },
+    showLeft: true,
+    right: {
+      start: GridLocation.SOUTH,
+      end: GridLocation.EAST,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.SOUTH,
+      end: GridLocation.WEST,
+      motionType: MotionType.PRO,
+    },
   },
 
   // --- Type1Gamma.svelte (2) ---
   {
     id: "t1-gamma-to-gamma",
     label: "Dual-shift from gamma to gamma",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.SOUTH, end: GridLocation.WEST, motionType: MotionType.PRO },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.SOUTH,
+      end: GridLocation.WEST,
+      motionType: MotionType.PRO,
+    },
   },
   {
     // Genuine gamma opposite-direction (Quarter-Opp): hands cross gamma halves.
@@ -123,89 +190,163 @@ export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
     // (Previously stayed within one gamma half = same-direction - wrong.)
     id: "t1-gamma-opposite",
     label: "Dual-shift at gamma, hands moving in opposite directions",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.NORTH, end: GridLocation.WEST, motionType: MotionType.PRO },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.NORTH,
+      end: GridLocation.WEST,
+      motionType: MotionType.PRO,
+    },
   },
 
   // --- Type2Shifts.svelte (2) ---
   {
     id: "t2-red-shifts",
     label: "Shift: right hand shifts while left hand stays static",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.WEST, end: GridLocation.WEST, motionType: MotionType.STATIC },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.WEST,
+      motionType: MotionType.STATIC,
+    },
   },
   {
     id: "t2-blue-shifts",
     label: "Shift: left hand shifts while right hand stays static",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.EAST, motionType: MotionType.STATIC },
-    blue: { start: GridLocation.WEST, end: GridLocation.NORTH, motionType: MotionType.PRO },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.EAST,
+      motionType: MotionType.STATIC,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.NORTH,
+      motionType: MotionType.PRO,
+    },
   },
 
   // --- Type3CrossShifts.svelte (1) ---
   {
     id: "t3-cross-shift",
     label: "Cross-shift: right hand shifts while left hand dashes across",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.SOUTH, motionType: MotionType.PRO },
-    blue: { start: GridLocation.WEST, end: GridLocation.EAST, motionType: MotionType.DASH },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.PRO,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.EAST,
+      motionType: MotionType.DASH,
+    },
   },
 
   // --- Type4Dash.svelte (1) ---
   {
     id: "t4-dash",
     label: "Dash: right hand dashes across while left hand stays static",
-    showBlue: true,
-    red: { start: GridLocation.SOUTH, end: GridLocation.NORTH, motionType: MotionType.DASH },
-    blue: { start: GridLocation.WEST, end: GridLocation.WEST, motionType: MotionType.STATIC },
+    showLeft: true,
+    right: {
+      start: GridLocation.SOUTH,
+      end: GridLocation.NORTH,
+      motionType: MotionType.DASH,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.WEST,
+      motionType: MotionType.STATIC,
+    },
   },
 
   // --- Type5DualDash.svelte (1) ---
   {
     id: "t5-dual-dash",
     label: "Dual-dash: both hands dash across the center",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.WEST, motionType: MotionType.DASH },
-    blue: { start: GridLocation.WEST, end: GridLocation.EAST, motionType: MotionType.DASH },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.WEST,
+      motionType: MotionType.DASH,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.EAST,
+      motionType: MotionType.DASH,
+    },
   },
 
   // --- Type6Static.svelte (3) ---
   {
     id: "t6-static-alpha",
     label: "Static: both hands hold at alpha (opposite points)",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.EAST, motionType: MotionType.STATIC },
-    blue: { start: GridLocation.WEST, end: GridLocation.WEST, motionType: MotionType.STATIC },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.EAST,
+      motionType: MotionType.STATIC,
+    },
+    left: {
+      start: GridLocation.WEST,
+      end: GridLocation.WEST,
+      motionType: MotionType.STATIC,
+    },
   },
   {
     id: "t6-static-beta",
     label: "Static: both hands hold at beta (same point)",
-    showBlue: true,
-    red: { start: GridLocation.SOUTH, end: GridLocation.SOUTH, motionType: MotionType.STATIC },
-    blue: { start: GridLocation.SOUTH, end: GridLocation.SOUTH, motionType: MotionType.STATIC },
+    showLeft: true,
+    right: {
+      start: GridLocation.SOUTH,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.STATIC,
+    },
+    left: {
+      start: GridLocation.SOUTH,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.STATIC,
+    },
   },
   {
     id: "t6-static-gamma",
     label: "Static: both hands hold at gamma (right angle)",
-    showBlue: true,
-    red: { start: GridLocation.EAST, end: GridLocation.EAST, motionType: MotionType.STATIC },
-    blue: { start: GridLocation.SOUTH, end: GridLocation.SOUTH, motionType: MotionType.STATIC },
+    showLeft: true,
+    right: {
+      start: GridLocation.EAST,
+      end: GridLocation.EAST,
+      motionType: MotionType.STATIC,
+    },
+    left: {
+      start: GridLocation.SOUTH,
+      end: GridLocation.SOUTH,
+      motionType: MotionType.STATIC,
+    },
   },
 ];
 
-export const GUIDE_MOTION_IDS: ReadonlySet<string> = new Set(GUIDE_MOTION_CONFIGS.map((c) => c.id));
+export const GUIDE_MOTION_IDS: ReadonlySet<string> = new Set(
+  GUIDE_MOTION_CONFIGS.map((c) => c.id)
+);
 
 export function isKnownMotionId(id: string): boolean {
   return GUIDE_MOTION_IDS.has(id);
 }
 
 function makeMotion(
-  color: MotionColor,
+  hand: HandSide,
   startLoc: GridLocation,
   endLoc: GridLocation,
-  type: MotionType,
+  type: MotionType
 ): MotionData {
   // Guide demos hard-code a linear path archetype for every hand motion: the
   // Level 1 illustrations teach the grid points themselves, so a straight
@@ -218,7 +359,7 @@ function makeMotion(
     rotationDirection: RotationDirection.NO_ROTATION,
     startLocation: startLoc,
     endLocation: endLoc,
-    color,
+    hand,
     turns: 0,
     startOrientation: Orientation.IN,
     endOrientation: Orientation.IN,
@@ -241,19 +382,26 @@ function makeMotion(
   };
 }
 
-export function buildGuideMotionSequence(config: GuideMotionConfig): SequenceData {
-  const { red, blue } = config;
-  const bStart = blue?.start ?? red.start;
-  const bEnd = blue?.end ?? bStart;
-  const bMotion = blue?.motionType ?? MotionType.STATIC;
+export function buildGuideMotionSequence(
+  config: GuideMotionConfig
+): SequenceData {
+  const { right, left } = config;
+  const leftStart = left?.start ?? right.start;
+  const leftEnd = left?.end ?? leftStart;
+  const leftMotionType = left?.motionType ?? MotionType.STATIC;
 
   const startPosition: StartPositionData = {
     isStartPosition: true as const,
     id: `guide-${config.id}-start`,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: makeMotion(MotionColor.BLUE, bStart, bStart, MotionType.STATIC),
-      red: makeMotion(MotionColor.RED, red.start, red.start, MotionType.STATIC),
+      left: makeMotion(HandSide.LEFT, leftStart, leftStart, MotionType.STATIC),
+      right: makeMotion(
+        HandSide.RIGHT,
+        right.start,
+        right.start,
+        MotionType.STATIC
+      ),
     },
   };
 
@@ -261,16 +409,21 @@ export function buildGuideMotionSequence(config: GuideMotionConfig): SequenceDat
     id: `guide-${config.id}-step1`,
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     letter: null,
     startPosition: null,
     endPosition: null,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: makeMotion(MotionColor.BLUE, bStart, bEnd, bMotion),
-      red: makeMotion(MotionColor.RED, red.start, red.end, red.motionType),
+      left: makeMotion(HandSide.LEFT, leftStart, leftEnd, leftMotionType),
+      right: makeMotion(
+        HandSide.RIGHT,
+        right.start,
+        right.end,
+        right.motionType
+      ),
     },
   };
 
@@ -286,35 +439,46 @@ export function buildGuideMotionSequence(config: GuideMotionConfig): SequenceDat
 
 /**
  * Static-pictograph form of a motion demo, for print (and any non-animated
- * context). The motion's single step IS a pictograph: blue + red MotionData with
+ * context). The motion's single step IS a pictograph: left + right MotionData with
  * start/end/type, where the arrow encodes direction and the hand the end point -
  * exactly how the original printed guide drew motions. Reuses `makeMotion` so the
  * geometry can never drift from the baked video.
  */
-export function configToPictographData(config: GuideMotionConfig): PictographData {
-  const { red, blue } = config;
-  // Single-hand demos set showBlue: false - only the moving (red) hand is drawn,
-  // matching the original printed guide. Omitting the blue motion stops the
+export function configToPictographData(
+  config: GuideMotionConfig
+): PictographData {
+  const { right, left } = config;
+  // Single-hand demos set showLeft: false - only the moving right hand is drawn,
+  // matching the original printed guide. Omitting the left motion stops the
   // renderer from drawing a second hand.
-  const redMotion = makeMotion(MotionColor.RED, red.start, red.end, red.motionType);
-  if (!config.showBlue) {
-    return { id: `guide-pic-${config.id}`, gridMode: GridMode.DIAMOND, motions: { red: redMotion } };
+  const rightMotion = makeMotion(
+    HandSide.RIGHT,
+    right.start,
+    right.end,
+    right.motionType
+  );
+  if (!config.showLeft) {
+    return {
+      id: `guide-pic-${config.id}`,
+      gridMode: GridMode.DIAMOND,
+      motions: { right: rightMotion },
+    };
   }
-  const bStart = blue?.start ?? red.start;
-  const bEnd = blue?.end ?? bStart;
-  const bMotion = blue?.motionType ?? MotionType.STATIC;
+  const leftStart = left?.start ?? right.start;
+  const leftEnd = left?.end ?? leftStart;
+  const leftMotionType = left?.motionType ?? MotionType.STATIC;
   return {
     id: `guide-pic-${config.id}`,
     gridMode: GridMode.DIAMOND,
     motions: {
-      blue: makeMotion(MotionColor.BLUE, bStart, bEnd, bMotion),
-      red: redMotion,
+      left: makeMotion(HandSide.LEFT, leftStart, leftEnd, leftMotionType),
+      right: rightMotion,
     },
   };
 }
 
 const GUIDE_MOTION_BY_ID: ReadonlyMap<string, GuideMotionConfig> = new Map(
-  GUIDE_MOTION_CONFIGS.map((c) => [c.id, c]),
+  GUIDE_MOTION_CONFIGS.map((c) => [c.id, c])
 );
 
 /** Pictograph data for a motion demo by id, or null if the id is unknown. */

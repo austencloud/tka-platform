@@ -13,8 +13,8 @@ import {
 import { createGhostPropPoseKey3D } from "$lib/shared/3d/effects/motion/ghost-prop-pose-3d";
 
 const GHOST_INTENT = {
-  blueColor: "#27b7ff",
-  redColor: "#ff3f72",
+  leftColor: "#27b7ff",
+  rightColor: "#ff3f72",
   intensity: 0.85,
   decay: 8,
   interval: 0.5,
@@ -34,8 +34,8 @@ describe("Ghost Chrono-Frost 3D", () => {
   it("resolves time, density, rim, and Ghost-owned prop colors", () => {
     const resolved = resolveGhost3D(GHOST_INTENT);
 
-    expect(resolved.blueColor).toBe("#27b7ff");
-    expect(resolved.redColor).toBe("#ff3f72");
+    expect(resolved.leftColor).toBe("#27b7ff");
+    expect(resolved.rightColor).toBe("#ff3f72");
     expect(resolved.lifetimeSeconds).toBeCloseTo(1.64);
     expect(resolved.positionQuantization).toBeGreaterThan(0);
     expect(resolved.angleQuantization).toBeGreaterThan(0);

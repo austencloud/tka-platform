@@ -15,13 +15,13 @@ import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared
 import type { MotionView } from "$lib/shared/pictograph/shared/domain/models/motion-view";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { stepDataToStep, motionToMotionData } from "./step-bridge";
 
 /** A canonical `Step` paired with the per-hand view fields lean `Motion` drops. */
 export interface StepWithView {
   readonly step: Step;
-  readonly view: { readonly blue: MotionView; readonly red: MotionView };
+  readonly view: { readonly left: MotionView; readonly right: MotionView };
 }
 
 /** Extract the view-layer fields off a fat `MotionData` into a `MotionView`. */
@@ -41,7 +41,7 @@ export function motionDataToMotionView(md: MotionData): MotionView {
 }
 
 /** Rebuild a fat `MotionData` losslessly from a lean `Motion` + its `MotionView`. */
-export function motionWithViewToMotionData(m: Motion, view: MotionView, color: MotionColor): MotionData {
+export function motionWithViewToMotionData(m: Motion, view: MotionView, color: HandSide): MotionData {
   return createMotionData({
     ...motionToMotionData(m, color), // structural fields (motionType, locations, orientations, turns, plane, prefloat)
     ...(view.isVisible !== undefined && { isVisible: view.isVisible }),
@@ -59,14 +59,14 @@ export function motionWithViewToMotionData(m: Motion, view: MotionView, color: M
 
 /** Forward: `StepData` -> canonical `Step` + the per-hand view side-channel. */
 export function stepDataToStepWithView(sd: StepData): StepWithView {
-  const blue = sd.motions[MotionColor.BLUE];
-  const red = sd.motions[MotionColor.RED];
-  if (!blue || !red) {
+  const left = sd.motions[HandSide.LEFT];
+  const right = sd.motions[HandSide.RIGHT];
+  if (!left || !right) {
     throw new Error(`stepDataToStepWithView: step ${sd.stepNumber} (${sd.id}) is missing a motion`);
   }
   return {
     step: stepDataToStep(sd),
-    view: { blue: motionDataToMotionView(blue), red: motionDataToMotionView(red) },
+    view: { left: motionDataToMotionView(left), right: motionDataToMotionView(right) },
   };
 }
 
@@ -87,8 +87,8 @@ export function stepWithViewToStepData({ step, view }: StepWithView): StepData {
     ...(step.gridMode !== undefined && { gridMode: step.gridMode as StepData["gridMode"] }),
     ...(step.isBlank !== undefined && { isBlank: step.isBlank }),
     motions: {
-      [MotionColor.BLUE]: motionWithViewToMotionData(step.motions.blue, view.blue, MotionColor.BLUE),
-      [MotionColor.RED]: motionWithViewToMotionData(step.motions.red, view.red, MotionColor.RED),
+      [HandSide.LEFT]: motionWithViewToMotionData(step.motions.left, view.left, HandSide.LEFT),
+      [HandSide.RIGHT]: motionWithViewToMotionData(step.motions.right, view.right, HandSide.RIGHT),
     },
   });
 }

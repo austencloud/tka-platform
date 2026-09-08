@@ -14,6 +14,7 @@ import type { PlacedRoom, RoomEdge } from "../domain/layout-types";
 import type { WallDefinition, WallSegment } from "../domain/wall-segment-types";
 import { computeSegmentWidth } from "../domain/wall-segment-types";
 import { ROOM_CONTENT } from "../data/museum-room-content";
+import { PLAQUE_ANNOTATIONS } from "../data/museum-annotations";
 import type { StampResult, DoorPosition } from "./types";
 
 type WallName = "north" | "south" | "east" | "west";
@@ -246,9 +247,20 @@ function buildExhibitDefinition(
   const roomContent = ROOM_CONTENT[room.id];
   const exhibitContent = roomContent?.exhibits?.[refId];
   if (exhibitContent) {
-    exhibit.plaque = exhibitContent.plaque;
+    // K's annotations live in their own file so the annotator's voice can be
+    // reviewed in one place; they ride along on the plaque content here.
+    const annotations = PLAQUE_ANNOTATIONS[refId];
+    exhibit.plaque = annotations
+      ? { ...exhibitContent.plaque, annotations }
+      : exhibitContent.plaque;
     if (exhibitContent.sequenceId) {
       exhibit.sequenceId = exhibitContent.sequenceId;
+    }
+    if (exhibitContent.document) {
+      exhibit.document = exhibitContent.document;
+    }
+    if (exhibitContent.interaction) {
+      exhibit.interaction = exhibitContent.interaction;
     }
   }
 

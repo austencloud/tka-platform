@@ -12,7 +12,7 @@
 
 import { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   VectorDirection,
 } from "../../../shared/domain/enums/pictograph-enums";
 
@@ -26,43 +26,43 @@ type BoxLoc = "ne" | "se" | "sw" | "nw";
  */
 export const LETTER_I_RADIAL_MAP: Record<
   Loc,
-  Record<MotionColor, VectorDirection>
+  Record<HandSide, VectorDirection>
 > = {
   [GridLocation.NORTH]: {
-    [MotionColor.RED]: VectorDirection.RIGHT,
-    [MotionColor.BLUE]: VectorDirection.LEFT,
+    [HandSide.RIGHT]: VectorDirection.RIGHT,
+    [HandSide.LEFT]: VectorDirection.LEFT,
   },
   [GridLocation.EAST]: {
-    [MotionColor.RED]: VectorDirection.DOWN,
-    [MotionColor.BLUE]: VectorDirection.UP,
+    [HandSide.RIGHT]: VectorDirection.DOWN,
+    [HandSide.LEFT]: VectorDirection.UP,
   },
   [GridLocation.SOUTH]: {
-    [MotionColor.RED]: VectorDirection.LEFT,
-    [MotionColor.BLUE]: VectorDirection.RIGHT,
+    [HandSide.RIGHT]: VectorDirection.LEFT,
+    [HandSide.LEFT]: VectorDirection.RIGHT,
   },
   [GridLocation.WEST]: {
-    [MotionColor.RED]: VectorDirection.DOWN,
-    [MotionColor.BLUE]: VectorDirection.UP,
+    [HandSide.RIGHT]: VectorDirection.DOWN,
+    [HandSide.LEFT]: VectorDirection.UP,
   },
   [GridLocation.NORTHEAST]: {
-    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
-    [MotionColor.BLUE]: VectorDirection.UPLEFT,
+    [HandSide.RIGHT]: VectorDirection.DOWNRIGHT,
+    [HandSide.LEFT]: VectorDirection.UPLEFT,
   },
   [GridLocation.SOUTHEAST]: {
-    [MotionColor.RED]: VectorDirection.UPRIGHT,
-    [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
+    [HandSide.RIGHT]: VectorDirection.UPRIGHT,
+    [HandSide.LEFT]: VectorDirection.DOWNLEFT,
   },
   [GridLocation.SOUTHWEST]: {
-    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
-    [MotionColor.BLUE]: VectorDirection.UPLEFT,
+    [HandSide.RIGHT]: VectorDirection.DOWNRIGHT,
+    [HandSide.LEFT]: VectorDirection.UPLEFT,
   },
   [GridLocation.NORTHWEST]: {
-    [MotionColor.RED]: VectorDirection.UPRIGHT,
-    [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
+    [HandSide.RIGHT]: VectorDirection.UPRIGHT,
+    [HandSide.LEFT]: VectorDirection.DOWNLEFT,
   },
   [GridLocation.CENTER]: {
-    [MotionColor.RED]: VectorDirection.UP,
-    [MotionColor.BLUE]: VectorDirection.DOWN,
+    [HandSide.RIGHT]: VectorDirection.UP,
+    [HandSide.LEFT]: VectorDirection.DOWN,
   },
 };
 
@@ -71,43 +71,43 @@ export const LETTER_I_RADIAL_MAP: Record<
  */
 export const LETTER_I_NON_RADIAL_MAP: Record<
   Loc,
-  Record<MotionColor, VectorDirection>
+  Record<HandSide, VectorDirection>
 > = {
   [GridLocation.NORTH]: {
-    [MotionColor.RED]: VectorDirection.UP,
-    [MotionColor.BLUE]: VectorDirection.DOWN,
+    [HandSide.RIGHT]: VectorDirection.UP,
+    [HandSide.LEFT]: VectorDirection.DOWN,
   },
   [GridLocation.EAST]: {
-    [MotionColor.RED]: VectorDirection.RIGHT,
-    [MotionColor.BLUE]: VectorDirection.LEFT,
+    [HandSide.RIGHT]: VectorDirection.RIGHT,
+    [HandSide.LEFT]: VectorDirection.LEFT,
   },
   [GridLocation.SOUTH]: {
-    [MotionColor.RED]: VectorDirection.DOWN,
-    [MotionColor.BLUE]: VectorDirection.UP,
+    [HandSide.RIGHT]: VectorDirection.DOWN,
+    [HandSide.LEFT]: VectorDirection.UP,
   },
   [GridLocation.WEST]: {
-    [MotionColor.RED]: VectorDirection.RIGHT,
-    [MotionColor.BLUE]: VectorDirection.LEFT,
+    [HandSide.RIGHT]: VectorDirection.RIGHT,
+    [HandSide.LEFT]: VectorDirection.LEFT,
   },
   [GridLocation.NORTHEAST]: {
-    [MotionColor.RED]: VectorDirection.UPRIGHT,
-    [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
+    [HandSide.RIGHT]: VectorDirection.UPRIGHT,
+    [HandSide.LEFT]: VectorDirection.DOWNLEFT,
   },
   [GridLocation.SOUTHEAST]: {
-    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
-    [MotionColor.BLUE]: VectorDirection.UPLEFT,
+    [HandSide.RIGHT]: VectorDirection.DOWNRIGHT,
+    [HandSide.LEFT]: VectorDirection.UPLEFT,
   },
   [GridLocation.SOUTHWEST]: {
-    [MotionColor.RED]: VectorDirection.UPRIGHT,
-    [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
+    [HandSide.RIGHT]: VectorDirection.UPRIGHT,
+    [HandSide.LEFT]: VectorDirection.DOWNLEFT,
   },
   [GridLocation.NORTHWEST]: {
-    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
-    [MotionColor.BLUE]: VectorDirection.UPLEFT,
+    [HandSide.RIGHT]: VectorDirection.DOWNRIGHT,
+    [HandSide.LEFT]: VectorDirection.UPLEFT,
   },
   [GridLocation.CENTER]: {
-    [MotionColor.RED]: VectorDirection.UP,
-    [MotionColor.BLUE]: VectorDirection.DOWN,
+    [HandSide.RIGHT]: VectorDirection.UP,
+    [HandSide.LEFT]: VectorDirection.DOWN,
   },
 };
 
@@ -116,23 +116,23 @@ export const LETTER_I_NON_RADIAL_MAP: Record<
  */
 export const DIAMOND_RADIAL_MAP: Record<
   DiamondLoc,
-  Record<MotionColor, VectorDirection>
+  Record<HandSide, VectorDirection>
 > = {
   [GridLocation.NORTH]: {
-    [MotionColor.RED]: VectorDirection.RIGHT,
-    [MotionColor.BLUE]: VectorDirection.LEFT,
+    [HandSide.RIGHT]: VectorDirection.RIGHT,
+    [HandSide.LEFT]: VectorDirection.LEFT,
   },
   [GridLocation.EAST]: {
-    [MotionColor.RED]: VectorDirection.DOWN,
-    [MotionColor.BLUE]: VectorDirection.UP,
+    [HandSide.RIGHT]: VectorDirection.DOWN,
+    [HandSide.LEFT]: VectorDirection.UP,
   },
   [GridLocation.SOUTH]: {
-    [MotionColor.RED]: VectorDirection.LEFT,
-    [MotionColor.BLUE]: VectorDirection.RIGHT,
+    [HandSide.RIGHT]: VectorDirection.LEFT,
+    [HandSide.LEFT]: VectorDirection.RIGHT,
   },
   [GridLocation.WEST]: {
-    [MotionColor.RED]: VectorDirection.UP,
-    [MotionColor.BLUE]: VectorDirection.DOWN,
+    [HandSide.RIGHT]: VectorDirection.UP,
+    [HandSide.LEFT]: VectorDirection.DOWN,
   },
 };
 
@@ -141,23 +141,23 @@ export const DIAMOND_RADIAL_MAP: Record<
  */
 export const DIAMOND_NON_RADIAL_MAP: Record<
   DiamondLoc,
-  Record<MotionColor, VectorDirection>
+  Record<HandSide, VectorDirection>
 > = {
   [GridLocation.NORTH]: {
-    [MotionColor.RED]: VectorDirection.UP,
-    [MotionColor.BLUE]: VectorDirection.DOWN,
+    [HandSide.RIGHT]: VectorDirection.UP,
+    [HandSide.LEFT]: VectorDirection.DOWN,
   },
   [GridLocation.EAST]: {
-    [MotionColor.RED]: VectorDirection.RIGHT,
-    [MotionColor.BLUE]: VectorDirection.LEFT,
+    [HandSide.RIGHT]: VectorDirection.RIGHT,
+    [HandSide.LEFT]: VectorDirection.LEFT,
   },
   [GridLocation.SOUTH]: {
-    [MotionColor.RED]: VectorDirection.DOWN,
-    [MotionColor.BLUE]: VectorDirection.UP,
+    [HandSide.RIGHT]: VectorDirection.DOWN,
+    [HandSide.LEFT]: VectorDirection.UP,
   },
   [GridLocation.WEST]: {
-    [MotionColor.RED]: VectorDirection.LEFT,
-    [MotionColor.BLUE]: VectorDirection.RIGHT,
+    [HandSide.RIGHT]: VectorDirection.LEFT,
+    [HandSide.LEFT]: VectorDirection.RIGHT,
   },
 };
 
@@ -166,23 +166,23 @@ export const DIAMOND_NON_RADIAL_MAP: Record<
  */
 export const BOX_RADIAL_MAP: Record<
   BoxLoc,
-  Record<MotionColor, VectorDirection>
+  Record<HandSide, VectorDirection>
 > = {
   [GridLocation.NORTHEAST]: {
-    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
-    [MotionColor.BLUE]: VectorDirection.UPLEFT,
+    [HandSide.RIGHT]: VectorDirection.DOWNRIGHT,
+    [HandSide.LEFT]: VectorDirection.UPLEFT,
   },
   [GridLocation.SOUTHEAST]: {
-    [MotionColor.RED]: VectorDirection.UPRIGHT,
-    [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
+    [HandSide.RIGHT]: VectorDirection.UPRIGHT,
+    [HandSide.LEFT]: VectorDirection.DOWNLEFT,
   },
   [GridLocation.SOUTHWEST]: {
-    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
-    [MotionColor.BLUE]: VectorDirection.UPLEFT,
+    [HandSide.RIGHT]: VectorDirection.DOWNRIGHT,
+    [HandSide.LEFT]: VectorDirection.UPLEFT,
   },
   [GridLocation.NORTHWEST]: {
-    [MotionColor.RED]: VectorDirection.UPRIGHT,
-    [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
+    [HandSide.RIGHT]: VectorDirection.UPRIGHT,
+    [HandSide.LEFT]: VectorDirection.DOWNLEFT,
   },
 };
 
@@ -191,23 +191,23 @@ export const BOX_RADIAL_MAP: Record<
  */
 export const BOX_NON_RADIAL_MAP: Record<
   BoxLoc,
-  Record<MotionColor, VectorDirection>
+  Record<HandSide, VectorDirection>
 > = {
   [GridLocation.NORTHEAST]: {
-    [MotionColor.RED]: VectorDirection.UPRIGHT,
-    [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
+    [HandSide.RIGHT]: VectorDirection.UPRIGHT,
+    [HandSide.LEFT]: VectorDirection.DOWNLEFT,
   },
   [GridLocation.SOUTHEAST]: {
-    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
-    [MotionColor.BLUE]: VectorDirection.UPLEFT,
+    [HandSide.RIGHT]: VectorDirection.DOWNRIGHT,
+    [HandSide.LEFT]: VectorDirection.UPLEFT,
   },
   [GridLocation.SOUTHWEST]: {
-    [MotionColor.RED]: VectorDirection.DOWNLEFT,
-    [MotionColor.BLUE]: VectorDirection.UPRIGHT,
+    [HandSide.RIGHT]: VectorDirection.DOWNLEFT,
+    [HandSide.LEFT]: VectorDirection.UPRIGHT,
   },
   [GridLocation.NORTHWEST]: {
-    [MotionColor.RED]: VectorDirection.UPLEFT,
-    [MotionColor.BLUE]: VectorDirection.DOWNRIGHT,
+    [HandSide.RIGHT]: VectorDirection.UPLEFT,
+    [HandSide.LEFT]: VectorDirection.DOWNRIGHT,
   },
 };
 

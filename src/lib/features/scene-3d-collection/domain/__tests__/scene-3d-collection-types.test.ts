@@ -4,6 +4,7 @@ import {
   Scene3DSnapshotSchema,
   getScene3DEnvironmentId,
   isGroupSaved,
+  scene3DHasFilm,
   type Scene3DSnapshot,
 } from "../scene-3d-collection-types";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -11,9 +12,18 @@ import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifi
 const snapshot: Scene3DSnapshot = {
   version: 1,
   scene: { backgroundType: "forest", oceanVariant: "abyss" },
-  camera: { position: { x: 0, y: 1, z: 5 }, target: { x: 0, y: 0, z: 0 } } as never,
+  camera: {
+    position: { x: 0, y: 1, z: 5 },
+    target: { x: 0, y: 0, z: 0 },
+  } as never,
   performers: [
-    { position: { x: 0, z: 0 }, facingAngle: 0, customBluePlane: "wall", customRedPlane: "wall", name: null },
+    {
+      position: { x: 0, z: 0 },
+      facingAngle: 0,
+      customLeftPlane: "wall",
+      customRightPlane: "wall",
+      name: null,
+    },
   ],
   selectedPerformerIndex: null,
   activeFormation: "manual",
@@ -22,8 +32,8 @@ const snapshot: Scene3DSnapshot = {
     prop: "staff",
     effortId: "linear",
     planeMode: "wall",
-    customBluePlane: "wall",
-    customRedPlane: "wall",
+    customLeftPlane: "wall",
+    customRightPlane: "wall",
   },
   visiblePlanes: ["wall"],
   showGridLabels: false,
@@ -33,12 +43,48 @@ const snapshot: Scene3DSnapshot = {
   stageGroundOffset: 0,
   effectToggles: { fire: false, trails: true },
   sceneFeatures: { stage: true, campfire: false },
-  props: { bluePropType: "staff", redPropType: "staff" },
+  props: { leftPropType: "staff", rightPropType: "staff" },
 };
 
 describe("Scene3DSnapshotSchema", () => {
   it("accepts a well-formed snapshot", () => {
     expect(Scene3DSnapshotSchema.safeParse(snapshot).success).toBe(true);
+  });
+
+  it("restores literal blue/red fields from a saved pre-migration scene", () => {
+    const legacy = {
+      ...snapshot,
+      performers: [
+        {
+          position: { x: 0, z: 0 },
+          facingAngle: 0,
+          customBluePlane: "wheel",
+          customRedPlane: "wall",
+        },
+      ],
+      defaultSettings: {
+        ...snapshot.defaultSettings,
+        customLeftPlane: undefined,
+        customRightPlane: undefined,
+        customBluePlane: "wheel",
+        customRedPlane: "wall",
+      },
+      props: { bluePropType: "poi", redPropType: "fan" },
+    };
+
+    const result = Scene3DSnapshotSchema.parse(legacy);
+    expect(result.performers[0]).toMatchObject({
+      customLeftPlane: "wheel",
+      customRightPlane: "wall",
+    });
+    expect(result.defaultSettings).toMatchObject({
+      customLeftPlane: "wheel",
+      customRightPlane: "wall",
+    });
+    expect(result.props).toEqual({
+      leftPropType: "poi",
+      rightPropType: "fan",
+    });
   });
 
   it("rejects a bad nav mode", () => {
@@ -79,7 +125,12 @@ describe("Scene3DSnapshotSchema", () => {
       performers: [
         {
           ...snapshot.performers[0]!,
-          settings: { prop: "fan", effortId: null, effect: "trails", staffLengthCm: 95 },
+          settings: {
+            prop: "fan",
+            effortId: null,
+            effect: "trails",
+            staffLengthCm: 95,
+          },
         },
       ],
     };
@@ -121,7 +172,9 @@ describe("Collected3DSceneSchema", () => {
       snapshot,
     };
     expect(Collected3DSceneSchema.safeParse(entry).success).toBe(true);
-    expect(Collected3DSceneSchema.safeParse({ ...entry, steps: [] }).success).toBe(true);
+    expect(
+      Collected3DSceneSchema.safeParse({ ...entry, steps: [] }).success
+    ).toBe(true);
   });
 
   it("rejects an entry with no id", () => {
@@ -132,7 +185,13 @@ describe("Collected3DSceneSchema", () => {
   // Unit 3 (lineage stamp): old entries lack sourceWord/sourceSequenceId
   // entirely — the schema must still accept them.
   it("accepts an entry with no lineage stamp (old entries)", () => {
-    const entry = { id: "abc", name: "Forest stage", poster: "x", createdAt: 1, snapshot };
+    const entry = {
+      id: "abc",
+      name: "Forest stage",
+      poster: "x",
+      createdAt: 1,
+      snapshot,
+    };
     expect(Collected3DSceneSchema.safeParse(entry).success).toBe(true);
   });
 
@@ -158,5 +217,65 @@ describe("Collected3DSceneSchema", () => {
       expect(result.data.sourceWord).toBe("FΨ");
       expect(result.data.sourceSequenceId).toBe("seq-123");
     }
+  });
+});
+
+describe("Scene3DFilmSchema", () => {
+  const film = {
+    version: 1 as const,
+    recordedAt: 1700000000000,
+    durationSeconds: 12.5,
+    cameraMode: "free" as const,
+    keyframes: [
+      {
+        timestamp: 0,
+        position: [0, 1.6, 5] as [number, number, number],
+        quaternion: [0, 0, 0, 1] as [number, number, number, number],
+        fov: 50,
+      },
+      {
+        timestamp: 12.5,
+        position: [1, 1.6, 4] as [number, number, number],
+        quaternion: [0, 0.1, 0, 0.99] as [number, number, number, number],
+        fov: 50,
+      },
+    ],
+    render: {
+      fps: 60,
+      resolution: 1080,
+      quality: "standard" as const,
+      includeStartPosition: true,
+      includeEndHold: true,
+    },
+    autoSaved: true,
+  };
+
+  const entry = {
+    id: "film-entry",
+    name: "FΨ film",
+    poster: "data:image/webp;base64,xxx",
+    createdAt: 1700000000000,
+    snapshot,
+  };
+
+  it("round-trips an entry carrying a film", () => {
+    const parsed = Collected3DSceneSchema.safeParse({ ...entry, film });
+    expect(parsed.success).toBe(true);
+    expect(scene3DHasFilm({ ...entry, film } as never)).toBe(true);
+  });
+
+  it("rejects a film with no keyframes", () => {
+    const bad = { ...entry, film: { ...film, keyframes: [] } };
+    expect(Collected3DSceneSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects an unknown camera mode", () => {
+    const bad = { ...entry, film: { ...film, cameraMode: "dolly" } };
+    expect(Collected3DSceneSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("treats an entry with no film as look-only", () => {
+    expect(Collected3DSceneSchema.safeParse(entry).success).toBe(true);
+    expect(scene3DHasFilm(entry as never)).toBe(false);
   });
 });

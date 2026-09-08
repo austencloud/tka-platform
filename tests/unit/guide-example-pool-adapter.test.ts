@@ -38,15 +38,15 @@ describe("position inverse (the canon the adapter relies on)", () => {
     // assert no two pairs collapse onto one position (uniqueness), and the
     // canonical inverse of every produced position forward-derives back to it.
     const producedBy = new Map<string, string>();
-    for (const blue of Object.values(GridLocation)) {
-      for (const red of Object.values(GridLocation)) {
+    for (const left of Object.values(GridLocation)) {
+      for (const right of Object.values(GridLocation)) {
         let pos: string;
         try {
-          pos = getGridPositionFromLocations(blue, red);
+          pos = getGridPositionFromLocations(left, right);
         } catch {
           continue;
         }
-        const key = `${blue},${red}`;
+        const key = `${left},${right}`;
         const prior = producedBy.get(pos);
         expect(prior === undefined || prior === key).toBe(true);
         producedBy.set(pos, key);
@@ -79,8 +79,8 @@ describe("entryToStrip — GΘSZ spot check (field-by-field)", () => {
     expect(start.stepNumber).toBe(0);
     // beta7 = (WEST, WEST) per the canonical deriver.
     expect(start.startPosition).toBe(GridPosition.BETA7);
-    expect(start.motions.blue.startLocation).toBe(GridLocation.WEST);
-    expect(start.motions.red.startLocation).toBe(GridLocation.WEST);
+    expect(start.motions.left.startLocation).toBe(GridLocation.WEST);
+    expect(start.motions.right.startLocation).toBe(GridLocation.WEST);
   });
 
   it("maps step 1 (G, beta7→beta1): letter enum, inverted locations, motion fields", () => {
@@ -90,29 +90,29 @@ describe("entryToStrip — GΘSZ spot check (field-by-field)", () => {
     expect(s1.startPosition).toBe(GridPosition.BETA7); // (w,w)
     expect(s1.endPosition).toBe(GridPosition.BETA1); // (n,n)
     // Locations come from inverting the JSON positions, per hand.
-    expect(s1.motions.blue.startLocation).toBe(GridLocation.WEST);
-    expect(s1.motions.blue.endLocation).toBe(GridLocation.NORTH);
-    expect(s1.motions.red.startLocation).toBe(GridLocation.WEST);
-    expect(s1.motions.red.endLocation).toBe(GridLocation.NORTH);
+    expect(s1.motions.left.startLocation).toBe(GridLocation.WEST);
+    expect(s1.motions.left.endLocation).toBe(GridLocation.NORTH);
+    expect(s1.motions.right.startLocation).toBe(GridLocation.WEST);
+    expect(s1.motions.right.endLocation).toBe(GridLocation.NORTH);
     // Motion type / direction taken straight from the JSON (pro cw / pro cw).
-    expect(s1.motions.blue.motionType).toBe(MotionType.PRO);
-    expect(s1.motions.blue.rotationDirection).toBe(RotationDirection.CLOCKWISE);
-    expect(s1.motions.red.motionType).toBe(MotionType.PRO);
-    expect(s1.motions.red.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(s1.motions.left.motionType).toBe(MotionType.PRO);
+    expect(s1.motions.left.rotationDirection).toBe(RotationDirection.CLOCKWISE);
+    expect(s1.motions.right.motionType).toBe(MotionType.PRO);
+    expect(s1.motions.right.rotationDirection).toBe(RotationDirection.CLOCKWISE);
   });
 
   it("maps a Greek letter (step 2 Θ) and a static hand", () => {
     const s2 = strip[2]!;
     expect(s2.letter).toBe(Letter.THETA);
     // JSON: blue static on Θ, red pro cw.
-    expect(s2.motions.blue.motionType).toBe(MotionType.STATIC);
-    expect(s2.motions.red.motionType).toBe(MotionType.PRO);
+    expect(s2.motions.left.motionType).toBe(MotionType.STATIC);
+    expect(s2.motions.right.motionType).toBe(MotionType.PRO);
   });
 
   it("ran bakeReversals — the cw→ccw seam flip produced a reversal mark", () => {
     // The mirrored second half inverts every rotation direction; bakeReversals
     // derives the dot from the motions themselves. Its presence proves baking ran.
-    const anyReversal = strip.some((s) => s.blueReversal || s.redReversal);
+    const anyReversal = strip.some((s) => s.leftReversal || s.rightReversal);
     expect(anyReversal).toBe(true);
   });
 });
@@ -228,8 +228,8 @@ describe("factory sweep: every pool JSON builds cleanly", () => {
             for (const step of candidate.steps) {
               const [startName, endName] = step.pos.split("→").map((s) => s.trim());
               for (const name of [startName, endName]) {
-                const [blue, red] = getGridLocationsFromPosition(name as GridPosition);
-                expect(getGridPositionFromLocations(blue, red)).toBe(name);
+                const [left, right] = getGridLocationsFromPosition(name as GridPosition);
+                expect(getGridPositionFromLocations(left, right)).toBe(name);
               }
             }
           });

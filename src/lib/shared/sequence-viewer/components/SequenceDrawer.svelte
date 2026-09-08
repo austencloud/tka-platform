@@ -56,8 +56,8 @@
     isAnimationPlaying = false,
     animationCurrentBeat = 0,
     animationSpeed = 1,
-    animationBluePropState = null as any,
-    animationRedPropState = null as any,
+    animationLeftPropState = null as any,
+    animationRightPropState = null as any,
     isCircular = false,
     exportLoopCount = 1,
     isAnimationExporting = false,
@@ -67,8 +67,8 @@
     playbackMode = "continuous" as "continuous" | "step",
     stepPlaybackPauseMs = 300,
     stepPlaybackStepSize = 1 as 1 | 0.5,
-    blueMotionVisible = true,
-    redMotionVisible = true,
+    leftMotionVisible = true,
+    rightMotionVisible = true,
     isSideBySideLayout = false,
 
     // Callbacks
@@ -99,8 +99,8 @@
     onPlaybackModeChange,
     onStepPlaybackPauseMsChange,
     onStepPlaybackStepSizeChange,
-    onToggleBlue,
-    onToggleRed,
+    onToggleLeft,
+    onToggleRight,
   }: {
     // Drawer props
     isOpen?: boolean;
@@ -130,8 +130,8 @@
     isAnimationPlaying?: boolean;
     animationCurrentBeat?: number;
     animationSpeed?: number;
-    animationBluePropState?: any;
-    animationRedPropState?: any;
+    animationLeftPropState?: any;
+    animationRightPropState?: any;
     isCircular?: boolean;
     exportLoopCount?: number;
     isAnimationExporting?: boolean;
@@ -141,8 +141,8 @@
     playbackMode?: "continuous" | "step";
     stepPlaybackPauseMs?: number;
     stepPlaybackStepSize?: 1 | 0.5;
-    blueMotionVisible?: boolean;
-    redMotionVisible?: boolean;
+    leftMotionVisible?: boolean;
+    rightMotionVisible?: boolean;
     isSideBySideLayout?: boolean;
 
     // Callbacks
@@ -173,8 +173,8 @@
     onPlaybackModeChange?: (mode: "continuous" | "step") => void;
     onStepPlaybackPauseMsChange?: (ms: number) => void;
     onStepPlaybackStepSizeChange?: (size: 1 | 0.5) => void;
-    onToggleBlue?: () => void;
-    onToggleRed?: () => void;
+    onToggleLeft?: () => void;
+    onToggleRight?: () => void;
   } = $props();
 
   // IMPORTANT: setContext must be called during component initialization, not in effects.
@@ -190,8 +190,8 @@
         get isPlaying() { return isAnimationPlaying; },
         get currentStep() { return animationCurrentBeat; },
         get speed() { return animationSpeed; },
-        get bluePropState() { return animationBluePropState; },
-        get redPropState() { return animationRedPropState; },
+        get leftPropState() { return animationLeftPropState; },
+        get rightPropState() { return animationRightPropState; },
         get isCircular() { return isCircular; },
         get exportLoopCount() { return exportLoopCount; },
         get isExporting() { return isAnimationExporting; },
@@ -201,8 +201,8 @@
         get playbackMode() { return playbackMode; },
         get stepPlaybackPauseMs() { return stepPlaybackPauseMs; },
         get stepPlaybackStepSize() { return stepPlaybackStepSize; },
-        get blueMotionVisible() { return blueMotionVisible; },
-        get redMotionVisible() { return redMotionVisible; },
+        get leftMotionVisible() { return leftMotionVisible; },
+        get rightMotionVisible() { return rightMotionVisible; },
         get isSideBySideLayout() { return isSideBySideLayout; },
         get selectedFormat() { return selectedFormat; },
       },
@@ -220,8 +220,8 @@
         onPlaybackModeChange: (m: "continuous" | "step") => onPlaybackModeChange?.(m),
         onStepPlaybackPauseMsChange: (ms: number) => onStepPlaybackPauseMsChange?.(ms),
         onStepPlaybackStepSizeChange: (size: 1 | 0.5) => onStepPlaybackStepSizeChange?.(size),
-        onToggleBlue: () => onToggleBlue?.(),
-        onToggleRed: () => onToggleRed?.(),
+        onToggleLeft: () => onToggleLeft?.(),
+        onToggleRight: () => onToggleRight?.(),
         onFormatChange: (format: "animation" | "static" | "performance") => onFormatChange?.(format),
       },
     });

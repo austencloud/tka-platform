@@ -136,217 +136,217 @@ function extractBeats(sequence) {
       letter: b.letter,
       startPos: b.startPos,
       endPos: b.endPos,
-      blue: {
-        startLoc: b.blueAttributes?.startLoc?.toLowerCase(),
-        endLoc: b.blueAttributes?.endLoc?.toLowerCase(),
-        motionType: b.blueAttributes?.motionType?.toLowerCase(),
+      left: {
+        startLoc: b.leftAttributes?.startLoc?.toLowerCase(),
+        endLoc: b.leftAttributes?.endLoc?.toLowerCase(),
+        motionType: b.leftAttributes?.motionType?.toLowerCase(),
       },
-      red: {
-        startLoc: b.redAttributes?.startLoc?.toLowerCase(),
-        endLoc: b.redAttributes?.endLoc?.toLowerCase(),
-        motionType: b.redAttributes?.motionType?.toLowerCase(),
+      right: {
+        startLoc: b.rightAttributes?.startLoc?.toLowerCase(),
+        endLoc: b.rightAttributes?.endLoc?.toLowerCase(),
+        motionType: b.rightAttributes?.motionType?.toLowerCase(),
       },
     }));
 }
 
 function isRotated(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    ROTATE_180[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_180[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_180[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_180[b1Red.endLoc] === b2Red.endLoc
+    ROTATE_180[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_180[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_180[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_180[b1Right.endLoc] === b2Right.endLoc
   );
 }
 
 function isSwapped(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
-  if (b1Blue.motionType === b1Red.motionType) return false;
+  if (b1Left.motionType === b1Right.motionType) return false;
   return (
-    b1Blue.startLoc === b2Red.startLoc &&
-    b1Blue.endLoc === b2Red.endLoc &&
-    b1Blue.motionType === b2Red.motionType &&
-    b1Red.startLoc === b2Blue.startLoc &&
-    b1Red.endLoc === b2Blue.endLoc &&
-    b1Red.motionType === b2Blue.motionType
+    b1Left.startLoc === b2Right.startLoc &&
+    b1Left.endLoc === b2Right.endLoc &&
+    b1Left.motionType === b2Right.motionType &&
+    b1Right.startLoc === b2Left.startLoc &&
+    b1Right.endLoc === b2Left.endLoc &&
+    b1Right.motionType === b2Left.motionType
   );
 }
 
 function isRepeated(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    b1Blue.startLoc === b2Blue.startLoc &&
-    b1Blue.endLoc === b2Blue.endLoc &&
-    b1Blue.motionType === b2Blue.motionType &&
-    b1Red.startLoc === b2Red.startLoc &&
-    b1Red.endLoc === b2Red.endLoc &&
-    b1Red.motionType === b2Red.motionType
+    b1Left.startLoc === b2Left.startLoc &&
+    b1Left.endLoc === b2Left.endLoc &&
+    b1Left.motionType === b2Left.motionType &&
+    b1Right.startLoc === b2Right.startLoc &&
+    b1Right.endLoc === b2Right.endLoc &&
+    b1Right.motionType === b2Right.motionType
   );
 }
 
 function isMirrored(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Red.endLoc
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Left.endLoc &&
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Right.endLoc
   );
 }
 
 function isFlipped(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    FLIP_HORIZONTAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    FLIP_HORIZONTAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    FLIP_HORIZONTAL[b1Red.startLoc] === b2Red.startLoc &&
-    FLIP_HORIZONTAL[b1Red.endLoc] === b2Red.endLoc
+    FLIP_HORIZONTAL[b1Left.startLoc] === b2Left.startLoc &&
+    FLIP_HORIZONTAL[b1Left.endLoc] === b2Left.endLoc &&
+    FLIP_HORIZONTAL[b1Right.startLoc] === b2Right.startLoc &&
+    FLIP_HORIZONTAL[b1Right.endLoc] === b2Right.endLoc
   );
 }
 
 function isInverted(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.motionType || !b2Blue?.motionType) return false;
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.motionType || !b2Left?.motionType) return false;
   const positionsMatch =
-    b1Blue.startLoc === b2Blue.startLoc &&
-    b1Blue.endLoc === b2Blue.endLoc &&
-    b1Red.startLoc === b2Red.startLoc &&
-    b1Red.endLoc === b2Red.endLoc;
+    b1Left.startLoc === b2Left.startLoc &&
+    b1Left.endLoc === b2Left.endLoc &&
+    b1Right.startLoc === b2Right.startLoc &&
+    b1Right.endLoc === b2Right.endLoc;
   const motionsInverted =
-    invertMotionType(b1Blue.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Red.motionType) === b2Red.motionType;
+    invertMotionType(b1Left.motionType) === b2Left.motionType &&
+    invertMotionType(b1Right.motionType) === b2Right.motionType;
   return positionsMatch && motionsInverted;
 }
 
 function isRotatedThenSwapped(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    ROTATE_180[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_180[b1Red.endLoc] === b2Blue.endLoc &&
-    b1Red.motionType === b2Blue.motionType &&
-    ROTATE_180[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_180[b1Blue.endLoc] === b2Red.endLoc &&
-    b1Blue.motionType === b2Red.motionType
+    ROTATE_180[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_180[b1Right.endLoc] === b2Left.endLoc &&
+    b1Right.motionType === b2Left.motionType &&
+    ROTATE_180[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_180[b1Left.endLoc] === b2Right.endLoc &&
+    b1Left.motionType === b2Right.motionType
   );
 }
 
 function isMirroredThenSwapped(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Blue.endLoc &&
-    b1Red.motionType === b2Blue.motionType &&
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Red.endLoc &&
-    b1Blue.motionType === b2Red.motionType
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Left.endLoc &&
+    b1Right.motionType === b2Left.motionType &&
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Right.endLoc &&
+    b1Left.motionType === b2Right.motionType
   );
 }
 
 function isMirroredSwappedInverted(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Blue.endLoc &&
-    invertMotionType(b1Red.motionType) === b2Blue.motionType &&
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Red.endLoc &&
-    invertMotionType(b1Blue.motionType) === b2Red.motionType
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Left.endLoc &&
+    invertMotionType(b1Right.motionType) === b2Left.motionType &&
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Right.endLoc &&
+    invertMotionType(b1Left.motionType) === b2Right.motionType
   );
 }
 
 function isFlippedThenInverted(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   const positionsFlipped =
-    FLIP_HORIZONTAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    FLIP_HORIZONTAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    FLIP_HORIZONTAL[b1Red.startLoc] === b2Red.startLoc &&
-    FLIP_HORIZONTAL[b1Red.endLoc] === b2Red.endLoc;
+    FLIP_HORIZONTAL[b1Left.startLoc] === b2Left.startLoc &&
+    FLIP_HORIZONTAL[b1Left.endLoc] === b2Left.endLoc &&
+    FLIP_HORIZONTAL[b1Right.startLoc] === b2Right.startLoc &&
+    FLIP_HORIZONTAL[b1Right.endLoc] === b2Right.endLoc;
   if (!positionsFlipped) return false;
   return (
-    invertMotionType(b1Blue.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Red.motionType) === b2Red.motionType
+    invertMotionType(b1Left.motionType) === b2Left.motionType &&
+    invertMotionType(b1Right.motionType) === b2Right.motionType
   );
 }
 
 function isQuarteredRotatedOnly(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    ROTATE_90_CCW[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CCW[b1Blue.endLoc] === b2Blue.endLoc &&
-    b1Blue.motionType === b2Blue.motionType &&
-    ROTATE_90_CCW[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CCW[b1Red.endLoc] === b2Red.endLoc &&
-    b1Red.motionType === b2Red.motionType
+    ROTATE_90_CCW[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CCW[b1Left.endLoc] === b2Left.endLoc &&
+    b1Left.motionType === b2Left.motionType &&
+    ROTATE_90_CCW[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CCW[b1Right.endLoc] === b2Right.endLoc &&
+    b1Right.motionType === b2Right.motionType
   );
 }
 
 function isQuarteredRotatedSwapped(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red,
-    b2Blue = beat2.blue,
-    b2Red = beat2.red;
-  if (!b1Blue?.endLoc || !b2Blue?.endLoc || !b1Red?.endLoc || !b2Red?.endLoc)
+  const b1Left = beat1.left,
+    b1Right = beat1.right,
+    b2Left = beat2.left,
+    b2Right = beat2.right;
+  if (!b1Left?.endLoc || !b2Left?.endLoc || !b1Right?.endLoc || !b2Right?.endLoc)
     return false;
   return (
-    ROTATE_90_CCW[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CCW[b1Red.endLoc] === b2Blue.endLoc &&
-    b1Red.motionType === b2Blue.motionType &&
-    ROTATE_90_CCW[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CCW[b1Blue.endLoc] === b2Red.endLoc &&
-    b1Blue.motionType === b2Red.motionType
+    ROTATE_90_CCW[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CCW[b1Right.endLoc] === b2Left.endLoc &&
+    b1Right.motionType === b2Left.motionType &&
+    ROTATE_90_CCW[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CCW[b1Left.endLoc] === b2Right.endLoc &&
+    b1Left.motionType === b2Right.motionType
   );
 }
 
@@ -369,8 +369,8 @@ function detectRotationDirection(beats) {
   ];
 
   // Track the progression of Blue's startLoc through quarters
-  const blueStartLocs = quarterBeats.map((b) => b.blue?.startLoc);
-  const redStartLocs = quarterBeats.map((b) => b.red?.startLoc);
+  const leftStartLocs = quarterBeats.map((b) => b.left?.startLoc);
+  const rightStartLocs = quarterBeats.map((b) => b.right?.startLoc);
 
   // Check if positions follow CCW or CW progression
   // CCW progression: n→w→s→e→n or any rotation of this (s→e→n→w, etc.)
@@ -381,8 +381,8 @@ function detectRotationDirection(beats) {
 
   // Check Blue's progression
   for (let i = 0; i < 4; i++) {
-    const current = blueStartLocs[i];
-    const next = blueStartLocs[(i + 1) % 4];
+    const current = leftStartLocs[i];
+    const next = leftStartLocs[(i + 1) % 4];
     if (!current || !next) continue;
 
     if (ROTATE_90_CCW[current] === next) ccwMatches++;
@@ -391,8 +391,8 @@ function detectRotationDirection(beats) {
 
   // Check Red's progression
   for (let i = 0; i < 4; i++) {
-    const current = redStartLocs[i];
-    const next = redStartLocs[(i + 1) % 4];
+    const current = rightStartLocs[i];
+    const next = rightStartLocs[(i + 1) % 4];
     if (!current || !next) continue;
 
     if (ROTATE_90_CCW[current] === next) ccwMatches++;
@@ -416,16 +416,16 @@ function detectRotationDirection(beats) {
  * This allows finding the COMMON transformation across all beat pairs.
  */
 function compareBeatPair(beat1, beat2) {
-  const b1Blue = beat1.blue,
-    b1Red = beat1.red;
-  const b2Blue = beat2.blue,
-    b2Red = beat2.red;
+  const b1Left = beat1.left,
+    b1Right = beat1.right;
+  const b2Left = beat2.left,
+    b2Right = beat2.right;
 
   if (
-    !b1Blue?.startLoc ||
-    !b2Blue?.startLoc ||
-    !b1Red?.startLoc ||
-    !b2Red?.startLoc
+    !b1Left?.startLoc ||
+    !b2Left?.startLoc ||
+    !b1Right?.startLoc ||
+    !b2Right?.startLoc
   ) {
     return [];
   }
@@ -434,12 +434,12 @@ function compareBeatPair(beat1, beat2) {
 
   // Check if beats are identical (repeated)
   const isRepeated =
-    b1Blue.startLoc === b2Blue.startLoc &&
-    b1Blue.endLoc === b2Blue.endLoc &&
-    b1Blue.motionType === b2Blue.motionType &&
-    b1Red.startLoc === b2Red.startLoc &&
-    b1Red.endLoc === b2Red.endLoc &&
-    b1Red.motionType === b2Red.motionType;
+    b1Left.startLoc === b2Left.startLoc &&
+    b1Left.endLoc === b2Left.endLoc &&
+    b1Left.motionType === b2Left.motionType &&
+    b1Right.startLoc === b2Right.startLoc &&
+    b1Right.endLoc === b2Right.endLoc &&
+    b1Right.motionType === b2Right.motionType;
 
   if (isRepeated) {
     transformations.push("repeated");
@@ -452,31 +452,31 @@ function compareBeatPair(beat1, beat2) {
 
   // ROTATED + SWAPPED position checks (colors swapped)
   const positions180Swapped =
-    ROTATE_180[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_180[b1Red.endLoc] === b2Blue.endLoc &&
-    ROTATE_180[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_180[b1Blue.endLoc] === b2Red.endLoc;
+    ROTATE_180[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_180[b1Right.endLoc] === b2Left.endLoc &&
+    ROTATE_180[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_180[b1Left.endLoc] === b2Right.endLoc;
 
   const positions90CCWSwapped =
-    ROTATE_90_CCW[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CCW[b1Red.endLoc] === b2Blue.endLoc &&
-    ROTATE_90_CCW[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CCW[b1Blue.endLoc] === b2Red.endLoc;
+    ROTATE_90_CCW[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CCW[b1Right.endLoc] === b2Left.endLoc &&
+    ROTATE_90_CCW[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CCW[b1Left.endLoc] === b2Right.endLoc;
 
   const positions90CWSwapped =
-    ROTATE_270_CCW[b1Red.startLoc] === b2Blue.startLoc &&
-    ROTATE_270_CCW[b1Red.endLoc] === b2Blue.endLoc &&
-    ROTATE_270_CCW[b1Blue.startLoc] === b2Red.startLoc &&
-    ROTATE_270_CCW[b1Blue.endLoc] === b2Red.endLoc;
+    ROTATE_270_CCW[b1Right.startLoc] === b2Left.startLoc &&
+    ROTATE_270_CCW[b1Right.endLoc] === b2Left.endLoc &&
+    ROTATE_270_CCW[b1Left.startLoc] === b2Right.startLoc &&
+    ROTATE_270_CCW[b1Left.endLoc] === b2Right.endLoc;
 
   // Motion checks for swapped colors (Red1→Blue2, Blue1→Red2)
   const motionSameSwapped =
-    b1Red.motionType === b2Blue.motionType &&
-    b1Blue.motionType === b2Red.motionType;
+    b1Right.motionType === b2Left.motionType &&
+    b1Left.motionType === b2Right.motionType;
 
   const motionInvertedSwapped =
-    invertMotionType(b1Red.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Blue.motionType) === b2Red.motionType;
+    invertMotionType(b1Right.motionType) === b2Left.motionType &&
+    invertMotionType(b1Left.motionType) === b2Right.motionType;
 
   // ROTATED_180 + SWAPPED (motion unchanged)
   if (positions180Swapped && motionSameSwapped) {
@@ -510,12 +510,12 @@ function compareBeatPair(beat1, beat2) {
 
   // MIRRORED + SWAPPED
   const isMirroredSwapped =
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Blue.endLoc &&
-    b1Red.motionType === b2Blue.motionType &&
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Red.endLoc &&
-    b1Blue.motionType === b2Red.motionType;
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Left.endLoc &&
+    b1Right.motionType === b2Left.motionType &&
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Right.endLoc &&
+    b1Left.motionType === b2Right.motionType;
 
   if (isMirroredSwapped) {
     transformations.push("mirrored_swapped");
@@ -525,33 +525,33 @@ function compareBeatPair(beat1, beat2) {
 
   // 90° rotation (CCW) - check positions
   const positions90CCW =
-    ROTATE_90_CCW[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_90_CCW[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_90_CCW[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_90_CCW[b1Red.endLoc] === b2Red.endLoc;
+    ROTATE_90_CCW[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_90_CCW[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_90_CCW[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_90_CCW[b1Right.endLoc] === b2Right.endLoc;
 
   // 180° rotation - check positions
   const positions180 =
-    ROTATE_180[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_180[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_180[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_180[b1Red.endLoc] === b2Red.endLoc;
+    ROTATE_180[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_180[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_180[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_180[b1Right.endLoc] === b2Right.endLoc;
 
   // 90° CW rotation (270° CCW) - check positions
   const positions90CW =
-    ROTATE_270_CCW[b1Blue.startLoc] === b2Blue.startLoc &&
-    ROTATE_270_CCW[b1Blue.endLoc] === b2Blue.endLoc &&
-    ROTATE_270_CCW[b1Red.startLoc] === b2Red.startLoc &&
-    ROTATE_270_CCW[b1Red.endLoc] === b2Red.endLoc;
+    ROTATE_270_CCW[b1Left.startLoc] === b2Left.startLoc &&
+    ROTATE_270_CCW[b1Left.endLoc] === b2Left.endLoc &&
+    ROTATE_270_CCW[b1Right.startLoc] === b2Right.startLoc &&
+    ROTATE_270_CCW[b1Right.endLoc] === b2Right.endLoc;
 
   // Check if motion is same or inverted (for same-color comparisons)
   const motionSameColors =
-    b1Blue.motionType === b2Blue.motionType &&
-    b1Red.motionType === b2Red.motionType;
+    b1Left.motionType === b2Left.motionType &&
+    b1Right.motionType === b2Right.motionType;
 
   const motionInvertedSameColors =
-    invertMotionType(b1Blue.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Red.motionType) === b2Red.motionType;
+    invertMotionType(b1Left.motionType) === b2Left.motionType &&
+    invertMotionType(b1Right.motionType) === b2Right.motionType;
 
   // ROTATED_90_CCW (pure rotation, motion unchanged)
   if (positions90CCW && motionSameColors) {
@@ -585,28 +585,28 @@ function compareBeatPair(beat1, beat2) {
 
   // Vertical mirror
   if (
-    MIRROR_VERTICAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    MIRROR_VERTICAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    MIRROR_VERTICAL[b1Red.startLoc] === b2Red.startLoc &&
-    MIRROR_VERTICAL[b1Red.endLoc] === b2Red.endLoc
+    MIRROR_VERTICAL[b1Left.startLoc] === b2Left.startLoc &&
+    MIRROR_VERTICAL[b1Left.endLoc] === b2Left.endLoc &&
+    MIRROR_VERTICAL[b1Right.startLoc] === b2Right.startLoc &&
+    MIRROR_VERTICAL[b1Right.endLoc] === b2Right.endLoc
   ) {
     transformations.push("mirrored");
   }
 
   // Horizontal flip (positions only, motion unchanged)
   const positionsFlipped =
-    FLIP_HORIZONTAL[b1Blue.startLoc] === b2Blue.startLoc &&
-    FLIP_HORIZONTAL[b1Blue.endLoc] === b2Blue.endLoc &&
-    FLIP_HORIZONTAL[b1Red.startLoc] === b2Red.startLoc &&
-    FLIP_HORIZONTAL[b1Red.endLoc] === b2Red.endLoc;
+    FLIP_HORIZONTAL[b1Left.startLoc] === b2Left.startLoc &&
+    FLIP_HORIZONTAL[b1Left.endLoc] === b2Left.endLoc &&
+    FLIP_HORIZONTAL[b1Right.startLoc] === b2Right.startLoc &&
+    FLIP_HORIZONTAL[b1Right.endLoc] === b2Right.endLoc;
 
   const motionSame =
-    b1Blue.motionType === b2Blue.motionType &&
-    b1Red.motionType === b2Red.motionType;
+    b1Left.motionType === b2Left.motionType &&
+    b1Right.motionType === b2Right.motionType;
 
   const motionFlipInverted =
-    invertMotionType(b1Blue.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Red.motionType) === b2Red.motionType;
+    invertMotionType(b1Left.motionType) === b2Left.motionType &&
+    invertMotionType(b1Right.motionType) === b2Right.motionType;
 
   if (positionsFlipped && motionSame) {
     transformations.push("flipped");
@@ -619,12 +619,12 @@ function compareBeatPair(beat1, beat2) {
 
   // Check if colors are swapped (without position change)
   const colorsSwapped =
-    b1Blue.startLoc === b2Red.startLoc &&
-    b1Blue.endLoc === b2Red.endLoc &&
-    b1Red.startLoc === b2Blue.startLoc &&
-    b1Red.endLoc === b2Blue.endLoc &&
-    b1Blue.motionType === b2Red.motionType &&
-    b1Red.motionType === b2Blue.motionType;
+    b1Left.startLoc === b2Right.startLoc &&
+    b1Left.endLoc === b2Right.endLoc &&
+    b1Right.startLoc === b2Left.startLoc &&
+    b1Right.endLoc === b2Left.endLoc &&
+    b1Left.motionType === b2Right.motionType &&
+    b1Right.motionType === b2Left.motionType;
 
   if (colorsSwapped && !transformations.includes("swapped")) {
     transformations.push("swapped");
@@ -632,12 +632,12 @@ function compareBeatPair(beat1, beat2) {
 
   // Check if motion types are inverted (same positions)
   const motionInverted =
-    b1Blue.startLoc === b2Blue.startLoc &&
-    b1Blue.endLoc === b2Blue.endLoc &&
-    b1Red.startLoc === b2Red.startLoc &&
-    b1Red.endLoc === b2Red.endLoc &&
-    invertMotionType(b1Blue.motionType) === b2Blue.motionType &&
-    invertMotionType(b1Red.motionType) === b2Red.motionType;
+    b1Left.startLoc === b2Left.startLoc &&
+    b1Left.endLoc === b2Left.endLoc &&
+    b1Right.startLoc === b2Right.startLoc &&
+    b1Right.endLoc === b2Right.endLoc &&
+    invertMotionType(b1Left.motionType) === b2Left.motionType &&
+    invertMotionType(b1Right.motionType) === b2Right.motionType;
 
   if (motionInverted) {
     transformations.push("inverted");
@@ -1273,7 +1273,7 @@ function detectLOOPType(sequence) {
   if (results.rotatedSwapped.matches === halfLength) {
     const swapIsMeaningful = beats
       .slice(0, halfLength)
-      .some((beat) => beat.blue?.motionType !== beat.red?.motionType);
+      .some((beat) => beat.left?.motionType !== beat.right?.motionType);
     if (swapIsMeaningful && !detectedComponents.includes("rotated+swapped")) {
       detectedComponents.push("rotated+swapped");
     }
@@ -1281,7 +1281,7 @@ function detectLOOPType(sequence) {
   if (results.mirroredSwapped.matches === halfLength) {
     const swapIsMeaningful = beats
       .slice(0, halfLength)
-      .some((beat) => beat.blue?.motionType !== beat.red?.motionType);
+      .some((beat) => beat.left?.motionType !== beat.right?.motionType);
     if (swapIsMeaningful && !detectedComponents.includes("mirrored+swapped")) {
       detectedComponents.push("mirrored+swapped");
     }
@@ -1294,7 +1294,7 @@ function detectLOOPType(sequence) {
   if (results.mirroredSwappedInverted.matches === halfLength) {
     const swapIsMeaningful = beats
       .slice(0, halfLength)
-      .some((beat) => beat.blue?.motionType !== beat.red?.motionType);
+      .some((beat) => beat.left?.motionType !== beat.right?.motionType);
     if (swapIsMeaningful) {
       [
         "mirrored",
@@ -1328,7 +1328,7 @@ function detectLOOPType(sequence) {
     if (quarteredRotatedSwappedMatches === totalQuarteredPairs) {
       const swapIsMeaningful = beats
         .slice(0, quarterLength)
-        .some((beat) => beat.blue?.motionType !== beat.red?.motionType);
+        .some((beat) => beat.left?.motionType !== beat.right?.motionType);
       if (swapIsMeaningful) {
         const rotatedIdx = detectedComponents.indexOf("rotated");
         if (rotatedIdx !== -1) detectedComponents.splice(rotatedIdx, 1);
@@ -1417,8 +1417,8 @@ function detectLOOPType(sequence) {
           const b2 = beats[quarterLength + i];
           // Check if blue/red swap at quarter boundary
           const swappedAtQuarter =
-            b1.blue?.startLoc === b2.red?.startLoc &&
-            b1.red?.startLoc === b2.blue?.startLoc;
+            b1.left?.startLoc === b2.right?.startLoc &&
+            b1.right?.startLoc === b2.left?.startLoc;
           if (!swappedAtQuarter) return false;
         }
         return true;
@@ -1787,15 +1787,15 @@ function generateMinimalSequenceJSON(sequence, detected) {
     beats: beats.map((b) => ({
       beat: b.beatNumber,
       letter: b.letter,
-      blue: {
-        start: b.blue.startLoc,
-        end: b.blue.endLoc,
-        motion: b.blue.motionType,
+      left: {
+        start: b.left.startLoc,
+        end: b.left.endLoc,
+        motion: b.left.motionType,
       },
-      red: {
-        start: b.red.startLoc,
-        end: b.red.endLoc,
-        motion: b.red.motionType,
+      right: {
+        start: b.right.startLoc,
+        end: b.right.endLoc,
+        motion: b.right.motionType,
       },
     })),
   };

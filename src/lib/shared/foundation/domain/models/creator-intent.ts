@@ -6,8 +6,8 @@ export interface CreatorIntent {
    * carry only an effort timeline. Absent means "no prop intent recorded" —
    * never substitute a default here; display falls back to viewer context. */
   readonly propConfig?: {
-    readonly bluePropType: PropType;
-    readonly redPropType: PropType;
+    readonly leftPropType: PropType;
+    readonly rightPropType: PropType;
     readonly catDogMode: boolean;
   };
   readonly effortTimeline?: EffortTimeline | null;

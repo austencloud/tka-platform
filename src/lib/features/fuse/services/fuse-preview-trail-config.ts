@@ -16,10 +16,10 @@ export const FUSE_PREVIEW_TIP_EFFECT_MAP: TipEffectMap = setCellWide(
 );
 
 export function resolveFusePreviewTrackingMode(
-  bluePropType: string | undefined,
-  redPropType: string | undefined
+  leftPropType: string | undefined,
+  rightPropType: string | undefined
 ): TrackingMode {
-  return pairTipEnds(bluePropType, redPropType) === 2
+  return pairTipEnds(leftPropType, rightPropType) === 2
     ? TrackingMode.BOTH_ENDS
     : TrackingMode.RIGHT_END;
 }

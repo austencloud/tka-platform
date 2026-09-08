@@ -9,6 +9,7 @@
   import { getExplorerContext } from "../context/explorer-context";
   import PathMiniViz from "./PathMiniViz.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     group: PathGroup;
@@ -21,17 +22,17 @@
 
   // Pick a color based on which sides use the path.
   const sideColor = $derived.by(() => {
-    const hasBoth = group.sides.has("blue") && group.sides.has("red");
+    const hasBoth = group.sides.has(HandSide.LEFT) && group.sides.has(HandSide.RIGHT);
     if (hasBoth) return "#a855f7"; // purple = both
-    if (group.sides.has("blue")) return "#3b82f6";
+    if (group.sides.has(HandSide.LEFT)) return "#3b82f6";
     return "#ef4444"; // red
   });
 
   const sideBadgeLabel = $derived.by(() => {
-    const hasBoth = group.sides.has("blue") && group.sides.has("red");
+    const hasBoth = group.sides.has(HandSide.LEFT) && group.sides.has(HandSide.RIGHT);
     if (hasBoth) return "both";
-    if (group.sides.has("blue")) return "blue";
-    return "red";
+    if (group.sides.has(HandSide.LEFT)) return "left";
+    return "right";
   });
 
   const gridModeLabel = $derived.by(() => {

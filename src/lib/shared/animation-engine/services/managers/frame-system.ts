@@ -79,7 +79,8 @@ export class FrameSystem {
     const pathPolicy = buildDeps.getVM().getPathPolicy();
     this.mandalaPathOptions.pathShape = pathPolicy.pathShape;
     this.mandalaPathOptions.motionAware = pathPolicy.motionAwarePaths;
-    params.mandalaVisible = this.state.visibilityState.mandala;
+    params.mandalaVisible =
+      props.mandalaVisibleOverride ?? this.state.visibilityState.mandala;
     params.mandalaSteps = props.sequenceData?.steps ?? null;
     params.mandalaPathOptions = this.mandalaPathOptions;
     return params;
@@ -141,13 +142,13 @@ export class FrameSystem {
 
   enforceUnilateralConstraint(
     settings: TrailSettings,
-    currentBluePropType: string,
-    currentRedPropType: string
+    currentLeftPropType: string,
+    currentRightPropType: string
   ): TrailSettings {
     return this.frameParameterBuilder.enforceUnilateralConstraint(
       settings,
-      currentBluePropType,
-      currentRedPropType
+      currentLeftPropType,
+      currentRightPropType
     );
   }
 

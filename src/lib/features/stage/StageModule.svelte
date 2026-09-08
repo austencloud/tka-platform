@@ -19,6 +19,7 @@
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import {
     SceneEnvironmentId,
     sceneEnvironmentIdForBackground,
@@ -36,20 +37,31 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
+  import type { TikaDirectorConversationMessage } from "./domain/tika-director";
+  import { describeCastForDirectorRevision } from "./domain/tika-director-revision";
+  import {
+    createTikaDirectorSession,
+    type TikaDirectorSubmitResult,
+  } from "./state/tika-director-session";
 
   import FormationOverlay from "./components/FormationOverlay.svelte";
   import SetProperties from "./components/SetProperties.svelte";
   import StageFloorPaths from "./components/StageFloorPaths.svelte";
   import StageTimeline from "./components/StageTimeline.svelte";
   import StageStarter from "./components/StageStarter.svelte";
+  import TikaDirectorPanel from "./components/TikaDirectorPanel.svelte";
   import SceneExportModal from "./scene/components/SceneExportModal.svelte";
   import { createSceneVideoExport } from "./scene/services/create-scene-video-export.svelte";
   import { setStageChoreographyContext } from "./context/stage-choreography-context";
   import { resolveActiveFormationIndex } from "./domain/active-formation";
+  import { resolveStageDeleteCommand } from "./domain/stage-delete-command";
   import { samplePerformerSequenceAtBeat } from "./domain/stage-sequence-timeline";
   import { createStageChoreographyState } from "./state/stage-choreography-state.svelte";
   import type { StudioStarter } from "./domain/studio-project";
-  import { createStageEditMode } from "./state/stage-edit-mode.svelte";
+  import {
+    createStageEditMode,
+    type StageSelection,
+  } from "./state/stage-edit-mode.svelte";
   import {
     DEFAULT_STAGE_SEQUENCE_ID,
     loadStageSequence,
@@ -58,6 +70,14 @@
     applyStageCastToViewer,
     applyStagePerformerMotion,
   } from "./services/stage-viewer-adapter";
+  import { resolveStageDirection } from "./services/tika-director-service";
+  import { executeTikaDirectorPlan } from "./services/tika-director-executor";
+  import {
+    resolveDirectorSequenceAssignments,
+    type DirectorSequenceAssignment,
+  } from "./domain/tika-director-sequences";
+  import { listLibrarySequences } from "$lib/shared/browse/services/library-sequence-list";
+  import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
   type SequenceLoadState = "loading" | "ready" | "error";
   type TimelineDisclosure = "hidden" | "dock" | "editor";
@@ -76,12 +96,75 @@
   setStageChoreographyContext(stageState);
   const editMode = createStageEditMode();
 
+  function performerIdAt(index: number): string | null {
+    return stageState.choreography.performers[index]?.id ?? null;
+  }
+
+  function performerIndexForId(id: string | null): number | null {
+    if (!id) return null;
+    const index = stageState.choreography.performers.findIndex(
+      (performer) => performer.id === id
+    );
+    return index >= 0 ? index : null;
+  }
+
   // The Stage is the same 3D surface as every other one in the app: the shared
   // viewer state is what makes the control rail's tools — performers, formation,
   // camera, scene, presets — reach real rigs instead of doing nothing.
   const viewer = createViewer3DState(undefined, {
     firstUseEnvironment: stageState.choreography.environmentId,
-    appDefaultProp: settings.bluePropType ?? null,
+    appDefaultProp: settings.leftPropType ?? null,
+    performerSelection: {
+      getSelectedIndices: () => {
+        if (editMode.selection.kind === "performers") {
+          return editMode.selection.performerIds
+            .map((id) => performerIndexForId(id))
+            .filter((index): index is number => index !== null);
+        }
+        const focusedIndex = performerIndexForId(editMode.selectedPerformerId);
+        return focusedIndex === null ? [] : [focusedIndex];
+      },
+      getPrimaryIndex: () => performerIndexForId(editMode.selectedPerformerId),
+      replace: (index) => {
+        const id = performerIdAt(index);
+        if (id) editMode.selectPerformer(id);
+      },
+      toggle: (index) => {
+        const id = performerIdAt(index);
+        if (id) editMode.selectPerformer(id, true);
+      },
+      clear: () => editMode.clearSelection(),
+      selectAll: (count) => {
+        const ids = stageState.choreography.performers
+          .slice(0, count)
+          .map((performer) => performer.id);
+        editMode.selectPerformers(ids);
+      },
+      setSelection: (indices, primaryIndex) => {
+        const ids = indices
+          .map((index) => performerIdAt(index))
+          .filter((id): id is string => id !== null);
+        editMode.selectPerformers(
+          ids,
+          primaryIndex === undefined
+            ? undefined
+            : (performerIdAt(primaryIndex) ?? undefined)
+        );
+      },
+      removeSelection: (indices) => {
+        const ids = indices
+          .map((index) => performerIdAt(index))
+          .filter((id): id is string => id !== null);
+        if (ids.length === 0) return false;
+        const firstIndex = Math.min(...indices);
+        if (!stageState.removePerformers(ids)) return false;
+        const remaining = stageState.choreography.performers;
+        const next = remaining[Math.min(firstIndex, remaining.length - 1)];
+        if (next) editMode.selectPerformer(next.id);
+        else editMode.clearSelection();
+        return true;
+      },
+    },
   });
   setViewer3DContext(viewer);
   viewer.setEnvironmentId(stageState.choreography.environmentId);
@@ -107,12 +190,16 @@
   const performanceFrames = $derived(stageState.performanceFrames);
 
   let chartRaised = $state(false);
+  let tikaDirectorOpen = $state(false);
+  let tikaPrompt = $state("");
+  let tikaMessages = $state<TikaDirectorConversationMessage[]>([]);
   let starterVisible = $state(!handoff);
   let starterSceneBlank = $state(false);
   let starterCurtainVisible = $state(false);
   let starterEnvironmentPreview = $state(false);
   let starterTransitionId = 0;
   let timelineExpanded = $state(false);
+  let timelineBeforeCompactSheet: boolean | null = null;
   let timelineLens = $state<"hands" | "floor" | "motion">("hands");
   let workspaceSizes = $state<number[]>([]);
   let pickerOpen = $state(false);
@@ -206,6 +293,114 @@
       : null
   );
 
+  let tikaViewerHistoryRevision = 0;
+  const unsubscribeTikaHistory = viewer.sceneUndo.subscribe(() => {
+    tikaViewerHistoryRevision++;
+  });
+  const tikaSession = createTikaDirectorSession({
+    isDisposed: () => viewer.disposed || !tikaDirectorOpen,
+    getRevision: () =>
+      JSON.stringify(
+        {
+          stageHistory: stageState.historyRevision,
+          viewerHistory: tikaViewerHistoryRevision,
+          choreography,
+          cast: describeCastForDirectorRevision(
+            viewer.performerManager.performers.map((performer) =>
+              performer.captureEditingSnapshot()
+            )
+          ),
+        },
+        (_key, value) => (value instanceof Map ? [...value] : value)
+      ),
+  });
+
+  async function readLibraryForDirector(): Promise<SequenceData[] | null> {
+    try {
+      return await listLibrarySequences();
+    } catch {
+      return null;
+    }
+  }
+
+  async function directStageWithTika(
+    prompt: string,
+    conversation: readonly TikaDirectorConversationMessage[],
+    signal: AbortSignal
+  ): Promise<TikaDirectorSubmitResult> {
+    const requestBeat = stageState.currentBeat;
+    // Picked and hydrated while the plan resolves, so apply stays synchronous
+    // under the session's revision check and never plays a metadata-only record.
+    let sequencePicks: DirectorSequenceAssignment[] = [];
+    try {
+      return await tikaSession.execute(
+        async () => {
+          const library = await readLibraryForDirector();
+          const response = await resolveStageDirection({
+            prompt,
+            conversation,
+            choreography,
+            currentBeat: requestBeat,
+            viewer,
+            ...(library ? { librarySequenceCount: library.length } : {}),
+            signal,
+          });
+          if (
+            response.kind === "apply" &&
+            response.actions.some(
+              (action) => action.type === "assign-distinct-sequences"
+            )
+          ) {
+            if (!library) {
+              throw new Error(
+                "TIKA could not read your library, so no sequences were assigned."
+              );
+            }
+            const picks = resolveDirectorSequenceAssignments({
+              actions: response.actions,
+              performerIds: choreography.performers.map((p) => p.id),
+              seedKey: `${choreography.id}:${prompt}`,
+              library,
+            });
+            sequencePicks = await Promise.all(
+              picks.map(async (pick) => ({
+                performerId: pick.performerId,
+                sequence: await hydrateSequence(pick.sequence),
+              }))
+            );
+            signal.throwIfAborted();
+          }
+          return response;
+        },
+        (response) =>
+          executeTikaDirectorPlan(response, {
+            stageState,
+            viewer,
+            requestBeat,
+            selectedFormationId: editMode.selectedFormationId,
+            seedKey: `${choreography.id}:${prompt}`,
+            sequencePicks,
+            preloadSequence: (pick) =>
+              preloadedSequences.set(pick.sequence.id, pick.sequence),
+          }),
+        signal
+      );
+    } catch (cause) {
+      if (signal.aborted || viewer.disposed || !tikaDirectorOpen) throw cause;
+      const failure = cause instanceof Error ? cause : new Error(String(cause));
+      getErrorHandler().showUserError({
+        message: "TIKA could not direct this scene.",
+        technicalDetails: failure.message,
+        error: failure,
+        context: {
+          module: "stage",
+          action: "direct-stage-with-tika",
+        },
+      });
+      throw failure;
+    }
+  }
+
   // Resolve every sequence the document references. One request per id, redone
   // whenever the set of ids changes or the user retries a failure.
   //
@@ -280,7 +475,7 @@
     };
   });
 
-  // Cast size and per-lane sequences are document facts; look edits — avatar,
+  // Cast size and per-lane sequences are document facts; look edits — character,
   // prop, effort, effects, planes — stay with the performer manager and are
   // never rewritten from here, so the rail's Performer tool keeps working.
   //
@@ -349,12 +544,16 @@
   });
 
   onDestroy(() => {
+    unsubscribeTikaHistory();
     stageState.destroy();
     exporter.cancel();
     viewer.dispose();
   });
 
-  let exportOpen = $state(false);
+  // Opening a saved film goes straight to its render card: the person already
+  // chose to render it back in the collection, so a second click to open the
+  // export modal would be a step that asks nothing.
+  let exportOpen = $state(!!handoff?.film);
 
   const workspacePanels = $derived.by<PanelDefinition[]>(() => {
     const stage: PanelDefinition = {
@@ -397,6 +596,24 @@
 
   function collapseChoreography(): void {
     timelineExpanded = false;
+  }
+
+  function handleCompactSceneSheetChange(
+    sheet: "performer" | "scene" | null
+  ): void {
+    if (sheet) {
+      if (timelineBeforeCompactSheet === null) {
+        timelineBeforeCompactSheet = timelineExpanded;
+      }
+      timelineExpanded = false;
+      return;
+    }
+
+    const shouldRestore = timelineBeforeCompactSheet;
+    timelineBeforeCompactSheet = null;
+    // If the user expanded the timeline while the sheet was open, that newer
+    // intent wins. Otherwise restore the layout they had before editing.
+    if (!timelineExpanded && shouldRestore) timelineExpanded = true;
   }
 
   function chooseSequence(next: SequenceData): void {
@@ -492,11 +709,110 @@
     if (added) editMode.selectFormation(added.id);
   }
 
-  function removeSelectedSet(): void {
-    const id = editMode.selectedFormationId ?? activeSet?.id;
-    if (!id) return;
-    stageState.removeFormation(id);
-    editMode.clearSelection();
+  function focusStageTarget(attribute: string, id: string): void {
+    void tick().then(() => {
+      const target = Array.from(
+        document.querySelectorAll<HTMLElement>(`[${attribute}]`)
+      ).find((element) => element.getAttribute(attribute) === id);
+      target?.focus({ preventScroll: true });
+    });
+  }
+
+  function deleteStageSelection(
+    selection: StageSelection = editMode.selection
+  ): void {
+    const command = resolveStageDeleteCommand(selection);
+
+    switch (command.kind) {
+      case "remove-performers": {
+        const selectedIds = new Set(command.performerIds);
+        const firstIndex = choreography.performers.findIndex((performer) =>
+          selectedIds.has(performer.id)
+        );
+        const removedLabels = choreography.performers
+          .filter((performer) => selectedIds.has(performer.id))
+          .map((performer) => performer.label);
+
+        if (!stageState.removePerformers(command.performerIds)) {
+          if (removedLabels.length > 0) {
+            toast.warning("A scene needs at least one performer.");
+          }
+          return;
+        }
+
+        const nextIndex = Math.min(
+          Math.max(0, firstIndex),
+          choreography.performers.length - 1
+        );
+        const nextPerformer = choreography.performers[nextIndex];
+        if (nextPerformer) {
+          editMode.selectPerformer(nextPerformer.id);
+          focusStageTarget("data-stage-performer-id", nextPerformer.id);
+        } else editMode.clearSelection();
+
+        toast.success(
+          removedLabels.length === 1
+            ? `Performer ${removedLabels[0]} removed. Ctrl+Z to undo.`
+            : `${removedLabels.length} performers removed. Ctrl+Z to undo.`
+        );
+        return;
+      }
+      case "remove-formation": {
+        const index = choreography.formations.findIndex(
+          (formation) => formation.id === command.formationId
+        );
+        if (index <= 0) {
+          if (index === 0) toast.info("The opening set stays in every scene.");
+          return;
+        }
+        const name =
+          choreography.formations[index]?.label ?? `Set ${index + 1}`;
+        const nextFormation =
+          choreography.formations[index + 1] ??
+          choreography.formations[index - 1];
+        stageState.removeFormation(command.formationId);
+        if (nextFormation) {
+          editMode.selectFormation(nextFormation.id);
+          focusStageTarget("data-stage-formation-id", nextFormation.id);
+        } else editMode.clearSelection();
+        toast.success(`${name} removed. Ctrl+Z to undo.`);
+        return;
+      }
+      case "remove-clip": {
+        const performer = choreography.performers.find(
+          (candidate) => candidate.id === command.performerId
+        );
+        const clip = performer?.sequenceClips.find(
+          (candidate) => candidate.id === command.clipId
+        );
+        if (!performer || !clip) return;
+        const name = stageState.clipLabel(clip);
+        stageState.removeSequenceClip(command.clipId);
+        editMode.selectPerformer(command.performerId);
+        focusStageTarget("data-stage-performer-id", command.performerId);
+        toast.success(
+          `${name} removed from performer ${performer.label}. Ctrl+Z to undo.`
+        );
+        return;
+      }
+      case "reset-travel":
+        if (
+          stageState.resetPerformerTravelTiming(
+            command.formationId,
+            command.performerId
+          )
+        ) {
+          toast.success("Custom travel timing reset to Auto. Ctrl+Z to undo.");
+        }
+        return;
+      case "explain-required-spot":
+        toast.info(
+          "Every performer needs a spot in each set. Move it or reset the set layout instead."
+        );
+        return;
+      case "none":
+        return;
+    }
   }
 
   /**
@@ -524,7 +840,7 @@
       nextSet: () => jumpToNeighbouringSet(1),
       toggleChart: () => (chartRaised = !chartRaised),
       addSet: addSetAtPlayhead,
-      removeSelectedSet,
+      deleteSelection: () => deleteStageSelection(),
     })) {
       manager.register(shortcut);
     }
@@ -557,6 +873,18 @@
 </script>
 
 {#snippet stageHudActions()}
+  {#if authState.isAdmin || import.meta.env.DEV}
+    <SceneChromeButton
+      icon="fa-wand-magic-sparkles"
+      label="Direct with TIKA"
+      tooltipSide="bottom"
+      active={tikaDirectorOpen}
+      onclick={(event: MouseEvent) => {
+        event.stopPropagation();
+        tikaDirectorOpen = !tikaDirectorOpen;
+      }}
+    />
+  {/if}
   <SceneChromeButton
     icon="fa-border-all"
     label={chartRaised ? "Hide drill chart" : "Drill chart"}
@@ -571,6 +899,20 @@
 
 {#snippet floorPaths()}
   <StageFloorPaths />
+{/snippet}
+
+{#snippet tikaPanel(close: () => void, compact: boolean)}
+  <TikaDirectorPanel
+    onClose={close}
+    active={tikaDirectorOpen}
+    {compact}
+    bind:prompt={tikaPrompt}
+    bind:messages={tikaMessages}
+    sceneName={choreography.name}
+    performerCount={choreography.performers.length}
+    currentBeat={stageState.currentBeat}
+    onSubmit={directStageWithTika}
+  />
 {/snippet}
 
 {#snippet stageOverlay()}
@@ -591,7 +933,11 @@
             axis: "x",
           }}
         >
-          <SetProperties {editMode} />
+          <SetProperties
+            {editMode}
+            onRemoveSet={(formationId) =>
+              deleteStageSelection({ kind: "formation", formationId })}
+          />
         </div>
       {/if}
     </div>
@@ -662,8 +1008,8 @@
           width: choreography.stageWidth,
           depth: choreography.stageDepth,
         }}
-        bluePropType={settings.bluePropType ?? settings.propType ?? "staff"}
-        redPropType={settings.redPropType ?? settings.propType ?? "staff"}
+        leftPropType={settings.leftPropType ?? settings.propType ?? "staff"}
+        rightPropType={settings.rightPropType ?? settings.propType ?? "staff"}
         onChangeSequence={() => (pickerOpen = true)}
         onExport={sharedSequence ? () => (exportOpen = true) : undefined}
         exportBusy={exporter.state.isExporting}
@@ -675,6 +1021,9 @@
         {performerSteps}
         worldChildren={starterSceneBlank ? undefined : floorPaths}
         hudActions={stageHudActions}
+        hostPanel={tikaPanel}
+        hostPanelTitle="Direct with TIKA"
+        bind:hostPanelOpen={tikaDirectorOpen}
         overlayChildren={stageOverlay}
         hideCanvasOverlays
         sceneControlsBottomOffset="0.75rem"
@@ -682,6 +1031,7 @@
         renderEmptyScene
         visiblePerformerCount={starterSceneBlank ? 0 : undefined}
         showSceneChrome={!starterSceneBlank}
+        onCompactSceneSheetChange={handleCompactSceneSheetChange}
         contained
       />
     {:else}
@@ -702,6 +1052,7 @@
     mode={timelineDisclosure === "editor" ? "editor" : "dock"}
     onExpand={() => openChoreography()}
     onCollapse={collapseChoreography}
+    onDeleteSelection={deleteStageSelection}
   />
 {/snippet}
 
@@ -739,6 +1090,7 @@
     bpm={choreography.bpm}
     {exporter}
     onClose={() => (exportOpen = false)}
+    film={handoff?.film}
   />
 {/if}
 

@@ -1,3 +1,6 @@
+import { untrack } from "svelte";
+import { captureActivePropConfig } from "$lib/shared/foundation/services/recorded-prop-intent";
+import { withSavedProps } from "$lib/shared/foundation/services/prop-viewing";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { libraryState } from "$lib/features/library/state/library-state.svelte";
@@ -20,11 +23,15 @@ import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigatio
 import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 import type { SoloPropSaveOrchestrator } from "$lib/features/library/services/solo-prop-save-orchestrator";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  extractLeftSoloProp,
+  extractRightSoloProp,
 } from "$lib/shared/foundation/services/sequence-decomposer";
 import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+import {
+  normalizeCardPresentation,
+  type CardPresentation,
+} from "$lib/shared/share/domain/models/card-presentation";
 
 type ContentModerator = {
   checkWord: (word: string) => ContentModerationResult;
@@ -36,6 +43,7 @@ export interface SavePanelDeps {
   soloPropSaveOrchestrator: SoloPropSaveOrchestrator | null;
   contentModerator: ContentModerator | null;
   hallOfShameSubmitter: HallOfShameSubmitter | null;
+  getDefaultCardPresentation: () => CardPresentation;
 }
 
 export interface SavePanelProps {
@@ -53,6 +61,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
     soloPropSaveOrchestrator,
     contentModerator,
     hallOfShameSubmitter,
+    getDefaultCardPresentation,
   } = deps;
   const { CreateModuleState } = ctx;
   const logger = createComponentLogger("SaveToLibraryPanel");
@@ -75,9 +84,13 @@ export function createSavePanelState(deps: SavePanelDeps) {
   let publishToCommunity = $state(false);
 
   // Form state
+  let saveProps = $state(captureActivePropConfig(getSettings()));
   let notes = $state("");
   let title = $state("");
   let showNotes = $state(false);
+  let cardPresentation = $state<CardPresentation>(
+    normalizeCardPresentation(getDefaultCardPresentation())
+  );
   // Collections chosen in the picker. The sequence isn't saved yet, so we
   // collect ids here and file them right after the save (see handleSave).
   let selectedCollectionIds = $state<string[]>([]);
@@ -111,8 +124,8 @@ export function createSavePanelState(deps: SavePanelDeps) {
   );
   const isSolo = $derived(motionProfile.kind === "solo");
   const isMixed = $derived(motionProfile.kind === "mixed");
-  const soloColor = $derived(
-    motionProfile.kind === "solo" ? motionProfile.color : null
+  const soloHand = $derived(
+    motionProfile.kind === "solo" ? motionProfile.hand : null
   );
   const authoredHand = $derived(
     motionProfile.kind === "solo" ? motionProfile.authoredHand : null
@@ -234,12 +247,16 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // Reset form when sequence changes or panel opens
   $effect(() => {
     if (sequence && _propsGetter().show) {
+      saveProps = untrack(() => captureActivePropConfig(getSettings()));
       notes = "";
       title =
         motionProfile.kind === "solo"
           ? `${motionProfile.authoredHand === "left" ? "Left" : "Right"}-hand choreography`
           : "";
       showNotes = false;
+      cardPresentation = sequence.cardPresentation
+        ? normalizeCardPresentation(sequence.cardPresentation)
+        : normalizeCardPresentation(getDefaultCardPresentation());
       selectedCollectionIds = [];
     }
   });
@@ -280,17 +297,12 @@ export function createSavePanelState(deps: SavePanelDeps) {
     if (!saveName || !sequence || isMixed) return;
 
     if (isSolo && !authState.isFullAccount) {
-      showToast({
-        message: "Create an account to keep solo choreography in your library.",
-        type: "info",
-        duration: 6000,
-      });
       authDrawerState.show("signup", "save");
       return;
     }
 
     if (isSolo) {
-      if (!soloPropSaveOrchestrator || !authoredHand || !soloColor) {
+      if (!soloPropSaveOrchestrator || !authoredHand || !soloHand) {
         logger.error("SoloPropSaveOrchestrator not available");
         showToast({
           message: "Solo choreography could not be saved. Try again.",
@@ -304,9 +316,9 @@ export function createSavePanelState(deps: SavePanelDeps) {
       saveStep = 1;
       try {
         const extracted =
-          soloColor === "blue"
-            ? extractBlueSoloProp(sequence)
-            : extractRedSoloProp(sequence);
+          soloHand === "left"
+            ? extractLeftSoloProp(sequence)
+            : extractRightSoloProp(sequence);
         const result = await soloPropSaveOrchestrator.save(extracted, {
           name: saveName,
           notes: notes.trim(),
@@ -382,7 +394,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
       });
 
       const result = await librarySaveService.saveSequence(
-        sequence,
+        { ...withSavedProps(sequence, saveProps), cardPresentation },
         {
           name: tkaName,
           visibility: publishToCommunity && !isFlagged ? "public" : "private",
@@ -462,18 +474,18 @@ export function createSavePanelState(deps: SavePanelDeps) {
         postSaveActivation.onGuestSaveSucceeded(result.sequenceId);
       }
     } catch (error) {
+      // The save service already opened the account prompt for this limit.
+      if (error instanceof LibraryError && error.code === "GUEST_CAP") return;
       logger.error("Failed to save sequence:", error);
       saveStep = 0;
       const message =
         error instanceof LibraryError && error.code === "ALREADY_EXISTS"
           ? "This exact sequence is already in your library."
-          : error instanceof LibraryError && error.code === "GUEST_CAP"
-            ? "Guest save limit reached - create a free account to save more."
-            : error instanceof LibraryError && error.code === "PERSIST_FAILED"
-              ? "Couldn't save this sequence - local storage write failed. Try again."
-              : error instanceof Error
-                ? `Couldn't save this sequence: ${error.message}`
-                : "Couldn't save this sequence. Please try again.";
+          : error instanceof LibraryError && error.code === "PERSIST_FAILED"
+            ? "Couldn't save this sequence - local storage write failed. Try again."
+            : error instanceof Error
+              ? `Couldn't save this sequence: ${error.message}`
+              : "Couldn't save this sequence. Please try again.";
       showToast({ message, type: "error", duration: 6000 });
     } finally {
       isSaving = false;
@@ -561,6 +573,12 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // ---------------------------------------------------------------------------
 
   return {
+    get saveProps() {
+      return saveProps;
+    },
+    set saveProps(value) {
+      saveProps = value;
+    },
     // Static data
     saveSteps,
     headerTitle,
@@ -611,6 +629,13 @@ export function createSavePanelState(deps: SavePanelDeps) {
     },
     set showNotes(v: boolean) {
       showNotes = v;
+    },
+
+    get cardPresentation() {
+      return cardPresentation;
+    },
+    set cardPresentation(v: CardPresentation) {
+      cardPresentation = normalizeCardPresentation(v);
     },
 
     get selectedCollectionIds() {
@@ -686,8 +711,8 @@ export function createSavePanelState(deps: SavePanelDeps) {
     get isMixed() {
       return isMixed;
     },
-    get soloColor() {
-      return soloColor;
+    get soloHand() {
+      return soloHand;
     },
     get authoredHand() {
       return authoredHand;

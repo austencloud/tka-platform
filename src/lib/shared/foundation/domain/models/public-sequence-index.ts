@@ -107,26 +107,26 @@ export interface PublicSequenceIndex {
   /** SHA-256 of SequenceEncoder.encode() output - used for URL-to-library matching */
   readonly encoderHash?: string;
 
-  /** Blue performer's solo prop decomposition (steps + hand path) */
-  readonly blueSoloProp?: SoloPropData;
+  /** Left-hand solo prop decomposition (steps + hand path) */
+  readonly leftSoloProp?: SoloPropData;
 
-  /** Red performer's solo prop decomposition (steps + hand path) */
-  readonly redSoloProp?: SoloPropData;
+  /** Right-hand solo prop decomposition (steps + hand path) */
+  readonly rightSoloProp?: SoloPropData;
 
-  /** Per-beat pairings linking blue and red motions */
+  /** Per-beat pairings linking left- and right-hand motions */
   readonly stepPairings?: readonly StepPairingData[];
 
-  /** Hash of blue performer's dual-prop hand path */
-  readonly bluePathHash?: string;
+  /** Hash of the left-hand dual-prop path */
+  readonly leftPathHash?: string;
 
-  /** Hash of red performer's dual-prop hand path */
-  readonly redPathHash?: string;
+  /** Hash of the right-hand dual-prop path */
+  readonly rightPathHash?: string;
 
-  /** Hash of blue performer's solo prop */
-  readonly blueSoloHash?: string;
+  /** Hash of the left-hand solo prop */
+  readonly leftSoloHash?: string;
 
-  /** Hash of red performer's solo prop */
-  readonly redSoloHash?: string;
+  /** Hash of the right-hand solo prop */
+  readonly rightSoloHash?: string;
 
 
   /** Creator's presentation intent (prop config + effort timeline) */

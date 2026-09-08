@@ -7,6 +7,7 @@ import {
   createDerivedTunnelPerformer,
   createIndependentTunnelPerformer,
   createTunnelComposition,
+  TunnelCompositionSchema,
   primaryTunnelSourceSequenceId,
   resolveTunnelLayerPlans,
   tunnelCompositionCycleSteps,
@@ -15,7 +16,7 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   GridLocation,
   GridMode,
@@ -36,8 +37,8 @@ function sequence(id: string, steps: number): SequenceData {
           duration: 1,
           motions: {},
           isBlank: false,
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
         }) as StepData
     ),
   });
@@ -54,15 +55,15 @@ function geometricSequence(id: string): SequenceData {
         id: `${id}-1`,
         stepNumber: 1,
         motions: {
-          [MotionColor.BLUE]: createMotionData({
-            color: MotionColor.BLUE,
+          [HandSide.LEFT]: createMotionData({
+            hand: HandSide.LEFT,
             startLocation: GridLocation.NORTH,
             endLocation: GridLocation.EAST,
             arrowLocation: GridLocation.NORTH,
             gridMode: GridMode.DIAMOND,
           }),
-          [MotionColor.RED]: createMotionData({
-            color: MotionColor.RED,
+          [HandSide.RIGHT]: createMotionData({
+            hand: HandSide.RIGHT,
             startLocation: GridLocation.SOUTH,
             endLocation: GridLocation.WEST,
             arrowLocation: GridLocation.SOUTH,
@@ -75,7 +76,7 @@ function geometricSequence(id: string): SequenceData {
 }
 
 describe("tunnel composition", () => {
-  it("assigns two authored sequences around an eight-arm formation", () => {
+  it("stages one visible instance for each newly authored performer", () => {
     const lead = createIndependentTunnelPerformer(sequence("lead", 8), 0);
     const partner = createIndependentTunnelPerformer(sequence("partner", 8), 1);
     const composition = createTunnelComposition([lead, partner], {
@@ -93,6 +94,29 @@ describe("tunnel composition", () => {
     const plans = resolveTunnelLayerPlans(composition);
 
     expect(lead.label).toBe("Performer 1");
+    expect(plans).toHaveLength(2);
+    expect(plans.map((plan) => plan.sequence.id)).toEqual(["lead", "partner"]);
+    expect(plans.map((plan) => plan.arm)).toEqual([0, 4]);
+  });
+
+  it("materializes every historical arm when migrating a generated cast", () => {
+    const lead = createIndependentTunnelPerformer(sequence("lead", 8), 0);
+    const partner = createIndependentTunnelPerformer(sequence("partner", 8), 1);
+    const composition = createTunnelComposition([lead, partner], {
+      formation: {
+        fold: 8,
+        mirror: false,
+        flip: false,
+        invert: false,
+        echo: false,
+        staggerSteps: 0,
+        speedOverrides: {},
+      },
+      legacyGeneratedStage: true,
+    });
+
+    const plans = resolveTunnelLayerPlans(composition);
+
     expect(plans).toHaveLength(8);
     expect(plans.map((plan) => plan.sequence.id)).toEqual([
       "lead",
@@ -104,6 +128,42 @@ describe("tunnel composition", () => {
       "lead",
       "partner",
     ]);
+  });
+
+  it("preserves a version-one three-person four-arm result exactly", () => {
+    const performers = ["p1", "p2", "p3"].map((id, index) => {
+      const performer = createIndependentTunnelPerformer(
+        sequence(id, 8),
+        index
+      );
+      performer.id = id;
+      return performer;
+    });
+    const parsed = TunnelCompositionSchema.parse({
+      version: 1,
+      id: "oregano",
+      name: "Oregano",
+      performers,
+      formation: {
+        fold: 4,
+        mirror: false,
+        flip: false,
+        invert: false,
+        echo: false,
+        staggerSteps: 0,
+        speedOverrides: {},
+      },
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    expect(parsed.version).toBe(2);
+    expect(
+      parsed.stage.instances.map((instance) => instance.performerId)
+    ).toEqual(["p1", "p2", "p3", "p1"]);
+    expect(
+      resolveTunnelLayerPlans(parsed).map((plan) => plan.sequence.id)
+    ).toEqual(["p1", "p2", "p3", "p1"]);
   });
 
   it("resolves a linked performer through its ordered transform recipe", () => {
@@ -151,8 +211,8 @@ describe("tunnel composition", () => {
     );
     const partner = layers.find((layer) => layer.authoredPerformerIndex === 1)!;
     const pairedBlue =
-      partner.performerSequence.steps[0]!.motions[MotionColor.BLUE]!;
-    const placedBlue = partner.sequence.steps[0]!.motions[MotionColor.BLUE]!;
+      partner.performerSequence.steps[0]!.motions[HandSide.LEFT]!;
+    const placedBlue = partner.sequence.steps[0]!.motions[HandSide.LEFT]!;
 
     expect(partner.performerSequence.gridMode).toBe(GridMode.BOX);
     expect(partner.performerSequence.steps[0]!.gridMode).toBe(GridMode.BOX);

@@ -2,8 +2,8 @@
 
 ## Outcome
 
-The Shape Matrix Explorer becomes a self-contained instrument that can fill a route or
-an application panel. A visitor can
+Kinetic Shape Engine becomes a self-contained instrument that can fill a route
+or an application panel. A visitor can
 choose a matrix cell, inspect its exact realizations, and return to the matrix
 without document scrolling. The page identifies Lorq Nichols as the creator of
 the Shape Matrix without claiming ownership, permission, collaboration, or
@@ -41,11 +41,23 @@ The original diagram and long editorial preface leave the primary interaction
 path. Concise context and source links live in an About modal using the shared
 modal owner.
 
-The product identity is `Shape Matrix Explorer`, with the subtitle `Built on
-Lorq Nichols’ Shape Matrix`. The About copy distinguishes Lorq's original
-framework from this app's independent TKA levels, quarter turns, mixed axes,
-prop rendering, relationships, and animation. The Original and About links stay
-present without implying permission, collaboration, or endorsement.
+As of 2026-09-04, the formal product identity is `Kinetic Shape Engine`, with
+`Shape Engine` as its compact name. `Shape Matrix Explorer` remains metadata's
+legacy alternate name so old references stay intelligible; it is no longer the
+visible product identity. The stable route remains `/notation/shape-matrix`.
+
+The visible source line identifies the original matrix's VTG ratios: `1:1`,
+`1:3`, and `1:5`. The About copy explains that Lorq used four even-petaled
+driving styles from each ratio family, giving twelve choices for each hand and
+144 left/right pairings. It also resolves the notation convention: Lorq's
+labels appear as `1:1`, `3:1`, and `5:1` in this engine because its controls put
+prop rotations before hand cycles.
+
+The About copy separates three things: Nichols' original matrix, the level and
+ratio matrices this engine generates, and the independent software built by
+Austen Cloud. `Shape Matrix` and `Theory Matrix` remain the names of
+matrix surfaces inside the larger engine. Source and About links stay present
+without implying permission, collaboration, or endorsement.
 
 ## Selection and sharing
 
@@ -145,7 +157,10 @@ Search terms: `Shape Matrix`, `realization pane`, `detail pane`, `ControlDock`,
 - Level 1 exposes 0 turns.
 - Level 2 exposes whole turns from 0 through 3.
 - Level 3 adds half turns and Float.
-- Level 4 exposes every quarter step from 0 through 3 and retains Float.
+- Level 4 exposes every quarter step from -0.25 through 3 and retains Float.
+- Choosing a level lands the edited axis on the first rotating turn that level
+  introduces: Level 1 at 0, Level 2 at 1, Level 3 at 0.5, and Level 4 at 0.25.
+  Earlier values remain selectable because the level vocabulary is cumulative.
 - Each axis owns its own turn band. The turn strip edits Blue rows, Red columns,
   or Both, with Both as the default. A numeric axis has four descriptors:
   pro/anti × in/out. Matching numeric bands therefore produce a 4×4 matrix;
@@ -155,8 +170,10 @@ Search terms: `Shape Matrix`, `realization pane`, `detail pane`, `ControlDock`,
   four descriptors, so Float × Float is also 4×4. Clock/counter supply the
   lateral circle placements missing from the former 2×2 treatment.
 - Turn labels may be read as TKA turn values or reduced prop-to-hand VTG
-  pattern ratios. Quarter ratios use `3:2`, `5:2`, and the corresponding
-  odd-over-two series. When the axes differ, the app names both explicitly,
+  pattern ratios. TKA Float reads as `0:1` in ratio mode, and TKA `-0.25`
+  reduces from `0.5:1` to `1:2`. Positive quarter ratios use `3:2`, `5:2`,
+  and the corresponding odd-over-two series. When the axes differ, the app
+  names both explicitly,
   for example `Blue 3:1 × Red 1:1`. Primary VTG sources establish the individual
   pattern ratios but not `3::1` as a canonical hybrid abbreviation, so the app
   does not invent that shorthand.
@@ -225,6 +242,9 @@ canonical notation.
   when it fits, three columns on narrow-tall hosts, and two columns in a
   short-wide rail. A prop-first secondary hand-path choice may add one row only
   when several hand paths genuinely produce the selected prop relationship.
+- Both relationship pickers spell out the timing-and-direction family when the
+  drill is wide enough for all six names. Tighter hosts use the shared VTG codes
+  so changing between Hands and Props never changes the row's text density.
 - On phone-width hosts, both pickers use the same compact two-row treatment and
   the pictograph rail yields its space to the live realization. The rail returns
   at wider tiers, where it no longer reduces the animation to a thumbnail.

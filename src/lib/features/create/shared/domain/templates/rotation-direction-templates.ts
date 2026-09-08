@@ -122,16 +122,16 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
   // ===== SPLIT BY HAND =====
   {
     id: "blue-cw-red-ccw",
-    name: "Blue CW / Red CCW",
-    description: "Blue hand clockwise, red counter-clockwise",
+    name: "Left CW / Right CCW",
+    description: "Left hand clockwise, right counter-clockwise",
     category: "split-hand",
     minSteps: 1,
     generator: (stepCount) => generateUniformPattern(stepCount, "cw", "ccw"),
   },
   {
     id: "blue-ccw-red-cw",
-    name: "Blue CCW / Red CW",
-    description: "Blue hand counter-clockwise, red clockwise",
+    name: "Left CCW / Right CW",
+    description: "Left hand counter-clockwise, right clockwise",
     category: "split-hand",
     minSteps: 1,
     generator: (stepCount) => generateUniformPattern(stepCount, "ccw", "cw"),
@@ -161,15 +161,15 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
  */
 function generateUniformPattern(
   stepCount: number,
-  blueDir: RotationDirectionValue,
-  redDir: RotationDirectionValue
+  leftDir: RotationDirectionValue,
+  rightDir: RotationDirectionValue
 ): RotationDirectionPatternEntry[] {
   const entries: RotationDirectionPatternEntry[] = [];
   for (let i = 0; i < stepCount; i++) {
     entries.push({
       stepIndex: i,
-      blue: blueDir,
-      red: redDir,
+      left: leftDir,
+      right: rightDir,
     });
   }
   return entries;
@@ -189,8 +189,8 @@ function generateAlternatingPattern(
     const dir = i % 2 === 0 ? startDir : otherDir;
     entries.push({
       stepIndex: i,
-      blue: dir,
-      red: dir,
+      left: dir,
+      right: dir,
     });
   }
   return entries;
@@ -212,8 +212,8 @@ function generateSplitHalfPattern(
     const dir = i < halfPoint ? firstHalfDir : secondHalfDir;
     entries.push({
       stepIndex: i,
-      blue: dir,
-      red: dir,
+      left: dir,
+      right: dir,
     });
   }
   return entries;

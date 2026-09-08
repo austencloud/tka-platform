@@ -9,6 +9,8 @@ import type {
   Animal3DParams,
   Pulse3DParams,
   Bloom3DParams,
+  Fire3DParams,
+  Charcoal3DParams,
 } from "$lib/shared/effects/translators/webgl3d-types";
 import type { QualityTier } from "../types";
 
@@ -29,6 +31,9 @@ interface SceneEffectTipBase3D {
   speed: number;
   /** Fractional animation step, used by beat-triggered scene effects. */
   currentStep: number;
+  /** Step count and seam contract for effects that retain motion history. */
+  totalSteps?: number;
+  seamlesslyLoopable?: boolean;
   /** Canonical prop tint for prop-matched color modes. */
   propColor: string;
 }
@@ -73,6 +78,8 @@ export interface SilkTipSource3D extends SceneEffectTipBase3D {
 export interface AnimalTipSource3D extends SceneEffectTipBase3D {
   effect: "animal";
   params: Animal3DParams;
+  totalSteps: number;
+  seamlesslyLoopable: boolean;
 }
 
 export interface PulseTipSource3D extends SceneEffectTipBase3D {
@@ -86,6 +93,24 @@ export interface BloomTipSource3D extends SceneEffectTipBase3D {
   qualityTier: QualityTier;
 }
 
+export interface FireTipSource3D extends SceneEffectTipBase3D {
+  effect: "fire";
+  params: Fire3DParams;
+  qualityTier: QualityTier;
+  /** Scalar jerk magnitude used for the brightest local-light stalls. */
+  jerk: number;
+}
+
+export interface CharcoalTipSource3D extends SceneEffectTipBase3D {
+  effect: "charcoal";
+  params: Charcoal3DParams;
+  qualityTier: QualityTier;
+  jerk: number;
+  totalSteps: number;
+  /** World-space stage floor used by falling ember fragments. */
+  collisionFloorY: number;
+}
+
 export type SceneEffectTipSource3D =
   | SparkleTipSource3D
   | GooTipSource3D
@@ -96,7 +121,9 @@ export type SceneEffectTipSource3D =
   | SilkTipSource3D
   | AnimalTipSource3D
   | PulseTipSource3D
-  | BloomTipSource3D;
+  | BloomTipSource3D
+  | FireTipSource3D
+  | CharcoalTipSource3D;
 
 export interface SceneEffectRigFrame3D {
   playing: boolean;

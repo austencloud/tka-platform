@@ -14,6 +14,7 @@
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import { createCompositionPlaybackAdapter } from "$lib/shared/media-composition/state/composition-playback-adapter";
   import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
 
   let {
     advanced = false,
@@ -21,6 +22,7 @@
     showAdvancedToggle = true,
     onMapPerformance,
     onToggleAdvanced,
+    selected = true,
   }: {
     advanced?: boolean;
     performanceAlignmentDetail?: string | null;
@@ -29,10 +31,17 @@
     showAdvancedToggle?: boolean;
     onMapPerformance?: () => void;
     onToggleAdvanced?: () => void;
+    selected?: boolean;
   } = $props();
 
   const composition = getMediaCompositionContext();
   const playback = createCompositionPlaybackAdapter(composition);
+  const shared = getViewerStudioSurfaces();
+  let target = $state<HTMLElement | null>(null);
+  $effect(() => {
+    if (target && selected)
+      return shared?.requestTransport(target, playback, studioTrailing);
+  });
 
   const alignmentLabel = $derived.by(() => {
     if (performanceAlignmentDetail) {
@@ -60,45 +69,57 @@
   const alignmentNeedsMapping = $derived(
     Boolean(
       performanceAlignmentDetail?.startsWith("Unmapped") ||
-        performanceAlignmentDetail?.includes("needs repair")
+      performanceAlignmentDetail?.includes("needs repair")
     )
   );
 </script>
 
-<UnifiedTimeline {playback}>
-  {#snippet trailing()}
-    {#if alignmentLabel}
-      <span
-        class="alignment"
-        title={alignmentNeedsMapping
-          ? "A starting grid. Drag the timing handles to match the performance."
-          : "The performance, animation, and card use the same beat map."}
-      >
-        <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
-        {alignmentLabel}
-      </span>
-    {/if}
-    {#if alignmentNeedsMapping && onMapPerformance}
-      <button type="button" class="map-timing" onclick={onMapPerformance}>
-        Map performance
-      </button>
-    {/if}
-    {#if showAdvancedToggle && onToggleAdvanced}
-      <button
-        type="button"
-        class="advanced-toggle"
-        class:active={advanced}
-        aria-expanded={advanced}
-        onclick={onToggleAdvanced}
-      >
-        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-        {advanced ? "Hide timeline" : "Advanced timing"}
-      </button>
-    {/if}
-  {/snippet}
-</UnifiedTimeline>
+{#snippet studioTrailing()}
+  {#if alignmentLabel}
+    <span
+      class="alignment"
+      title={alignmentNeedsMapping
+        ? "A starting grid. Drag the timing handles to match the performance."
+        : "The performance, animation, and card use the same beat map."}
+    >
+      <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
+      {alignmentLabel}
+    </span>
+  {/if}
+  {#if alignmentNeedsMapping && onMapPerformance}
+    <button type="button" class="map-timing" onclick={onMapPerformance}>
+      Map performance
+    </button>
+  {/if}
+  {#if showAdvancedToggle && onToggleAdvanced}
+    <button
+      type="button"
+      class="advanced-toggle"
+      class:active={advanced}
+      aria-expanded={advanced}
+      onclick={onToggleAdvanced}
+    >
+      <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+      {advanced ? "Hide timeline" : "Advanced timing"}
+    </button>
+  {/if}
+{/snippet}
+<div
+  class="transport-destination"
+  bind:this={target}
+  data-studio-transport-destination
+>
+  {#if !shared?.transportAvailable}
+    <UnifiedTimeline {playback} trailing={studioTrailing} />
+  {/if}
+</div>
 
 <style>
+  .transport-destination {
+    width: 100%;
+    min-height: 61px;
+    min-width: 0;
+  }
   .alignment {
     display: flex;
     align-items: center;

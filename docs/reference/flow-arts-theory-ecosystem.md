@@ -56,8 +56,12 @@ Four categories: TS (tog-same), TO (tog-opp), SS (split-same), SO (split-opp). T
 - Captured at cardinal points (up/down/left/right axis crossings)
 
 **3. Pattern (Shape)** — the flower shape traced over 360 degrees
-- Categorized by prop-to-hand rotation ratios: 1:1, 1:3, 1:5
-- 40 patterns in the 1:1 set, 64 in the 1:3 set (documented in Book of P.H.A.T.)
+- VTG writes ratios **hand:prop**: hand cycles first, prop rotations second.
+  The classic sets are 1:1, 1:3, and 1:5, meaning one hand circle to one,
+  three, or five prop rotations. This app displays the same order. (Internal
+  storage keys and URL parameters are prop-first; see `spinRatioKey`.)
+- 40 patterns in the 1:1 set, 64 in the 1:3 set (documented in Book of
+  P.H.A.T.)
 
 ### Transition Theory
 

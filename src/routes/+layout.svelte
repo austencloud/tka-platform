@@ -182,21 +182,29 @@
     // uses the persistent root chrome. Deeper /guide pages keep GuideShell's
     // standalone header/footer and book canvas.
     "/guide",
-    "/glossary",
+    "/atlas",
     "/faq",
     "/learn/staff-spinning-choreography",
+    // The archive, moved off /notation on 2026-09-03. A single page, not a
+    // subtree: nothing renders under /history.
+    "/history",
   ]);
-  // /notation is a subtree: the hub plus the per-prop pages (/notation/staves,
-  // /notation/fans, ...) all render the same persistent chrome.
-  const MARKETING_SUBTREES = ["/shop", "/notation", "/learn/concepts"];
+  // /notation is a subtree: the per-prop and per-system pages
+  // (/notation/staves, /notation/fans, ...) all render the same persistent
+  // chrome. Its own index only redirects to /history.
+  const MARKETING_SUBTREES = [
+    "/shop",
+    "/notation",
+    "/learn/concepts",
+    "/timing-and-direction",
+  ];
   // Carve-outs inside those subtrees. The QfT app is an instrument, not a page
   // about one: it wants the whole viewport, owns its own bottom chrome, and
-  // carries its own way back out to /notation. The persistent site header on
-  // top of that reads as a page wrapped around an app.
-  const MARKETING_EXCLUDE = new Set([
-    "/notation/qft",
-    "/notation/shape-matrix",
-  ]);
+  // carries its own way back out to /history. The persistent site header on
+  // top of that reads as a page wrapped around an app. Shape Engine used to
+  // sit here as /notation/shape-matrix; it now owns /shape-engine, outside
+  // every marketing subtree, so it needs no carve-out.
+  const MARKETING_EXCLUDE = new Set(["/notation/qft"]);
   const isMarketing = $derived.by(() => {
     const p = page.url.pathname;
     if (MARKETING_EXCLUDE.has(p)) return false;
@@ -293,7 +301,6 @@
       firebase: import("$lib/shared/auth/firebase"),
       authState: import("$lib/shared/auth/state/auth-state.svelte"),
       i18n: import("$lib/shared/i18n/i18n.svelte.js"),
-      posthog: import("$lib/shared/analytics/services/posthog"),
       modalUrlState:
         import("$lib/shared/application/state/ui/modal-url-state.svelte"),
       cacheBuster: import("$lib/shared/utils/cache-buster"),
@@ -462,11 +469,20 @@
       setTimeout(preloadGlyphs, 0);
     }
 
+    // Desktop only: route 3D asset URLs onto the offline bundle before any
+    // scene can mount. A local manifest read; no-op on web/mobile.
+    const { installDesktopAssetRuntime } =
+      await import("$lib/shared/desktop/desktop-asset-runtime");
+    await installDesktopAssetRuntime().catch((err: unknown) =>
+      console.warn("[Layout] Desktop asset bundle unavailable:", err)
+    );
+
     // Initialize desktop Tauri features (window state, updater).
     // No-op on web/mobile - the isDesktop check inside returns immediately.
     const { getDesktopInitializer } =
       await import("$lib/shared/desktop/get-desktop-initializer");
-    getDesktopInitializer()
+    const desktopInitializer = getDesktopInitializer();
+    desktopInitializer
       .initialize()
       .catch((err: unknown) =>
         console.warn("[Layout] Desktop init skipped:", err)
@@ -485,6 +501,11 @@
       // Gallery: always warm from the IndexedDB cache (local, instant). On a
       // constrained connection, skip the fresh Firestore sync; otherwise sync in
       // the background so the gallery is up to date before the user opens it.
+      //
+      // The desktop build seeds that cache from its bundled public index on
+      // first launch; wait for it so the warm finds data instead of an empty
+      // table. Resolved immediately on the web.
+      await desktopInitializer.dataSeeded.catch(() => undefined);
       try {
         const { getGalleryPrefetcher } =
           await import("$lib/features/browse/shared/get-gallery-prefetcher");
@@ -531,12 +552,23 @@
 
     // Analytics: PostHog
     bootProfiler.mark("posthog");
-    const { initPostHog } = await imports.posthog;
-    await initPostHog();
-    const { initializePostHogLifecycleReporter } =
-      await import("$lib/shared/analytics/services/posthog-lifecycle-reporter");
-    initializePostHogLifecycleReporter();
-    bootProfiler.end("posthog");
+    void (async () => {
+      try {
+        const { initPostHog } =
+          await import("$lib/shared/analytics/services/posthog");
+        await initPostHog();
+        const { initializePostHogLifecycleReporter } =
+          await import("$lib/shared/analytics/services/posthog-lifecycle-reporter");
+        initializePostHogLifecycleReporter();
+      } catch (error) {
+        console.warn(
+          "[Layout] Optional analytics initialization failed:",
+          error
+        );
+      } finally {
+        bootProfiler.end("posthog");
+      }
+    })();
 
     // i18n
     bootProfiler.mark("i18n");

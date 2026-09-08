@@ -45,8 +45,8 @@ function makeStep(
   stepNumber: number,
   startPos: string,
   endPos: string,
-  blueOverrides: Partial<MotionData> = {},
-  redOverrides: Partial<MotionData> = {},
+  leftOverrides: Partial<MotionData> = {},
+  rightOverrides: Partial<MotionData> = {},
   letter: string | null = "A",
 ): SequenceStep {
   return {
@@ -57,8 +57,8 @@ function makeStep(
     startPosition: startPos,
     endPosition: endPos,
     motions: {
-      blue: makeMotion({ startLocation: "n", endLocation: "e", ...blueOverrides }),
-      red: makeMotion({ startLocation: "s", endLocation: "w", ...redOverrides }),
+      left: makeMotion({ startLocation: "n", endLocation: "e", ...leftOverrides }),
+      right: makeMotion({ startLocation: "s", endLocation: "w", ...rightOverrides }),
     },
   } as SequenceStep;
 }
@@ -107,8 +107,8 @@ function assertStructuralInvariants(result: SequenceStep[]) {
     const curr = result[i]!;
     expect(curr.stepNumber).toBeGreaterThan(prev.stepNumber ?? -1);
     expect(curr.startPosition).toBe(prev.endPosition);
-    expect(curr.motions.blue.startLocation).toBe(prev.motions.blue.endLocation);
-    expect(curr.motions.red.startLocation).toBe(prev.motions.red.endLocation);
+    expect(curr.motions.left.startLocation).toBe(prev.motions.left.endLocation);
+    expect(curr.motions.right.startLocation).toBe(prev.motions.right.endLocation);
   }
 }
 
@@ -126,20 +126,20 @@ describe("executeLOOPSpec routing", () => {
 
   it("throws for asymmetric spec (different components)", () => {
     const spec: LOOPSpec = {
-      blue: singleComponent(LOOPComponent.MIRRORED, 2),
-      red: singleComponent(LOOPComponent.ROTATED, 4),
+      left: singleComponent(LOOPComponent.MIRRORED, 2),
+      right: singleComponent(LOOPComponent.ROTATED, 4),
     };
     expect(() => executeLOOPSpec(makeStaticPositionSequence(), spec)).toThrow(/asymmetric/i);
   });
 
-  it("throws for blue-only spec (blue defined, red undefined)", () => {
-    const spec: LOOPSpec = { blue: singleComponent(LOOPComponent.INVERTED, 2) };
+  it("throws for left-only spec (left defined, right undefined)", () => {
+    const spec: LOOPSpec = { left: singleComponent(LOOPComponent.INVERTED, 2) };
     expect(() => executeLOOPSpec(makeStaticPositionSequence(2), spec)).toThrow(/asymmetric/i);
   });
 
   it("empty spec returns input unchanged", () => {
     const seq = makeStaticPositionSequence(3);
-    const result = executeLOOPSpec(deepClone(seq), { blue: EMPTY_PROP_SPEC, red: EMPTY_PROP_SPEC });
+    const result = executeLOOPSpec(deepClone(seq), { left: EMPTY_PROP_SPEC, right: EMPTY_PROP_SPEC });
     expect(result.length).toBe(seq.length);
   });
 });
@@ -154,7 +154,7 @@ describe("getLOOPSpecExpansionMultiplier", () => {
       ]),
     };
 
-    expect(getLOOPSpecExpansionMultiplier({ blue: prop, red: prop })).toBe(4);
+    expect(getLOOPSpecExpansionMultiplier({ left: prop, right: prop })).toBe(4);
   });
 
   it("counts ROTATED as absorbed by a same-period SWAPPED stage", () => {
@@ -165,7 +165,7 @@ describe("getLOOPSpecExpansionMultiplier", () => {
       ]),
     };
 
-    expect(getLOOPSpecExpansionMultiplier({ blue: prop, red: prop })).toBe(2);
+    expect(getLOOPSpecExpansionMultiplier({ left: prop, right: prop })).toBe(2);
   });
 
   it("does not count overlay inversion as an expansion", () => {
@@ -176,7 +176,7 @@ describe("getLOOPSpecExpansionMultiplier", () => {
       ]),
     };
 
-    expect(getLOOPSpecExpansionMultiplier({ blue: prop, red: prop })).toBe(2);
+    expect(getLOOPSpecExpansionMultiplier({ left: prop, right: prop })).toBe(2);
   });
 });
 
@@ -252,36 +252,36 @@ describe("executeSymmetricSpec ROTATED stage routing", () => {
     };
     const seq = makeRotatableSequence(4);
     const seedTurns = [
-      { blue: 1, red: 0 },
-      { blue: 1, red: 1 },
-      { blue: 0, red: 1 },
-      { blue: 1, red: 0 },
+      { left: 1, right: 0 },
+      { left: 1, right: 1 },
+      { left: 0, right: 1 },
+      { left: 1, right: 0 },
     ];
 
     for (let index = 0; index < seedTurns.length; index++) {
       const turns = seedTurns[index]!;
-      seq[index + 1]!.motions.blue.turns = turns.blue;
-      seq[index + 1]!.motions.red.turns = turns.red;
+      seq[index + 1]!.motions.left.turns = turns.left;
+      seq[index + 1]!.motions.right.turns = turns.right;
     }
 
     const result = executeSymmetricSpec(seq, spec);
     expect(result).toHaveLength(17);
 
     for (let step = 1; step <= 4; step++) {
-      expect(result[step + 4]!.motions.blue.turns).toBe(
-        result[step]!.motions.blue.turns,
+      expect(result[step + 4]!.motions.left.turns).toBe(
+        result[step]!.motions.left.turns,
       );
-      expect(result[step + 4]!.motions.red.turns).toBe(
-        result[step]!.motions.red.turns,
+      expect(result[step + 4]!.motions.right.turns).toBe(
+        result[step]!.motions.right.turns,
       );
     }
 
     for (let step = 1; step <= 8; step++) {
-      expect(result[step + 8]!.motions.blue.turns).toBe(
-        result[step]!.motions.red.turns,
+      expect(result[step + 8]!.motions.left.turns).toBe(
+        result[step]!.motions.right.turns,
       );
-      expect(result[step + 8]!.motions.red.turns).toBe(
-        result[step]!.motions.blue.turns,
+      expect(result[step + 8]!.motions.right.turns).toBe(
+        result[step]!.motions.left.turns,
       );
     }
   });
@@ -305,7 +305,7 @@ describe("executeSymmetricSpec ROTATED stage routing", () => {
 // ---------------------------------------------------------------------------
 
 describe("FusedExecutor compound transforms", () => {
-  it("MIRROR + SWAP: blue reads red source", () => {
+  it("MIRROR + SWAP: left reads right source", () => {
     const spec: PropLOOPSpec = {
       components: new Map<LOOPComponent, ComponentSpec>([
         [LOOPComponent.MIRRORED, { period: 2 }],
@@ -313,11 +313,11 @@ describe("FusedExecutor compound transforms", () => {
       ]),
     };
     const seq = makeStaticPositionSequence(1);
-    seq[1]!.motions.blue = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
-    seq[1]!.motions.red = makeMotion({ startLocation: "n", endLocation: "n", motionType: "anti", rotationDirection: "ccw" });
+    seq[1]!.motions.left = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
+    seq[1]!.motions.right = makeMotion({ startLocation: "n", endLocation: "n", motionType: "anti", rotationDirection: "ccw" });
 
     const transformed = executeSymmetricSpec(seq, spec)[2]!;
-    expect(transformed.motions.blue.motionType).toBe("anti");
+    expect(transformed.motions.left.motionType).toBe("anti");
   });
 
   it("FLIP + INVERT: flipCount=2 (even) preserves rotation, invert flips motionType", () => {
@@ -328,11 +328,11 @@ describe("FusedExecutor compound transforms", () => {
       ]),
     };
     const seq = makeStaticPositionSequence(1);
-    seq[1]!.motions.blue = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
+    seq[1]!.motions.left = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
 
     const transformed = executeSymmetricSpec(seq, spec)[2]!;
-    expect(transformed.motions.blue.rotationDirection).toBe("cw");
-    expect(transformed.motions.blue.motionType).toBe("anti");
+    expect(transformed.motions.left.rotationDirection).toBe("cw");
+    expect(transformed.motions.left.motionType).toBe("anti");
   });
 
   it("all four flags: flipCount=3 (odd) flips rotation, swap+invert double-inverts motionType", () => {
@@ -345,14 +345,14 @@ describe("FusedExecutor compound transforms", () => {
       ]),
     };
     const seq = makeStaticPositionSequence(1);
-    seq[1]!.motions.blue = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
-    seq[1]!.motions.red = makeMotion({ startLocation: "n", endLocation: "n", motionType: "anti", rotationDirection: "ccw" });
+    seq[1]!.motions.left = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
+    seq[1]!.motions.right = makeMotion({ startLocation: "n", endLocation: "n", motionType: "anti", rotationDirection: "ccw" });
 
     const transformed = executeSymmetricSpec(seq, spec)[2]!;
-    // swap: blue reads red (anti), invert: anti→pro
-    expect(transformed.motions.blue.motionType).toBe("pro");
-    // source red rotDir "ccw", flipCount=3 odd → "cw"
-    expect(transformed.motions.blue.rotationDirection).toBe("cw");
+    // swap: left reads right (anti), invert: anti→pro
+    expect(transformed.motions.left.motionType).toBe("pro");
+    // source right rotDir "ccw", flipCount=3 odd → "cw"
+    expect(transformed.motions.left.rotationDirection).toBe("cw");
   });
 
   it("period 4: odd passes transform, even passes copy (alternating pattern)", () => {
@@ -360,13 +360,13 @@ describe("FusedExecutor compound transforms", () => {
       components: new Map([[LOOPComponent.INVERTED, { period: 4 }]]),
     };
     const seq = makeStaticPositionSequence(1);
-    seq[1]!.motions.blue = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
+    seq[1]!.motions.left = makeMotion({ startLocation: "s", endLocation: "s", motionType: "pro", rotationDirection: "cw" });
 
     const result = executeSymmetricSpec(seq, spec);
     expect(result.length).toBe(5);
-    expect(result[1]!.motions.blue.motionType).toBe("pro");  // pass 0: original
-    expect(result[2]!.motions.blue.motionType).toBe("anti"); // pass 1: transform
-    expect(result[3]!.motions.blue.motionType).toBe("pro");  // pass 2: copy
-    expect(result[4]!.motions.blue.motionType).toBe("anti"); // pass 3: transform
+    expect(result[1]!.motions.left.motionType).toBe("pro");  // pass 0: original
+    expect(result[2]!.motions.left.motionType).toBe("anti"); // pass 1: transform
+    expect(result[3]!.motions.left.motionType).toBe("pro");  // pass 2: copy
+    expect(result[4]!.motions.left.motionType).toBe("anti"); // pass 3: transform
   });
 });

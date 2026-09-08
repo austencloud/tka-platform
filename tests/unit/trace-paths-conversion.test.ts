@@ -18,7 +18,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/mot
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createHandPath } from "$lib/shared/foundation/services/hand-path-factory";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -42,13 +42,13 @@ import type {
 
 /** One hand's motion for one beat. Equal endpoints build a genuine STATIC. */
 function handMotion(
-  color: MotionColor,
+  color: HandSide,
   start: GridLocation,
   end: GridLocation
 ): MotionData {
   const still = start === end;
   return createMotionData({
-    color,
+    hand: color,
     startLocation: start,
     endLocation: end,
     motionType: still ? MotionType.STATIC : MotionType.PRO,
@@ -65,11 +65,11 @@ function handMotion(
  * beats: n→e then e→s.
  */
 function twoHandSequence(
-  blue: readonly GridLocation[],
-  red: readonly GridLocation[],
+  left: readonly GridLocation[],
+  right: readonly GridLocation[],
   options: { withStartPosition?: boolean } = {}
 ) {
-  const beatCount = blue.length - 1;
+  const beatCount = left.length - 1;
   const steps: StepData[] = [];
 
   for (let i = 0; i < beatCount; i++) {
@@ -77,15 +77,15 @@ function twoHandSequence(
       createStepData({
         stepNumber: i + 1,
         motions: {
-          [MotionColor.BLUE]: handMotion(
-            MotionColor.BLUE,
-            blue[i] as GridLocation,
-            blue[i + 1] as GridLocation
+          [HandSide.LEFT]: handMotion(
+            HandSide.LEFT,
+            left[i] as GridLocation,
+            left[i + 1] as GridLocation
           ),
-          [MotionColor.RED]: handMotion(
-            MotionColor.RED,
-            red[i] as GridLocation,
-            red[i + 1] as GridLocation
+          [HandSide.RIGHT]: handMotion(
+            HandSide.RIGHT,
+            right[i] as GridLocation,
+            right[i + 1] as GridLocation
           ),
         },
       })
@@ -101,15 +101,15 @@ function twoHandSequence(
       ? {
           startPosition: createStartPositionData({
             motions: {
-              [MotionColor.BLUE]: handMotion(
-                MotionColor.BLUE,
-                blue[0] as GridLocation,
-                blue[0] as GridLocation
+              [HandSide.LEFT]: handMotion(
+                HandSide.LEFT,
+                left[0] as GridLocation,
+                left[0] as GridLocation
               ),
-              [MotionColor.RED]: handMotion(
-                MotionColor.RED,
-                red[0] as GridLocation,
-                red[0] as GridLocation
+              [HandSide.RIGHT]: handMotion(
+                HandSide.RIGHT,
+                right[0] as GridLocation,
+                right[0] as GridLocation
               ),
             },
           }),
@@ -145,13 +145,13 @@ function walkOf(round: TraceRound, hand: TraceHand): GridLocation[] {
 
 describe("sequenceToTraceRound", () => {
   it("preserves every hand's ordered start and end locations", () => {
-    const blueWalk = [
+    const leftWalk = [
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,
       GridLocation.WEST,
     ] as const;
-    const redWalk = [
+    const rightWalk = [
       GridLocation.SOUTH,
       GridLocation.WEST,
       GridLocation.NORTH,
@@ -160,19 +160,19 @@ describe("sequenceToTraceRound", () => {
 
     const round = expectOk(
       sequenceToTraceRound(
-        twoHandSequence(blueWalk, redWalk, { withStartPosition: true })
+        twoHandSequence(leftWalk, rightWalk, { withStartPosition: true })
       )
     );
 
-    expect(walkOf(round, MotionColor.BLUE)).toEqual([...blueWalk]);
-    expect(walkOf(round, MotionColor.RED)).toEqual([...redWalk]);
+    expect(walkOf(round, HandSide.LEFT)).toEqual([...leftWalk]);
+    expect(walkOf(round, HandSide.RIGHT)).toEqual([...rightWalk]);
 
     // One beat per step, indexed in order, both hands present on each.
     expect(round.beats).toHaveLength(3);
     expect(round.beats.map((b) => b.index)).toEqual([0, 1, 2]);
     for (const beat of round.beats) {
-      expect(beat.segments[MotionColor.BLUE]).toBeDefined();
-      expect(beat.segments[MotionColor.RED]).toBeDefined();
+      expect(beat.segments[HandSide.LEFT]).toBeDefined();
+      expect(beat.segments[HandSide.RIGHT]).toBeDefined();
     }
   });
 
@@ -194,8 +194,8 @@ describe("sequenceToTraceRound", () => {
       )
     );
 
-    const forwardBlue = forward.hands[MotionColor.BLUE]?.segments[0];
-    const reversedBlue = reversed.hands[MotionColor.BLUE]?.segments[0];
+    const forwardBlue = forward.hands[HandSide.LEFT]?.segments[0];
+    const reversedBlue = reversed.hands[HandSide.LEFT]?.segments[0];
     expect(forwardBlue?.kind).toBe("move");
     expect(reversedBlue?.kind).toBe("move");
 
@@ -221,13 +221,13 @@ describe("sequenceToTraceRound", () => {
       createStepData({
         stepNumber: 1,
         motions: {
-          [MotionColor.BLUE]: handMotion(
-            MotionColor.BLUE,
+          [HandSide.LEFT]: handMotion(
+            HandSide.LEFT,
             GridLocation.NORTH,
             GridLocation.EAST
           ),
-          [MotionColor.RED]: handMotion(
-            MotionColor.RED,
+          [HandSide.RIGHT]: handMotion(
+            HandSide.RIGHT,
             GridLocation.SOUTH,
             GridLocation.WEST
           ),
@@ -236,13 +236,13 @@ describe("sequenceToTraceRound", () => {
       createStepData({
         stepNumber: 2,
         motions: {
-          [MotionColor.BLUE]: handMotion(
-            MotionColor.BLUE,
+          [HandSide.LEFT]: handMotion(
+            HandSide.LEFT,
             GridLocation.EAST,
             GridLocation.SOUTH
           ),
-          [MotionColor.RED]: handMotion(
-            MotionColor.RED,
+          [HandSide.RIGHT]: handMotion(
+            HandSide.RIGHT,
             GridLocation.NORTH,
             GridLocation.EAST
           ),
@@ -257,7 +257,7 @@ describe("sequenceToTraceRound", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected a discontinuity error");
     expect(result.error.code).toBe("discontinuous-beat");
-    expect(result.error.hand).toBe(MotionColor.RED);
+    expect(result.error.hand).toBe(HandSide.RIGHT);
     expect(result.error.beatIndex).toBe(1);
   });
 
@@ -270,13 +270,13 @@ describe("sequenceToTraceRound", () => {
           createStepData({
             stepNumber: 1,
             motions: {
-              [MotionColor.BLUE]: handMotion(
-                MotionColor.BLUE,
+              [HandSide.LEFT]: handMotion(
+                HandSide.LEFT,
                 GridLocation.NORTH,
                 GridLocation.EAST
               ),
-              [MotionColor.RED]: handMotion(
-                MotionColor.RED,
+              [HandSide.RIGHT]: handMotion(
+                HandSide.RIGHT,
                 GridLocation.SOUTH,
                 GridLocation.WEST
               ),
@@ -287,13 +287,13 @@ describe("sequenceToTraceRound", () => {
         // beat 1 wants it to leave from north.
         startPosition: createStartPositionData({
           motions: {
-            [MotionColor.BLUE]: handMotion(
-              MotionColor.BLUE,
+            [HandSide.LEFT]: handMotion(
+              HandSide.LEFT,
               GridLocation.WEST,
               GridLocation.WEST
             ),
-            [MotionColor.RED]: handMotion(
-              MotionColor.RED,
+            [HandSide.RIGHT]: handMotion(
+              HandSide.RIGHT,
               GridLocation.SOUTH,
               GridLocation.SOUTH
             ),
@@ -305,7 +305,7 @@ describe("sequenceToTraceRound", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected a discontinuity error");
     expect(result.error.code).toBe("discontinuous-beat");
-    expect(result.error.hand).toBe(MotionColor.BLUE);
+    expect(result.error.hand).toBe(HandSide.LEFT);
     expect(result.error.beatIndex).toBe(0);
   });
 
@@ -320,7 +320,7 @@ describe("sequenceToTraceRound", () => {
       )
     );
 
-    const blueSegments = round.hands[MotionColor.BLUE]?.segments ?? [];
+    const blueSegments = round.hands[HandSide.LEFT]?.segments ?? [];
     expect(blueSegments[0]).toEqual({
       kind: "hold",
       location: GridLocation.NORTH,
@@ -342,13 +342,13 @@ describe("sequenceToTraceRound", () => {
       createStepData({
         stepNumber: 1,
         motions: {
-          [MotionColor.BLUE]: handMotion(
-            MotionColor.BLUE,
+          [HandSide.LEFT]: handMotion(
+            HandSide.LEFT,
             GridLocation.NORTH,
             GridLocation.EAST
           ),
-          [MotionColor.RED]: handMotion(
-            MotionColor.RED,
+          [HandSide.RIGHT]: handMotion(
+            HandSide.RIGHT,
             GridLocation.SOUTH,
             GridLocation.WEST
           ),
@@ -358,8 +358,8 @@ describe("sequenceToTraceRound", () => {
       createStepData({
         stepNumber: 2,
         motions: {
-          [MotionColor.BLUE]: handMotion(
-            MotionColor.BLUE,
+          [HandSide.LEFT]: handMotion(
+            HandSide.LEFT,
             GridLocation.EAST,
             GridLocation.SOUTH
           ),
@@ -374,7 +374,7 @@ describe("sequenceToTraceRound", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected a missing-hand error");
     expect(result.error.code).toBe("missing-hand-motion");
-    expect(result.error.hand).toBe(MotionColor.RED);
+    expect(result.error.hand).toBe(HandSide.RIGHT);
     expect(result.error.beatIndex).toBe(1);
   });
 
@@ -383,8 +383,8 @@ describe("sequenceToTraceRound", () => {
       createStepData({
         stepNumber: 1,
         motions: {
-          [MotionColor.BLUE]: handMotion(
-            MotionColor.BLUE,
+          [HandSide.LEFT]: handMotion(
+            HandSide.LEFT,
             GridLocation.NORTH,
             GridLocation.EAST
           ),
@@ -398,8 +398,8 @@ describe("sequenceToTraceRound", () => {
       )
     );
 
-    expect(Object.keys(round.hands)).toEqual([MotionColor.BLUE]);
-    expect(round.beats[0]?.segments[MotionColor.RED]).toBeUndefined();
+    expect(Object.keys(round.hands)).toEqual([HandSide.LEFT]);
+    expect(round.beats[0]?.segments[HandSide.RIGHT]).toBeUndefined();
   });
 
   it("refuses an empty sequence", () => {
@@ -420,8 +420,8 @@ describe("sequenceToTraceRound", () => {
         createStepData({
           stepNumber: 1,
           motions: {
-            [MotionColor.BLUE]: handMotion(
-              MotionColor.BLUE,
+            [HandSide.LEFT]: handMotion(
+              HandSide.LEFT,
               GridLocation.NORTHEAST,
               GridLocation.SOUTHEAST
             ),
@@ -445,25 +445,25 @@ describe("handPathToTraceRound", () => {
     const result = handPathToTraceRound(path);
     const round = expectOk(result);
 
-    expect(Object.keys(round.hands)).toEqual([MotionColor.BLUE]);
-    expect(round.hands[MotionColor.RED]).toBeUndefined();
-    expect(walkOf(round, MotionColor.BLUE)).toEqual([
+    expect(Object.keys(round.hands)).toEqual([HandSide.LEFT]);
+    expect(round.hands[HandSide.RIGHT]).toBeUndefined();
+    expect(walkOf(round, HandSide.LEFT)).toEqual([
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,
     ]);
     expect(round.beats).toHaveLength(2);
     for (const beat of round.beats) {
-      expect(beat.segments[MotionColor.RED]).toBeUndefined();
+      expect(beat.segments[HandSide.RIGHT]).toBeUndefined();
     }
   });
 
   it("can be assigned to the red hand instead", () => {
     const path = createHandPath([GridLocation.WEST, GridLocation.NORTH]);
-    const round = expectOk(handPathToTraceRound(path, MotionColor.RED));
+    const round = expectOk(handPathToTraceRound(path, HandSide.RIGHT));
 
-    expect(Object.keys(round.hands)).toEqual([MotionColor.RED]);
-    expect(walkOf(round, MotionColor.RED)).toEqual([
+    expect(Object.keys(round.hands)).toEqual([HandSide.RIGHT]);
+    expect(walkOf(round, HandSide.RIGHT)).toEqual([
       GridLocation.WEST,
       GridLocation.NORTH,
     ]);
@@ -479,45 +479,45 @@ describe("handPathToTraceRound", () => {
 
 describe("pairHandPathsToTraceRound", () => {
   it("puts two equal-length paths on one beat timeline", () => {
-    const blue = createHandPath([
+    const left = createHandPath([
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,
     ]);
-    const red = createHandPath([
+    const right = createHandPath([
       GridLocation.SOUTH,
       GridLocation.WEST,
       GridLocation.NORTH,
     ]);
 
-    const round = expectOk(pairHandPathsToTraceRound(blue, red));
+    const round = expectOk(pairHandPathsToTraceRound(left, right));
 
     expect(round.beats).toHaveLength(2);
-    expect(walkOf(round, MotionColor.BLUE)).toEqual([
+    expect(walkOf(round, HandSide.LEFT)).toEqual([
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,
     ]);
-    expect(walkOf(round, MotionColor.RED)).toEqual([
+    expect(walkOf(round, HandSide.RIGHT)).toEqual([
       GridLocation.SOUTH,
       GridLocation.WEST,
       GridLocation.NORTH,
     ]);
     for (const beat of round.beats) {
-      expect(beat.segments[MotionColor.BLUE]).toBeDefined();
-      expect(beat.segments[MotionColor.RED]).toBeDefined();
+      expect(beat.segments[HandSide.LEFT]).toBeDefined();
+      expect(beat.segments[HandSide.RIGHT]).toBeDefined();
     }
   });
 
   it("errors when the two paths cover different numbers of beats", () => {
-    const blue = createHandPath([
+    const left = createHandPath([
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,
     ]);
-    const red = createHandPath([GridLocation.SOUTH, GridLocation.WEST]);
+    const right = createHandPath([GridLocation.SOUTH, GridLocation.WEST]);
 
-    const result = pairHandPathsToTraceRound(blue, red);
+    const result = pairHandPathsToTraceRound(left, right);
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected an unequal-length error");
     expect(result.error.code).toBe("unequal-hand-path-lengths");
@@ -575,23 +575,23 @@ describe("normalized geometry", () => {
       )
     );
 
-    const blue = round.hands[MotionColor.BLUE]?.segments[0];
-    const red = round.hands[MotionColor.RED]?.segments[0];
-    if (blue?.kind !== "move" || red?.kind !== "move") {
+    const left = round.hands[HandSide.LEFT]?.segments[0];
+    const right = round.hands[HandSide.RIGHT]?.segments[0];
+    if (left?.kind !== "move" || right?.kind !== "move") {
       throw new Error("expected move segments");
     }
 
     // Blue leaves north and arrives east; red leaves south and arrives west.
     // In the 950-space grid north is above centre (y < 0.5) and east is right
     // of it (x > 0.5), which is what the normalized endpoints must show.
-    const blueFirst = blue.expectedPath[0];
-    const blueLast = blue.expectedPath[blue.expectedPath.length - 1];
-    expect(blueFirst?.y).toBeLessThan(0.5);
-    expect(blueLast?.x).toBeGreaterThan(0.5);
+    const leftFirst = left.expectedPath[0];
+    const leftLast = left.expectedPath[left.expectedPath.length - 1];
+    expect(leftFirst?.y).toBeLessThan(0.5);
+    expect(leftLast?.x).toBeGreaterThan(0.5);
 
-    const redFirst = red.expectedPath[0];
-    const redLast = red.expectedPath[red.expectedPath.length - 1];
-    expect(redFirst?.y).toBeGreaterThan(0.5);
-    expect(redLast?.x).toBeLessThan(0.5);
+    const rightFirst = right.expectedPath[0];
+    const rightLast = right.expectedPath[right.expectedPath.length - 1];
+    expect(rightFirst?.y).toBeGreaterThan(0.5);
+    expect(rightLast?.x).toBeLessThan(0.5);
   });
 });

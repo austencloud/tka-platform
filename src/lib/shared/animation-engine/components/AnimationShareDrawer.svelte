@@ -140,8 +140,8 @@
     playbackMode = "continuous",
     stepPlaybackPauseMs = 300,
     stepPlaybackStepSize = 1,
-    blueProp = null,
-    redProp = null,
+    leftProp = null,
+    rightProp = null,
     gridVisible = true,
     gridMode = null,
     letter = null,
@@ -178,8 +178,8 @@
     playbackMode?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").PlaybackMode;
     stepPlaybackPauseMs?: number;
     stepPlaybackStepSize?: import("$lib/shared/animation-engine/state/animation-panel-state.svelte").StepPlaybackStepSize;
-    blueProp?: PropState | null;
-    redProp?: PropState | null;
+    leftProp?: PropState | null;
+    rightProp?: PropState | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null | undefined;
     letter?: Letter | null;
@@ -360,8 +360,8 @@
           <!-- Canvas Area (position:relative host so the export takeover scrims only the canvas) -->
           <div class="canvas-overlay-host">
             <AnimationCanvas
-              {blueProp}
-              {redProp}
+              {leftProp}
+              {rightProp}
               {gridVisible}
               {gridMode}
               {letter}

@@ -41,8 +41,8 @@ export function getTriGridPositions(mode: TriGridMode): TriGridPositionInfo[] {
       group: "beta",
       index: i + 1,
       label: `Beta ${i + 1} (${locationLabel(loc)})`,
-      blueLocation: loc,
-      redLocation: loc,
+      leftLocation: loc,
+      rightLocation: loc,
     });
   }
 
@@ -51,14 +51,14 @@ export function getTriGridPositions(mode: TriGridMode): TriGridPositionInfo[] {
   let gammaIndex = 1;
   for (let i = 0; i < locs.length; i++) {
     for (let j = i + 1; j < locs.length; j++) {
-      const blue = locs[i]!;
-      const red = locs[j]!;
+      const left = locs[i]!;
+      const right = locs[j]!;
       positions.push({
         group: "gamma",
         index: gammaIndex,
-        label: `Gamma ${gammaIndex} (${locationLabel(blue)}, ${locationLabel(red)})`,
-        blueLocation: blue,
-        redLocation: red,
+        label: `Gamma ${gammaIndex} (${locationLabel(left)}, ${locationLabel(right)})`,
+        leftLocation: left,
+        rightLocation: right,
       });
       gammaIndex++;
     }
@@ -71,16 +71,16 @@ export function getTriGridPositions(mode: TriGridMode): TriGridPositionInfo[] {
  * Resolve position group from blue and red grid locations.
  */
 export function resolveTriGridPosition(
-  blueLocation: GridLocation,
-  redLocation: GridLocation,
+  leftLocation: GridLocation,
+  rightLocation: GridLocation,
   mode: TriGridMode,
 ): TriGridPositionInfo | null {
   const positions = getTriGridPositions(mode);
   return (
     positions.find(
       (p) =>
-        (p.blueLocation === blueLocation && p.redLocation === redLocation) ||
-        (p.blueLocation === redLocation && p.redLocation === blueLocation),
+        (p.leftLocation === leftLocation && p.rightLocation === rightLocation) ||
+        (p.leftLocation === rightLocation && p.rightLocation === leftLocation),
     ) ?? null
   );
 }

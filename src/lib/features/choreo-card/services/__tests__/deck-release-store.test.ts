@@ -46,7 +46,7 @@ async function captureManifest(
     return updater(tx);
   });
   await releaseDeck(cards, "rainbow", "Test Notes", {
-    name: "Test", description: "", bluePropType: "staff", redPropType: "staff",
+    name: "Test", description: "", leftPropType: "staff", rightPropType: "staff",
   }, recipe);
   return captured;
 }

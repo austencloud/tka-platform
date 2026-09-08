@@ -101,6 +101,25 @@ describe("SwipeToDismiss tap slop", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["left", "right"] as const)(
+    "lets vertical scrolling with diagonal drift continue in a %s drawer",
+    (placement) => {
+      handler.detach();
+      handler = new SwipeToDismiss({ placement, dismissible: true, onDismiss });
+      handler.attach(drawer);
+      const direction = placement === "left" ? -1 : 1;
+      button.dispatchEvent(touchEvent("touchstart", 200, 100));
+      const move = touchEvent("touchmove", 200 + direction * 20, 200);
+      button.dispatchEvent(move);
+
+      expect(move.defaultPrevented).toBe(false);
+      // Once scrolling wins, later drift must not turn it into dismissal.
+      button.dispatchEvent(touchEvent("touchmove", 200 + direction * 160, 220));
+      button.dispatchEvent(touchEvent("touchend", 200 + direction * 160, 220));
+      expect(onDismiss).not.toHaveBeenCalled();
+    }
+  );
+
   it("leaves selection drags inside a swipe-blocked form to the form", () => {
     const form = createReal("main");
     form.setAttribute("data-swipe-block", "");

@@ -473,6 +473,18 @@ export class SwipeToDismiss {
     const absDeltaY = Math.abs(deltaY);
     const absDeltaX = Math.abs(deltaX);
 
+    // A vertical scroll can drift toward a side drawer's dismiss edge. Hand
+    // that gesture back before horizontal drift cancels native scrolling.
+    if (
+      (this.options.placement === "left" || this.options.placement === "right") &&
+      absDeltaY > absDeltaX &&
+      absDeltaY > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD
+    ) {
+      this.isDragging = false;
+      this.options.onDragChange?.(0, 1, false);
+      return;
+    }
+
     // Check if user is swiping in the dismiss direction
     const isSwipingInDismissDirection =
       (this.options.placement === "bottom" && deltaY > 0) ||

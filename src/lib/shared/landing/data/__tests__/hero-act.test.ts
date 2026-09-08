@@ -7,7 +7,7 @@
  * where generation enters hero-act.ts's world, so tests exercise the act's
  * cycling, pass-counting, and chaining without touching the real engine.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -67,6 +67,25 @@ async function flushUntil(pred: () => boolean, ticks = 50): Promise<void> {
   }
 }
 
+/** Every draw the act has asked for, from either source. */
+function drawCount(): number {
+  return (
+    mocks.generatePerVisitDemo.mock.calls.length +
+    mocks.drawMatrixRealization.mock.calls.length
+  );
+}
+
+/** Waits for the background prefetch to fire AND land.
+ *
+ *  prepareNext() defers its draw to background priority, so it costs one
+ *  macrotask more than the `.then()` chain a single flush() covers. The
+ *  trailing flush lets the resolved draw settle into the act's prepared slot,
+ *  which is what the offer/accept assertions read. */
+async function flushPrefetch(draws = 2): Promise<void> {
+  await flushUntil(() => drawCount() >= draws);
+  await flush();
+}
+
 /**
  * These tests exercise the act's orchestration (cycling, prefetch, chaining)
  * against the generated per-visit draw, which they mock. The shape-matrix source
@@ -104,6 +123,25 @@ beforeEach(() => {
   );
   mocks.drawMatrixRealization.mockReset();
   mocks.drawMatrixRealization.mockResolvedValue(null);
+});
+
+/**
+ * Drains the act's background-priority prefetch before the next test starts.
+ *
+ * prepareNext() schedules its draw instead of firing it inline, so an act that
+ * outlives its test can still land a draw afterwards — and beforeEach has by
+ * then reset the mocks, so that draw is counted against the NEXT test. Wait for
+ * the scheduled work to go quiet rather than guessing a tick count.
+ */
+afterEach(async () => {
+  let quiet = 0;
+  let seen = -1;
+  for (let i = 0; i < 30 && quiet < 3; i++) {
+    const now = drawCount();
+    quiet = now === seen ? quiet + 1 : 0;
+    seen = now;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
 });
 
 describe("createHeroAct", () => {
@@ -181,7 +219,7 @@ describe("createHeroAct", () => {
   it("pre-generates the next prop after the fresh first sequence lands", async () => {
     const act = createHeroAct({ random: () => 0.5, ...NO_MATRIX });
     act.start();
-    await flush();
+    await flushPrefetch();
 
     expect(mocks.generatePerVisitDemo).toHaveBeenCalledTimes(2);
     expect(mocks.generatePerVisitDemo.mock.calls[1]?.[0]).toEqual({
@@ -197,7 +235,10 @@ describe("createHeroAct", () => {
       .mockReturnValueOnce(0.5);
     const firstVisit = createHeroAct({ random, ...NO_MATRIX });
     firstVisit.start();
-    await flush();
+    // gen-1 opens the first act and gen-2 is its prefetch, so the second act's
+    // opening draw is gen-3. Wait for the prefetch rather than assuming it beat
+    // the second act to the generator.
+    await flushPrefetch();
 
     const secondVisit = createHeroAct({ random, ...NO_MATRIX });
     secondVisit.start();
@@ -281,12 +322,12 @@ describe("createHeroAct", () => {
   it("advanceNow reuses an already-prepared next sequence instead of generating a duplicate", async () => {
     const act = createStaffFirstAct();
     act.start();
-    await flush(); // the FAN pre-generation lands
+    await flushPrefetch(); // the FAN pre-generation lands
 
     expect(mocks.generatePerVisitDemo).toHaveBeenCalledTimes(2);
 
     await act.advanceNow();
-    await flush();
+    await flushPrefetch(3);
 
     // Exactly one more call: the background prepareNext() for the prop after
     // FAN (CLUB), fired by advance() itself. A second call targeting FAN
@@ -303,7 +344,11 @@ describe("createHeroAct", () => {
     const act = createStaffFirstAct();
     act.start();
     mocks.generatePerVisitDemo.mockReturnValueOnce(pendingPrefetch);
-    await flush();
+    // The prefetch must have STARTED for this scenario to exist, so wait for the
+    // call rather than for a result that never arrives. Flushing a fixed tick
+    // instead would leave the deferred draw unfired, and advanceNow would then
+    // consume the never-resolving promise itself and hang.
+    await flushUntil(() => mocks.generatePerVisitDemo.mock.calls.length >= 2);
 
     await act.advanceNow();
     await flush();
@@ -326,7 +371,7 @@ describe("createHeroAct", () => {
   it("offers the prepared sequence only after PASSES_PER_SEQUENCE boundaries, then commits both sequence and prop atomically", async () => {
     const act = createStaffFirstAct();
     act.start();
-    await flush(); // FAN pre-generation lands
+    await flushPrefetch(); // FAN pre-generation lands
     expect(act.propType).toBe(PropType.STAFF);
     const outgoingId = act.sequence?.id;
 
@@ -357,7 +402,7 @@ describe("createHeroAct", () => {
     // The first call already returned the initial staff sequence. Hold the
     // second call, which is the background FAN prefetch.
     mocks.generatePerVisitDemo.mockReturnValueOnce(pending);
-    await flush();
+    await flushPrefetch();
     expect(mocks.generatePerVisitDemo).toHaveBeenCalledTimes(2);
 
     // Loop boundary fires before generation has resolved. PASSES_PER_SEQUENCE

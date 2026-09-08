@@ -15,9 +15,9 @@
   }
 
   const defaultOptions: HandOption[] = [
-    { hand: "blue", label: "Left", shortLabel: "L" },
+    { hand: "left", label: "Left", shortLabel: "L" },
     { hand: "both", label: "Both", shortLabel: "Both" },
-    { hand: "red", label: "Right", shortLabel: "R" },
+    { hand: "right", label: "Right", shortLabel: "R" },
   ];
 
   interface Props {

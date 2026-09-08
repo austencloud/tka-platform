@@ -14,7 +14,7 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -51,8 +51,8 @@ function createThetaDashPictograph(): PictographData {
     startPosition: GridPosition.ALPHA5,
     endPosition: GridPosition.GAMMA7,
     motions: {
-      blue: createMotionData({
-        color: MotionColor.BLUE,
+      left: createMotionData({
+        hand: HandSide.LEFT,
         motionType: MotionType.DASH,
         turns: 3,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -63,8 +63,8 @@ function createThetaDashPictograph(): PictographData {
         endOrientation: Orientation.COUNTER,
         propType: PropType.CLUB,
       }),
-      red: createMotionData({
-        color: MotionColor.RED,
+      right: createMotionData({
+        hand: HandSide.RIGHT,
         motionType: MotionType.PRO,
         turns: 3,
         rotationDirection: RotationDirection.CLOCKWISE,
@@ -87,7 +87,7 @@ describe("rotation override effective state", () => {
 
   it("inherits Θ- (s, 3, 3) from layer2 and lets the toggle turn it off and on", async () => {
     const pictograph = createThetaDashPictograph();
-    const blueMotion = pictograph.motions.blue!;
+    const leftMotion = pictograph.motions.left!;
     const tupleGenerator = new TurnsTupleGenerator();
     const specialPlacement = new SpecialPlacer(
       new SpecialPlacementDataProvider(new ThetaDashPlacementCache()),
@@ -106,24 +106,24 @@ describe("rotation override effective state", () => {
 
     expect(tupleGenerator.generateTurnsTuple(pictograph)).toBe("(s, 3, 3)");
     await expect(
-      manager.hasRotationOverride(blueMotion, pictograph)
+      manager.hasRotationOverride(leftMotion, pictograph)
     ).resolves.toBe(true);
     await expect(
-      calculator.calculateRotation(blueMotion, GridLocation.EAST, pictograph)
+      calculator.calculateRotation(leftMotion, GridLocation.EAST, pictograph)
     ).resolves.toBe(0);
 
     await expect(
-      manager.toggleRotationOverride(blueMotion, pictograph)
+      manager.toggleRotationOverride(leftMotion, pictograph)
     ).resolves.toBe(false);
     await expect(
-      calculator.calculateRotation(blueMotion, GridLocation.EAST, pictograph)
+      calculator.calculateRotation(leftMotion, GridLocation.EAST, pictograph)
     ).resolves.toBe(90);
 
     await expect(
-      manager.toggleRotationOverride(blueMotion, pictograph)
+      manager.toggleRotationOverride(leftMotion, pictograph)
     ).resolves.toBe(true);
     await expect(
-      calculator.calculateRotation(blueMotion, GridLocation.EAST, pictograph)
+      calculator.calculateRotation(leftMotion, GridLocation.EAST, pictograph)
     ).resolves.toBe(0);
   });
 

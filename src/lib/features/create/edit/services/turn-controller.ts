@@ -85,13 +85,13 @@ export function getTurnDescription(turns: number | "fl" | undefined): string {
 
 export function getCurrentTurnValue(
   stepData: Step | null,
-  color: "blue" | "red"
+  hand: "left" | "right"
 ): number | "fl" {
   if (!stepData) return 0;
   const turnValue =
-    color === "blue"
-      ? stepData.motions.blue?.turns
-      : stepData.motions.red?.turns;
+    hand === "left"
+      ? stepData.motions.left?.turns
+      : stepData.motions.right?.turns;
   if (turnValue === "fl") return "fl";
   return typeof turnValue === "number" ? turnValue : 0;
 }

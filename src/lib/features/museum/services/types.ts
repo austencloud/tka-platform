@@ -50,12 +50,11 @@ export interface ValidationError {
 }
 
 
-export interface PlaqueContent {
-  title: string;
-  subtitle?: string;
-  body: string;
-  barter?: string;
-}
+export type {
+  PlaqueContent,
+  PlaqueStyle,
+  PlaqueAnnotation,
+} from "../domain/museum-grid-types";
 
 export type PlaqueSize = "standard" | "large" | "dev-whiteboard";
 

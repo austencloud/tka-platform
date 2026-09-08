@@ -1,4 +1,4 @@
-import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
+import type { CharacterInstanceState } from "./character-instance-state.svelte";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
@@ -10,7 +10,7 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
  * follows that viewer-wide choice.
  */
 export function resolvePerformerProp(
-  performer: AvatarInstanceState | null | undefined,
+  performer: CharacterInstanceState | null | undefined,
   globalFallback: PropType,
   explicitOverride?: PropType | null
 ): PropType {

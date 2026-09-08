@@ -1,10 +1,10 @@
-import type { Vector3 } from 'three';
+import type { Vector3 } from "three";
 import type {
   GridLocation,
   MotionType,
   RotationDirection,
   Orientation,
-} from './tka-enums';
+} from "./tka-enums";
 
 /**
  * Domain types for turning tracked staff endpoints into notation.
@@ -13,7 +13,7 @@ import type {
  * The 2D grid plane is XY; location angle = atan2(x, y) clockwise from North.
  */
 
-export type StaffColor = 'blue' | 'red';
+export type StaffHand = "left" | "right";
 
 /**
  * A staff's pose in the TKA grid frame. A staff is rotationally symmetric about
@@ -29,7 +29,7 @@ export interface StaffPose3D {
 
 /** A classified beat for one staff. */
 export interface BeatPose3D {
-  staff: StaffColor;
+  hand: StaffHand;
   frameIndex: number;
   pose: StaffPose3D;
   location: GridLocation;
@@ -70,11 +70,11 @@ export function zeroTrackConfidence(): TrackConfidence {
 
 /** The full TKA notation for one staff across a start->end beat pair. */
 export interface StaffMotionNotation {
-  staff: StaffColor;
+  hand: StaffHand;
   startLocation: GridLocation;
   endLocation: GridLocation;
   /** Hand-path family before prop-rotation refinement. */
-  handMotion: 'static' | 'shift' | 'dash';
+  handMotion: "static" | "shift" | "dash";
   /** Renderer-level motion type (shift resolves to pro/anti/float). */
   motionType: MotionType;
   rotationDirection: RotationDirection;

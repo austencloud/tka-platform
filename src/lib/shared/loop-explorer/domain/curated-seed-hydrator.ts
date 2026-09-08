@@ -14,7 +14,7 @@ import {
 } from "$lib/shared/foundation/services/data/enum-mapper";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   createMotionData,
   type MotionData,
@@ -40,8 +40,12 @@ export interface CuratedStepWire {
   readonly startPosition: string;
   readonly endPosition: string;
   readonly stepNumber: number;
-  readonly blueMotion: CuratedMotionWire;
-  readonly redMotion: CuratedMotionWire;
+  readonly leftMotion: CuratedMotionWire;
+  readonly rightMotion: CuratedMotionWire;
+  /** @deprecated Legacy checked-in and exported seed vocabulary. */
+  readonly blueMotion?: CuratedMotionWire;
+  /** @deprecated Legacy checked-in and exported seed vocabulary. */
+  readonly redMotion?: CuratedMotionWire;
 }
 
 export interface CuratedSequenceWire {
@@ -50,10 +54,7 @@ export interface CuratedSequenceWire {
   readonly steps: readonly CuratedStepWire[];
 }
 
-function hydrateMotion(
-  wire: CuratedMotionWire,
-  color: MotionColor
-): MotionData {
+function hydrateMotion(wire: CuratedMotionWire, color: HandSide): MotionData {
   const startLocation = mapLocation(wire.startLocation);
 
   return createMotionData({
@@ -73,7 +74,7 @@ function hydrateMotion(
         wire.prefloatRotationDirection
       ),
     }),
-    color,
+    hand: color,
     isVisible: true,
     propType: PropType.STAFF,
     // The compact harness format does not persist placement data. This is the
@@ -82,6 +83,22 @@ function hydrateMotion(
     arrowLocation: startLocation,
     gridMode: GridMode.DIAMOND,
   });
+}
+
+function motionWireFor(
+  step: CuratedStepWire,
+  hand: HandSide
+): CuratedMotionWire {
+  const wire =
+    hand === HandSide.LEFT
+      ? (step.leftMotion ?? step.blueMotion)
+      : (step.rightMotion ?? step.redMotion);
+  if (!wire) {
+    throw new Error(
+      `seed step ${step.stepNumber} is missing its ${hand} motion`
+    );
+  }
+  return wire;
 }
 
 /**
@@ -117,8 +134,14 @@ export function hydrateCuratedSequence(
       stepNumber: step.stepNumber,
       duration: 1,
       motions: {
-        [MotionColor.BLUE]: hydrateMotion(step.blueMotion, MotionColor.BLUE),
-        [MotionColor.RED]: hydrateMotion(step.redMotion, MotionColor.RED),
+        [HandSide.LEFT]: hydrateMotion(
+          motionWireFor(step, HandSide.LEFT),
+          HandSide.LEFT
+        ),
+        [HandSide.RIGHT]: hydrateMotion(
+          motionWireFor(step, HandSide.RIGHT),
+          HandSide.RIGHT
+        ),
       },
     });
   });

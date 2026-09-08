@@ -11,10 +11,11 @@ import type {
   ContextMenuItem,
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { VisibilityStateManager } from "../../state/visibility-state.svelte";
+import { HandSide } from "../../domain/enums/pictograph-enums";
 
 interface PictographContextMenuDeps {
   visibilityManager: VisibilityStateManager;
-  onAdjustArrow?: (color: "blue" | "red") => void;
+  onAdjustArrow?: (hand: HandSide) => void;
   /** True if the user is admin and the pictograph has motions (not a blank/start beat) */
   showArrowAdjustment?: boolean;
   /**
@@ -112,18 +113,18 @@ export function buildPictographContextMenuItems(
   if (deps.showArrowAdjustment && deps.onAdjustArrow) {
     items.push({ type: "separator" });
     items.push({
-      id: "adjust-blue-arrow",
-      label: "Adjust Blue Arrow",
+      id: "adjust-left-arrow",
+      label: "Adjust Left Arrow",
       icon: "fa-arrows-alt",
       iconColor: "#2563eb",
-      action: () => deps.onAdjustArrow!("blue"),
+      action: () => deps.onAdjustArrow!(HandSide.LEFT),
     });
     items.push({
-      id: "adjust-red-arrow",
-      label: "Adjust Red Arrow",
+      id: "adjust-right-arrow",
+      label: "Adjust Right Arrow",
       icon: "fa-arrows-alt",
       iconColor: "#dc2626",
-      action: () => deps.onAdjustArrow!("red"),
+      action: () => deps.onAdjustArrow!(HandSide.RIGHT),
     });
   }
 

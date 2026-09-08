@@ -205,6 +205,27 @@ describe("createConstructAttractAct", () => {
 });
 
 describe("Construct animation rendering", () => {
+  it("reserves one action box and swaps playback controls sequentially", () => {
+    const constructSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/routes/(public)/composer/_sections/ConstructSection.svelte"
+      ),
+      "utf8"
+    );
+
+    expect(constructSource).toContain('<div class="action-swap">');
+    expect(constructSource).toContain('mode="swap"');
+    expect(constructSource).toContain('class="action-swap-state"');
+    expect(constructSource).toContain("place-items: center");
+    expect(constructSource).toContain("@container (min-width: 1100px)");
+    expect(constructSource).toContain("inline-size: 21rem");
+    expect(constructSource).toContain("align-items: stretch;");
+    expect(constructSource).not.toContain("align-items: start;");
+    expect(constructSource).toContain("margin-block: auto;");
+    expect(constructSource).not.toContain("margin-top: auto;");
+  });
+
   it("pins the shared vivid trail preset and assigns trails to the prop tips", () => {
     const constructSource = readFileSync(
       resolve(
@@ -222,6 +243,8 @@ describe("Construct animation rendering", () => {
     );
 
     expect(HERO_TRAIL_PRESET.mode).toBe(TrailMode.FADE);
+    expect(HERO_TRAIL_PRESET.lineWidth).toBe(5);
+    expect(HERO_TRAIL_PRESET.glowBlur).toBe(8);
     expect(HERO_TIP_EFFECT_MAP["*"]?.effect).toBe("trails");
     expect(constructSource).toContain(
       "trailSettingsOverride={HERO_TRAIL_PRESET}"

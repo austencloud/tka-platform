@@ -1,3 +1,5 @@
+import type { HandSide } from "@tka/tka-types";
+
 /**
  * Shared Pictograph Types
  *
@@ -9,7 +11,7 @@
  * Motion data for a single hand/prop in a pictograph.
  */
 export interface MotionData {
-  color: string;
+  hand: HandSide;
   startLocation: string;
   endLocation: string;
   motionType: string;
@@ -31,8 +33,8 @@ export interface PictographData {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotion: MotionData;
-  redMotion: MotionData;
+  leftMotion: MotionData;
+  rightMotion: MotionData;
 }
 
 /**

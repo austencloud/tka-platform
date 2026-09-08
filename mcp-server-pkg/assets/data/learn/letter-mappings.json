@@ -3,284 +3,284 @@
     "A": {
       "startPosition": "alpha1",
       "endPosition": "alpha3",
-      "blueMotion": "pro",
-      "redMotion": "pro"
+      "leftMotion": "pro",
+      "rightMotion": "pro"
     },
     "B": {
       "startPosition": "alpha1",
       "endPosition": "alpha3",
-      "blueMotion": "anti",
-      "redMotion": "anti"
+      "leftMotion": "anti",
+      "rightMotion": "anti"
     },
     "C": {
       "startPosition": "alpha1",
       "endPosition": "alpha3",
-      "blueMotion": "anti",
-      "redMotion": "pro"
+      "leftMotion": "anti",
+      "rightMotion": "pro"
     },
     "D": {
       "startPosition": "beta1",
       "endPosition": "alpha3",
-      "blueMotion": "pro",
-      "redMotion": "pro"
+      "leftMotion": "pro",
+      "rightMotion": "pro"
     },
     "E": {
       "startPosition": "beta1",
       "endPosition": "alpha3",
-      "blueMotion": "anti",
-      "redMotion": "anti"
+      "leftMotion": "anti",
+      "rightMotion": "anti"
     },
     "F": {
       "startPosition": "beta1",
       "endPosition": "alpha3",
-      "blueMotion": "anti",
-      "redMotion": "pro"
+      "leftMotion": "anti",
+      "rightMotion": "pro"
     },
     "G": {
       "startPosition": "beta3",
       "endPosition": "beta5",
-      "blueMotion": "pro",
-      "redMotion": "pro"
+      "leftMotion": "pro",
+      "rightMotion": "pro"
     },
     "H": {
       "startPosition": "beta3",
       "endPosition": "beta5",
-      "blueMotion": "anti",
-      "redMotion": "anti"
+      "leftMotion": "anti",
+      "rightMotion": "anti"
     },
     "I": {
       "startPosition": "beta3",
       "endPosition": "beta5",
-      "blueMotion": "anti",
-      "redMotion": "pro"
+      "leftMotion": "anti",
+      "rightMotion": "pro"
     },
     "J": {
       "startPosition": "alpha3",
       "endPosition": "beta5",
-      "blueMotion": "pro",
-      "redMotion": "pro"
+      "leftMotion": "pro",
+      "rightMotion": "pro"
     },
     "K": {
       "startPosition": "alpha3",
       "endPosition": "beta5",
-      "blueMotion": "anti",
-      "redMotion": "anti"
+      "leftMotion": "anti",
+      "rightMotion": "anti"
     },
     "L": {
       "startPosition": "alpha3",
       "endPosition": "beta5",
-      "blueMotion": "anti",
-      "redMotion": "pro"
+      "leftMotion": "anti",
+      "rightMotion": "pro"
     },
     "M": {
       "startPosition": "gamma11",
       "endPosition": "gamma1",
-      "blueMotion": "pro",
-      "redMotion": "pro"
+      "leftMotion": "pro",
+      "rightMotion": "pro"
     },
     "N": {
       "startPosition": "gamma11",
       "endPosition": "gamma1",
-      "blueMotion": "anti",
-      "redMotion": "anti"
+      "leftMotion": "anti",
+      "rightMotion": "anti"
     },
     "O": {
       "startPosition": "gamma11",
       "endPosition": "gamma1",
-      "blueMotion": "anti",
-      "redMotion": "pro"
+      "leftMotion": "anti",
+      "rightMotion": "pro"
     },
     "P": {
       "startPosition": "gamma1",
       "endPosition": "gamma15",
-      "blueMotion": "pro",
-      "redMotion": "pro"
+      "leftMotion": "pro",
+      "rightMotion": "pro"
     },
     "Q": {
       "startPosition": "gamma1",
       "endPosition": "gamma15",
-      "blueMotion": "anti",
-      "redMotion": "anti"
+      "leftMotion": "anti",
+      "rightMotion": "anti"
     },
     "R": {
       "startPosition": "gamma1",
       "endPosition": "gamma15",
-      "blueMotion": "anti",
-      "redMotion": "pro"
+      "leftMotion": "anti",
+      "rightMotion": "pro"
     },
     "S": {
       "startPosition": "gamma13",
       "endPosition": "gamma11",
-      "blueMotion": "pro",
-      "redMotion": "pro"
+      "leftMotion": "pro",
+      "rightMotion": "pro"
     },
     "T": {
       "startPosition": "gamma13",
       "endPosition": "gamma11",
-      "blueMotion": "anti",
-      "redMotion": "anti"
+      "leftMotion": "anti",
+      "rightMotion": "anti"
     },
     "U": {
       "startPosition": "gamma13",
       "endPosition": "gamma11",
-      "blueMotion": "anti",
-      "redMotion": "pro"
+      "leftMotion": "anti",
+      "rightMotion": "pro"
     },
     "V": {
       "startPosition": "gamma13",
       "endPosition": "gamma11",
-      "blueMotion": "pro",
-      "redMotion": "anti"
+      "leftMotion": "pro",
+      "rightMotion": "anti"
     },
     "W": {
       "startPosition": "gamma13",
       "endPosition": "alpha3",
-      "blueMotion": "static",
-      "redMotion": "pro"
+      "leftMotion": "static",
+      "rightMotion": "pro"
     },
     "X": {
       "startPosition": "gamma13",
       "endPosition": "alpha3",
-      "blueMotion": "static",
-      "redMotion": "anti"
+      "leftMotion": "static",
+      "rightMotion": "anti"
     },
     "Y": {
       "startPosition": "gamma11",
       "endPosition": "beta5",
-      "blueMotion": "static",
-      "redMotion": "pro"
+      "leftMotion": "static",
+      "rightMotion": "pro"
     },
     "Z": {
       "startPosition": "gamma11",
       "endPosition": "beta5",
-      "blueMotion": "static",
-      "redMotion": "anti"
+      "leftMotion": "static",
+      "rightMotion": "anti"
     },
     "Σ": {
       "startPosition": "alpha3",
       "endPosition": "gamma13",
-      "blueMotion": "static",
-      "redMotion": "pro"
+      "leftMotion": "static",
+      "rightMotion": "pro"
     },
     "Δ": {
       "startPosition": "alpha3",
       "endPosition": "gamma13",
-      "blueMotion": "static",
-      "redMotion": "anti"
+      "leftMotion": "static",
+      "rightMotion": "anti"
     },
     "Θ": {
       "startPosition": "beta5",
       "endPosition": "gamma11",
-      "blueMotion": "static",
-      "redMotion": "pro"
+      "leftMotion": "static",
+      "rightMotion": "pro"
     },
     "Ω": {
       "startPosition": "beta5",
       "endPosition": "gamma11",
-      "blueMotion": "static",
-      "redMotion": "anti"
+      "leftMotion": "static",
+      "rightMotion": "anti"
     },
     "W-": {
       "startPosition": "gamma5",
       "endPosition": "alpha3",
-      "blueMotion": "dash",
-      "redMotion": "pro"
+      "leftMotion": "dash",
+      "rightMotion": "pro"
     },
     "X-": {
       "startPosition": "gamma5",
       "endPosition": "alpha3",
-      "blueMotion": "dash",
-      "redMotion": "anti"
+      "leftMotion": "dash",
+      "rightMotion": "anti"
     },
     "Y-": {
       "startPosition": "gamma3",
       "endPosition": "beta5",
-      "blueMotion": "dash",
-      "redMotion": "pro"
+      "leftMotion": "dash",
+      "rightMotion": "pro"
     },
     "Z-": {
       "startPosition": "gamma3",
       "endPosition": "beta5",
-      "blueMotion": "dash",
-      "redMotion": "anti"
+      "leftMotion": "dash",
+      "rightMotion": "anti"
     },
     "Σ-": {
       "startPosition": "beta3",
       "endPosition": "gamma13",
-      "blueMotion": "dash",
-      "redMotion": "pro"
+      "leftMotion": "dash",
+      "rightMotion": "pro"
     },
     "Δ-": {
       "startPosition": "beta3",
       "endPosition": "gamma13",
-      "blueMotion": "dash",
-      "redMotion": "anti"
+      "leftMotion": "dash",
+      "rightMotion": "anti"
     },
     "Θ-": {
       "startPosition": "alpha5",
       "endPosition": "gamma11",
-      "blueMotion": "dash",
-      "redMotion": "pro"
+      "leftMotion": "dash",
+      "rightMotion": "pro"
     },
     "Ω-": {
       "startPosition": "alpha5",
       "endPosition": "gamma11",
-      "blueMotion": "dash",
-      "redMotion": "anti"
+      "leftMotion": "dash",
+      "rightMotion": "anti"
     },
     "Φ": {
       "startPosition": "beta7",
       "endPosition": "alpha3",
-      "blueMotion": "static",
-      "redMotion": "dash"
+      "leftMotion": "static",
+      "rightMotion": "dash"
     },
     "Ψ": {
       "startPosition": "alpha1",
       "endPosition": "beta5",
-      "blueMotion": "static",
-      "redMotion": "dash"
+      "leftMotion": "static",
+      "rightMotion": "dash"
     },
     "Λ": {
       "startPosition": "gamma7",
       "endPosition": "gamma11",
-      "blueMotion": "static",
-      "redMotion": "dash"
+      "leftMotion": "static",
+      "rightMotion": "dash"
     },
     "Φ-": {
       "startPosition": "alpha3",
       "endPosition": "alpha7",
-      "blueMotion": "dash",
-      "redMotion": "dash"
+      "leftMotion": "dash",
+      "rightMotion": "dash"
     },
     "Ψ-": {
       "startPosition": "beta1",
       "endPosition": "beta5",
-      "blueMotion": "dash",
-      "redMotion": "dash"
+      "leftMotion": "dash",
+      "rightMotion": "dash"
     },
     "Λ-": {
       "startPosition": "gamma15",
       "endPosition": "gamma11",
-      "blueMotion": "dash",
-      "redMotion": "dash"
+      "leftMotion": "dash",
+      "rightMotion": "dash"
     },
     "α": {
       "startPosition": "alpha3",
       "endPosition": "alpha3",
-      "blueMotion": "static",
-      "redMotion": "static"
+      "leftMotion": "static",
+      "rightMotion": "static"
     },
     "β": {
       "startPosition": "beta5",
       "endPosition": "beta5",
-      "blueMotion": "static",
-      "redMotion": "static"
+      "leftMotion": "static",
+      "rightMotion": "static"
     },
     "γ": {
       "startPosition": "gamma11",
       "endPosition": "gamma11",
-      "blueMotion": "static",
-      "redMotion": "static"
+      "leftMotion": "static",
+      "rightMotion": "static"
     }
   },
   "rows": [

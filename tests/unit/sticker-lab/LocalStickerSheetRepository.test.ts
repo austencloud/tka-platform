@@ -42,7 +42,7 @@ describe("LocalStickerSheetRepository", () => {
     expect(repo.load()).toBeNull();
   });
 
-  it("save then load returns the same sheet with v3 stickers intact", () => {
+  it("save then load returns the same sheet with v4 stickers intact", () => {
     const sheet = {
       ...createDefaultStickerSheet(),
       stickers: [createDefaultStickerUnit({ primitiveRef: testRef })],
@@ -148,6 +148,27 @@ describe("LocalStickerSheetRepository", () => {
     expect(loaded!.stickers[0]!.primitiveRef.displayName).toBe(
       "Imported sticker"
     );
+    expect(loaded!.stickers[0]!.variant).toBe("left");
+  });
+
+  it("migrates v3 color-named variants to performer-relative identities", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
+    const sheet = {
+      ...createDefaultStickerSheet(),
+      stickers: [
+        { ...unit, id: "left-legacy", variant: "blue" },
+        { ...unit, id: "right-legacy", variant: "red" },
+      ],
+    };
+    storage.setItem(
+      STORAGE_KEY_ACTIVE_SHEET,
+      JSON.stringify({ version: 3, sheet })
+    );
+
+    expect(repo.load()!.stickers.map((sticker) => sticker.variant)).toEqual([
+      "left",
+      "right",
+    ]);
   });
 
   it("v2 sheet with sheetSize=13x19 round-trips through save/load", () => {

@@ -22,7 +22,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
   GridLocation,
@@ -185,13 +185,13 @@ export class RotatedInvertedLOOPExecutor {
       startPosition: previousStep.endPosition ?? null,
       endPosition: rotatedEndPosition,
       motions: {
-        [MotionColor.BLUE]: this._createRotatedInvertedMotion(
-          MotionColor.BLUE,
+        [HandSide.LEFT]: this._createRotatedInvertedMotion(
+          HandSide.LEFT,
           previousStep,
           previousMatchingStep
         ),
-        [MotionColor.RED]: this._createRotatedInvertedMotion(
-          MotionColor.RED,
+        [HandSide.RIGHT]: this._createRotatedInvertedMotion(
+          HandSide.RIGHT,
           previousStep,
           previousMatchingStep
         ),
@@ -287,37 +287,37 @@ export class RotatedInvertedLOOPExecutor {
     previousMatchingStep: StepData
   ): GridPosition | null {
     // Get hand rotation directions from the matching step (same color)
-    const blueHandRotDir = getHandRotationDirection(
-      previousMatchingStep.motions[MotionColor.BLUE]!
+    const leftHandRotDir = getHandRotationDirection(
+      previousMatchingStep.motions[HandSide.LEFT]!
         .startLocation as GridLocation,
-      previousMatchingStep.motions[MotionColor.BLUE]!
+      previousMatchingStep.motions[HandSide.LEFT]!
         .endLocation as GridLocation
     );
-    const redHandRotDir = getHandRotationDirection(
-      previousMatchingStep.motions[MotionColor.RED]!
+    const rightHandRotDir = getHandRotationDirection(
+      previousMatchingStep.motions[HandSide.RIGHT]!
         .startLocation as GridLocation,
-      previousMatchingStep.motions[MotionColor.RED]!.endLocation as GridLocation
+      previousMatchingStep.motions[HandSide.RIGHT]!.endLocation as GridLocation
     );
 
     // Get the location maps for rotation
-    const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
-    const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
+    const leftLocationMap = getLocationMapForHandRotation(leftHandRotDir);
+    const rightLocationMap = getLocationMapForHandRotation(rightHandRotDir);
 
     // Rotate the locations from the previous step
-    const newBlueEndLoc =
-      blueLocationMap[
-        previousStep.motions[MotionColor.BLUE]!.endLocation as GridLocation
+    const newLeftEndLoc =
+      leftLocationMap[
+        previousStep.motions[HandSide.LEFT]!.endLocation as GridLocation
       ];
-    const newRedEndLoc =
-      redLocationMap[
-        previousStep.motions[MotionColor.RED]!.endLocation as GridLocation
+    const newRightEndLoc =
+      rightLocationMap[
+        previousStep.motions[HandSide.RIGHT]!.endLocation as GridLocation
       ];
 
     // Derive position from both locations
     const newEndPosition =
       getGridPositionFromLocations(
-        newBlueEndLoc,
-        newRedEndLoc
+        newLeftEndLoc,
+        newRightEndLoc
       );
 
     return newEndPosition;
@@ -328,7 +328,7 @@ export class RotatedInvertedLOOPExecutor {
    * Combines location rotation with motion type and prop rotation flipping
    */
   private _createRotatedInvertedMotion(
-    color: MotionColor,
+    color: HandSide,
     previousStep: StepData,
     previousMatchingStep: StepData
   ): MotionData {

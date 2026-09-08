@@ -9,16 +9,16 @@ import { findExactParityCandidates } from "./verify-realization-parity";
 import { MODE_FAMILY_ID, type VtgMode } from "./shape-matrix-realizations";
 
 export interface FlowerParityTarget {
-  blue: SVGPathData[];
-  red: SVGPathData[];
+  left: SVGPathData[];
+  right: SVGPathData[];
   tipPoint?: TipPoint;
   clubTipDx: number;
 }
 
 export interface PropRelationshipPhaseSolution {
   sequence: SequenceData;
-  blueOrientation: Orientation;
-  redOrientation: Orientation;
+  leftOrientation: Orientation;
+  rightOrientation: Orientation;
 }
 
 /**
@@ -29,36 +29,36 @@ export interface PropRelationshipPhaseSolution {
  */
 export function buildExactFlowerPhases(
   base: SequenceData,
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   edges: CsvEdge[],
   target: FlowerParityTarget
 ): PropRelationshipPhaseSolution[] {
   return findExactParityCandidates(
     base,
     pair,
-    target.blue,
-    target.red,
+    target.left,
+    target.right,
     edges,
     target.tipPoint ?? target.clubTipDx
   ).map((candidate) => ({
     sequence: candidate.sequence,
-    blueOrientation: candidate.blueOri,
-    redOrientation: candidate.redOri,
+    leftOrientation: candidate.leftOri,
+    rightOrientation: candidate.rightOri,
   }));
 }
 
 /** Return the nearest exact flower phase with the requested prop relationship. */
 export function solvePropRelationshipPhase(
   base: SequenceData,
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   targetPropMode: VtgMode,
   edges: CsvEdge[],
   target: FlowerParityTarget
 ): PropRelationshipPhaseSolution | null {
   if (
-    pair.blue.turns === "fl" ||
-    pair.red.turns === "fl" ||
-    pair.blue.turns !== pair.red.turns
+    pair.left.turns === "fl" ||
+    pair.right.turns === "fl" ||
+    pair.left.turns !== pair.right.turns
   ) {
     return null;
   }
@@ -78,7 +78,7 @@ export function solvePropRelationshipPhase(
 /** Build the nearest exact phase when the hand path is the active driver. */
 export function buildDefaultFlowerPhase(
   base: SequenceData,
-  pair: { blue: Flower; red: Flower },
+  pair: { left: Flower; right: Flower },
   edges: CsvEdge[],
   target: FlowerParityTarget
 ): PropRelationshipPhaseSolution | null {

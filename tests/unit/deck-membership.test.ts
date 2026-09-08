@@ -48,8 +48,8 @@ describe("buildSignals", () => {
     const s = seq({
       gridMode: "centric",
       steps: [{
-        stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-        motions: { blue: { startLocation: "c" }, red: { startLocation: "n" } },
+        stepNumber: 1, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
+        motions: { left: { startLocation: "c" }, right: { startLocation: "n" } },
       }] as unknown as SequenceData["steps"],
     });
     const signals = buildSignals(s, providers);
@@ -61,8 +61,8 @@ describe("buildSignals", () => {
     const s = seq({
       gridMode: "diamond",
       steps: [{
-        stepNumber: 1, duration: 1, blueReversal: false, redReversal: false, isBlank: false,
-        motions: { blue: { startLocation: "n" }, red: { startLocation: "s" } },
+        stepNumber: 1, duration: 1, leftReversal: false, rightReversal: false, isBlank: false,
+        motions: { left: { startLocation: "n" }, right: { startLocation: "s" } },
       }] as unknown as SequenceData["steps"],
     });
     const signals = buildSignals(s, providers);

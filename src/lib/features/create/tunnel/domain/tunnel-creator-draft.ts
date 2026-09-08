@@ -12,7 +12,7 @@ import {
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import type { TunnelRelationshipRule } from "./tunnel-relationship-rule";
 
-export const TUNNEL_CREATOR_DRAFT_VERSION = 5;
+export const TUNNEL_CREATOR_DRAFT_VERSION = 6;
 
 export type TunnelSourceOrigin = "picked" | "generated";
 export type TunnelWorkflowMode = "seeded" | "custom";
@@ -123,6 +123,18 @@ const TunnelCreatorDraftSchema = z.object({
   presentation: TunnelSnapshotSchema.nullable(),
 });
 
+const VersionFiveTunnelCreatorDraftSchema = z.object({
+  version: z.literal(5),
+  workflow: z.enum(["seeded", "custom"]),
+  mode: z.enum(["separate", "linked"]),
+  composition: TunnelCompositionSchema.nullable(),
+  relationship: RelationshipSchema,
+  sourceStates: SourceStatesSchema,
+  workspace: WorkspaceSchema,
+  editingTunnel: EditingTunnelSchema,
+  presentation: TunnelSnapshotSchema.nullable(),
+});
+
 const VersionFourTunnelCreatorDraftSchema = z.object({
   version: z.literal(4),
   mode: z.enum(["separate", "linked"]),
@@ -170,6 +182,14 @@ export function parseTunnelCreatorDraft(
 ): TunnelCreatorDraft | null {
   const parsed = TunnelCreatorDraftSchema.safeParse(value);
   if (parsed.success) return parsed.data as unknown as TunnelCreatorDraft;
+
+  const versionFive = VersionFiveTunnelCreatorDraftSchema.safeParse(value);
+  if (versionFive.success) {
+    return {
+      ...versionFive.data,
+      version: TUNNEL_CREATOR_DRAFT_VERSION,
+    } as unknown as TunnelCreatorDraft;
+  }
 
   const versionFour = VersionFourTunnelCreatorDraftSchema.safeParse(value);
   if (versionFour.success) {

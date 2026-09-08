@@ -371,18 +371,18 @@ export class LetterQueryHandler implements ILetterQueryHandler {
 
     // Handle the mismatch between JSON config and LetterMapping interface
     const mappingData = mapping as CodexLetterMapping & {
-      blueMotion?: MotionType;
-      redMotion?: MotionType;
+      leftMotion?: MotionType;
+      rightMotion?: MotionType;
     };
     const matchingRow = csvRows.find(
       (row: ParsedCsvRow) =>
         row.letter === letter &&
         row.startPosition === mapping.startPosition &&
         row.endPosition === mapping.endPosition &&
-        row.blueMotionType ===
-          String(mappingData.blueMotion ?? mappingData.blueMotionType) &&
-        row.redMotionType ===
-          String(mappingData.redMotion ?? mappingData.redMotionType)
+        row.leftMotionType ===
+          String(mappingData.leftMotion ?? mappingData.leftMotionType) &&
+        row.rightMotionType ===
+          String(mappingData.rightMotion ?? mappingData.rightMotionType)
     );
 
     return matchingRow ?? null;

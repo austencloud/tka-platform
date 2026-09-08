@@ -5,7 +5,7 @@ import { getAllLetterVariants } from "../../../../../../tests/helpers/real-picto
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   RotationDirection,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -31,7 +31,7 @@ describe("calculateOrientationAt(·, 1) === calculateEndOrientation (dataset inv
     for (const letter of LETTERS) {
       const variants = await getAllLetterVariants(letter);
       for (const picto of variants) {
-        for (const hand of [picto.motions.blue, picto.motions.red]) {
+        for (const hand of [picto.motions.left, picto.motions.right]) {
           if (!hand) continue;
           if ((hand.startOrientation as string).startsWith("center")) continue; // deferred
           for (const turns of TURN_VALUES) {
@@ -53,7 +53,7 @@ describe("calculateOrientationAt(·, 1) === calculateEndOrientation (dataset inv
                 endOrientation,
                 turns,
               };
-              const actual = calculateOrientationAt(input, 1, MotionColor.RED);
+              const actual = calculateOrientationAt(input, 1, HandSide.RIGHT);
               comparisons++;
               if (actual !== endOrientation) {
                 mismatches.push(

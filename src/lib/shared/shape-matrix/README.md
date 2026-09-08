@@ -1,9 +1,11 @@
-# Shape Matrix Engine
+# Shape Engine
 
-Shared engine for the interactive VTG shape matrix: the flower axis, the
-matrix grid, the exact-realization drill, and cell rendering. Consumed by the
-`/notation/shape-matrix` public destination, the `/notation` teaser, and the
-lab dev harness (`src/routes/test/shape-matrix/+page.svelte`,
+Shared implementation for Shape Engine: the flower axis, level and
+ratio matrices, exact-realization drill, and cell rendering. Internal
+`ShapeMatrix*` names remain because the matrix is still the behavior they own.
+The implementation is consumed by the `/shape-engine` public
+destination, the history archive, and the lab dev harness
+(`src/routes/test/shape-matrix/+page.svelte`,
 `src/lib/features/lab/vtg-lab/`).
 
 No barrel export (`index.ts`) per this codebase's code-style convention —
@@ -33,7 +35,7 @@ state. FAC can omit it for an isolated session or provide its own state owner.
 | `MODE_ORDER`, `MODE_LABEL`, `VtgMode`                                                                                | `$lib/shared/shape-matrix/services/shape-matrix-realizations` |
 | `buildModeRealizationCandidates`, `ModeRealization`                                                                  | `$lib/shared/shape-matrix/services/build-mode-realizations`   |
 | `findExactParityCandidates`, `flowerPhaseOrientations`, `verifyAndCorrect`, `ParityResult`                           | `$lib/shared/shape-matrix/services/verify-realization-parity` |
-| `renderCell`, `renderHeader`                                                                                         | `$lib/shared/shape-matrix/services/shape-matrix-render`       |
+| `renderCell`, `renderHeader`, `renderExtentFit`, `renderEngineAligned`, `engineExtentBoxRatio` (the animation canvas's guide painter) | `$lib/shared/shape-matrix/services/shape-matrix-render`       |
 | `renderPoiCell`, `renderPoiHeader` (poi light-trail painter; same signatures, swap via the grid's `painter` prop)    | `$lib/shared/shape-matrix/services/shape-matrix-poi-render`   |
 | `Flower`, `flowerKey`, `flowerLabel`, `flowerStartOrientation`, `buildFlowerAxis`, `ratioLabel`, `flowerTurnPattern` | `$lib/shared/shape-matrix/domain/flower-signature`            |
 

@@ -34,16 +34,16 @@
   }
 
   function reversalState(option: PictographData): {
-    blueReversal: boolean;
-    redReversal: boolean;
+    leftReversal: boolean;
+    rightReversal: boolean;
   } {
     const pictograph = option as PictographData & {
-      blueReversal?: boolean;
-      redReversal?: boolean;
+      leftReversal?: boolean;
+      rightReversal?: boolean;
     };
     return {
-      blueReversal: pictograph.blueReversal ?? false,
-      redReversal: pictograph.redReversal ?? false,
+      leftReversal: pictograph.leftReversal ?? false,
+      rightReversal: pictograph.rightReversal ?? false,
     };
   }
 </script>
@@ -81,8 +81,8 @@
                 <OptionCard
                   pictograph={pathOption.option as PreparedPictographData}
                   size={previewSize}
-                  blueReversal={reversals.blueReversal}
-                  redReversal={reversals.redReversal}
+                  leftReversal={reversals.leftReversal}
+                  rightReversal={reversals.rightReversal}
                   isContinuation={continuationIndex ===
                     pathOption.originalIndex}
                   onSelect={() =>

@@ -1,0 +1,19 @@
+{
+  "viewport": [
+    1600,
+    900
+  ],
+  "camera": [
+    -0.826,
+    27.384,
+    -68.885
+  ],
+  "look": [
+    -1.18,
+    26.97,
+    -70
+  ],
+  "withValley": "- complementary:\n  - button \"Pause flow\"\n  - button \"Hide valley\"\n  - status: Ready · 34.79 s · 22 draws · 548254 triangles · CPU submit 0.80 ms · frame 16.70 ms · 120 samples",
+  "withoutValley": "- complementary:\n  - button \"Pause flow\"\n  - button \"Show valley\" [active]\n  - status: Ready · 53.71 s · 20 draws · 446742 triangles · CPU submit 0.80 ms · frame 16.70 ms · 120 samples",
+  "note": "Shared-world renderer, rolling 120-sample medians on a shared development machine; CPU submission and frame cadence, not GPU execution or a mobile guarantee."
+}

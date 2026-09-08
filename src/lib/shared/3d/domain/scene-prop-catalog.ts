@@ -1,11 +1,13 @@
-import type {
-  FanBuild,
-  FanCover,
-  FanFrameColor,
-  PropFinish,
-} from "@austencloud/scene-3d";
+import type { PropFinish } from "@austencloud/scene-3d";
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PropBuildPreviewOption } from "$lib/shared/pictograph/prop/domain/fan-appearance";
+export {
+  fanBuildPreviewOptions,
+  fanCoverPreviewOptions,
+  fanFramePreviewOptions,
+} from "$lib/shared/pictograph/prop/domain/fan-appearance";
+export type { PropBuildPreviewOption } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
 export interface ScenePropVariant {
   id: PropType;
@@ -26,13 +28,10 @@ export interface ScenePropFamily {
  */
 export const SCENE_PROP_FAMILIES: readonly ScenePropFamily[] = [
   {
-    tileLabel: "Sword / Sickles",
+    tileLabel: "Sword",
     controlLabel: "Weapon",
     representative: PropType.SWORD,
-    variants: [
-      { id: PropType.SWORD, label: "Sword" },
-      { id: PropType.SICKLES, label: "Sickles" },
-    ],
+    variants: [{ id: PropType.SWORD, label: "Sword" }],
   },
   {
     tileLabel: "Double Staff",
@@ -136,6 +135,59 @@ export function findScenePropFamilyByRepresentative(
 }
 
 /* -------------------------------------------------------------------------
+   How long a build draws
+   -------------------------------------------------------------------------
+   Length is a property of a build, so it belongs beside the rest of what the
+   catalog knows about one.
+
+   Two of the three Double Staff builds are drawn from authored GLB models
+   rather than procedural geometry, and a model draws at the size it was
+   authored: the scene package's `Prop3D` hands `length` to every procedural
+   component and drops it on the GLTF branch. So every length control in the
+   product — the performer's own `staffLengthCm`, a pinned lab length, the
+   body-derived hug fit — reaches the plain Staff and stops at the LED Baton
+   and the Fire Staff. Anything reporting a prop's size has to say which of
+   those two it is looking at.
+
+   The numbers are each model's own `authored_length_m` node extra, written by
+   scripts/build-capsule-baton-model.py (0.8636 m, "a 34\" baton, the same
+   overall length as the default staff") and
+   scripts/build-fire-double-staff-model.py (0.9 m), and confirmed against the
+   shipped GLBs' POSITION accessor bounds.
+
+   The table covers the Double Staff family because that is the only family
+   whose builds mix procedural and model-backed geometry, so it is the only
+   one where the distinction changes a reading. Other model-backed props
+   ignore length the same way; they are absent because nothing asks them for
+   a length yet.
+   ------------------------------------------------------------------------- */
+
+const AUTHORED_MODEL_LENGTH_CM: Partial<Record<PropType, number>> = {
+  [PropType.CAPSULE_BATON]: 86.36,
+  [PropType.FIRE_DOUBLE_STAFF]: 90,
+};
+
+/**
+ * The authored length of a model-backed build, or null when the build is
+ * procedural and therefore draws whatever length it is handed.
+ */
+export function scenePropAuthoredLengthCm(prop: PropType): number | null {
+  return AUTHORED_MODEL_LENGTH_CM[prop] ?? null;
+}
+
+/**
+ * The length a build actually draws at, given the length it was asked for.
+ * A procedural build honours the request; a model-backed one answers with its
+ * authored length no matter what was asked.
+ */
+export function scenePropDrawnLengthCm(
+  prop: PropType,
+  requestedCm: number | null
+): number | null {
+  return scenePropAuthoredLengthCm(prop) ?? requestedCm;
+}
+
+/* -------------------------------------------------------------------------
    Build previews
    -------------------------------------------------------------------------
    Every build choice a prop offers — which member of its family, which
@@ -145,17 +197,6 @@ export function findScenePropFamilyByRepresentative(
    this prop, and what builds of it exist. A picker that showed a different
    set of pictures would be a second catalog.
    ------------------------------------------------------------------------- */
-
-export interface PropBuildPreviewOption<T extends string> {
-  id: T;
-  label: string;
-  image: string;
-  imageScale?: number;
-  designCredit?: {
-    originator: string;
-    sourceUrl: string;
-  };
-}
 
 const PREVIEW_ROOT = "/images/props/build-previews";
 
@@ -174,7 +215,6 @@ const PROP_PREVIEW_IMAGES: Partial<Record<PropType, string>> = {
   [PropType.TRIAD]: "triad-fire.webp",
   [PropType.TRIGENG]: "trigeng.webp",
   [PropType.SWORD]: "sword.webp",
-  [PropType.SICKLES]: "sickles.webp",
 };
 
 function previewImage(file: string): string {
@@ -192,80 +232,5 @@ export function finishPreviewOptions(
   return [
     { id: "fire", label: "Fire", image: previewImage(`${stem}-fire.webp`) },
     { id: "day", label: "Day", image: previewImage(`${stem}-day.webp`) },
-  ];
-}
-
-function fanImage(
-  build: FanBuild,
-  frame: FanFrameColor,
-  cover: FanCover
-): string {
-  if (build === "pictograph") return previewImage("fan-pictograph-front.webp");
-  if (build === "fire") return previewImage(`fan-fire-${cover}-complete.webp`);
-  if (build === "lotus") return previewImage("fan-lotus-bare-complete.webp");
-  return previewImage(`fan-day-${frame}-${cover}-complete.webp`);
-}
-
-export function fanBuildPreviewOptions(
-  frame: FanFrameColor,
-  cover: FanCover
-): readonly PropBuildPreviewOption<FanBuild>[] {
-  return [
-    {
-      id: "pictograph",
-      label: "Pictograph",
-      image: fanImage("pictograph", frame, cover),
-    },
-    {
-      id: "fire",
-      label: "Fire",
-      image: fanImage("fire", frame, cover),
-      designCredit: {
-        originator: "Doodle",
-        sourceUrl: "https://forgedfans.com/products/doodlegrip-fire-fans",
-      },
-    },
-    {
-      id: "lotus",
-      label: "Lotus",
-      image: fanImage("lotus", frame, cover),
-      designCredit: {
-        originator: "Home of Poi",
-        sourceUrl:
-          "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
-      },
-    },
-    {
-      id: "day",
-      label: "Day",
-      image: fanImage("day", frame, cover),
-      designCredit: {
-        originator: "Doodle",
-        sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
-      },
-    },
-  ];
-}
-
-export function fanFramePreviewOptions(
-  cover: FanCover
-): readonly PropBuildPreviewOption<FanFrameColor>[] {
-  return [
-    { id: "black", label: "Black", image: fanImage("day", "black", cover) },
-    { id: "white", label: "White", image: fanImage("day", "white", cover) },
-  ];
-}
-
-export function fanCoverPreviewOptions(
-  build: Extract<FanBuild, "fire" | "day">,
-  frame: FanFrameColor
-): readonly PropBuildPreviewOption<FanCover>[] {
-  return [
-    { id: "bare", label: "Bare", image: fanImage(build, frame, "bare") },
-    {
-      id: "covered",
-      label: "Covered",
-      image: fanImage(build, frame, "covered"),
-    },
   ];
 }

@@ -39,10 +39,13 @@ import {
   type PayloadDerivation,
 } from "./lib/shortcode-derivation";
 import { decodeSequenceFromQR } from "../../src/lib/shared/navigation/services/sequence-encoder";
-import { getSequenceMotionProfile } from "../../src/lib/shared/foundation/services/sequence-motion-profile";
 import {
-  extractBlueSoloProp,
-  extractRedSoloProp,
+  getSequenceMotionProfile,
+  motionHandForAuthoredHand,
+} from "../../src/lib/shared/foundation/services/sequence-motion-profile";
+import {
+  extractLeftSoloProp,
+  extractRightSoloProp,
 } from "../../src/lib/shared/foundation/services/sequence-decomposer";
 import { hashSoloProp } from "../../src/lib/shared/foundation/services/content-hasher";
 import type { SoloPropData } from "../../src/lib/shared/foundation/domain/models/solo-prop-data";
@@ -131,17 +134,17 @@ async function validateSoloRecord(data: AnyRec): Promise<string | null> {
       ).slice(0, 120)}`;
     }
     const profile = getSequenceMotionProfile(decoded);
-    const expectedColor = authoredHand === "left" ? "blue" : "red";
-    if (profile.kind !== "solo" || profile.color !== expectedColor) {
+    const expectedHand = motionHandForAuthoredHand(authoredHand);
+    if (profile.kind !== "solo" || profile.hand !== expectedHand) {
       return "solo encoded payload contradicts authoredHand";
     }
     if (decoded.steps.length !== stepCount) {
       return "solo encoded step count contradicts envelope";
     }
     soloProp =
-      expectedColor === "blue"
-        ? extractBlueSoloProp(decoded)
-        : extractRedSoloProp(decoded);
+      authoredHand === "left"
+        ? extractLeftSoloProp(decoded)
+        : extractRightSoloProp(decoded);
   } else {
     soloProp = data.soloData as SoloPropData;
     if (

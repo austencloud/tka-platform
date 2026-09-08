@@ -110,8 +110,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
   <div class="canvas-box">
     {#if ready}
       <AnimatorCanvas
-        blueProp={animationState.bluePropState}
-        redProp={animationState.redPropState}
+        leftProp={animationState.leftPropState}
+        rightProp={animationState.rightPropState}
         gridVisible={true}
         {gridMode}
         letter={currentLetter}
@@ -119,8 +119,8 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
         sequenceData={animationState.sequenceData}
         currentStep={animationState.currentStep}
         isPlaying={animationState.isPlaying}
-        bluePropType={PropType.STAFF}
-        redPropType={PropType.STAFF}
+        leftPropType={PropType.STAFF}
+        rightPropType={PropType.STAFF}
         word={currentSequence?.word || "TEST"}
         previewDarkMode={true}
         focused={true}

@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
+  import { reparentToInspector } from "$lib/shared/sequence-viewer/components/reparent-to-inspector";
+  import { sequencePositionToMediaTime } from "$lib/shared/media-composition/domain/sequence-time-map";
   import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
@@ -37,6 +41,13 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { mirrorSequence } from "$lib/shared/create/services/sequence-transformer";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { tryGetViewerUrlSessionContext } from "$lib/shared/sequence-viewer/services/viewer-url-session";
+  import {
+    capturePsSlice,
+    persistedPsSlice,
+    seedFromPsSlice,
+    type PsSlicePayload,
+  } from "$lib/shared/sequence-viewer/services/viewer-url-slices/ps-slice";
   import PostStudioActionBar from "./PostStudioActionBar.svelte";
   import PostStudioPreview from "./PostStudioPreview.svelte";
   import PostStudioInspector from "./PostStudioInspector.svelte";
@@ -55,10 +66,13 @@
     PostStudioArtControllers,
     setPostStudioArtContext,
   } from "./post-studio-art-context.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
 
   type FocusedPanel = "canvas" | "edit" | "timing";
 
   interface Props {
+    /** Retain the draft while its host is hidden, without running playback. */
+    active?: boolean;
     sequence: SequenceData;
     cardPreviewUrl: string | null;
     animationPreviewUrl: string | null;
@@ -79,6 +93,7 @@
   }
 
   let {
+    active = true,
     sequence,
     cardPreviewUrl,
     animationPreviewUrl,
@@ -95,6 +110,10 @@
   }: Props = $props();
 
   const exportOptions = getExportOptionsState();
+  const sharedSurfaces = getViewerStudioSurfaces();
+  const externalInspector = $derived(
+    sharedSurfaces?.externalInspectorTarget ?? null
+  );
   const effectsConfig =
     getEffectsConfigContext() ??
     createEffectsConfigState(undefined, { persist: false });
@@ -103,8 +122,22 @@
     getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
   setAnimationVisibilityContext(animationVisibility);
 
+  // ps slice: setup-state seed. `PostStudioPane.svelte` mounts this component
+  // via `{#if layout.showPostStudio}`, so `tryGetViewerUrlSessionContext()`
+  // resolves the same session `SequenceViewerOrchestrator.svelte` publishes
+  // to every pane. `persistedPsSlice()` always returns null (no encoded field
+  // has a disk-backed form), so `isOverride` degenerates to "any non-null URL
+  // payload is an override" — see `ps-slice.ts`'s doc comment, "Own-link rule".
+  const viewerUrlSession = tryGetViewerUrlSessionContext();
+  const psSeedPayload =
+    (viewerUrlSession?.getSeed("ps") as PsSlicePayload | null) ?? null;
+  const psSeed =
+    psSeedPayload && viewerUrlSession?.isOverride("ps", persistedPsSlice())
+      ? seedFromPsSlice(psSeedPayload)
+      : null;
+
   let selectedPropType = $state<PropType>(
-    settingsService.settings.bluePropType ?? PropType.STAFF
+    psSeed?.propType ?? settingsService.settings.leftPropType ?? PropType.STAFF
   );
   const synchronizedCardRenderOptions = $derived(
     withPostStudioPropType(cardRenderOptions, selectedPropType)
@@ -136,9 +169,10 @@
    * element's height said "compact" while the CSS still had both columns up.
    */
   const compactWorkspace = $derived(
-    workspaceWidth === 0 ||
-      workspaceWidth <= 1120 ||
-      (viewportHeight > 0 && viewportHeight <= 640)
+    !externalInspector &&
+      (workspaceWidth === 0 ||
+        workspaceWidth <= 1120 ||
+        (viewportHeight > 0 && viewportHeight <= 640))
   );
 
   const sequenceRef = $derived(createPostStudioSequenceRef(sequence));
@@ -407,21 +441,37 @@
     }
   }
 
+  // Seeded mirror: `toggleNotationMirror` FLIPS (it un-mirrors when already
+  // mirrored), so a seeded `notationMirrored: true` cannot call it as-is.
+  // `notationMirrored`/`mirrorCache` both still hold their fresh-mount values
+  // at this point in setup, so this call always takes the function's own
+  // async-build "turn on" branch above — reusing that branch rather than
+  // duplicating its cache-population logic here.
+  if (psSeed?.notationMirrored) {
+    void toggleNotationMirror();
+  }
+
   // Tunnel and mandala controllers live here, above both the slot that draws
   // them and the inspector that steers them, so the Look / Spin / Colors
   // controls change the instance the canvas is reading. Same ownership as
   // ArtPane in the sequence viewer.
   const artControllers = new PostStudioArtControllers({
     getSequence: () => displaySequence,
-    getBluePropType: () => synchronizedCardRenderOptions?.bluePropTypeOverride,
-    getRedPropType: () => synchronizedCardRenderOptions?.redPropTypeOverride,
+    getLeftPropType: () => synchronizedCardRenderOptions?.leftPropTypeOverride,
+    getRightPropType: () =>
+      synchronizedCardRenderOptions?.rightPropTypeOverride,
     pathPolicy: animationVisibility,
   });
   setPostStudioArtContext(artControllers);
 
   let previewRoot = $state<HTMLElement | null>(null);
-  let audioMode = $state<"original" | "instagram">("original");
-  let audioModeTouched = $state(false);
+  // Seeded as touched when the URL carried an explicit choice: the untouched
+  // `$effect` below (line ~486) would otherwise overwrite it the instant
+  // `canKeepOriginalAudio` resolves. See `ps-slice.ts`, "Touched-flag diffing".
+  let audioMode = $state<"original" | "instagram">(
+    psSeed?.audioMode ?? "original"
+  );
+  let audioModeTouched = $state(psSeed?.audioMode !== undefined);
   let exportProgress = $state<PostStudioExportProgress | null>(null);
   let exportError = $state("");
   let exportedUrl = $state<string | null>(null);
@@ -463,7 +513,10 @@
     composition.missingRequiredRoles[0] ?? null
   );
   const canRender = $derived(
-    composition.isReady && previewRoot !== null && !exporting
+    composition.isReady &&
+      previewRoot !== null &&
+      !exporting &&
+      !sharedSurfaces?.moving
   );
 
   /**
@@ -476,8 +529,32 @@
    * stays paused.
    */
   let autoPlayStarted = $state(false);
+  let sharedEntryRevision = 0;
   $effect(() => {
-    if (autoPlayStarted) return;
+    if (!active || !sharedSurfaces?.active || !composition.isReady) return;
+    const entry = sharedSurfaces.entry;
+    if (entry.revision === sharedEntryRevision) return;
+    sharedEntryRevision = entry.revision;
+    untrack(() => {
+      if (composition.tempoBpm !== null) composition.setTempoBpm(entry.bpm);
+      const map = composition.sequenceTimeMap;
+      if (map)
+        composition.seek(sequencePositionToMediaTime(map, entry.position));
+      if (composition.isPlaying !== entry.playing) composition.togglePlayback();
+    });
+  });
+  $effect(() =>
+    sharedSurfaces?.setControls(() => ({
+      playing: composition.isPlaying,
+      bpm: composition.tempoBpm ?? 60,
+      propType: selectedPropType,
+      toggle: composition.togglePlayback,
+      setBpm: composition.setTempoBpm,
+      setProp: setPropType,
+    }))
+  );
+  $effect(() => {
+    if (sharedSurfaces || autoPlayStarted || !active) return;
     if (!composition.isReady || composition.isPlaying) return;
     autoPlayStarted = true;
     composition.togglePlayback();
@@ -502,6 +579,34 @@
     exportCancelled = true;
     if (exportedUrl) URL.revokeObjectURL(exportedUrl);
     if (localPerformanceUrl) URL.revokeObjectURL(localPerformanceUrl);
+  });
+
+  // ps slice: live capture. `defaultPropType` is read fresh on every capture
+  // (never cached), because it is the LIVE per-session baseline `propType`
+  // diffs against — see `ps-slice.ts`, "Diff baseline: per-session live
+  // value, not a fixed constant".
+  const capturePs = (options: { full?: boolean } = {}) =>
+    capturePsSlice(
+      {
+        propType: selectedPropType,
+        defaultPropType:
+          settingsService.settings.leftPropType ?? PropType.STAFF,
+        audioMode,
+        audioModeTouched,
+        notationMirrored,
+      },
+      options
+    );
+
+  if (viewerUrlSession) {
+    const unregisterPsSlice = viewerUrlSession.registerSlice("ps", capturePs);
+    onDestroy(unregisterPsSlice);
+  }
+
+  $effect(() => {
+    if (!viewerUrlSession) return;
+    void capturePs();
+    viewerUrlSession.scheduleUrlWrite();
   });
 
   function setPreviewRoot(root: HTMLElement | null): void {
@@ -626,6 +731,12 @@
   let frameRequest: number | null = null;
   let previousFrameTime: number | null = null;
 
+  $effect(() => {
+    // The shell reads the outgoing play intent before releasing its loan.
+    // Pausing earlier makes effect ordering turn a playing return into a pause.
+    if (!active && !sharedSurfaces?.active) composition.pause();
+  });
+
   function tick(now: number): void {
     if (previousFrameTime !== null) {
       composition.advance((now - previousFrameTime) / 1000);
@@ -653,7 +764,6 @@
   onDestroy(() => {
     if (frameRequest !== null) cancelAnimationFrame(frameRequest);
   });
-
 </script>
 
 <svelte:window bind:innerHeight={viewportHeight} />
@@ -661,6 +771,7 @@
 <section
   class="post-studio"
   data-mobile-panel={focusedPanel}
+  data-external-inspector={!!externalInspector}
   aria-label={`Post Studio, ${sequenceName}`}
 >
   <PostStudioActionBar
@@ -685,11 +796,12 @@
     {onSharePost}
   />
 
-  {#snippet transport(showAdvancedToggle: boolean)}
+  {#snippet transport(showAdvancedToggle: boolean, selected = true)}
     <PostStudioTransport
       advanced={timingAdvanced}
       {performanceAlignmentDetail}
       {showAdvancedToggle}
+      {selected}
       onMapPerformance={() => (performancePickerOpen = true)}
       onToggleAdvanced={toggleTimingAdvanced}
     />
@@ -703,13 +815,18 @@
           cardRenderOptions={synchronizedCardRenderOptions}
           durationLabel={`${composition.durationSeconds.toFixed(1)}s`}
           onRootReady={setPreviewRoot}
-          onEditRegion={() => (focusedPanel = "edit")}
+          onEditRegion={() => {
+            if (!externalInspector) focusedPanel = "edit";
+          }}
         />
       </div>
       <!-- Docked under the frame it drives, exactly as the 2D animation canvas
            and the 3D viewer dock the same bar under theirs. It is the same
            component; the studio no longer keeps a transport of its own. -->
-      {@render transport(!compactWorkspace)}
+      {@render transport(
+        !compactWorkspace,
+        !compactWorkspace || focusedPanel !== "timing"
+      )}
     </main>
   {/snippet}
 
@@ -719,7 +836,12 @@
          made, not of the layer, and as a card down here they took ~370px of the
          rail's height — enough that a source with real controls (the mandala
          has six categories) had to scroll inside a porthole. -->
-    <aside class="inspector-rail" aria-label="Selected layer settings">
+    <aside
+      class="inspector-rail"
+      class:external={!!externalInspector}
+      use:reparentToInspector={externalInspector}
+      aria-label="Selected layer settings"
+    >
       <PostStudioInspector
         sequence={displaySequence}
         {exportOptions}
@@ -732,10 +854,10 @@
 
   {#snippet timelinePanel()}
     <div class="timeline-dock">
-      <!-- On the compact layout the canvas column (and with it the transport)
-           is hidden while this panel is showing, so it carries its own. -->
+      <!-- Compact Timing is another destination for the same transport; it
+           does not mount a second player while the canvas column is hidden. -->
       {#if compactWorkspace}
-        {@render transport(false)}
+        {@render transport(false, focusedPanel === "timing")}
       {/if}
       <PostStudioTimeline />
     </div>
@@ -758,21 +880,23 @@
     >
       <PanelGroup
         direction="horizontal"
-        panels={[
-          {
-            id: "canvas",
-            content: canvasPanel,
-            defaultSize: workspaceSizes[0],
-            minSize: workspaceWidth >= 1680 ? 640 : 480,
-          },
-          {
-            id: "inspector",
-            content: inspectorPanel,
-            defaultSize: workspaceSizes[1],
-            minSize: workspaceWidth >= 1680 ? 720 : 320,
-            maxSize: workspaceWidth >= 2600 ? 1600 : 1280,
-          },
-        ]}
+        panels={externalInspector
+          ? [{ id: "canvas", content: canvasPanel, defaultSize: 1 }]
+          : [
+              {
+                id: "canvas",
+                content: canvasPanel,
+                defaultSize: workspaceSizes[0],
+                minSize: workspaceWidth >= 1680 ? 640 : 480,
+              },
+              {
+                id: "inspector",
+                content: inspectorPanel,
+                defaultSize: workspaceSizes[1],
+                minSize: workspaceWidth >= 1680 ? 720 : 320,
+                maxSize: workspaceWidth >= 2600 ? 1600 : 1280,
+              },
+            ]}
         bind:sizes={workspaceSizes}
         onSizesChange={() => (workspaceWasAdjusted = true)}
         gap={8}
@@ -789,7 +913,15 @@
     {/if}
   </div>
 
-  <nav class="focused-nav" aria-label="Post Studio tools">
+  {#if externalInspector}
+    {@render inspectorPanel()}
+  {/if}
+
+  <nav
+    class="focused-nav"
+    class:external={!!externalInspector}
+    aria-label="Post Studio tools"
+  >
     <button
       type="button"
       class:active={focusedPanel === "canvas"}
@@ -833,6 +965,19 @@
     onChooseFile={choosePerformanceFile}
   />
 </section>
+
+<!-- The render reads the live preview DOM frame by frame. Any edit made while
+     it runs lands in the middle of the output, so the whole app is locked until
+     it finishes or the person cancels. -->
+<ExportTakeover
+  phase={exporting ? "capturing" : "idle"}
+  progress={exportPercent / 100}
+  phaseLabel={exportProgress
+    ? `Rendering frame ${exportProgress.completedFrames} of ${exportProgress.totalFrames}`
+    : "Rendering"}
+  onCancel={cancelExport}
+  label="Rendering your post"
+/>
 
 <style>
   .post-studio {
@@ -919,6 +1064,28 @@
     border-left: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
     scrollbar-width: none;
+  }
+
+  .inspector-rail.external {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+  }
+
+  .post-studio[data-external-inspector="true"] .focused-nav {
+    display: none;
+  }
+  .post-studio[data-external-inspector="true"] .canvas-panel {
+    display: grid;
+  }
+  .post-studio[data-external-inspector="true"] .studio-body {
+    display: grid;
+  }
+  .post-studio[data-external-inspector="true"] .workspace {
+    display: flex;
+    height: auto;
   }
 
   .inspector-rail::-webkit-scrollbar,

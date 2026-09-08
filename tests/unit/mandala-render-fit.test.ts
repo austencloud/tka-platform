@@ -19,14 +19,14 @@ import type { StepLike } from "$lib/shared/mandala/services/types";
 import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
-const emptyPaths: MandalaPaths = { blue: [], red: [], purple: [] };
+const emptyPaths: MandalaPaths = { left: [], right: [], purple: [] };
 const standardExtent =
   MANDALA_GRID_RADIUS +
   (MANDALA_STANDARD_TIP_DX * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
 const quarterTurn: StepLike[] = [
   {
     motions: {
-      blue: {
+      left: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "s",
@@ -35,7 +35,7 @@ const quarterTurn: StepLike[] = [
         endOrientation: "out",
         turns: 0,
       },
-      red: {
+      right: {
         motionType: "pro",
         rotationDirection: "cw",
         startLocation: "n",
@@ -63,7 +63,7 @@ describe("mandala render fitting", () => {
   it("keeps the established enlarged scale for compact paths", () => {
     const paths: MandalaPaths = {
       ...emptyPaths,
-      blue: [{ d: "M -24 0 C -12 -18 12 18 24 0", tipIndex: 0 }],
+      left: [{ d: "M -24 0 C -12 -18 12 18 24 0", tipIndex: 0 }],
     };
 
     expect(resolveMandalaRenderExtent(paths, options())).toBe(standardExtent);
@@ -72,7 +72,7 @@ describe("mandala render fitting", () => {
   it("shrinks paths whose real geometry exceeds the standard prop reach", () => {
     const paths: MandalaPaths = {
       ...emptyPaths,
-      blue: [{ d: "M -260 0 C -180 -40 180 40 260 0", tipIndex: 0 }],
+      left: [{ d: "M -260 0 C -180 -40 180 40 260 0", tipIndex: 0 }],
     };
 
     expect(resolveMandalaRenderExtent(paths, options())).toBe(260);
@@ -96,7 +96,7 @@ describe("mandala render fitting", () => {
     vi.stubGlobal("Path2D", class TestPath2D {});
     try {
       renderMandalaToCanvas(context, paths, {
-        ...options({ show: "blue" }),
+        ...options({ show: "left" }),
         offsetX: 0,
         offsetY: 0,
       });
@@ -118,7 +118,7 @@ describe("mandala render fitting", () => {
       PropType.STAFF,
       PropType.STAFF,
       undefined,
-      { blue: tips, red: tips }
+      { left: tips, right: tips }
     );
 
     expect(resolveMandalaRenderExtent(paths, options())).toBe(standardExtent);
@@ -139,7 +139,7 @@ describe("mandala render fitting", () => {
       propType,
       propType,
       undefined,
-      { blue: tips, red: tips }
+      { left: tips, right: tips }
     );
 
     expect(resolveMandalaRenderExtent(paths, options())).toBeGreaterThan(
@@ -149,12 +149,12 @@ describe("mandala render fitting", () => {
 
   it("fits only the color that will actually be painted", () => {
     const paths: MandalaPaths = {
-      blue: [{ d: "M -30 0 C -20 -10 20 10 30 0", tipIndex: 0 }],
-      red: [{ d: "M -320 0 C -200 -20 200 20 320 0", tipIndex: 0 }],
+      left: [{ d: "M -30 0 C -20 -10 20 10 30 0", tipIndex: 0 }],
+      right: [{ d: "M -320 0 C -200 -20 200 20 320 0", tipIndex: 0 }],
       purple: [],
     };
 
-    expect(resolveMandalaRenderExtent(paths, options({ show: "blue" }))).toBe(
+    expect(resolveMandalaRenderExtent(paths, options({ show: "left" }))).toBe(
       standardExtent
     );
     expect(resolveMandalaRenderExtent(paths, options({ show: "both" }))).toBe(

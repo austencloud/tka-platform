@@ -14,10 +14,10 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 
 const SAMPLER_CONFIG: LedSamplerConfig = {
   canvasSize: 950,
-  bluePropDimensions: { width: 252.8, height: 77.8 },
-  redPropDimensions: { width: 252.8, height: 77.8 },
-  bluePropType: "staff",
-  redPropType: "staff",
+  leftPropDimensions: { width: 252.8, height: 77.8 },
+  rightPropDimensions: { width: 252.8, height: 77.8 },
+  leftPropType: "staff",
+  rightPropType: "staff",
 };
 
 function prop(angle: number): PropState {

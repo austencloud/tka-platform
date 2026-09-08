@@ -36,7 +36,7 @@
   import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -69,7 +69,7 @@
 
   const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
   const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
-  const shift = (color: MotionColor, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation = IN) => {
+  const shift = (color: HandSide, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation = IN) => {
     const dir = hpDir(from, to);
     return createMotionData({
       motionType: anti ? MotionType.ANTI : MotionType.PRO,
@@ -84,7 +84,7 @@
       gridMode: GridMode.DIAMOND,
     });
   };
-  const dash = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+  const dash = (color: HandSide, from: GridLocation, to: GridLocation) =>
     createMotionData({
       motionType: MotionType.DASH,
       rotationDirection: NOROT,
@@ -97,7 +97,7 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const stat = (color: MotionColor, loc: GridLocation, ori: Orientation = IN) =>
+  const stat = (color: HandSide, loc: GridLocation, ori: Orientation = IN) =>
     createMotionData({
       motionType: MotionType.STATIC,
       startLocation: loc,
@@ -162,8 +162,8 @@
       endPosition: getGridPositionFromLocations(c.bTo, c.rTo),
       stepNumber,
       motions: {
-        blue: dash(MotionColor.BLUE, c.bFrom, c.bTo),
-        red: shift(MotionColor.RED, c.rFrom, c.rTo, c.anti),
+        left: dash(HandSide.LEFT, c.bFrom, c.bTo),
+        right: shift(HandSide.RIGHT, c.rFrom, c.rTo, c.anti),
       },
     }) as unknown as StepData;
 
@@ -176,8 +176,8 @@
       startPosition: getGridPositionFromLocations(c.bFrom, c.rFrom),
       endPosition: getGridPositionFromLocations(c.bFrom, c.rFrom),
       motions: {
-        blue: stat(MotionColor.BLUE, c.bFrom),
-        red: stat(MotionColor.RED, c.rFrom),
+        left: stat(HandSide.LEFT, c.bFrom),
+        right: stat(HandSide.RIGHT, c.rFrom),
       },
     }) as unknown as StepData;
 
@@ -213,8 +213,8 @@
     cell: CellDef;
     startOris: [Orientation, Orientation];
     endOris: [Orientation, Orientation];
-    bluePose: Pose;
-    redPose: Pose;
+    leftPose: Pose;
+    rightPose: Pose;
   };
   const BREAKDOWNS: Breakdown[] = [
     {
@@ -226,8 +226,8 @@
       cell: { letter: Letter.W_DASH, name: "W-", bFrom: E, bTo: W, rFrom: SO_, rTo: E, anti: false },
       startOris: [IN, IN],
       endOris: [OUT, IN],
-      bluePose: { x: 475, y: 475, deg: 180 },
-      redPose: { x: 576.2, y: 576.2, deg: 225 },
+      leftPose: { x: 475, y: 475, deg: 180 },
+      rightPose: { x: 576.2, y: 576.2, deg: 225 },
     },
     {
       // Δ-: blue dash s→n (mid at center, crossbar N), red antispin s→e (SE, -45°).
@@ -238,8 +238,8 @@
       cell: { letter: Letter.DELTA_DASH, name: "Δ-", bFrom: SO_, bTo: N, rFrom: SO_, rTo: E, anti: true },
       startOris: [IN, IN],
       endOris: [OUT, OUT],
-      bluePose: { x: 475, y: 475, deg: -90 },
-      redPose: { x: 576.2, y: 576.2, deg: -45 },
+      leftPose: { x: 475, y: 475, deg: -90 },
+      rightPose: { x: 576.2, y: 576.2, deg: -45 },
     },
   ];
 
@@ -250,8 +250,8 @@
       gridMode: GridMode.DIAMOND,
       stepNumber: null,
       motions: {
-        blue: stat(MotionColor.BLUE, which === "start" ? b.cell.bFrom : b.cell.bTo, which === "start" ? b.startOris[0] : b.endOris[0]),
-        red: stat(MotionColor.RED, which === "start" ? b.cell.rFrom : b.cell.rTo, which === "start" ? b.startOris[1] : b.endOris[1]),
+        left: stat(HandSide.LEFT, which === "start" ? b.cell.bFrom : b.cell.bTo, which === "start" ? b.startOris[0] : b.endOris[0]),
+        right: stat(HandSide.RIGHT, which === "start" ? b.cell.rFrom : b.cell.rTo, which === "start" ? b.startOris[1] : b.endOris[1]),
       },
     }) as unknown as StepData;
 
@@ -261,8 +261,8 @@
       letter: null,
       gridMode: GridMode.DIAMOND,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE),
-        red: createPlaceholderMotion(MotionColor.RED),
+        left: createPlaceholderMotion(HandSide.LEFT),
+        right: createPlaceholderMotion(HandSide.RIGHT),
       },
     }) as unknown as StepData;
 
@@ -378,8 +378,8 @@
         <PictographContainer
           pictographData={RESOLVED_CELLS[key]![1]}
           gridMode={GridMode.DIAMOND}
-          bluePropTypeOverride={PropType.STAFF}
-          redPropTypeOverride={PropType.STAFF}
+          leftPropTypeOverride={PropType.STAFF}
+          rightPropTypeOverride={PropType.STAFF}
           {...PICTO_FLAGS}
         />
         <SelectionHit
@@ -403,23 +403,23 @@
 
     <!-- start -->
     <div class="mini" style="left:{BD_XS[0]! * S}px; top:{b.y * S}px; width:{FRAME * S}px; height:{FRAME * S}px">
-      <PictographContainer pictographData={bdFrame(b, "start")} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} showTKA={false} />
+      <PictographContainer pictographData={bdFrame(b, "start")} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} showTKA={false} />
     </div>
     <!-- halfway: bare grid + both staffs at their mid-motion poses -->
     <div class="mini" style="left:{BD_XS[1]! * S}px; top:{b.y * S}px; width:{FRAME * S}px; height:{FRAME * S}px">
       <PictographContainer pictographData={bareGrid(`${b.key}-half`)} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} showTKA={false} />
       <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
-        <g transform="translate({b.bluePose.x}, {b.bluePose.y}) rotate({b.bluePose.deg}) translate(-126.4, -38.9)">
+        <g transform="translate({b.leftPose.x}, {b.leftPose.y}) rotate({b.leftPose.deg}) translate(-126.4, -38.9)">
           <path d={STAFF_D} fill={BLUE} />
         </g>
-        <g transform="translate({b.redPose.x}, {b.redPose.y}) rotate({b.redPose.deg}) translate(-126.4, -38.9)">
+        <g transform="translate({b.rightPose.x}, {b.rightPose.y}) rotate({b.rightPose.deg}) translate(-126.4, -38.9)">
           <path d={STAFF_D} fill={RED} />
         </g>
       </svg>
     </div>
     <!-- end -->
     <div class="mini" style="left:{BD_XS[2]! * S}px; top:{b.y * S}px; width:{FRAME * S}px; height:{FRAME * S}px">
-      <PictographContainer pictographData={bdFrame(b, "end")} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} showTKA={false} />
+      <PictographContainer pictographData={bdFrame(b, "end")} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} showTKA={false} />
     </div>
     <!-- combined: the real pictograph, clickable -->
     {@const key = `${b.key}-full`}
@@ -433,8 +433,8 @@
       <PictographContainer
         pictographData={RESOLVED_BD[key]![1]}
         gridMode={GridMode.DIAMOND}
-        bluePropTypeOverride={PropType.STAFF}
-        redPropTypeOverride={PropType.STAFF}
+        leftPropTypeOverride={PropType.STAFF}
+        rightPropTypeOverride={PropType.STAFF}
         {...PICTO_FLAGS}
       />
       <SelectionHit

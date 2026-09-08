@@ -240,8 +240,8 @@
         {currentStep}
         isPlaying={playing}
         {bpm}
-        bluePropType="staff"
-        redPropType="staff"
+        leftPropType="staff"
+        rightPropType="staff"
         hideOverlays
         hideSceneMarkers
         onSceneReadyChange={handleSceneReady}

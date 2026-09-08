@@ -22,7 +22,7 @@ export type { SourceMode };
 
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import * as propTypeApplierModule from "$lib/shared/landing/services/prop-type-applier";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -271,7 +271,7 @@ export class SequenceChainingOrchestrator {
 
   private extractEndState(): EndState {
     if (!this.currentSequence) {
-      return { position: null, blueOrientation: null, redOrientation: null };
+      return { position: null, leftOrientation: null, rightOrientation: null };
     }
 
     const seq = this.currentSequence;
@@ -280,13 +280,13 @@ export class SequenceChainingOrchestrator {
 
     // Fallback 1: derive from motion end locations
     if (!position && finalStep?.motions) {
-      const blueMotion = finalStep.motions[MotionColor.BLUE];
-      const redMotion = finalStep.motions[MotionColor.RED];
-      if (blueMotion?.endLocation && redMotion?.endLocation) {
+      const leftMotion = finalStep.motions[HandSide.LEFT];
+      const rightMotion = finalStep.motions[HandSide.RIGHT];
+      if (leftMotion?.endLocation && rightMotion?.endLocation) {
         try {
           position = getGridPositionFromLocations(
-            blueMotion.endLocation,
-            redMotion.endLocation
+            leftMotion.endLocation,
+            rightMotion.endLocation
           );
         } catch {
           /* silently fail */
@@ -306,11 +306,11 @@ export class SequenceChainingOrchestrator {
       position,
       // Invisible placeholder = hand not really there (both-required Step
       // shape): null orientation disables orientation matching downstream.
-      blueOrientation: (isVisibleMotion(finalStep?.motions?.blue)
-        ? finalStep.motions.blue.endOrientation
+      leftOrientation: (isVisibleMotion(finalStep?.motions?.left)
+        ? finalStep.motions.left.endOrientation
         : null) as Orientation | null,
-      redOrientation: (isVisibleMotion(finalStep?.motions?.red)
-        ? finalStep.motions.red.endOrientation
+      rightOrientation: (isVisibleMotion(finalStep?.motions?.right)
+        ? finalStep.motions.right.endOrientation
         : null) as Orientation | null,
     };
   }

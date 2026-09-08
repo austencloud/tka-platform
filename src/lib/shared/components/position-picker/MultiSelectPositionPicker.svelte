@@ -38,15 +38,15 @@ Uses blocklist approach: positions in blockedPositions are excluded.
     blockedPositions = [],
     onBlockedChange,
     gridMode: gridModeProp = GridMode.DIAMOND,
-    blueStartOrientation = Orientation.IN,
-    redStartOrientation = Orientation.IN,
+    leftStartOrientation = Orientation.IN,
+    rightStartOrientation = Orientation.IN,
     presets = [],
   } = $props<{
     blockedPositions: GridPosition[];
     onBlockedChange: (blocked: GridPosition[]) => void;
     gridMode?: GridMode;
-    blueStartOrientation?: Orientation;
-    redStartOrientation?: Orientation;
+    leftStartOrientation?: Orientation;
+    rightStartOrientation?: Orientation;
     /** Named shortcuts shown beside All and Choose one. */
     presets?: PositionSelectionPreset[];
   }>();
@@ -201,20 +201,20 @@ Uses blocklist approach: positions in blockedPositions are excluded.
       ...p,
       motions: {
         ...p.motions,
-        blue: p.motions?.blue
+        left: p.motions?.left
           ? {
-              ...p.motions.blue,
-              startOrientation: blueStartOrientation,
-              endOrientation: blueStartOrientation,
+              ...p.motions.left,
+              startOrientation: leftStartOrientation,
+              endOrientation: leftStartOrientation,
             }
-          : p.motions?.blue,
-        red: p.motions?.red
+          : p.motions?.left,
+        right: p.motions?.right
           ? {
-              ...p.motions.red,
-              startOrientation: redStartOrientation,
-              endOrientation: redStartOrientation,
+              ...p.motions.right,
+              startOrientation: rightStartOrientation,
+              endOrientation: rightStartOrientation,
             }
-          : p.motions?.red,
+          : p.motions?.right,
       },
     }))
   );

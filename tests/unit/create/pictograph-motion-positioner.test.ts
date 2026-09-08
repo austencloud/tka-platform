@@ -6,7 +6,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -20,8 +20,8 @@ const step = createStepData({
   stepNumber: 1,
   gridMode: GridMode.DIAMOND,
   motions: {
-    blue: createMotionData({
-      color: MotionColor.BLUE,
+    left: createMotionData({
+      hand: HandSide.LEFT,
       motionType: MotionType.DASH,
       rotationDirection: RotationDirection.CLOCKWISE,
       startLocation: GridLocation.WEST,
@@ -32,8 +32,8 @@ const step = createStepData({
       propType: PropType.STAFF,
       isVisible: true,
     }),
-    red: createMotionData({
-      color: MotionColor.RED,
+    right: createMotionData({
+      hand: HandSide.RIGHT,
       motionType: MotionType.PRO,
       rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
       startLocation: GridLocation.SOUTH,
@@ -48,13 +48,13 @@ const step = createStepData({
 });
 
 const startPositions = {
-  blue: { x: 327.4, y: 480.2, rotation: 180 },
-  red: { x: 478.8, y: 622.6, rotation: 0 },
+  left: { x: 327.4, y: 480.2, rotation: 180 },
+  right: { x: 478.8, y: 622.6, rotation: 0 },
 };
 
 const endPositions = {
-  blue: { x: 622.9, y: 471.7, rotation: 0 },
-  red: { x: 470.5, y: 326.4, rotation: 180 },
+  left: { x: 622.9, y: 471.7, rotation: 0 },
+  right: { x: 470.5, y: 326.4, rotation: 180 },
 };
 
 describe("calculatePictographMotionPositions", () => {
@@ -62,8 +62,8 @@ describe("calculatePictographMotionPositions", () => {
     const common = {
       step,
       gridMode: GridMode.DIAMOND,
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
       startPositions,
       endPositions,
     };
@@ -81,16 +81,16 @@ describe("calculatePictographMotionPositions", () => {
       step,
       progress: 0.5,
       gridMode: GridMode.DIAMOND,
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
       startPositions,
       endPositions,
     });
 
-    expect(midpoint.blue?.x).toBeGreaterThan(startPositions.blue.x);
-    expect(midpoint.blue?.x).toBeLessThan(endPositions.blue.x);
-    expect(midpoint.blue?.y).toBeCloseTo(475.95, 0);
-    expect(midpoint.red?.y).toBeLessThan(startPositions.red.y);
-    expect(midpoint.red?.y).toBeGreaterThan(endPositions.red.y);
+    expect(midpoint.left?.x).toBeGreaterThan(startPositions.left.x);
+    expect(midpoint.left?.x).toBeLessThan(endPositions.left.x);
+    expect(midpoint.left?.y).toBeCloseTo(475.95, 0);
+    expect(midpoint.right?.y).toBeLessThan(startPositions.right.y);
+    expect(midpoint.right?.y).toBeGreaterThan(endPositions.right.y);
   });
 });

@@ -98,36 +98,36 @@ describe("resolveLoopDisplay", () => {
       // the resolver runs the detector instead of parsing the stored type.
       const makeStep = (
         stepNumber: number,
-        blueStart: string,
-        blueEnd: string,
-        redStart: string,
-        redEnd: string,
+        leftStart: string,
+        leftEnd: string,
+        rightStart: string,
+        rightEnd: string,
         startPos: string,
         endPos: string
       ) =>
         ({
           stepNumber,
           duration: 1,
-          blueReversal: false,
-          redReversal: false,
+          leftReversal: false,
+          rightReversal: false,
           isBlank: false,
           letter: "A",
           startPosition: startPos,
           endPosition: endPos,
           motions: {
-            blue: {
+            left: {
               motionType: "pro",
-              startLocation: blueStart,
-              endLocation: blueEnd,
+              startLocation: leftStart,
+              endLocation: leftEnd,
               rotationDirection: "cw",
               startOrientation: "in",
               endOrientation: "in",
               turns: 0,
             },
-            red: {
+            right: {
               motionType: "pro",
-              startLocation: redStart,
-              endLocation: redEnd,
+              startLocation: rightStart,
+              endLocation: rightEnd,
               rotationDirection: "cw",
               startOrientation: "in",
               endOrientation: "in",
@@ -169,8 +169,8 @@ describe("resolveLoopDisplay", () => {
           {
             stepNumber: 1,
             duration: 1,
-            blueReversal: false,
-            redReversal: false,
+            leftReversal: false,
+            rightReversal: false,
             isBlank: false,
             motions: {},
           } as unknown as SequenceData["steps"][number],

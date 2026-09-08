@@ -129,16 +129,18 @@ describe("Prop Studio bootstrap", () => {
       "utf8"
     );
 
-    // The studio mounts the canonical rail instead of a bespoke band, so the
-    // "previews ignore the viewer's saved prop overrides" guarantee now lives
-    // in ScenePropPicker — the component every host shares.
+    // The studio mounts the canonical rail instead of a bespoke band. Its prop
+    // cards now come from BentoPropGrid, which renders catalog art rather than
+    // a saved pictograph composition, so saved composition overrides never
+    // enter this surface.
     const pickerSource = readFileSync(
       resolve("src/lib/shared/3d/components/controls/ScenePropPicker.svelte"),
       "utf8"
     );
 
     expect(studioSource).toContain("enableEffects={false}");
-    expect(pickerSource).toContain("useSavedOverrides={false}");
+    expect(pickerSource).toContain("<BentoPropGrid");
+    expect(pickerSource).not.toContain("PropCompositionPreview");
     // The canonical rail needs an effects *config* context to render, so the
     // studio builds one — but non-persisting, so a review session never writes
     // back into the visitor's saved effect setup. The heavyweight effects

@@ -124,9 +124,9 @@ function prefixClosesSeamlessly(steps: readonly Step[], period: number): boolean
   if (first.startPosition == null || last.endPosition == null) return false;
   if (first.startPosition !== last.endPosition) return false;
 
-  for (const color of ["blue", "red"] as const) {
-    const startOri = first.motions[color]?.startOrientation;
-    const endOri = last.motions[color]?.endOrientation;
+  for (const hand of ["left", "right"] as const) {
+    const startOri = first.motions[hand]?.startOrientation;
+    const endOri = last.motions[hand]?.endOrientation;
     if (startOri == null || endOri == null) return false;
     if (startOri !== endOri) return false;
   }
@@ -135,9 +135,9 @@ function prefixClosesSeamlessly(steps: readonly Step[], period: number): boolean
 
 /** Per-hand motion equality across the fields that define a step's identity. */
 function stepMotionsEqual(a: Step, b: Step): boolean {
-  for (const color of ["blue", "red"] as const) {
-    const ma = a.motions[color];
-    const mb = b.motions[color];
+  for (const hand of ["left", "right"] as const) {
+    const ma = a.motions[hand];
+    const mb = b.motions[hand];
     if (!ma || !mb) return ma === mb;
     if (
       ma.motionType !== mb.motionType ||

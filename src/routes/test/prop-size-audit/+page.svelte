@@ -19,9 +19,14 @@
 <script lang="ts">
   import { page } from "$app/state";
   import PropPickerReview from "./PropPickerReview.svelte";
+  import FireFanFidelityReview from "./FireFanFidelityReview.svelte";
+  import CompactStageComparison from "./CompactStageComparison.svelte";
   import { VIEWBOX_SIZE } from "$lib/shared/render/core/constants/viewbox";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
-  import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+  import {
+    CLUB_TIP_REACH,
+    getTipPointsBaseline,
+  } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import {
     getAllPropTypes,
     getPropTypeDisplayInfo,
@@ -34,7 +39,7 @@
   const HAND_ORBIT = 150;
   // The reference: the club's furthest tip. Every regular prop is tuned to sit
   // near this.
-  const CLUB_REACH = 129.335;
+  const CLUB_REACH = CLUB_TIP_REACH;
 
   /** Mirrors resolvePropSvgPath in svg-generator.ts — keep the two in step. */
   function propSvgHref(type: string): string {
@@ -81,7 +86,12 @@
     .sort((a, b) => a.reach - b.reach);
 
   let showBig = $state(true);
-  const reviewingPicker = $derived(page.url.searchParams.get("review") === "picker");
+  const reviewingPicker = $derived(
+    page.url.searchParams.get("review") === "picker"
+  );
+  const reviewingFireFans = $derived(
+    page.url.searchParams.get("review") === "fire-fans"
+  );
   const visible = $derived(
     showBig ? rows : rows.filter((r) => !r.type.toString().startsWith("big"))
   );
@@ -95,29 +105,52 @@
   }
 </script>
 
-<svelte:head><title>{reviewingPicker ? "Prop Picker Review" : "Prop size audit"}</title></svelte:head>
+<svelte:head
+  ><title
+    >{reviewingPicker
+      ? "Prop Picker Review"
+      : reviewingFireFans
+        ? "Fire Fan Fidelity Review"
+        : "Prop size audit"}</title
+  ></svelte:head
+>
 
 {#if reviewingPicker}
   <PropPickerReview />
+{:else if reviewingFireFans}
+  <FireFanFidelityReview />
 {/if}
 
-<div class="page" class:review-hidden={reviewingPicker}>
+<div class="page" class:review-hidden={reviewingPicker || reviewingFireFans}>
   <header>
     <h1>Prop size audit</h1>
     <p>
-      True animation-canvas scale. Solid ring is the hand orbit (150). Dashed
-      ring is the mandala radius that prop produces. Club is the reference at
-      {CLUB_REACH} reach.
+      The fan gate tests inward landing on strict animation points. The full
+      inventory below keeps true 950-unit prop dimensions and the club reach
+      reference.
     </p>
+  </header>
+
+  <CompactStageComparison />
+
+  <div class="inventory-heading">
+    <div>
+      <span>Full inventory</span>
+      <h2>Every active prop at production scale</h2>
+    </div>
     <button class="toggle" onclick={() => (showBig = !showBig)}>
       {showBig ? "Hide" : "Show"} big variants
     </button>
-  </header>
+  </div>
 
   <div class="grid">
     {#each visible as r (r.type)}
       <figure class="cell" class:reference={r.type.toString() === "club"}>
-        <svg viewBox="0 0 {VIEWBOX_SIZE} {VIEWBOX_SIZE}" role="img" aria-label={r.label}>
+        <svg
+          viewBox="0 0 {VIEWBOX_SIZE} {VIEWBOX_SIZE}"
+          role="img"
+          aria-label={r.label}
+        >
           <rect width={VIEWBOX_SIZE} height={VIEWBOX_SIZE} class="bg" />
           <!-- Mandala radius this prop produces -->
           {#if r.reach > 0}
@@ -129,7 +162,12 @@
             />
           {/if}
           <!-- Club reference ring, on every cell so drift is readable at a glance -->
-          <circle cx={CENTER} cy={CENTER} r={HAND_ORBIT + CLUB_REACH} class="ref-ring" />
+          <circle
+            cx={CENTER}
+            cy={CENTER}
+            r={HAND_ORBIT + CLUB_REACH}
+            class="ref-ring"
+          />
           <!-- Hand orbit -->
           <circle cx={CENTER} cy={CENTER} r={HAND_ORBIT} class="orbit" />
           <circle cx={CENTER + HAND_ORBIT} cy={CENTER} r="6" class="hand" />
@@ -190,6 +228,28 @@
     line-height: 1.5;
   }
 
+  .inventory-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 2600px;
+    margin: 0 auto 1rem;
+  }
+
+  .inventory-heading span {
+    color: var(--theme-accent, #9b8cff);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .inventory-heading h2 {
+    margin: 0.25rem 0 0;
+    font-size: clamp(1.2rem, 2vw, 1.65rem);
+  }
+
   .toggle {
     min-height: 44px;
     padding: 0.625rem 1.25rem;
@@ -213,16 +273,35 @@
   }
 
   @media (min-width: 700px) {
-    .grid { grid-template-columns: repeat(3, 1fr); }
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
   @media (min-width: 1100px) {
-    .grid { grid-template-columns: repeat(4, 1fr); }
+    .grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
   @media (min-width: 1680px) {
-    .grid { grid-template-columns: repeat(6, 1fr); }
+    .grid {
+      grid-template-columns: repeat(6, 1fr);
+    }
   }
   @media (min-width: 2600px) {
-    .grid { grid-template-columns: repeat(8, 1fr); }
+    .grid {
+      grid-template-columns: repeat(8, 1fr);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .inventory-heading {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .toggle {
+      align-self: flex-start;
+    }
   }
 
   .cell {
@@ -243,13 +322,17 @@
     height: auto;
   }
 
-  .bg { fill: #101018; }
+  .bg {
+    fill: #101018;
+  }
   .orbit {
     fill: none;
     stroke: rgba(255, 255, 255, 0.22);
     stroke-width: 2;
   }
-  .hand { fill: rgba(255, 255, 255, 0.45); }
+  .hand {
+    fill: rgba(255, 255, 255, 0.45);
+  }
   .ref-ring {
     fill: none;
     stroke: rgba(120, 220, 160, 0.35);
@@ -260,9 +343,15 @@
     stroke-width: 4;
     stroke-dasharray: 14 10;
   }
-  .reach-ring.on { stroke: rgba(120, 220, 160, 0.9); }
-  .reach-ring.near { stroke: rgba(240, 200, 90, 0.9); }
-  .reach-ring.off { stroke: rgba(240, 110, 110, 0.9); }
+  .reach-ring.on {
+    stroke: rgba(120, 220, 160, 0.9);
+  }
+  .reach-ring.near {
+    stroke: rgba(240, 200, 90, 0.9);
+  }
+  .reach-ring.off {
+    stroke: rgba(240, 110, 110, 0.9);
+  }
 
   figcaption {
     display: flex;
@@ -271,7 +360,10 @@
     padding: 0.625rem 0.75rem 0.75rem;
   }
 
-  .name { font-weight: 700; font-size: 0.95rem; }
+  .name {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
   .meta {
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.45);
@@ -282,8 +374,16 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
-  .drift.on { color: rgb(120, 220, 160); }
-  .drift.near { color: rgb(240, 200, 90); }
-  .drift.off { color: rgb(240, 110, 110); }
-  .drift.none { color: rgba(255, 255, 255, 0.3); }
+  .drift.on {
+    color: rgb(120, 220, 160);
+  }
+  .drift.near {
+    color: rgb(240, 200, 90);
+  }
+  .drift.off {
+    color: rgb(240, 110, 110);
+  }
+  .drift.none {
+    color: rgba(255, 255, 255, 0.3);
+  }
 </style>

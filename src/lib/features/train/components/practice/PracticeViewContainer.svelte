@@ -27,8 +27,8 @@
     isPerforming?: boolean;
     currentFrame?: DetectionFrame | null;
     expectedPositions?: {
-      blue: GridLocation | null;
-      red: GridLocation | null;
+      left: GridLocation | null;
+      right: GridLocation | null;
     } | null;
     mode?: TrainMode;
     countdownValue?: number | null;
@@ -80,7 +80,7 @@
   const showGrid = true; // Always show beat grid
 
   // Extract propType from sequence (from first step's motion)
-  const propType = $derived(sequence?.steps?.[0]?.motions?.blue?.propType ?? null);
+  const propType = $derived(sequence?.steps?.[0]?.motions?.left?.propType ?? null);
 </script>
 
 <div class="view-container">

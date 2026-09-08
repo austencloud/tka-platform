@@ -1,4 +1,8 @@
 import {
+  captureActivePropConfig,
+  type ResolvedPropConfig,
+} from "$lib/shared/foundation/services/recorded-prop-intent";
+import {
   isFavorite as checkIsFavorite,
   toggleFavorite as doToggleFavorite,
 } from "$lib/shared/library/services/collection-manager";
@@ -13,18 +17,30 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+import {
+  normalizeCardPresentation,
+  type CardPresentation,
+} from "$lib/shared/share/domain/models/card-presentation";
 
 export interface LibraryActionHandlerDeps {
   getSequence: () => SequenceData | null;
   getIsOwned: () => boolean;
-  getBluePropType: () => PropType | undefined;
-  getRedPropType: () => PropType | undefined;
+  getLeftPropType: () => PropType | undefined;
+  getRightPropType: () => PropType | undefined;
   getCatDogModeEnabled: () => boolean | undefined;
   getHapticService: () => HapticFeedback | null;
   onDeleteSuccess: () => void;
 }
 
 export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
+  let saveProps = $state<ResolvedPropConfig | null>(null);
+  let resolveSaveProps: ((config: ResolvedPropConfig | null) => void) | null =
+    null;
+  function finishPropChoice(save: boolean) {
+    resolveSaveProps?.(save ? saveProps : null);
+    resolveSaveProps = null;
+    saveProps = null;
+  }
   let isSaved = $state(true);
   let isSaving = $state(false);
   let isFavorite = $state(false);
@@ -123,6 +139,25 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     }
   }
 
+  async function saveCardPresentation(
+    presentation: CardPresentation
+  ): Promise<boolean> {
+    const sequence = deps.getSequence();
+    if (!sequence || !isOwnedLibraryRecord || !deps.getIsOwned()) return false;
+    try {
+      const repo = getLibraryRepository() as LibraryRepository;
+      await repo.updateSequence(sequence.id, {
+        cardPresentation: normalizeCardPresentation(presentation),
+      });
+      showToast("Card footer saved", "success");
+      return true;
+    } catch (error) {
+      console.error("[Orchestrator] saveCardPresentation FAILED:", error);
+      showToast("Couldn't save the card footer", "error");
+      return false;
+    }
+  }
+
   async function handleSave() {
     deps.getHapticService()?.trigger("selection");
     const sequence = deps.getSequence();
@@ -130,7 +165,18 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
       showToast("No sequence to save", "info");
       return;
     }
-    if (isSaving) return;
+    if (isSaving || saveProps) return;
+    saveProps = captureActivePropConfig({
+      leftPropType: deps.getLeftPropType(),
+      rightPropType: deps.getRightPropType(),
+      catDogMode: deps.getCatDogModeEnabled(),
+    });
+    const selectedProps = await new Promise<ResolvedPropConfig | null>(
+      (resolve) => {
+        resolveSaveProps = resolve;
+      }
+    );
+    if (!selectedProps) return;
 
     savedStateRevision += 1;
     isSaving = true;
@@ -138,9 +184,9 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     try {
       const coordinator = await getVisualSequenceSaveCoordinator();
       const outcome = await coordinator.save(sequence, {
-        bluePropType: deps.getBluePropType(),
-        redPropType: deps.getRedPropType(),
-        catDogModeEnabled: deps.getCatDogModeEnabled(),
+        leftPropType: selectedProps.leftPropType,
+        rightPropType: selectedProps.rightPropType,
+        catDogModeEnabled: selectedProps.catDogMode,
         pathShape: getAnimationVisibilityManager().getPathShape(),
       });
       if (outcome.status === "failed") return;
@@ -172,6 +218,13 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
   }
 
   return {
+    get saveProps() {
+      return saveProps;
+    },
+    set saveProps(value: ResolvedPropConfig | null) {
+      saveProps = value;
+    },
+    finishPropChoice,
     get isSaved() {
       return isSaved;
     },
@@ -189,6 +242,7 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     handleFavoriteToggle,
     handlePublishAction,
     handleUnpublishAction,
+    saveCardPresentation,
     handleSave,
     handleDelete,
   };

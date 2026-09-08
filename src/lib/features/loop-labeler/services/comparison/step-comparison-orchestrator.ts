@@ -9,10 +9,7 @@ import {
 } from "../../domain/constants/transformation-maps";
 import { checkRotations } from "./rotation-comparer";
 import { checkReflections } from "./reflection-comparer";
-import {
-  checkRepeated,
-  checkSwapInvert,
-} from "./swap-invert-comparer";
+import { checkRepeated, checkSwapInvert } from "./swap-invert-comparer";
 import { formatBeatPairTransformations } from "../candidate-formatter";
 
 /**
@@ -20,7 +17,6 @@ import { formatBeatPairTransformations } from "../candidate-formatter";
  */
 export class StepComparisonOrchestrator {
   constructor() {}
-
 
   extractBeats(sequence: SequenceEntry): ExtractedStep[] {
     const raw = sequence.fullMetadata?.sequence;
@@ -36,32 +32,32 @@ export class StepComparisonOrchestrator {
         letter: b.letter || "",
         startPos: b.startPos || "",
         endPos: b.endPos || "",
-        blue: {
-          startLoc: b.blueAttributes?.startLoc?.toLowerCase() || "",
-          endLoc: b.blueAttributes?.endLoc?.toLowerCase() || "",
-          motionType: b.blueAttributes?.motionType?.toLowerCase() || "",
-          propRotDir: b.blueAttributes?.propRotDir?.toLowerCase() || "",
+        left: {
+          startLoc: b.leftAttributes?.startLoc?.toLowerCase() || "",
+          endLoc: b.leftAttributes?.endLoc?.toLowerCase() || "",
+          motionType: b.leftAttributes?.motionType?.toLowerCase() || "",
+          propRotDir: b.leftAttributes?.propRotDir?.toLowerCase() || "",
         },
-        red: {
-          startLoc: b.redAttributes?.startLoc?.toLowerCase() || "",
-          endLoc: b.redAttributes?.endLoc?.toLowerCase() || "",
-          motionType: b.redAttributes?.motionType?.toLowerCase() || "",
-          propRotDir: b.redAttributes?.propRotDir?.toLowerCase() || "",
+        right: {
+          startLoc: b.rightAttributes?.startLoc?.toLowerCase() || "",
+          endLoc: b.rightAttributes?.endLoc?.toLowerCase() || "",
+          motionType: b.rightAttributes?.motionType?.toLowerCase() || "",
+          propRotDir: b.rightAttributes?.propRotDir?.toLowerCase() || "",
         },
       }));
   }
 
   compareStepPair(step1: ExtractedStep, step2: ExtractedStep): string[] {
-    const b1Blue = step1.blue;
-    const b1Red = step1.red;
-    const b2Blue = step2.blue;
-    const b2Red = step2.red;
+    const b1Left = step1.left;
+    const b1Right = step1.right;
+    const b2Left = step2.left;
+    const b2Right = step2.right;
 
     if (
-      !b1Blue?.startLoc ||
-      !b2Blue?.startLoc ||
-      !b1Red?.startLoc ||
-      !b2Red?.startLoc
+      !b1Left?.startLoc ||
+      !b2Left?.startLoc ||
+      !b1Right?.startLoc ||
+      !b2Right?.startLoc
     ) {
       return [];
     }
@@ -69,16 +65,16 @@ export class StepComparisonOrchestrator {
     const allTransformations: string[] = [];
 
     // Check for repeated (identity)
-    const repeated = checkRepeated(b1Blue, b1Red, b2Blue, b2Red);
+    const repeated = checkRepeated(b1Left, b1Right, b2Left, b2Right);
     allTransformations.push(...repeated.transformations);
 
-    const rotations = checkRotations(b1Blue, b1Red, b2Blue, b2Red);
+    const rotations = checkRotations(b1Left, b1Right, b2Left, b2Right);
     allTransformations.push(...rotations.transformations);
 
-    const reflections = checkReflections(b1Blue, b1Red, b2Blue, b2Red);
+    const reflections = checkReflections(b1Left, b1Right, b2Left, b2Right);
     allTransformations.push(...reflections.transformations);
 
-    const swapInvert = checkSwapInvert(b1Blue, b1Red, b2Blue, b2Red);
+    const swapInvert = checkSwapInvert(b1Left, b1Right, b2Left, b2Right);
     allTransformations.push(...swapInvert.transformations);
 
     return allTransformations;
@@ -95,9 +91,7 @@ export class StepComparisonOrchestrator {
       const step2 = steps[halfLength + i]!;
       const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
-        formatBeatPairTransformations(
-          rawTransformations
-        );
+        formatBeatPairTransformations(rawTransformations);
 
       stepPairs.push({
         keyStep: step1.stepNumber,
@@ -123,9 +117,7 @@ export class StepComparisonOrchestrator {
       const step2 = steps[(i + quarterLength) % steps.length]!;
       const rawTransformations = this.compareStepPair(step1, step2);
       const { primary, all } =
-        formatBeatPairTransformations(
-          rawTransformations
-        );
+        formatBeatPairTransformations(rawTransformations);
 
       stepPairs.push({
         keyStep: step1.stepNumber,
@@ -151,14 +143,14 @@ export class StepComparisonOrchestrator {
     if (!b0 || !b1 || !b2 || !b3) return null;
 
     const quarterBeats = [b0, b1, b2, b3];
-    const blueStartLocs = quarterBeats.map((b) => b.blue?.startLoc);
+    const leftStartLocs = quarterBeats.map((b) => b.left?.startLoc);
 
     let ccwMatches = 0;
     let cwMatches = 0;
 
     for (let i = 0; i < 4; i++) {
-      const current = blueStartLocs[i];
-      const next = blueStartLocs[(i + 1) % 4];
+      const current = leftStartLocs[i];
+      const next = leftStartLocs[(i + 1) % 4];
       if (!current || !next) continue;
 
       if (ROTATE_90_CCW[current] === next) ccwMatches++;
@@ -171,6 +163,5 @@ export class StepComparisonOrchestrator {
     return null;
   }
 }
-
 
 export const stepComparisonOrchestrator = new StepComparisonOrchestrator();

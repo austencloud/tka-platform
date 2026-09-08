@@ -46,8 +46,8 @@ export interface GalleryCompositionSource {
 
 export interface BuildGalleryRenderInputParams {
   sequence: SequenceData;
-  bluePropType?: PropType;
-  redPropType?: PropType;
+  leftPropType?: PropType;
+  rightPropType?: PropType;
   catDogModeEnabled?: boolean;
   lightMode?: boolean;
   variant?: ThumbnailVariant;
@@ -65,8 +65,8 @@ export interface BuildGalleryRenderInputParams {
   // Visibility overrides
   visibility?: ThumbnailVisibilitySettings;
   handPathMode?: boolean;
-  showBlueMotion?: boolean;
-  showRedMotion?: boolean;
+  showLeftMotion?: boolean;
+  showRightMotion?: boolean;
   /** Grid cards pass true; the builder still gates on auth + step count. */
   allowQR?: boolean;
   cardMode?: boolean;
@@ -112,17 +112,17 @@ export function buildGalleryVisibility(
   const {
     visibility,
     handPathMode = false,
-    showBlueMotion = true,
-    showRedMotion = true,
+    showLeftMotion = true,
+    showRightMotion = true,
     allowQR = true,
     isAuthenticated,
     compositionManager,
   } = p;
   const stepCount = galleryStepCount(p.sequence);
 
-  const needsMotionFilter = showBlueMotion !== true || showRedMotion !== true;
+  const needsMotionFilter = showLeftMotion !== true || showRightMotion !== true;
   const motionOverrides = needsMotionFilter
-    ? { showBlueMotion, showRedMotion }
+    ? { showLeftMotion, showRightMotion }
     : {};
 
   // Guests get no QR; one-count cards have no spare cell for it.
@@ -188,8 +188,8 @@ export function buildGalleryRenderInput(
 ): ThumbnailRenderInput {
   const {
     sequence,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     catDogModeEnabled = false,
     lightMode = false,
     variant = "gallery",
@@ -215,8 +215,8 @@ export function buildGalleryRenderInput(
   return {
     sequenceName,
     sequenceId: sequence.id,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     catDogModeEnabled,
     lightMode,
     variant,

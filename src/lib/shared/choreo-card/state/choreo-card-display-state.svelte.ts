@@ -18,12 +18,13 @@ export interface ChoreoCardDisplayDeps {
   readonly browseViewMode: BrowseViewMode | undefined;
   readonly handPathMode: boolean;
   readonly showWord: boolean;
+  readonly customTitleText: string | undefined;
   readonly showDifficultyLevel: boolean;
   readonly hideSoloHeader: boolean;
   readonly showLoopGlyph: boolean;
   readonly showNotes: boolean;
-  readonly showBlueMotion: boolean;
-  readonly showRedMotion: boolean;
+  readonly showLeftMotion: boolean;
+  readonly showRightMotion: boolean;
 }
 
 /** Owns card display semantics derived from viewer and glyph visibility. */
@@ -45,9 +46,9 @@ export function createChoreoCardDisplayState(
   ]);
   onDestroy(() => visibilityManager.unregisterObserver(onVisibilityChanged));
 
-  const showBlueMotion = $derived(getDeps().showBlueMotion);
-  const showRedMotion = $derived(getDeps().showRedMotion);
-  const allMotionsVisible = $derived(showBlueMotion && showRedMotion);
+  const showLeftMotion = $derived(getDeps().showLeftMotion);
+  const showRightMotion = $derived(getDeps().showRightMotion);
+  const allMotionsVisible = $derived(showLeftMotion && showRightMotion);
   const showTnD = $derived.by(() => {
     void visibilityVersion;
     return visibilityManager.getRawGlyphVisibility("tndGlyph");
@@ -85,14 +86,18 @@ export function createChoreoCardDisplayState(
     getDeps().browseViewMode?.granularity === "solo"
   );
   const isMotionSoloMode = $derived(
-    (showBlueMotion && !showRedMotion) || (showRedMotion && !showBlueMotion)
+    (showLeftMotion && !showRightMotion) || (showRightMotion && !showLeftMotion)
   );
   const isSoloMode = $derived(isBrowseSoloMode || isMotionSoloMode);
-  const soloColor = $derived<"blue" | "red" | undefined>(
-    getDeps().browseViewMode?.color ??
-      (isMotionSoloMode ? (showBlueMotion ? "blue" : "red") : undefined)
+  const soloHand = $derived<"left" | "right" | undefined>(
+    getDeps().browseViewMode?.hand ??
+      (isMotionSoloMode ? (showLeftMotion ? "left" : "right") : undefined)
   );
   const isHandsMode = $derived(getDeps().browseViewMode?.subject === "hands");
+
+  const customTitleVisible = $derived(
+    !!getDeps().customTitleText?.trim() && !isSoloMode
+  );
 
   const difficultyLevel = $derived.by(() => {
     const steps = getDeps().sequence.steps;
@@ -126,15 +131,20 @@ export function createChoreoCardDisplayState(
 
   const wordVisible = $derived(
     getDeps().showWord &&
+      !customTitleVisible &&
       !!getDeps().sequence.word &&
       !isSoloMode &&
       !isHandsMode
   );
   const effectiveShowDifficulty = $derived(
-    getDeps().showDifficultyLevel && !isHandsMode && !isSoloMode
+    getDeps().showDifficultyLevel &&
+      !getDeps().handPathMode &&
+      !isHandsMode &&
+      !isSoloMode
   );
   const showHeader = $derived(
     (isBrowseSoloMode && !getDeps().hideSoloHeader) ||
+      customTitleVisible ||
       effectiveShowDifficulty ||
       (getDeps().showLoopGlyph && !!loopComponents) ||
       wordVisible
@@ -149,11 +159,11 @@ export function createChoreoCardDisplayState(
     get visibilityVersion() {
       return visibilityVersion;
     },
-    get showBlueMotion() {
-      return showBlueMotion;
+    get showLeftMotion() {
+      return showLeftMotion;
     },
-    get showRedMotion() {
-      return showRedMotion;
+    get showRightMotion() {
+      return showRightMotion;
     },
     get allMotionsVisible() {
       return allMotionsVisible;
@@ -191,8 +201,8 @@ export function createChoreoCardDisplayState(
     get isSoloMode() {
       return isSoloMode;
     },
-    get soloColor() {
-      return soloColor;
+    get soloHand() {
+      return soloHand;
     },
     get isHandsMode() {
       return isHandsMode;
@@ -220,6 +230,9 @@ export function createChoreoCardDisplayState(
     },
     get wordVisible() {
       return wordVisible;
+    },
+    get customTitleVisible() {
+      return customTitleVisible;
     },
     get effectiveShowDifficulty() {
       return effectiveShowDifficulty;

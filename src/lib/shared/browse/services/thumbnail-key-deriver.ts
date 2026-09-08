@@ -30,9 +30,9 @@ export interface ThumbnailVisibilitySettings {
   /** Render sequence mandalas in empty cells */
   showMandala?: boolean;
   /** Show blue motion (prop + arrow). Default: true */
-  showBlueMotion?: boolean;
+  showLeftMotion?: boolean;
   /** Show red motion (prop + arrow). Default: true */
-  showRedMotion?: boolean;
+  showRightMotion?: boolean;
 }
 
 export interface ThumbnailRenderInput {
@@ -42,8 +42,8 @@ export interface ThumbnailRenderInput {
   sequenceId?: string;
 
   // Prop configuration
-  bluePropType: PropType | undefined;
-  redPropType: PropType | undefined;
+  leftPropType: PropType | undefined;
+  rightPropType: PropType | undefined;
   catDogModeEnabled: boolean;
 
   // Visual mode
@@ -182,19 +182,19 @@ export function inputUsesDefaults(input: ThumbnailRenderInput): boolean {
 function isCatDogMode(input: ThumbnailRenderInput): boolean {
   return (
     input.catDogModeEnabled &&
-    input.bluePropType !== undefined &&
-    input.redPropType !== undefined &&
-    input.bluePropType !== input.redPropType
+    input.leftPropType !== undefined &&
+    input.rightPropType !== undefined &&
+    input.leftPropType !== input.rightPropType
   );
 }
 
 function derivePropKey(input: ThumbnailRenderInput, isCatDog: boolean): string {
   if (isCatDog) {
     // Cat-dog: preserve hand positions (blue=left, red=right)
-    return `catdog_${input.bluePropType}_${input.redPropType}`;
+    return `catdog_${input.leftPropType}_${input.rightPropType}`;
   }
   // Single prop mode: use blue, fallback to red, fallback to staff
-  return input.bluePropType || input.redPropType || PropType.STAFF;
+  return input.leftPropType || input.rightPropType || PropType.STAFF;
 }
 
 function checkInputUsesDefaults(
@@ -268,9 +268,9 @@ function checkInputUsesDefaults(
       return false;
     if (input.visibility.showMandala !== undefined && input.visibility.showMandala !== defaultVisibility.showMandala)
       return false;
-    if (input.visibility.showBlueMotion !== undefined && input.visibility.showBlueMotion !== true)
+    if (input.visibility.showLeftMotion !== undefined && input.visibility.showLeftMotion !== true)
       return false;
-    if (input.visibility.showRedMotion !== undefined && input.visibility.showRedMotion !== true)
+    if (input.visibility.showRightMotion !== undefined && input.visibility.showRightMotion !== true)
       return false;
   }
 
@@ -289,8 +289,8 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
   return {
     seq: input.sequenceName,
     id: input.sequenceId ?? null,
-    blue: input.bluePropType,
-    red: input.redPropType,
+    left: input.leftPropType,
+    right: input.rightPropType,
     catDog: input.catDogModeEnabled,
     light: input.lightMode,
     variant: input.variant,
@@ -313,8 +313,8 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     // Sequence mandalas in empty cells
     showMandala: input.visibility?.showMandala,
     // Motion visibility (blue/red hand filtering)
-    showBlueMotion: input.visibility?.showBlueMotion,
-    showRedMotion: input.visibility?.showRedMotion,
+    showLeftMotion: input.visibility?.showLeftMotion,
+    showRightMotion: input.visibility?.showRightMotion,
     // LOOP badge
     loop: input.loopType ?? null,
     showLoopGlyph: input.showLoopGlyph,

@@ -6,7 +6,7 @@ const TAU = Math.PI * 2;
 const QUARTER_TURN = Math.PI / 2;
 const EIGHTH_TURN = Math.PI / 4;
 
-export type ContactHandId = "blue-left" | "red-right";
+export type ContactHandId = "left" | "right";
 export type ContactDigit = "thumb" | "index" | "middle" | "ring" | "pinky";
 export type ContactRegion = ContactDigit | "palm";
 
@@ -17,8 +17,8 @@ export interface ContactPoint {
 }
 
 export interface ContactBallPose {
-  id: "blue-a" | "blue-b" | "red-a" | "red-b";
-  color: "blue" | "red";
+  id: "left-a" | "left-b" | "right-a" | "right-b";
+  hand: ContactHandId;
   position: [number, number, number];
   rotation: [number, number, number];
   supportMode: "rolling";
@@ -56,8 +56,8 @@ interface ContactMotionSegment {
   startTime: number;
   endTime: number;
   letter: string | null;
-  blue: ContactArc;
-  red: ContactArc;
+  left: ContactArc;
+  right: ContactArc;
 }
 
 interface ContactArc {
@@ -129,7 +129,7 @@ const OUTER_LOCATION_INDEX: Partial<Record<GridLocation, number>> = {
   nw: 7,
 };
 
-const BLUE_REGION_RING: readonly ContactRegion[] = [
+const LEFT_REGION_RING: readonly ContactRegion[] = [
   "middle",
   "index",
   "thumb",
@@ -140,7 +140,7 @@ const BLUE_REGION_RING: readonly ContactRegion[] = [
   "ring",
 ];
 
-const RED_REGION_RING: readonly ContactRegion[] = [
+const RIGHT_REGION_RING: readonly ContactRegion[] = [
   "middle",
   "ring",
   "pinky",
@@ -168,7 +168,7 @@ function getOuterAngle(location: GridLocation): number | null {
 }
 
 function buildArc(
-  hand: "blue" | "red",
+  hand: ContactHandId,
   stepNumber: number,
   start: GridLocation,
   end: GridLocation,
@@ -203,7 +203,7 @@ function buildArc(
 function getMotionLocations(
   sequence: SequenceData,
   stepIndex: number,
-  hand: "blue" | "red"
+  hand: ContactHandId
 ) {
   const motion = sequence.steps[stepIndex]?.motions[hand];
   return motion
@@ -230,34 +230,34 @@ export function buildContactPalmspinProfile(
 
   const issues: ContactTranslationIssue[] = [];
   const segments: ContactMotionSegment[] = [];
-  const directions: Partial<Record<"blue" | "red", number>> = {};
+  const directions: Partial<Record<ContactHandId, number>> = {};
   let elapsed = 0;
 
   for (let index = 0; index < sequence.steps.length; index += 1) {
     const step = sequence.steps[index];
-    const blueLocations = getMotionLocations(sequence, index, "blue");
-    const redLocations = getMotionLocations(sequence, index, "red");
-    if (!step || !blueLocations || !redLocations) continue;
+    const leftLocations = getMotionLocations(sequence, index, "left");
+    const rightLocations = getMotionLocations(sequence, index, "right");
+    if (!step || !leftLocations || !rightLocations) continue;
 
-    const blue = buildArc(
-      "blue",
+    const left = buildArc(
+      "left",
       index + 1,
-      blueLocations.start,
-      blueLocations.end,
+      leftLocations.start,
+      leftLocations.end,
       issues
     );
-    const red = buildArc(
-      "red",
+    const right = buildArc(
+      "right",
       index + 1,
-      redLocations.start,
-      redLocations.end,
+      rightLocations.start,
+      rightLocations.end,
       issues
     );
-    if (!blue || !red) continue;
+    if (!left || !right) continue;
 
     for (const [hand, arc] of [
-      ["blue", blue],
-      ["red", red],
+      ["left", left],
+      ["right", right],
     ] as const) {
       const previous = getMotionLocations(sequence, index - 1, hand);
       if (index > 0 && previous?.end !== arc.start) {
@@ -283,13 +283,13 @@ export function buildContactPalmspinProfile(
       startTime: elapsed,
       endTime: elapsed + duration,
       letter: step.letter,
-      blue,
-      red,
+      left,
+      right,
     });
     elapsed += duration;
   }
 
-  for (const hand of ["blue", "red"] as const) {
+  for (const hand of ["left", "right"] as const) {
     const first = getMotionLocations(sequence, 0, hand);
     const last = getMotionLocations(sequence, sequence.steps.length - 1, hand);
     if (first && last && last.end !== first.start) {
@@ -338,11 +338,11 @@ function sampleHand(
   regions: readonly ContactRegion[],
   angle: number
 ): ContactHandPose {
-  const isBlue = id === "blue-left";
-  const direction = isBlue ? 1 : -1;
+  const isLeft = id === "left";
+  const direction = isLeft ? 1 : -1;
   return {
     id,
-    position: [isBlue ? -0.82 : 0.82, 0, 0.42],
+    position: [isLeft ? -0.82 : 0.82, 0, 0.42],
     rotation: [
       -0.04 + Math.cos(angle) * 0.015,
       direction * Math.sin(angle) * 0.025,
@@ -354,15 +354,15 @@ function sampleHand(
 }
 
 function samplePair(
-  color: "blue" | "red",
+  side: ContactHandId,
   hand: ContactHandPose,
   angle: number,
   regions: readonly ContactRegion[]
 ): readonly [ContactBallPose, ContactBallPose] {
-  const direction = color === "blue" ? 1 : -1;
+  const direction = side === "left" ? 1 : -1;
   const pairCenterX =
     hand.position[0] +
-    (color === "blue" ? -CONTACT_PALM_X_OFFSET : CONTACT_PALM_X_OFFSET);
+    (side === "left" ? -CONTACT_PALM_X_OFFSET : CONTACT_PALM_X_OFFSET);
   const pairCenterZ = hand.position[2] + CONTACT_PALM_Z_OFFSET;
   const offsetX = Math.sin(angle) * CONTACT_BALL_RADIUS;
   const offsetZ = Math.cos(angle) * CONTACT_BALL_RADIUS;
@@ -374,8 +374,8 @@ function samplePair(
       pairCenterZ + offsetZ * sign,
     ] as [number, number, number];
     return {
-      id: `${color}-${suffix}`,
-      color,
+      id: `${side}-${suffix}`,
+      hand: side,
       position,
       rotation: [direction * angle, angle * 0.7 + sign * Math.PI, angle * 0.45],
       supportMode: "rolling",
@@ -395,12 +395,12 @@ function sampleArc(arc: ContactArc, localPhase: number): number {
 }
 
 function sampleRegionPair(
-  hand: "blue" | "red",
+  hand: ContactHandId,
   angle: number
 ): readonly [ContactRegion, ContactRegion] {
-  const ring = hand === "blue" ? BLUE_REGION_RING : RED_REGION_RING;
+  const ring = hand === "left" ? LEFT_REGION_RING : RIGHT_REGION_RING;
   const rawIndex = Math.round(normalizePhase(angle / TAU) * 8) % 8;
-  const adjacentIndex = (rawIndex + (hand === "blue" ? 1 : 7)) % 8;
+  const adjacentIndex = (rawIndex + (hand === "left" ? 1 : 7)) % 8;
   return [ring[rawIndex] ?? "palm", ring[adjacentIndex] ?? "palm"];
 }
 
@@ -424,30 +424,30 @@ export function sampleTwoBallPalmspin(
     1,
     Math.max(0, (timeline - segment.startTime) / segment.duration)
   );
-  const blueAngle = sampleArc(segment.blue, localPhase);
-  const redAngle = sampleArc(segment.red, localPhase);
-  const blueRegions = sampleRegionPair("blue", blueAngle);
-  const redRegions = sampleRegionPair("red", redAngle);
-  const blueGridIndex = sampleGridIndex(blueAngle);
-  const redGridIndex = sampleGridIndex(redAngle);
-  const blueHand = sampleHand(
-    "blue-left",
-    blueGridIndex,
-    blueRegions,
-    blueAngle
+  const leftAngle = sampleArc(segment.left, localPhase);
+  const rightAngle = sampleArc(segment.right, localPhase);
+  const leftRegions = sampleRegionPair("left", leftAngle);
+  const rightRegions = sampleRegionPair("right", rightAngle);
+  const leftGridIndex = sampleGridIndex(leftAngle);
+  const rightGridIndex = sampleGridIndex(rightAngle);
+  const leftHand = sampleHand(
+    "left",
+    leftGridIndex,
+    leftRegions,
+    leftAngle
   );
-  const redHand = sampleHand("red-right", redGridIndex, redRegions, redAngle);
-  const bluePair = samplePair("blue", blueHand, blueAngle, blueRegions);
-  const redPair = samplePair("red", redHand, redAngle, redRegions);
+  const rightHand = sampleHand("right", rightGridIndex, rightRegions, rightAngle);
+  const leftPair = samplePair("left", leftHand, leftAngle, leftRegions);
+  const rightPair = samplePair("right", rightHand, rightAngle, rightRegions);
 
   return {
     phase,
     sourceStepNumber: segment.stepIndex + 1,
     sourceStepCount: profile.sourceStepCount,
     sourceLetter: segment.letter,
-    palmWaypoint: blueGridIndex + 1,
-    hands: [blueHand, redHand],
-    balls: [bluePair[0], bluePair[1], redPair[0], redPair[1]],
+    palmWaypoint: leftGridIndex + 1,
+    hands: [leftHand, rightHand],
+    balls: [leftPair[0], leftPair[1], rightPair[0], rightPair[1]],
   };
 }
 
@@ -472,8 +472,8 @@ export function inspectContactFrame(
     });
   }
 
-  for (const color of ["blue", "red"] as const) {
-    const pair = frame.balls.filter((ball) => ball.color === color);
+  for (const hand of ["left", "right"] as const) {
+    const pair = frame.balls.filter((ball) => ball.hand === hand);
     if (pair.length !== 2) continue;
     const [a, b] = pair;
     if (!a || !b) continue;
@@ -486,7 +486,7 @@ export function inspectContactFrame(
     if (Math.abs(distance - expected) > 0.001) {
       issues.push({
         code: "pair-separation",
-        detail: `${color} pair separation ${distance.toFixed(3)} differs from ${expected.toFixed(3)}`,
+        detail: `${hand} pair separation ${distance.toFixed(3)} differs from ${expected.toFixed(3)}`,
       });
     }
   }

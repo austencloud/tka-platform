@@ -22,7 +22,7 @@ Three things it is careful about:
   Low stimulus additionally drops the glow.
 -->
 <script lang="ts">
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type {
     NormalizedPoint,
     TraceHand,
@@ -114,12 +114,12 @@ Three things it is careful about:
   }
 
   function handClass(hand: TraceHand): string {
-    return hand === MotionColor.BLUE ? "blue" : "red";
+    return hand === HandSide.LEFT ? "blue" : "red";
   }
 
   /** The persistent glyph that travels with the color. Never the color alone. */
   function handGlyph(hand: TraceHand): string {
-    return hand === MotionColor.BLUE ? "B" : "R";
+    return hand === HandSide.LEFT ? "B" : "R";
   }
 </script>
 
@@ -162,7 +162,7 @@ Three things it is careful about:
         class="target start {handClass(hand)}"
         class:lead={isArming && !isArmed}
       >
-        {#if hand === MotionColor.BLUE}
+        {#if hand === HandSide.LEFT}
           <circle
             cx={start.x}
             cy={start.y}
@@ -192,7 +192,7 @@ Three things it is careful about:
            two targets never compete for attention at the same moment. -->
       {#if segment.kind === "move" && isArmed}
         <g class="target end {handClass(hand)}">
-          {#if hand === MotionColor.BLUE}
+          {#if hand === HandSide.LEFT}
             <circle
               cx={end.x}
               cy={end.y}

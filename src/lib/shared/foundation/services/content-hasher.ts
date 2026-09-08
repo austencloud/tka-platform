@@ -4,7 +4,8 @@ import type { SoloPropData } from "../domain/models/solo-prop-data";
 import type { SoloPropStepData } from "../domain/models/solo-prop-step-data";
 import type { SequenceData } from "../domain/models/sequence-data";
 
-const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const BASE62_CHARS =
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 function toBase62(bytes: Uint8Array): string {
   let result = "";
@@ -21,6 +22,7 @@ function toBase62(bytes: Uint8Array): string {
 
 function serializeStep(step: SoloPropStepData): string {
   let s = `${step.startLocation}:${step.endLocation}:${step.motionType}:${step.rotationDirection}:${step.turns}:${step.startOrientation}:${step.endOrientation}`;
+  if (step.plane != null && step.plane !== "wall") s += `:plane=${step.plane}`;
   if (step.handPath != null) {
     s += `:${step.handPath}`;
     if (step.skewSteps != null) {
@@ -90,7 +92,9 @@ export function hashHandPath(locations: readonly GridLocation[]): string {
   return hash128(canonical);
 }
 
-export function hashSoloProp(soloProp: Pick<SoloPropData, "startLocation" | "startOrientation" | "steps">): string {
+export function hashSoloProp(
+  soloProp: Pick<SoloPropData, "startLocation" | "startOrientation" | "steps">
+): string {
   const parts = [`${soloProp.startLocation}:${soloProp.startOrientation}`];
   for (const step of soloProp.steps) {
     parts.push(serializeStep(step));
@@ -104,9 +108,9 @@ interface HashableNode {
   startPosition?: unknown;
   endPosition?: unknown;
   gridPosition?: unknown;
-  blueReversal?: boolean;
-  redReversal?: boolean;
-  motions?: { blue?: MotionData; red?: MotionData };
+  leftReversal?: boolean;
+  rightReversal?: boolean;
+  motions?: { left?: MotionData; right?: MotionData };
 }
 
 function serializeMotion(m?: MotionData): string {
@@ -122,10 +126,10 @@ function serializeChoreoNode(node: HashableNode): string {
     node.letter ?? "",
     node.startPosition ?? node.gridPosition ?? "",
     node.endPosition ?? "",
-    serializeMotion(node.motions?.blue),
-    serializeMotion(node.motions?.red),
-    node.blueReversal ? "B" : "",
-    node.redReversal ? "R" : "",
+    serializeMotion(node.motions?.left),
+    serializeMotion(node.motions?.right),
+    node.leftReversal ? "B" : "",
+    node.rightReversal ? "R" : "",
   ].join(":");
 }
 
@@ -139,7 +143,7 @@ function serializeChoreoNode(node: HashableNode): string {
  * and reversal variants that reuse a base sequence's id never collide.
  */
 export function hashSequenceContent(
-  seq: Pick<SequenceData, "word" | "steps" | "startPosition">,
+  seq: Pick<SequenceData, "word" | "steps" | "startPosition">
 ): string {
   const parts: string[] = [String(seq.word ?? "")];
   if (seq.startPosition) {
@@ -169,8 +173,8 @@ function serializeSkeletonNode(node: HashableNode): string {
     node.letter ?? "",
     node.startPosition ?? node.gridPosition ?? "",
     node.endPosition ?? "",
-    serializeMotionSkeleton(node.motions?.blue),
-    serializeMotionSkeleton(node.motions?.red),
+    serializeMotionSkeleton(node.motions?.left),
+    serializeMotionSkeleton(node.motions?.right),
   ].join(":");
 }
 
@@ -185,11 +189,13 @@ function serializeSkeletonNode(node: HashableNode): string {
  * never as the same path re-spun with a different turn pattern.
  */
 export function hashSequenceSkeleton(
-  seq: Pick<SequenceData, "word" | "steps" | "startPosition">,
+  seq: Pick<SequenceData, "word" | "steps" | "startPosition">
 ): string {
   const parts: string[] = [String(seq.word ?? "")];
   if (seq.startPosition) {
-    parts.push("sp|" + serializeSkeletonNode(seq.startPosition as HashableNode));
+    parts.push(
+      "sp|" + serializeSkeletonNode(seq.startPosition as HashableNode)
+    );
   }
   for (const step of seq.steps ?? []) {
     parts.push(serializeSkeletonNode(step as HashableNode));

@@ -7,7 +7,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceEntry, RawStepData, RawMotionAttributes } from "$lib/shared/loop-labeler/domain/sequence-models";
 import type { Step, Motion } from "@tka/tka-types";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export function convert(sequence: SequenceData): SequenceEntry {
@@ -53,16 +53,16 @@ function convertStepsToRaw(sequence: SequenceData): RawStepData[] {
 }
 
 function convertStepToRaw(step: Step): RawStepData {
-  const blueMotion = step.motions[MotionColor.BLUE];
-  const redMotion = step.motions[MotionColor.RED];
+  const leftMotion = step.motions[HandSide.LEFT];
+  const rightMotion = step.motions[HandSide.RIGHT];
 
   return {
     beat: step.stepNumber,
     letter: step.letter ?? undefined,
     startPos: step.startPosition ?? undefined,
     endPos: step.endPosition ?? undefined,
-    blueAttributes: blueMotion ? convertMotionToRaw(blueMotion) : undefined,
-    redAttributes: redMotion ? convertMotionToRaw(redMotion) : undefined,
+    leftAttributes: leftMotion ? convertMotionToRaw(leftMotion) : undefined,
+    rightAttributes: rightMotion ? convertMotionToRaw(rightMotion) : undefined,
   };
 }
 

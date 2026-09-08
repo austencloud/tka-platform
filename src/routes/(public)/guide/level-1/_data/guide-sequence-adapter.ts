@@ -48,7 +48,7 @@ function withLinearPaths<T extends Record<string, unknown>>(box: T): T {
 }
 
 /**
- * Bake reversal dots (blueReversal/redReversal) into a strip FROM ITS OWN
+ * Bake reversal dots (leftReversal/rightReversal) into a strip FROM ITS OWN
  * MOTION DATA via the canonical engine detector - never hand-author flags on
  * pages that use this. Dots = the `propReversal` channel only (display policy
  * 2026-07-05: dots mark prop-direction reversals). Strips read LINEARLY (no
@@ -60,11 +60,11 @@ export function bakeReversals(strip: StepData[]): StepData[] {
   const flags = deriveReversals(strip);
   return strip.map((b, i) => {
     const f = flags[i];
-    if (!f || (!f.blue.propReversal && !f.red.propReversal)) return b;
+    if (!f || (!f.left.propReversal && !f.right.propReversal)) return b;
     return {
       ...b,
-      blueReversal: f.blue.propReversal,
-      redReversal: f.red.propReversal,
+      leftReversal: f.left.propReversal,
+      rightReversal: f.right.propReversal,
     } as StepData;
   });
 }

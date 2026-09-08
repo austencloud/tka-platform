@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import { getViewerStudioSurfaces } from "$lib/shared/sequence-viewer/context/viewer-studio-surfaces-context";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
@@ -16,17 +17,33 @@
     sequence,
     sequencePosition,
     playing,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
   }: {
     sequence: SequenceData;
     sequencePosition: number;
     playing: boolean;
-    bluePropType?: PropType;
-    redPropType?: PropType;
+    leftPropType?: PropType;
+    rightPropType?: PropType;
   } = $props();
 
   const stateManager = new AnimationStateManager();
+  const shared = getViewerStudioSurfaces();
+  const owner = {};
+  function destination(node: HTMLElement) {
+    return {
+      destroy: shared?.requestCanvas(owner, node, () => ({
+        sequence,
+        position: sequencePosition,
+        playing,
+        left: leftProp,
+        right: rightProp,
+        step: stepData,
+        leftPropType,
+        rightPropType,
+      })),
+    };
+  }
   const orchestrator = new SequenceAnimationOrchestrator(
     stateManager,
     getViewerAnimationPropConfig
@@ -37,8 +54,8 @@
   // readiness marker; keeping the exact reference lets both Create and the
   // Sequence Viewer drive the same animation layer.
   let initializedSequence = $state.raw<SequenceData | null>(null);
-  let blueProp = $state<PropState | null>(null);
-  let redProp = $state<PropState | null>(null);
+  let leftProp = $state<PropState | null>(null);
+  let rightProp = $state<PropState | null>(null);
 
   const beatNumber = $derived(
     clampDisplayedBeatNumber(
@@ -73,30 +90,37 @@
     const position = sequencePosition;
     if (initializedSequence !== sequence) return;
     orchestrator.calculateState(position);
-    blueProp = stateManager.getBluePropState();
-    redProp = stateManager.getRedPropState();
+    leftProp = stateManager.getLeftPropState();
+    rightProp = stateManager.getRightPropState();
   });
 </script>
 
-<div class="animation-layer">
-  <AnimatorCanvas
-    {blueProp}
-    {redProp}
-    gridVisible
-    gridMode={sequence.gridMode ?? null}
-    letter={stepData?.letter ?? null}
-    {stepData}
-    sequenceData={sequence}
-    currentStep={sequencePosition}
-    isPlaying={playing}
-    {bluePropType}
-    {redPropType}
-    word={null}
-    previewDarkMode
-    hideProgressBar
-    hideHeader
-    fillContainer
-  />
+<div
+  class="animation-layer"
+  use:destination
+  data-studio-animation-destination
+  data-sequence-position={sequencePosition}
+>
+  {#if !shared?.ownsCanvas(owner)}
+    <AnimatorCanvas
+      {leftProp}
+      {rightProp}
+      gridVisible
+      gridMode={sequence.gridMode ?? null}
+      letter={stepData?.letter ?? null}
+      {stepData}
+      sequenceData={sequence}
+      currentStep={sequencePosition}
+      isPlaying={playing}
+      {leftPropType}
+      {rightPropType}
+      word={null}
+      previewDarkMode
+      hideProgressBar
+      hideHeader
+      fillContainer
+    />
+  {/if}
 </div>
 
 <style>

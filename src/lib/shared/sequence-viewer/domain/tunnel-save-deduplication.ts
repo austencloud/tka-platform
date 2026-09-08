@@ -47,6 +47,7 @@ function fingerprintComposition(
             }
           : performer.source,
     })),
+    stage: composition.stage,
     formation: composition.formation,
   };
 }

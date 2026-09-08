@@ -65,10 +65,10 @@
       return {
         ...data,
         motions: {
-          blue: data.motions.blue
-            ? { ...data.motions.blue, propType }
+          left: data.motions.left
+            ? { ...data.motions.left, propType }
             : undefined,
-          red: data.motions.red ? { ...data.motions.red, propType } : undefined,
+          right: data.motions.right ? { ...data.motions.right, propType } : undefined,
         },
       };
     };
@@ -239,8 +239,8 @@
   {#if animationReady && AnimatorCanvasComponent}
     <div class="canvas-fill">
       <AnimatorCanvasComponent
-        blueProp={animationState.bluePropState}
-        redProp={animationState.redPropState}
+        leftProp={animationState.leftPropState}
+        rightProp={animationState.rightPropState}
         gridVisible={true}
         {gridMode}
         letter={currentLetter}
@@ -249,8 +249,8 @@
         currentStep={animationState.currentStep}
         isPlaying={animationState.isPlaying}
         trailSettings={animationSettings.trail}
-        bluePropType={propType}
-        redPropType={propType}
+        leftPropType={propType}
+        rightPropType={propType}
         word={null}
         previewDarkMode={true}
         hideTkaGlyph={false}

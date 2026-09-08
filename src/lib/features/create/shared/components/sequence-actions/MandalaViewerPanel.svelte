@@ -5,10 +5,6 @@
     MandalaPathShape,
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
-  import {
-    BLUE_STROKE,
-    RED_STROKE,
-  } from "$lib/shared/mandala/domain/mandala-constants";
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
   import MandalaPane from "$lib/shared/sequence-viewer/components/MandalaPane.svelte";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
@@ -20,8 +16,8 @@
     sequence: SequenceData;
     variant: MandalaRenderOptions["show"];
     pathShape: MandalaPathShape;
-    bluePropType: string;
-    redPropType: string;
+    leftPropType: string;
+    rightPropType: string;
     isMobile?: boolean;
     onClose: () => void;
   }
@@ -30,8 +26,8 @@
     sequence,
     variant,
     pathShape,
-    bluePropType,
-    redPropType,
+    leftPropType,
+    rightPropType,
     isMobile = false,
     onClose,
   }: Props = $props();
@@ -41,21 +37,19 @@
   const ctrl = new MandalaViewerController(
     {
       getSequence: () => sequence,
-      getBluePropType: () => bluePropType,
-      getRedPropType: () => redPropType,
+      getLeftPropType: () => leftPropType,
+      getRightPropType: () => rightPropType,
       pathPolicy: getAnimationVisibilityManager(),
     },
     {
-      // This focused viewer always opens in the standard stroke colors.
-      // Palette controls can change them without replacing the full viewer's
-      // saved look.
+      // This focused viewer owns no other lasting Mandala look, but its Custom
+      // palette is the same authored pair available from Tunnel.
       viewOverrides: {
         colorMode: "solid",
         preset: "custom",
-        customBlue: BLUE_STROKE,
-        customRed: RED_STROKE,
       },
       persistViewState: false,
+      persistCustomColors: true,
     }
   );
 
@@ -71,8 +65,8 @@
       const name = await saveMandalaToCollection({
         steps: sequence.steps ?? [],
         variant: ctrl.show,
-        bluePropType,
-        redPropType,
+        leftPropType,
+        rightPropType,
         pathShape: ctrl.pathShape,
         sequenceWord: sequence.word ?? "",
       });
@@ -97,8 +91,8 @@
   <div class="mandala-stage">
     <MandalaPane
       {sequence}
-      {bluePropType}
-      {redPropType}
+      {leftPropType}
+      {rightPropType}
       {ctrl}
       showDownload={false}
       dockAction={saveAction}

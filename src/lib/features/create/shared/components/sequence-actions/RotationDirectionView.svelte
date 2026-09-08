@@ -52,7 +52,7 @@
 
   const isMobile = $derived(!layoutState.isSideBySideLayout);
   const targetHandLabel = $derived(
-    targetHand === "blue" ? "Left" : targetHand === "red" ? "Right" : "Both"
+    targetHand === "left" ? "Left" : targetHand === "right" ? "Right" : "Both"
   );
 
   // Load saved patterns once when the view mounts (entering the drill-down).

@@ -11,8 +11,8 @@ export type OrientationCycleCount = 1 | 2 | 4 | 8;
 
 export interface OrientationCycleAnalysis {
   cycleCount: OrientationCycleCount;
-  blueOrientations: Orientation[];
-  redOrientations: Orientation[];
+  leftOrientations: Orientation[];
+  rightOrientations: Orientation[];
 }
 
 export interface OrientationCycleClosure {
@@ -45,8 +45,8 @@ export interface OrientationCycleOptions {
    * separately from the sequence steps.
    */
   startOrientations?: {
-    blue: Orientation;
-    red: Orientation;
+    left: Orientation;
+    right: Orientation;
   };
 }
 
@@ -69,15 +69,15 @@ export function analyzeOrientationCycle(
   if (pattern.length === 0) {
     return {
       cycleCount: 1,
-      blueOrientations: [startOrientations.blue],
-      redOrientations: [startOrientations.red],
+      leftOrientations: [startOrientations.left],
+      rightOrientations: [startOrientations.right],
     };
   }
 
-  const blueOrientations: Orientation[] = [startOrientations.blue];
-  const redOrientations: Orientation[] = [startOrientations.red];
-  let blue = startOrientations.blue;
-  let red = startOrientations.red;
+  const leftOrientations: Orientation[] = [startOrientations.left];
+  const rightOrientations: Orientation[] = [startOrientations.right];
+  let left = startOrientations.left;
+  let right = startOrientations.right;
 
   for (
     let repetition = 1;
@@ -85,14 +85,14 @@ export function analyzeOrientationCycle(
     repetition++
   ) {
     for (const step of pattern) {
-      blue = calculateMotionEndOrientation(step, "blue", blue);
-      red = calculateMotionEndOrientation(step, "red", red);
+      left = calculateMotionEndOrientation(step, "left", left);
+      right = calculateMotionEndOrientation(step, "right", right);
     }
 
-    blueOrientations.push(blue);
-    redOrientations.push(red);
+    leftOrientations.push(left);
+    rightOrientations.push(right);
 
-    if (blue === startOrientations.blue && red === startOrientations.red) {
+    if (left === startOrientations.left && right === startOrientations.right) {
       if (!isOrientationCycleCount(repetition)) {
         throw new Error(
           `Orientation returned after unsupported repetition count ${repetition}`
@@ -100,16 +100,16 @@ export function analyzeOrientationCycle(
       }
       return {
         cycleCount: repetition,
-        blueOrientations,
-        redOrientations,
+        leftOrientations,
+        rightOrientations,
       };
     }
   }
 
   throw new Error(
     `Orientation did not close after ${MAX_ORIENTATION_CYCLE_REPETITIONS} ` +
-      `position-pattern repetitions (blue ${startOrientations.blue} -> ${blue}, ` +
-      `red ${startOrientations.red} -> ${red})`
+      `position-pattern repetitions (left ${startOrientations.left} -> ${left}, ` +
+      `right ${startOrientations.right} -> ${right})`
   );
 }
 
@@ -196,8 +196,8 @@ export function closeOrientationCycle(
         startPosition:
           previousStep.endPosition as SequenceStep["startPosition"],
         motions: {
-          blue: { ...sourceStep.motions.blue },
-          red: { ...sourceStep.motions.red },
+          left: { ...sourceStep.motions.left },
+          right: { ...sourceStep.motions.right },
         },
       };
       output.push(updateStepOrientations(copiedStep, previousStep));
@@ -226,13 +226,13 @@ function assertOrientationsClose(
   if (!end) return;
 
   if (
-    start.blue !== end.motions.blue.endOrientation ||
-    start.red !== end.motions.red.endOrientation
+    start.left !== end.motions.left.endOrientation ||
+    start.right !== end.motions.right.endOrientation
   ) {
     throw new Error(
       `Orientation closure emitted an open sequence ` +
-        `(blue ${start.blue} -> ${end.motions.blue.endOrientation}, ` +
-        `red ${start.red} -> ${end.motions.red.endOrientation})`
+        `(left ${start.left} -> ${end.motions.left.endOrientation}, ` +
+        `right ${start.right} -> ${end.motions.right.endOrientation})`
     );
   }
 }
@@ -246,18 +246,18 @@ function getPatternSteps(
 function getStartingOrientations(
   sequence: readonly SequenceStep[],
   firstStep: SequenceStep | undefined
-): { blue: Orientation; red: Orientation } {
+): { left: Orientation; right: Orientation } {
   const startStep = sequence.find((step) => step.stepNumber === 0);
   const source = startStep ?? firstStep;
   return {
-    blue: (source?.motions.blue.startOrientation ?? "in") as Orientation,
-    red: (source?.motions.red.startOrientation ?? "in") as Orientation,
+    left: (source?.motions.left.startOrientation ?? "in") as Orientation,
+    right: (source?.motions.right.startOrientation ?? "in") as Orientation,
   };
 }
 
 function calculateMotionEndOrientation(
   step: SequenceStep,
-  side: "blue" | "red",
+  side: "left" | "right",
   startOrientation: Orientation
 ): Orientation {
   const motion = step.motions[side];
@@ -279,8 +279,8 @@ function cloneStep(step: SequenceStep): SequenceStep {
   return {
     ...step,
     motions: {
-      blue: { ...step.motions.blue },
-      red: { ...step.motions.red },
+      left: { ...step.motions.left },
+      right: { ...step.motions.right },
     },
   };
 }

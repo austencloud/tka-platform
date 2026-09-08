@@ -50,13 +50,13 @@ export function transitionFor(id: string): string {
 export function codexData(id: string): PictographData | null {
   const d = pictographs[id];
   if (!d) return null;
-  const { blue, red } = d.motions;
-  if (!blue || !red) return d;
+  const { left, right } = d.motions;
+  if (!left || !right) return d;
   return {
     ...d,
     motions: {
-      blue: createMotionData({ ...blue, turns: 0 }),
-      red: createMotionData({ ...red, turns: 0 }),
+      left: createMotionData({ ...left, turns: 0 }),
+      right: createMotionData({ ...right, turns: 0 }),
     },
   };
 }

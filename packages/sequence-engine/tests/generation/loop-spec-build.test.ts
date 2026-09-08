@@ -56,8 +56,8 @@ function loadVariations(csvPath: string): PictographData[] {
       endPosition: c[2]!,
       timing: c[3]!,
       direction: c[4]!,
-      blueMotion: {
-        color: "blue",
+      leftMotion: {
+        hand: "left",
         motionType: c[5]!,
         rotationDirection: c[6]!,
         startLocation: c[7]!,
@@ -65,8 +65,8 @@ function loadVariations(csvPath: string): PictographData[] {
         startOrientation: "in",
         endOrientation: "in",
       },
-      redMotion: {
-        color: "red",
+      rightMotion: {
+        hand: "right",
         motionType: c[9]!,
         rotationDirection: c[10]!,
         startLocation: c[11]!,
@@ -110,7 +110,7 @@ function symmetric(
   >
 ): LOOPSpec {
   const map = new Map(entries);
-  return { blue: { components: map }, red: { components: map } };
+  return { left: { components: map }, right: { components: map } };
 }
 
 describe("SequenceBuilder loopSpec path", () => {
@@ -240,8 +240,8 @@ describe("SequenceBuilder loopSpec path", () => {
       const rawFunctional = [...detected.components].map(String).sort();
       const functional = normalizeReflection(rawFunctional);
       const rich = loopDetectorClass.detectLOOPType(result.sequence);
-      const rawClassBased = rich.spec?.blue
-        ? [...rich.spec.blue.components.keys()].map(String).sort()
+      const rawClassBased = rich.spec?.left
+        ? [...rich.spec.left.components.keys()].map(String).sort()
         : [];
       const classBased = normalizeReflection(rawClassBased);
       const diagnostic = JSON.stringify({
@@ -349,8 +349,8 @@ describe("SequenceBuilder loopSpec path", () => {
 
     // Overlay signature: blocks of 4; steps 5-8 are the pro/anti flip of 1-4.
     for (let i = 0; i < 4; i++) {
-      const b = steps[i]!.motions.blue.motionType;
-      const o = steps[i + 4]!.motions.blue.motionType;
+      const b = steps[i]!.motions.left.motionType;
+      const o = steps[i + 4]!.motions.left.motionType;
       if (b === "pro") expect(o).toBe("anti");
       if (b === "anti") expect(o).toBe("pro");
     }

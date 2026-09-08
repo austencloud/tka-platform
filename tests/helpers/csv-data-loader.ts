@@ -17,14 +17,14 @@ interface CSVRow {
   endPosition: string;
   timing: string;
   direction: string;
-  blueMotionType: string;
-  blueRotationDirection: string;
-  blueStartLocation: string;
-  blueEndLocation: string;
-  redMotionType: string;
-  redRotationDirection: string;
-  redStartLocation: string;
-  redEndLocation: string;
+  leftMotionType: string;
+  leftRotationDirection: string;
+  leftStartLocation: string;
+  leftEndLocation: string;
+  rightMotionType: string;
+  rightRotationDirection: string;
+  rightStartLocation: string;
+  rightEndLocation: string;
 }
 
 /**
@@ -112,13 +112,13 @@ export interface CSVLetterData {
   letter: Letter;
   startPosition: string;
   endPosition: string;
-  blueMotion: {
+  leftMotion: {
     type: string;
     rotation: string;
     startLoc: string;
     endLoc: string;
   };
-  redMotion: {
+  rightMotion: {
     type: string;
     rotation: string;
     startLoc: string;
@@ -131,17 +131,17 @@ export function convertCSVRowToLetterData(row: CSVRow): CSVLetterData {
     letter: row.letter as Letter,
     startPosition: row.startPosition,
     endPosition: row.endPosition,
-    blueMotion: {
-      type: row.blueMotionType,
-      rotation: row.blueRotationDirection,
-      startLoc: row.blueStartLocation,
-      endLoc: row.blueEndLocation,
+    leftMotion: {
+      type: row.leftMotionType,
+      rotation: row.leftRotationDirection,
+      startLoc: row.leftStartLocation,
+      endLoc: row.leftEndLocation,
     },
-    redMotion: {
-      type: row.redMotionType,
-      rotation: row.redRotationDirection,
-      startLoc: row.redStartLocation,
-      endLoc: row.redEndLocation,
+    rightMotion: {
+      type: row.rightMotionType,
+      rotation: row.rightRotationDirection,
+      startLoc: row.rightStartLocation,
+      endLoc: row.rightEndLocation,
     },
   };
 }

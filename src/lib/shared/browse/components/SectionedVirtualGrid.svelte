@@ -20,6 +20,7 @@
   list's offset below the toolbar/filter bar.
 -->
 <script lang="ts">
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onMount, onDestroy, untrack } from "svelte";
   import {
     createVirtualizer,
@@ -58,6 +59,7 @@
   }
 
   interface Props {
+    collectionPropType?: PropType | null;
     engine: BrowseEngine;
     thumbnailService: BrowseThumbnailProvider | null;
     /** The single external scroll container (BrowsePanel's `.panel-content`). */
@@ -69,8 +71,8 @@
     ) => void;
     eager?: boolean;
     handPathMode?: boolean;
-    showBlueMotion?: boolean;
-    showRedMotion?: boolean;
+    showLeftMotion?: boolean;
+    showRightMotion?: boolean;
     addWord?: boolean;
     addDifficultyLevel?: boolean;
     selectedIds?: ReadonlySet<string>;
@@ -90,14 +92,15 @@
   }
 
   const {
+    collectionPropType,
     engine,
     thumbnailService,
     scrollElement,
     onAction,
     eager = false,
     handPathMode = false,
-    showBlueMotion = true,
-    showRedMotion = true,
+    showLeftMotion = true,
+    showRightMotion = true,
     addWord = true,
     addDifficultyLevel = true,
     selectedIds,
@@ -113,14 +116,14 @@
 
   // ── Card render context (mirrors VirtualizedSequenceGrid) ──────────────
   const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
+    leftPropType: settingsService.settings.leftPropType,
+    rightPropType: settingsService.settings.rightPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
   const isCatDog = $derived(
     isCatDogMode(
-      propSettings.bluePropType,
-      propSettings.redPropType,
+      propSettings.leftPropType,
+      propSettings.rightPropType,
       propSettings.catDogMode
     )
   );
@@ -658,20 +661,21 @@
             {#each it.sequences as sequence (sequence.id)}
               {@const seqVariations = getVariationsForSequence(sequence)}
               <ChoreoCardThumbnail
+                {collectionPropType}
                 {sequence}
                 variations={seqVariations}
                 onPrimaryAction={onAction
                   ? (seq) => handleAction("view-detail", seq, seqVariations)
                   : undefined}
                 onHover={handleHover}
-                bluePropType={propSettings.bluePropType}
-                redPropType={propSettings.redPropType}
+                leftPropType={propSettings.leftPropType}
+                rightPropType={propSettings.rightPropType}
                 catDogModeEnabled={isCatDog}
                 {lightMode}
                 {eager}
                 {handPathMode}
-                {showBlueMotion}
-                {showRedMotion}
+                {showLeftMotion}
+                {showRightMotion}
                 {addWord}
                 {addDifficultyLevel}
                 {selectedIds}

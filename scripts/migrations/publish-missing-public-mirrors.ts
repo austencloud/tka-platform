@@ -8,14 +8,18 @@
  * This script takes explicit owner/sequence targets, verifies the owner
  * document is public, undeleted, and has NO mirror, then performs the full
  * publish-transaction shape through the SAME modules the runtime writer uses:
- * schema-2 projection + hash claim + owner parity stamps, one Admin
- * transaction per sequence. A claim already held by another sequence is a
- * legitimate PUBLIC_DUPLICATE and is reported, never stolen.
+ * schema-2 projection + retained revision + hash claim + owner parity stamps,
+ * one Admin transaction per sequence. With --promote, that transaction also
+ * moves a private or unlisted owner document to public. A claim already held
+ * by another sequence is a legitimate PUBLIC_DUPLICATE and is reported, never
+ * stolen.
  *
  *   npx tsx scripts/migrations/publish-missing-public-mirrors.ts \
  *     --target <ownerId>:<sequenceId> [--target ...]              # dry-run
  *   TKA_ADMIN=1 npx tsx scripts/migrations/publish-missing-public-mirrors.ts \
  *     --target <ownerId>:<sequenceId> --apply
+ *   TKA_ADMIN=1 npx tsx scripts/migrations/publish-missing-public-mirrors.ts \
+ *     --target <ownerId>:<sequenceId> --promote --apply
  *
  * Context preparation (profile, tags, loop, encoder hash, level) is the same
  * Admin-SDK replica the reconciler carries; copied rather than imported
@@ -39,6 +43,8 @@ import {
   publicSequenceClaimId,
   PUBLIC_SEQUENCE_HASH_COLLECTION,
 } from "../../src/lib/shared/library/services/public-sequence-persister";
+import { buildSequenceRevisionRecord } from "../../src/lib/shared/library/services/sequence-revision";
+import { getSequenceRevisionPath } from "../../src/lib/shared/library/data/firestore-paths";
 import { sha256Hex } from "../../src/lib/shared/foundation/utils/canonical-digest";
 import { encodeSequence } from "../../src/lib/shared/navigation/services/sequence-encoder";
 import { calculateDifficultyLevel } from "../../src/lib/shared/browse/services/sequence-difficulty-calculator";
@@ -76,11 +82,14 @@ interface AdminTransaction {
   delete(ref: AdminDocRef): void;
 }
 interface AdminDb {
+  doc(path: string): AdminDocRef;
   collection(path: string): AdminCollectionRef;
   runTransaction<T>(fn: (t: AdminTransaction) => Promise<T>): Promise<T>;
 }
 
 const APPLY = process.argv.includes("--apply");
+const PROMOTE = process.argv.includes("--promote");
+const STRICT = process.argv.includes("--strict");
 const targets: Array<{ ownerId: string; sequenceId: string }> = [];
 for (let i = 2; i < process.argv.length; i++) {
   if (process.argv[i] === "--target") {
@@ -186,7 +195,9 @@ async function detectLoop(
       try {
         const detection = loopDetector.detectLOOPType(hydrated);
         const display = resolveLoopDisplay(hydrated);
-        period = detection.period ? periodToNumber(detection.period) : undefined;
+        period = detection.period
+          ? periodToNumber(detection.period)
+          : undefined;
         components =
           display.components.size > 0 ? [...display.components] : undefined;
         loopType = loopType ?? detection.loopType;
@@ -211,7 +222,8 @@ async function detectLoop(
   if (hydrated.loopType) return detected(hydrated.loopType, true);
   const curated = await fetchCuratedLoopType(db, hydrated.word ?? "");
   if (curated) return detected(curated, true);
-  if (!isSeamlesslyLoopable(hydrated)) return { isCircular: false, loopType: null };
+  if (!isSeamlesslyLoopable(hydrated))
+    return { isCircular: false, loopType: null };
   return detected(null, true);
 }
 
@@ -224,6 +236,63 @@ interface Report {
   detail?: string;
   word?: string;
   claimId?: string;
+}
+
+function timestampMillis(value: unknown): number | null {
+  if (value instanceof Date) return value.getTime();
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    "toMillis" in value &&
+    typeof (value as { toMillis?: unknown }).toMillis === "function"
+  ) {
+    return (value as { toMillis(): number }).toMillis();
+  }
+  return null;
+}
+
+async function hasStoredPublicParity(
+  db: AdminDb,
+  ownerId: string,
+  sequenceId: string,
+  ownerData: AnyRec,
+  publicData: AnyRec
+): Promise<boolean> {
+  const contentHash = publicData["contentHash"];
+  const contentHashVersion = publicData["contentHashVersion"];
+  if (
+    typeof contentHash !== "string" ||
+    typeof contentHashVersion !== "number"
+  ) {
+    return false;
+  }
+  const claimSnap = await db
+    .collection(PUBLIC_SEQUENCE_HASH_COLLECTION)
+    .doc(publicSequenceClaimId(contentHashVersion, contentHash))
+    .get();
+  const claimData = claimSnap.data() ?? {};
+
+  return (
+    ownerData["visibility"] === "public" &&
+    ownerData["isDeleted"] !== true &&
+    publicData["ownerId"] === ownerId &&
+    publicData["sourceRef"] === `users/${ownerId}/sequences/${sequenceId}` &&
+    ownerData["word"] === publicData["word"] &&
+    ownerData["sequenceLength"] === publicData["sequenceLength"] &&
+    ownerData["contentHash"] === contentHash &&
+    ownerData["contentHashVersion"] === contentHashVersion &&
+    ownerData["publicProjectionRevision"] ===
+      publicData["publicProjectionRevision"] &&
+    ownerData["publicProjectionSchemaVersion"] ===
+      publicData["publicProjectionSchemaVersion"] &&
+    ownerData["publicProjectionDigest"] ===
+      publicData["publicProjectionDigest"] &&
+    claimSnap.exists &&
+    claimData["sequenceId"] === sequenceId &&
+    claimData["ownerId"] === ownerId &&
+    claimData["contentHash"] === contentHash &&
+    claimData["contentHashVersion"] === contentHashVersion
+  );
 }
 
 const { db: rawDb, sdk } = (await initFirestore()) as {
@@ -251,17 +320,31 @@ for (const { ownerId, sequenceId } of targets) {
     reports.push({ ownerId, sequenceId, outcome: "OWNER_MISSING" });
     continue;
   }
+  const ownerData = ownerSnap.data() ?? {};
   if (publicSnap.exists) {
+    const alreadyPublic =
+      PROMOTE &&
+      (await hasStoredPublicParity(
+        db,
+        ownerId,
+        sequenceId,
+        ownerData,
+        publicSnap.data() ?? {}
+      ));
     reports.push({
       ownerId,
       sequenceId,
-      outcome: "MIRROR_ALREADY_EXISTS",
-      detail: "use reconcile-sequence-public-projections instead",
+      outcome: alreadyPublic ? "ALREADY_PUBLIC" : "MIRROR_ALREADY_EXISTS",
+      ...(!alreadyPublic && {
+        detail: "use reconcile-sequence-public-projections instead",
+      }),
     });
     continue;
   }
-  const ownerData = ownerSnap.data() ?? {};
-  if (ownerData["isDeleted"] === true || ownerData["visibility"] !== "public") {
+  if (
+    ownerData["isDeleted"] === true ||
+    (!PROMOTE && ownerData["visibility"] !== "public")
+  ) {
     reports.push({
       ownerId,
       sequenceId,
@@ -293,11 +376,14 @@ for (const { ownerId, sequenceId } of targets) {
   const loop = await detectLoop(db, hydrated);
   const encoderHash = await sha256Hex(encodeSequence(hydrated));
   const level = calculateDifficultyLevel([...(hydrated.steps ?? [])]);
+  const publicationTime = new Date();
 
   const context: PublicProjectionContext = {
     ownerId,
     ownerDisplayName: profile.displayName,
-    ...(profile.avatarUrl !== undefined && { ownerAvatarUrl: profile.avatarUrl }),
+    ...(profile.avatarUrl !== undefined && {
+      ownerAvatarUrl: profile.avatarUrl,
+    }),
     tagNames,
     encoderHash,
     loop,
@@ -305,19 +391,34 @@ for (const { ownerId, sequenceId } of targets) {
       difficultyLevel: ownerData["difficultyLevel"] as string,
     }),
     level,
-    now: new Date(),
+    now: publicationTime,
   };
 
-  const projection = await buildPublicSequenceProjection(normalized, context, 1, {
-    kind: "first-publication",
-  });
+  const projection = await buildPublicSequenceProjection(
+    normalized,
+    context,
+    1,
+    {
+      kind: "first-publication",
+    }
+  );
   const claimId = publicSequenceClaimId(
     normalized.contentHashVersion,
     normalized.contentHash
   );
   const claimRef = db.collection(PUBLIC_SEQUENCE_HASH_COLLECTION).doc(claimId);
+  const retainedRevision = await buildSequenceRevisionRecord(
+    projection,
+    publicationTime
+  );
+  const retainedRevisionRef = db.doc(
+    getSequenceRevisionPath(retainedRevision.revisionId)
+  );
   const claimSnap = await claimRef.get();
-  if (claimSnap.exists && (claimSnap.data() ?? {})["sequenceId"] !== sequenceId) {
+  if (
+    claimSnap.exists &&
+    (claimSnap.data() ?? {})["sequenceId"] !== sequenceId
+  ) {
     reports.push({
       ownerId,
       sequenceId,
@@ -332,7 +433,10 @@ for (const { ownerId, sequenceId } of targets) {
     reports.push({
       ownerId,
       sequenceId,
-      outcome: "WOULD_PUBLISH",
+      outcome:
+        PROMOTE && ownerData["visibility"] !== "public"
+          ? "WOULD_PROMOTE"
+          : "WOULD_PUBLISH",
       word: normalized.exactWord,
       claimId,
     });
@@ -340,12 +444,24 @@ for (const { ownerId, sequenceId } of targets) {
   }
 
   await db.runTransaction(async (t) => {
-    const [ownerNow, publicNow, claimNow] = await t.getAll(
+    const [ownerNow, publicNow, claimNow, retainedRevisionNow] = await t.getAll(
       ownerRef,
       publicRef,
-      claimRef
+      claimRef,
+      retainedRevisionRef
     );
-    if (!ownerNow?.exists || publicNow?.exists) {
+    const ownerNowData = ownerNow?.data() ?? {};
+    const ownerChanged =
+      timestampMillis(ownerNowData["updatedAt"]) !==
+        timestampMillis(ownerData["updatedAt"]) ||
+      (ownerNowData["_version"] ?? null) !== (ownerData["_version"] ?? null);
+    if (
+      !ownerNow?.exists ||
+      publicNow?.exists ||
+      ownerChanged ||
+      ownerNowData["isDeleted"] === true ||
+      (!PROMOTE && ownerNowData["visibility"] !== "public")
+    ) {
       reports.push({ ownerId, sequenceId, outcome: "SKIPPED_CHANGED" });
       return;
     }
@@ -354,17 +470,39 @@ for (const { ownerId, sequenceId } of targets) {
       reports.push({ ownerId, sequenceId, outcome: "SKIPPED_CLAIM_CONFLICT" });
       return;
     }
+    if (retainedRevisionNow?.exists) {
+      const existingRevision = retainedRevisionNow.data() ?? {};
+      if (
+        existingRevision["sequenceId"] !== sequenceId ||
+        existingRevision["contentDigest"] !== retainedRevision.contentDigest
+      ) {
+        reports.push({
+          ownerId,
+          sequenceId,
+          outcome: "SKIPPED_REVISION_CONFLICT",
+        });
+        return;
+      }
+    }
     t.set(publicRef, projection);
+    if (!retainedRevisionNow?.exists) {
+      t.set(retainedRevisionRef, retainedRevision);
+    }
     if (!claimData) {
       t.set(claimRef, {
         sequenceId,
         ownerId,
         contentHash: normalized.contentHash,
         contentHashVersion: normalized.contentHashVersion,
-        createdAt: new Date(),
+        createdAt: publicationTime,
       });
     }
     t.update(ownerRef, {
+      visibility: "public",
+      ...(ownerNowData["visibility"] !== "public" && {
+        visibilityChangedAt: publicationTime,
+      }),
+      updatedAt: publicationTime,
       word: normalized.exactWord,
       sequenceLength: normalized.sequenceLength,
       contentHash: normalized.contentHash,
@@ -376,7 +514,10 @@ for (const { ownerId, sequenceId } of targets) {
     reports.push({
       ownerId,
       sequenceId,
-      outcome: "PUBLISHED",
+      outcome:
+        PROMOTE && ownerData["visibility"] !== "public"
+          ? "PROMOTED"
+          : "PUBLISHED",
       word: normalized.exactWord,
       claimId,
     });
@@ -400,3 +541,14 @@ for (const r of reports) {
   );
 }
 console.log(`\nManifest: ${manifestPath}`);
+
+if (STRICT) {
+  const successfulOutcomes = new Set(
+    APPLY
+      ? ["PUBLISHED", "PROMOTED", "ALREADY_PUBLIC"]
+      : ["WOULD_PUBLISH", "WOULD_PROMOTE", "ALREADY_PUBLIC"]
+  );
+  if (reports.some((report) => !successfulOutcomes.has(report.outcome))) {
+    process.exitCode = 1;
+  }
+}

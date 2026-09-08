@@ -33,11 +33,11 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: "only 4" },
   },
   {
-    id: "distinct-avatar-6-performers-pool-of-4",
-    utterance: "Six performers, all different avatars, but only casting from x-bot, y-bot, remy, and ch26.",
-    film: corpusFilm("distinct-avatar-6-performers-pool-of-4", {
+    id: "distinct-character-6-performers-pool-of-4",
+    utterance: "Six performers, all different characters, but only casting from x-bot, y-bot, remy, and ch26.",
+    film: corpusFilm("distinct-character-6-performers-pool-of-4", {
       performance: {
-        cast: { count: 6, defaults: { avatarId: { pick: "distinct", from: ["x-bot", "y-bot", "remy", "ch26"] } } },
+        cast: { count: 6, defaults: { characterId: { pick: "distinct", from: ["x-bot", "y-bot", "remy", "ch26"] } } },
       },
     }),
     expect: { outcome: "rejects", messageIncludes: "only 4" },
@@ -67,11 +67,11 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: "excludes every allowed value" },
   },
   {
-    id: "not-excludes-entire-avatar-pool",
-    utterance: "Performer 1 can't be x-bot or y-bot, and those are the only two avatars we're allowed to use.",
-    film: corpusFilm("not-excludes-entire-avatar-pool", {
+    id: "not-excludes-entire-character-pool",
+    utterance: "Performer 1 can't be x-bot or y-bot, and those are the only two characters we're allowed to use.",
+    film: corpusFilm("not-excludes-entire-character-pool", {
       performance: {
-        cast: { count: 1, performers: [{ avatarId: { not: ["x-bot", "y-bot"], from: ["x-bot", "y-bot"] } }] },
+        cast: { count: 1, performers: [{ characterId: { not: ["x-bot", "y-bot"], from: ["x-bot", "y-bot"] } }] },
       },
     }),
     expect: { outcome: "rejects", messageIncludes: "excludes every allowed value" },
@@ -128,15 +128,15 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: "forms a cycle involving" },
   },
   {
-    id: "sameas-two-cycle-avatar",
-    utterance: "Give performer 1 and performer 2 each other's avatar — literally, copy each other.",
-    film: corpusFilm("sameas-two-cycle-avatar", {
+    id: "sameas-two-cycle-character",
+    utterance: "Give performer 1 and performer 2 each other's character — literally, copy each other.",
+    film: corpusFilm("sameas-two-cycle-character", {
       performance: {
         cast: {
           count: 2,
           performers: [
-            { id: "performer-1", avatarId: { sameAs: "performer-2" } },
-            { id: "performer-2", avatarId: { sameAs: "performer-1" } },
+            { id: "performer-1", characterId: { sameAs: "performer-2" } },
+            { id: "performer-2", characterId: { sameAs: "performer-1" } },
           ],
         },
       },

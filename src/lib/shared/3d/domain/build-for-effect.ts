@@ -95,10 +95,14 @@ function fireEquip(
   propType: PropType,
   current: PropBuild
 ): PropBuildEquip | null {
-  // Both physical fire builds burn from five wicks. Keep the fan the performer
+  // Physical fire builds burn from five wicks. Keep the fan the performer
   // chose and only uncover it; pictograph and day builds still equip DoodleGrip.
   if (FAN_PROPS.has(propType)) {
-    if (current.fanBuild === "fire" || current.fanBuild === "lotus") {
+    if (
+      current.fanBuild === "fire" ||
+      current.fanBuild === "lotus" ||
+      current.fanBuild === "flat-grip"
+    ) {
       return equipBuild({ fanCover: "bare" }, current);
     }
     return equipBuild({ fanBuild: "fire", fanCover: "bare" }, current);
@@ -130,6 +134,9 @@ export function buildForEffect(
     case "fire":
       return fireEquip(propType, current);
     case "led":
+      if (FAN_PROPS.has(propType)) {
+        return equipBuild({ fanBuild: "moon", fanCover: "bare" }, current);
+      }
       return equipProp(DOUBLE_STAFF_FAMILY, PropType.CAPSULE_BATON, propType);
     default:
       // Coal, trails, sparkles and the rest read whatever build is in hand.

@@ -13,10 +13,18 @@
   import type { ExportPanelState } from "../../state/export-panel-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { onMount, onDestroy } from "svelte";
+  import CardFooterEditor from "$lib/shared/share/components/CardFooterEditor.svelte";
+  import {
+    cardPresentationFromFooterSettings,
+    resolveCardFooter,
+    type CardPresentation,
+  } from "$lib/shared/share/domain/models/card-presentation";
 
   // Try to get export panel context (may not exist if used standalone)
   const EXPORT_PANEL_STATE_KEY = Symbol.for("ExportPanelState");
-  const exportPanelState = getContext<ExportPanelState | undefined>(EXPORT_PANEL_STATE_KEY);
+  const exportPanelState = getContext<ExportPanelState | undefined>(
+    EXPORT_PANEL_STATE_KEY
+  );
   const isInExportPanel = !!exportPanelState;
 
   const imageCompositionManager = getImageCompositionManager();
@@ -25,6 +33,9 @@
   let showNotes = $state(imageCompositionManager.showNotes);
   let customNotesText = $state(imageCompositionManager.customNotesText);
   let isCustomized = $state(false);
+  const cardPresentation = $derived(
+    cardPresentationFromFooterSettings(showNotes, customNotesText)
+  );
 
   // Sync with persistent settings changes
   function handleSettingsChange() {
@@ -52,13 +63,10 @@
     imageCompositionManager.unregisterObserver(handleSettingsChange);
   });
 
-  function toggleNotes() {
-    showNotes = !showNotes;
-    applyChanges();
-  }
-
-  function handleNotesInput(e: Event) {
-    customNotesText = (e.target as HTMLInputElement).value;
+  function changeCardPresentation(value: CardPresentation) {
+    const footer = resolveCardFooter(value);
+    showNotes = footer.show;
+    if (footer.show) customNotesText = footer.text;
     applyChanges();
   }
 
@@ -107,30 +115,14 @@
     {/if}
   </div>
 
-  <!-- Footer toggles -->
-  <div class="toggle-grid">
-    <button
-      class="toggle-btn"
-      class:active={showNotes}
-      aria-pressed={showNotes}
-      onclick={toggleNotes}
-    >
-      Notes
-    </button>
-  </div>
-
-  <!-- Custom notes input -->
-  <div class="notes-input-group">
-    <label class="input-label" for="export-notes">Notes Text</label>
-    <input
-      id="export-notes"
-      type="text"
-      class="notes-input"
-      value={customNotesText}
-      placeholder="Created using Flow Arts Composer"
-      oninput={handleNotesInput}
-    />
-  </div>
+  <CardFooterEditor
+    value={cardPresentation}
+    onchange={changeCardPresentation}
+    description={isInExportPanel
+      ? "Applies to this export only."
+      : "Sets the default for new cards."}
+    idBase="static-export-footer"
+  />
 
   <!-- Reset button (only shown when customized in Export panel mode) -->
   {#if isInExportPanel && isCustomized}
@@ -170,99 +162,16 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     color: var(--theme-text-dim);
-    transition: all var(--duration-fast) ease;
+    transition:
+      background-color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      color var(--duration-fast) ease;
   }
 
   .status-badge.customized {
     background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     color: var(--theme-accent);
-  }
-
-  .toggle-grid {
-    display: flex;
-    gap: 8px;
-  }
-
-  .toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    min-width: 120px;
-    padding: 10px 12px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .toggle-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-  }
-
-  .toggle-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
-    color: white;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 15%, transparent);
-  }
-
-  .toggle-btn.active:hover {
-    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
-  }
-
-  .notes-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .input-label {
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-text-dim);
-    padding-left: 2px;
-  }
-
-  .notes-input {
-    width: 100%;
-    min-height: 44px;
-    padding: 12px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text);
-    font-size: var(--font-size-compact);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    transition: all var(--duration-fast) ease;
-    box-sizing: border-box;
-  }
-
-  .notes-input::placeholder {
-    color: var(--theme-text-dim);
-    opacity: 0.6;
-  }
-
-  .notes-input:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .notes-input:focus {
-    outline: none;
-    border-color: var(--theme-accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent) 25%, transparent);
   }
 
   .reset-btn {
@@ -294,8 +203,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .toggle-btn,
-    .notes-input,
     .reset-btn,
     .status-badge {
       transition: none;

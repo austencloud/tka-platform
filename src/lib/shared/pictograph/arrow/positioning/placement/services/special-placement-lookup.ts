@@ -12,6 +12,7 @@ import {
   isHybridLetter,
   startsFromStandardOrientation,
 } from "./letter-classifier";
+import { HandSide, normalizeLegacyHandSide } from "@tka/tka-types";
 
 export class SpecialPlacementLookup {
   constructor() {}
@@ -145,9 +146,7 @@ export class SpecialPlacementLookup {
     pictographData: PictographData,
     arrowColor?: string
   ): Point | null {
-    const isHybridLetterVal = isHybridLetter(
-      pictographData.letter ?? ""
-    );
+    const isHybridLetterVal = isHybridLetter(pictographData.letter ?? "");
     const standardOrientation = startsFromStandardOrientation(pictographData);
 
     // For HYBRID letters with standard orientation, use motion type as PRIMARY key
@@ -209,17 +208,12 @@ export class SpecialPlacementLookup {
     pictographData: PictographData,
     arrowColor?: string
   ): Point | null {
-    let colorKey = "";
-
-    if (arrowColor) {
-      colorKey = arrowColor;
-    } else if (pictographData.motions.blue === motionData) {
-      colorKey = "blue";
-    } else if (pictographData.motions.red === motionData) {
-      colorKey = "red";
-    } else {
-      colorKey = "blue";
-    }
+    const hand =
+      normalizeLegacyHandSide(arrowColor ?? motionData.hand) ??
+      (pictographData.motions.right === motionData
+        ? HandSide.RIGHT
+        : HandSide.LEFT);
+    let colorKey = hand === HandSide.LEFT ? "blue" : "red";
 
     if (pictographData.betaSwapped) {
       colorKey = colorKey === "blue" ? "red" : "blue";

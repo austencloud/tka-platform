@@ -5,7 +5,7 @@
  * reversal-detector singletons at module scope so call sites can invoke the
  * transforms directly (or via the `sequenceTransformer` bundle for DI).
  *
- * For single-hand transforms (blue or red), these functions pass the required
+ * For single-hand transforms (left or right), these functions pass the required
  * services to derive new positions and look up correct letters.
  */
 
@@ -18,7 +18,7 @@ import {
   mirrorSequence as mirrorSequenceTransform,
   flipSequence as flipSequenceTransform,
   rotateSequence as rotateSequenceTransform,
-  colorSwapSequence,
+  handSwapSequence,
   invertSequence as invertSequenceTransform,
   rewindSequence as rewindSequenceTransform,
   shiftStartPosition as shiftStartPositionTransform,
@@ -53,9 +53,9 @@ export async function flipSequence(
   return flipSequenceTransform(sequence, motionQueryHandler, targetHand);
 }
 
-export function swapColors(sequence: SequenceData): SequenceData {
-  // Note: swapColors always operates on both hands - that's its purpose
-  return colorSwapSequence(sequence);
+export function swapHands(sequence: SequenceData): SequenceData {
+  // Note: swapHands always operates on both hands - that's its purpose
+  return handSwapSequence(sequence);
 }
 
 export async function rotateSequence(
@@ -119,7 +119,7 @@ export const sequenceTransformer = {
   duplicateSequence,
   mirrorSequence,
   flipSequence,
-  swapColors,
+  swapHands,
   rotateSequence,
   invertSequence,
   rewindSequence,

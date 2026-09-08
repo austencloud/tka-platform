@@ -44,7 +44,7 @@ const POSITIONS = [];
 
 // Beta: both hands at same vertex
 VERTICES.forEach((v, i) => {
-  POSITIONS.push({ name: `beta${i + 1}`, blue: v, red: v });
+  POSITIONS.push({ name: `beta${i + 1}`, left: v, right: v });
 });
 
 // Gamma: hands at different vertices (ordered — blue/red assignment matters)
@@ -54,8 +54,8 @@ for (let i = 0; i < VERTICES.length; i++) {
     if (i !== j) {
       POSITIONS.push({
         name: `gamma${gammaIdx}`,
-        blue: VERTICES[i],
-        red: VERTICES[j],
+        left: VERTICES[i],
+        right: VERTICES[j],
       });
       gammaIdx++;
     }
@@ -63,8 +63,8 @@ for (let i = 0; i < VERTICES.length; i++) {
 }
 
 /** Look up position name from blue/red locations */
-function findPosition(blue, red) {
-  const pos = POSITIONS.find((p) => p.blue === blue && p.red === red);
+function findPosition(left, right) {
+  const pos = POSITIONS.find((p) => p.left === left && p.right === right);
   return pos ? pos.name : null;
 }
 
@@ -94,21 +94,21 @@ const CSV_HEADER =
   "blueMotionType,blueRotationDirection,blueStartLocation,blueEndLocation," +
   "redMotionType,redRotationDirection,redStartLocation,redEndLocation";
 
-function makeRow(letter, startPos, endPos, timing, direction, blue, red) {
+function makeRow(letter, startPos, endPos, timing, direction, left, right) {
   return [
     letter,
     startPos,
     endPos,
     timing,
     direction,
-    blue.motionType,
-    blue.rotationDir,
-    blue.startLoc,
-    blue.endLoc,
-    red.motionType,
-    red.rotationDir,
-    red.startLoc,
-    red.endLoc,
+    left.motionType,
+    left.rotationDir,
+    left.startLoc,
+    left.endLoc,
+    right.motionType,
+    right.rotationDir,
+    right.startLoc,
+    right.endLoc,
   ].join(",");
 }
 
@@ -128,12 +128,12 @@ const rows = [];
  */
 function generateBetaToBeta() {
   const letters = [
-    { letter: "G", blueMotion: "pro", redMotion: "pro" },
-    { letter: "H", blueMotion: "anti", redMotion: "anti" },
-    { letter: "I", blueMotion: "pro", redMotion: "anti" },
+    { letter: "G", leftMotion: "pro", rightMotion: "pro" },
+    { letter: "H", leftMotion: "anti", rightMotion: "anti" },
+    { letter: "I", leftMotion: "pro", rightMotion: "anti" },
   ];
 
-  for (const { letter, blueMotion, redMotion } of letters) {
+  for (const { letter, leftMotion, rightMotion } of letters) {
     // From each beta position, both hands can shift CW or CCW together
     for (let i = 0; i < VERTICES.length; i++) {
       const startVertex = VERTICES[i];
@@ -146,12 +146,12 @@ function generateBetaToBeta() {
 
         rows.push(
           makeRow(letter, startPos, endPos, "tog", "same", {
-            motionType: blueMotion,
+            motionType: leftMotion,
             rotationDir: dir,
             startLoc: startVertex,
             endLoc: endVertex,
           }, {
-            motionType: redMotion,
+            motionType: rightMotion,
             rotationDir: dir,
             startLoc: startVertex,
             endLoc: endVertex,
@@ -172,33 +172,33 @@ function generateBetaToBeta() {
  */
 function generateBetaToGamma() {
   const letters = [
-    { letter: "J", blueMotion: "pro", redMotion: "pro" },
-    { letter: "K", blueMotion: "anti", redMotion: "anti" },
-    { letter: "L", blueMotion: "pro", redMotion: "anti" },
+    { letter: "J", leftMotion: "pro", rightMotion: "pro" },
+    { letter: "K", leftMotion: "anti", rightMotion: "anti" },
+    { letter: "L", leftMotion: "pro", rightMotion: "anti" },
   ];
 
-  for (const { letter, blueMotion, redMotion } of letters) {
+  for (const { letter, leftMotion, rightMotion } of letters) {
     for (let i = 0; i < VERTICES.length; i++) {
       const startVertex = VERTICES[i];
       const startPos = `beta${i + 1}`;
 
       // Blue goes CW, Red goes CCW
       {
-        const blueEnd = shift(startVertex, "cw");
-        const redEnd = shift(startVertex, "ccw");
-        const endPos = findPosition(blueEnd, redEnd);
+        const leftEnd = shift(startVertex, "cw");
+        const rightEnd = shift(startVertex, "ccw");
+        const endPos = findPosition(leftEnd, rightEnd);
         if (endPos) {
           rows.push(
             makeRow(letter, startPos, endPos, "tog", "opp", {
-              motionType: blueMotion,
+              motionType: leftMotion,
               rotationDir: "cw",
               startLoc: startVertex,
-              endLoc: blueEnd,
+              endLoc: leftEnd,
             }, {
-              motionType: redMotion,
+              motionType: rightMotion,
               rotationDir: "ccw",
               startLoc: startVertex,
-              endLoc: redEnd,
+              endLoc: rightEnd,
             })
           );
         }
@@ -206,21 +206,21 @@ function generateBetaToGamma() {
 
       // Blue goes CCW, Red goes CW
       {
-        const blueEnd = shift(startVertex, "ccw");
-        const redEnd = shift(startVertex, "cw");
-        const endPos = findPosition(blueEnd, redEnd);
+        const leftEnd = shift(startVertex, "ccw");
+        const rightEnd = shift(startVertex, "cw");
+        const endPos = findPosition(leftEnd, rightEnd);
         if (endPos) {
           rows.push(
             makeRow(letter, startPos, endPos, "tog", "opp", {
-              motionType: blueMotion,
+              motionType: leftMotion,
               rotationDir: "ccw",
               startLoc: startVertex,
-              endLoc: blueEnd,
+              endLoc: leftEnd,
             }, {
-              motionType: redMotion,
+              motionType: rightMotion,
               rotationDir: "cw",
               startLoc: startVertex,
-              endLoc: redEnd,
+              endLoc: rightEnd,
             })
           );
         }
@@ -250,16 +250,16 @@ function generateBetaToGamma() {
  */
 function generateGammaToGamma() {
   const letters = [
-    { letter: "M", timing: "split", direction: "opp", blueMotion: "pro", redMotion: "pro" },
-    { letter: "N", timing: "split", direction: "opp", blueMotion: "anti", redMotion: "anti" },
-    { letter: "O", timing: "split", direction: "opp", blueMotion: "pro", redMotion: "anti" },
-    { letter: "P", timing: "split", direction: "same", blueMotion: "pro", redMotion: "pro" },
-    { letter: "Q", timing: "split", direction: "same", blueMotion: "anti", redMotion: "anti" },
-    { letter: "R", timing: "split", direction: "same", blueMotion: "pro", redMotion: "anti" },
+    { letter: "M", timing: "split", direction: "opp", leftMotion: "pro", rightMotion: "pro" },
+    { letter: "N", timing: "split", direction: "opp", leftMotion: "anti", rightMotion: "anti" },
+    { letter: "O", timing: "split", direction: "opp", leftMotion: "pro", rightMotion: "anti" },
+    { letter: "P", timing: "split", direction: "same", leftMotion: "pro", rightMotion: "pro" },
+    { letter: "Q", timing: "split", direction: "same", leftMotion: "anti", rightMotion: "anti" },
+    { letter: "R", timing: "split", direction: "same", leftMotion: "pro", rightMotion: "anti" },
   ];
 
   // For each letter, find which orbital direction combos produce gamma→gamma
-  for (const { letter, timing, direction, blueMotion, redMotion } of letters) {
+  for (const { letter, timing, direction, leftMotion, rightMotion } of letters) {
     // Determine which orbital combos match the timing/direction
     // "same direction" = both hands orbit same way (both CW or both CCW)
     // "opp direction" = hands orbit opposite ways (one CW, one CCW)
@@ -272,24 +272,24 @@ function generateGammaToGamma() {
     const gammaPositions = POSITIONS.filter((p) => p.name.startsWith("gamma"));
 
     for (const startP of gammaPositions) {
-      for (const [blueDir, redDir] of orbitalCombos) {
-        const blueEnd = shift(startP.blue, blueDir);
-        const redEnd = shift(startP.red, redDir);
-        const endPos = findPosition(blueEnd, redEnd);
+      for (const [leftDir, rightDir] of orbitalCombos) {
+        const leftEnd = shift(startP.left, leftDir);
+        const rightEnd = shift(startP.right, rightDir);
+        const endPos = findPosition(leftEnd, rightEnd);
 
         // Only keep gamma→gamma transitions
         if (endPos && positionGroup(endPos) === "gamma") {
           rows.push(
             makeRow(letter, startP.name, endPos, timing, direction, {
-              motionType: blueMotion,
-              rotationDir: blueDir,
-              startLoc: startP.blue,
-              endLoc: blueEnd,
+              motionType: leftMotion,
+              rotationDir: leftDir,
+              startLoc: startP.left,
+              endLoc: leftEnd,
             }, {
-              motionType: redMotion,
-              rotationDir: redDir,
-              startLoc: startP.red,
-              endLoc: redEnd,
+              motionType: rightMotion,
+              rotationDir: rightDir,
+              startLoc: startP.right,
+              endLoc: rightEnd,
             })
           );
         }
@@ -315,38 +315,38 @@ function generateGammaToGamma() {
  */
 function generateQuarterTime() {
   const letters = [
-    { letter: "S", timing: "quarter", direction: "same", blueMotion: "pro", redMotion: "pro" },
-    { letter: "T", timing: "quarter", direction: "same", blueMotion: "anti", redMotion: "anti" },
-    { letter: "U", timing: "quarter", direction: "same", blueMotion: "pro", redMotion: "anti" },
-    { letter: "V", timing: "quarter", direction: "opp", blueMotion: "pro", redMotion: "pro" },
+    { letter: "S", timing: "quarter", direction: "same", leftMotion: "pro", rightMotion: "pro" },
+    { letter: "T", timing: "quarter", direction: "same", leftMotion: "anti", rightMotion: "anti" },
+    { letter: "U", timing: "quarter", direction: "same", leftMotion: "pro", rightMotion: "anti" },
+    { letter: "V", timing: "quarter", direction: "opp", leftMotion: "pro", rightMotion: "pro" },
   ];
 
   const gammaPositions = POSITIONS.filter((p) => p.name.startsWith("gamma"));
 
-  for (const { letter, timing, direction, blueMotion, redMotion } of letters) {
+  for (const { letter, timing, direction, leftMotion, rightMotion } of letters) {
     const orbitalCombos =
       direction === "same"
         ? [["cw", "cw"], ["ccw", "ccw"]]
         : [["cw", "ccw"], ["ccw", "cw"]];
 
     for (const startP of gammaPositions) {
-      for (const [blueDir, redDir] of orbitalCombos) {
-        const blueEnd = shift(startP.blue, blueDir);
-        const redEnd = shift(startP.red, redDir);
-        const endPos = findPosition(blueEnd, redEnd);
+      for (const [leftDir, rightDir] of orbitalCombos) {
+        const leftEnd = shift(startP.left, leftDir);
+        const rightEnd = shift(startP.right, rightDir);
+        const endPos = findPosition(leftEnd, rightEnd);
 
         if (endPos && positionGroup(endPos) === "gamma") {
           rows.push(
             makeRow(letter, startP.name, endPos, timing, direction, {
-              motionType: blueMotion,
-              rotationDir: blueDir,
-              startLoc: startP.blue,
-              endLoc: blueEnd,
+              motionType: leftMotion,
+              rotationDir: leftDir,
+              startLoc: startP.left,
+              endLoc: leftEnd,
             }, {
-              motionType: redMotion,
-              rotationDir: redDir,
-              startLoc: startP.red,
-              endLoc: redEnd,
+              motionType: rightMotion,
+              rotationDir: rightDir,
+              startLoc: startP.right,
+              endLoc: rightEnd,
             })
           );
         }
@@ -376,20 +376,20 @@ function generateType2() {
       for (const dir of ["cw", "ccw"]) {
         // Blue shifts, red stays
         {
-          const blueEnd = shift(startP.blue, dir);
-          const endPos = findPosition(blueEnd, startP.red);
+          const leftEnd = shift(startP.left, dir);
+          const endPos = findPosition(leftEnd, startP.right);
           if (endPos && positionGroup(endPos) === "gamma") {
             rows.push(
               makeRow(letter, startP.name, endPos, "split", "opp", {
                 motionType: shiftMotion,
                 rotationDir: dir,
-                startLoc: startP.blue,
-                endLoc: blueEnd,
+                startLoc: startP.left,
+                endLoc: leftEnd,
               }, {
                 motionType: "static",
                 rotationDir: "noRotation",
-                startLoc: startP.red,
-                endLoc: startP.red,
+                startLoc: startP.right,
+                endLoc: startP.right,
               })
             );
           }
@@ -397,20 +397,20 @@ function generateType2() {
 
         // Red shifts, blue stays
         {
-          const redEnd = shift(startP.red, dir);
-          const endPos = findPosition(startP.blue, redEnd);
+          const rightEnd = shift(startP.right, dir);
+          const endPos = findPosition(startP.left, rightEnd);
           if (endPos && positionGroup(endPos) === "gamma") {
             rows.push(
               makeRow(letter, startP.name, endPos, "split", "opp", {
                 motionType: "static",
                 rotationDir: "noRotation",
-                startLoc: startP.blue,
-                endLoc: startP.blue,
+                startLoc: startP.left,
+                endLoc: startP.left,
               }, {
                 motionType: shiftMotion,
                 rotationDir: dir,
-                startLoc: startP.red,
-                endLoc: redEnd,
+                startLoc: startP.right,
+                endLoc: rightEnd,
               })
             );
           }
@@ -428,21 +428,21 @@ function generateType2() {
       for (const dir of ["cw", "ccw"]) {
         // Blue shifts to red's vertex → beta
         {
-          const blueEnd = shift(startP.blue, dir);
-          if (blueEnd === startP.red) {
-            const endPos = findPosition(blueEnd, startP.red);
+          const leftEnd = shift(startP.left, dir);
+          if (leftEnd === startP.right) {
+            const endPos = findPosition(leftEnd, startP.right);
             if (endPos && positionGroup(endPos) === "beta") {
               rows.push(
                 makeRow(letter, startP.name, endPos, "split", "opp", {
                   motionType: shiftMotion,
                   rotationDir: dir,
-                  startLoc: startP.blue,
-                  endLoc: blueEnd,
+                  startLoc: startP.left,
+                  endLoc: leftEnd,
                 }, {
                   motionType: "static",
                   rotationDir: "noRotation",
-                  startLoc: startP.red,
-                  endLoc: startP.red,
+                  startLoc: startP.right,
+                  endLoc: startP.right,
                 })
               );
             }
@@ -451,21 +451,21 @@ function generateType2() {
 
         // Red shifts to blue's vertex → beta
         {
-          const redEnd = shift(startP.red, dir);
-          if (redEnd === startP.blue) {
-            const endPos = findPosition(startP.blue, redEnd);
+          const rightEnd = shift(startP.right, dir);
+          if (rightEnd === startP.left) {
+            const endPos = findPosition(startP.left, rightEnd);
             if (endPos && positionGroup(endPos) === "beta") {
               rows.push(
                 makeRow(letter, startP.name, endPos, "split", "opp", {
                   motionType: "static",
                   rotationDir: "noRotation",
-                  startLoc: startP.blue,
-                  endLoc: startP.blue,
+                  startLoc: startP.left,
+                  endLoc: startP.left,
                 }, {
                   motionType: shiftMotion,
                   rotationDir: dir,
-                  startLoc: startP.red,
-                  endLoc: redEnd,
+                  startLoc: startP.right,
+                  endLoc: rightEnd,
                 })
               );
             }
@@ -507,13 +507,13 @@ function generateStatic() {
       makeRow("γ", gp.name, gp.name, "none", "none", {
         motionType: "static",
         rotationDir: "noRotation",
-        startLoc: gp.blue,
-        endLoc: gp.blue,
+        startLoc: gp.left,
+        endLoc: gp.left,
       }, {
         motionType: "static",
         rotationDir: "noRotation",
-        startLoc: gp.red,
-        endLoc: gp.red,
+        startLoc: gp.right,
+        endLoc: gp.right,
       })
     );
   }

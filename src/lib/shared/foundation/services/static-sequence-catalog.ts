@@ -1,4 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { normalizeLegacySequence } from "@tka/tka-types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -7,7 +8,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function hasMotionPair(value: unknown): boolean {
   if (!isRecord(value) || !isRecord(value["motions"])) return false;
   const motions = value["motions"];
-  return isRecord(motions["blue"]) && isRecord(motions["red"]);
+  return (
+    (isRecord(motions["left"]) && isRecord(motions["right"])) ||
+    (isRecord(motions["blue"]) && isRecord(motions["red"]))
+  );
 }
 
 /**
@@ -32,7 +36,7 @@ export function selectStaticSequence(
     return null;
   }
 
-  return candidate as unknown as SequenceData;
+  return normalizeLegacySequence(candidate) as unknown as SequenceData;
 }
 
 export async function loadStaticSequence(

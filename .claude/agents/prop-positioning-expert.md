@@ -66,7 +66,7 @@ shift lands NONRADIAL (clock/counter) at t=0.5, not the endpoint's `out` —
 anti reverses in↔out continuously across the arc. This is why halve (`/`) and
 skew (`+`/`-`) are different motion identities even when hand geometry
 matches: skew never touches orientation rules, halve does. Notation canon:
-`docs/superpowers/specs/2026-07-16-half-notation-canon-design.md` (`/` =
+`docs/superpowers/specs/shipped/2026-07-16-half-notation-canon-design.md` (`/` =
 midpoint fraction token, per-hand, turns-column slot; backed by
 `MotionData.segment {t0,t1}` — display layer, never a second source of truth).
 

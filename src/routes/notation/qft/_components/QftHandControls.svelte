@@ -9,20 +9,20 @@
     tone,
     showPresets = true,
   }: {
-    hand: "blue" | "red";
+    hand: "left" | "right";
     tone: "accent" | "blue" | "red";
     showPresets?: boolean;
   } = $props();
 
   const state = getQftAppContext();
-  const selection = $derived(hand === "blue" ? state.blue : state.red);
+  const selection = $derived(hand === "left" ? state.left : state.right);
   const flowerIndex = $derived(
-    hand === "blue" ? state.blueFlowerIndex : state.redFlowerIndex
+    hand === "left" ? state.leftFlowerIndex : state.rightFlowerIndex
   );
   const label = $derived(
     tone === "accent"
       ? "Hand motion"
-      : `${tone === "blue" ? "Blue" : "Red"} hand`
+      : `${hand === "left" ? "Left" : "Right"} hand`
   );
   const toneColor = $derived(
     tone === "blue"

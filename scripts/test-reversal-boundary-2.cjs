@@ -9,8 +9,8 @@ function makeSequence(stepCount) {
   for (let i = 0; i < stepCount; i++) {
     steps.push({
       step: i,
-      blue: { motionType: "pro", rotDir: "cw" },
-      red: { motionType: "pro", rotDir: "cw" },
+      left: { motionType: "pro", rotDir: "cw" },
+      right: { motionType: "pro", rotDir: "cw" },
     });
   }
   return steps;
@@ -23,16 +23,16 @@ function flipMotion(m) {
   };
 }
 
-function applyReversal(steps, blueMask, redMask) {
+function applyReversal(steps, leftMask, rightMask) {
   return steps.map((s, i) => {
-    const bRev = (blueMask >> i) & 1;
-    const rRev = (redMask >> i) & 1;
+    const bRev = (leftMask >> i) & 1;
+    const rRev = (rightMask >> i) & 1;
     return {
       step: s.step,
-      blue: bRev ? flipMotion(s.blue) : { ...s.blue },
-      red: rRev ? flipMotion(s.red) : { ...s.red },
-      blueReversed: !!bRev,
-      redReversed: !!rRev,
+      left: bRev ? flipMotion(s.left) : { ...s.left },
+      right: rRev ? flipMotion(s.right) : { ...s.right },
+      leftReversed: !!bRev,
+      rightReversed: !!rRev,
     };
   });
 }
@@ -40,10 +40,10 @@ function applyReversal(steps, blueMask, redMask) {
 function checkBoundary(steps) {
   const first = steps[0];
   const last = steps[steps.length - 1];
-  return last.blue.motionType === first.blue.motionType &&
-         last.blue.rotDir === first.blue.rotDir &&
-         last.red.motionType === first.red.motionType &&
-         last.red.rotDir === first.red.rotDir;
+  return last.left.motionType === first.left.motionType &&
+         last.left.rotDir === first.left.rotDir &&
+         last.right.motionType === first.right.motionType &&
+         last.right.rotDir === first.right.rotDir;
 }
 
 function maskToPattern(mask, n) {
@@ -53,8 +53,8 @@ function maskToPattern(mask, n) {
 }
 
 function maskToString(mask, n) {
-  const bluePat = [];
-  const redPat = [];
+  const leftPat = [];
+  const rightPat = [];
   // This is for combined patterns
   return maskToPattern(mask, n);
 }
@@ -76,8 +76,8 @@ for (let bMask = 0; bMask < total; bMask++) {
     if (checkBoundary(reversed)) {
       const bPat = maskToPattern(bMask, N);
       const rPat = maskToPattern(rMask, N);
-      const bCount = reversed.filter(s => s.blueReversed).length;
-      const rCount = reversed.filter(s => s.redReversed).length;
+      const bCount = reversed.filter(s => s.leftReversed).length;
+      const rCount = reversed.filter(s => s.rightReversed).length;
 
       // Build combined pattern string
       const combined = [];

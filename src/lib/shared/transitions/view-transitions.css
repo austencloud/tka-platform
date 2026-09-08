@@ -37,6 +37,89 @@ html.named-route-morph::view-transition {
   background: transparent;
 }
 
+/* One live hand canvas travels between the explorer and its article. Using
+   only the incoming image avoids two out-of-phase sets of hands overlapping. */
+::view-transition-group(timing-direction-canvas) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: var(--ease-in-out);
+}
+::view-transition-old(timing-direction-canvas) {
+  display: none;
+}
+::view-transition-new(timing-direction-canvas) {
+  animation: none;
+  height: 100%;
+  width: 100%;
+  object-fit: fill;
+}
+
+/* The Grid and Hand Positions lessons are one continuous curriculum journey.
+   Their shared stage regions keep their names across the concept-state swap so
+   the grid carries forward while the heading and controls settle around it. */
+::view-transition-group(learn-grid-stage) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: var(--ease-in-out);
+}
+
+::view-transition-old(learn-lesson-heading),
+::view-transition-new(learn-lesson-heading),
+::view-transition-old(learn-lesson-controls),
+::view-transition-new(learn-lesson-controls) {
+  animation-duration: var(--duration-emphasis);
+  animation-timing-function: var(--ease-in-out);
+}
+
+/*
+ * REDUCED-MOTION SEQUENCE VIEWER DISSOLVE
+ *
+ * The live canvas and Card stay mounted. Chrome snapshots the stable outer
+ * workspace and overlaps the old/new pixels for one standard transition beat.
+ * The group itself never interpolates geometry, so reduced motion contains no
+ * scale, pan, slide, or resizing — only the muted opacity change recommended
+ * by WCAG's interaction-animation guidance.
+ */
+html.sequence-viewer-reduced-dissolve::view-transition {
+  background: transparent;
+}
+
+html.sequence-viewer-reduced-dissolve::view-transition-group(
+    sequence-viewer-workspace
+  ) {
+  animation: none !important;
+}
+
+html.sequence-viewer-reduced-dissolve::view-transition-old(
+    sequence-viewer-workspace
+  ) {
+  animation: sequence-viewer-dissolve-out var(--duration-normal)
+    var(--ease-in-out) both !important;
+}
+
+html.sequence-viewer-reduced-dissolve::view-transition-new(
+    sequence-viewer-workspace
+  ) {
+  animation: sequence-viewer-dissolve-in var(--duration-normal)
+    var(--ease-in-out) both !important;
+}
+
+@keyframes sequence-viewer-dissolve-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sequence-viewer-dissolve-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ============================================================================
    SHOP BOOK MORPH
    The live shop has one generic product-detail journey: the guide book. Its
@@ -597,7 +680,7 @@ html.named-route-morph::view-transition {
 ::view-transition-group(launchpad-composer),
 ::view-transition-group(launchpad-choreo-cards),
 ::view-transition-group(launchpad-guide),
-::view-transition-group(launchpad-notation),
+::view-transition-group(launchpad-history),
 ::view-transition-group(launchpad-faq),
 ::view-transition-group(launchpad-glossary) {
   animation-duration: 380ms;
@@ -614,9 +697,9 @@ html.named-route-morph::view-transition {
   ::view-transition-group(launchpad-guide),
   ::view-transition-old(launchpad-guide),
   ::view-transition-new(launchpad-guide),
-  ::view-transition-group(launchpad-notation),
-  ::view-transition-old(launchpad-notation),
-  ::view-transition-new(launchpad-notation),
+  ::view-transition-group(launchpad-history),
+  ::view-transition-old(launchpad-history),
+  ::view-transition-new(launchpad-history),
   ::view-transition-group(launchpad-faq),
   ::view-transition-old(launchpad-faq),
   ::view-transition-new(launchpad-faq),
@@ -675,7 +758,6 @@ html.named-route-morph::view-transition {
   z-index: 1;
   position: relative;
 }
-
 
 /* CSS custom properties for zoom origin (set via JS from button position) */
 :root {

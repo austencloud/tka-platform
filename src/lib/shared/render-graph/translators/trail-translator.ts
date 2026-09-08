@@ -95,7 +95,7 @@ function pickTipColor(
     const [r, g, b] = hsvToRgb(h, 0.85, 1);
     return [r, g, b, intent.brightness];
   }
-  const hex = tipId === "red" ? intent.redColor : intent.blueColor;
+  const hex = tipId === "red" ? intent.rightColor : intent.leftColor;
   const [r, g, b] = hexToRgb(hex);
   return [r, g, b, intent.brightness];
 }

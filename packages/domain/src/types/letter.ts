@@ -1,6 +1,6 @@
 export interface MotionPattern {
-  blueMotion: string;
-  redMotion: string;
+  leftMotion: string;
+  rightMotion: string;
   note?: string;
 }
 

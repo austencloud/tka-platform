@@ -52,7 +52,7 @@ export const GRID_MODES: readonly GridMode[] = Object.freeze(
 );
 
 /**
- * Named two-hand grid position. Identifies (blue_hand_location, red_hand_location)
+ * Named two-hand grid position. Identifies (left_hand_location, right_hand_location)
  * via the enumeration in `GridPositionDeriver.ts`.
  *
  * Families:

@@ -50,6 +50,10 @@ export function createMeshyPreviewBody(manifest, asset) {
     auto_size: true,
     origin_at: "bottom",
     moderation: true,
+    // Characters ask for a rig-ready pose; scenery leaves this unset.
+    ...((asset.poseMode ?? manifest.poseMode)
+      ? { pose_mode: asset.poseMode ?? manifest.poseMode }
+      : {}),
   };
 }
 

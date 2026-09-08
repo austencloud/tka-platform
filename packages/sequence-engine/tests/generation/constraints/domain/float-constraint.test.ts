@@ -3,7 +3,7 @@ import { FloatConstraint } from "../../../../src/generation/constraints/domain/F
 import type { ConstraintContext } from "../../../../src/generation/constraints/types.js";
 
 const EMPTY_MOTION = {
-  color: "",
+  hand: "",
   startLocation: "",
   endLocation: "",
   motionType: "",
@@ -25,8 +25,8 @@ function makeContext(
       endPosition: "alpha1",
       timing: "together",
       direction: "same",
-      blueMotion: EMPTY_MOTION,
-      redMotion: EMPTY_MOTION,
+      leftMotion: EMPTY_MOTION,
+      rightMotion: EMPTY_MOTION,
     },
     letter: "A",
   };
@@ -48,7 +48,7 @@ describe("FloatConstraint", () => {
 
   it("satisfied even with turn allocation present", () => {
     const result = constraint.evaluate(
-      makeContext({ turnAllocation: { blue: 1, red: -1 } }),
+      makeContext({ turnAllocation: { left: 1, right: -1 } }),
     );
     expect(result.satisfied).toBe(true);
   });

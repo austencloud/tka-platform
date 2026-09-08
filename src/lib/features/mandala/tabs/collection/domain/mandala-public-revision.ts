@@ -28,8 +28,8 @@ import type { CollectedMandala } from "./mandala-collection-types";
 export interface MandalaPublicPayload {
   readonly steps: StepData[];
   readonly variant: CollectedMandala["variant"];
-  readonly bluePropType: string;
-  readonly redPropType: string;
+  readonly leftPropType: string;
+  readonly rightPropType: string;
   readonly pathShape?: MandalaPathShape;
   readonly sourceWord?: string;
 }
@@ -44,8 +44,8 @@ export function mandalaPublicPayload(
     CollectedMandala,
     | "steps"
     | "variant"
-    | "bluePropType"
-    | "redPropType"
+    | "leftPropType"
+    | "rightPropType"
     | "pathShape"
     | "sourceWord"
   >
@@ -53,8 +53,8 @@ export function mandalaPublicPayload(
   return {
     steps: mandala.steps,
     variant: mandala.variant,
-    bluePropType: mandala.bluePropType,
-    redPropType: mandala.redPropType,
+    leftPropType: mandala.leftPropType,
+    rightPropType: mandala.rightPropType,
     ...(mandala.pathShape !== undefined && { pathShape: mandala.pathShape }),
     ...(mandala.sourceWord !== undefined && { sourceWord: mandala.sourceWord }),
   };

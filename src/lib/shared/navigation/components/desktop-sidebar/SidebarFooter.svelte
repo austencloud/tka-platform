@@ -33,8 +33,8 @@
   }>();
 
   // Prop type display info for the prop button
-  const bluePropType = $derived(getSettings()?.bluePropType ?? PropType.STAFF);
-  const propDisplayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
+  const leftPropType = $derived(getSettings()?.leftPropType ?? PropType.STAFF);
+  const propDisplayInfo = $derived(getPropTypeDisplayInfo(leftPropType));
 
   // Inbox unread state
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);

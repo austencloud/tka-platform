@@ -48,15 +48,15 @@ function torsoHalfExtent(body: RestPoseGeometry, forward: Vector3, dir: Vector3)
  * (same input → same output → no frame-to-frame jitter).
  */
 export function planVacate(
-  blue: SweptTube,
-  red: SweptTube,
+  left: SweptTube,
+  right: SweptTube,
   body: RestPoseGeometry,
   knob: DodgeKnob,
 ): VacateResult {
-  const cBlue = blue.centroid();
-  const cRed = red.centroid();
-  const center = cBlue.clone().add(cRed).multiplyScalar(0.5);
-  const axis = blue.principalAxis() ?? red.principalAxis();
+  const cLeft = left.centroid();
+  const cRight = right.centroid();
+  const center = cLeft.clone().add(cRight).multiplyScalar(0.5);
+  const axis = left.principalAxis() ?? right.principalAxis();
 
   const reach = body.upperArmLength + body.forearmLength + REACH_SLACK;
   const shoulderY = body.leftShoulder.y;
@@ -71,7 +71,7 @@ export function planVacate(
     if (forward.lengthSq() < 1e-9) forward.set(0, 0, 1);
     forward.normalize();
     let worst = -Infinity;
-    for (const tube of [blue, red]) {
+    for (const tube of [left, right]) {
       for (const y of spineYs) {
         const p = new Vector3(fx, y, fz);
         const near = tube.minDistanceToSegments(p);
@@ -84,7 +84,7 @@ export function planVacate(
     }
     const lsh = new Vector3(fx + body.leftShoulder.x, shoulderY, fz);
     const rsh = new Vector3(fx + body.rightShoulder.x, shoulderY, fz);
-    const grips = [cBlue, cRed];
+    const grips = [cLeft, cRight];
     const worstReach = Math.max(
       ...grips.map((g) => Math.min(lsh.distanceTo(g), rsh.distanceTo(g))),
     );
@@ -145,9 +145,9 @@ export function planVacate(
   const forward = new Vector3(-fx, 0, -fz);
   if (forward.lengthSq() < 1e-9) forward.set(0, 0, 1);
   forward.normalize();
-  const nearBlue = blue.minDistanceToSegments(new Vector3(fx, body.spine2.y, fz));
-  const nearRed = red.minDistanceToSegments(new Vector3(fx, body.spine2.y, fz));
-  const near = nearBlue.dist < nearRed.dist ? nearBlue : nearRed;
+  const nearLeft = left.minDistanceToSegments(new Vector3(fx, body.spine2.y, fz));
+  const nearRight = right.minDistanceToSegments(new Vector3(fx, body.spine2.y, fz));
+  const near = nearLeft.dist < nearRight.dist ? nearLeft : nearRight;
   const toStaff = new Vector3(near.nearestPoint.x - fx, 0, near.nearestPoint.z - fz);
   let torsoTwistRad = 0;
   if (toStaff.lengthSq() > 1e-9) {

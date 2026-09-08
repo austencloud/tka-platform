@@ -37,16 +37,24 @@
     preferredSize?: string;
     /** Whether the handle after this panel is available (default: true). */
     resizable?: boolean;
+    /** Accessible name for the handle after this panel. */
+    resizeLabel?: string;
     /** Panel ID for tracking */
     id?: string;
   }
 </script>
 
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
   import { flexPresence, growFade } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import ResizeHandle from "./ResizeHandle.svelte";
+  import {
+    needsMeasuredBasisHandoff,
+    panelFlexStyle,
+    resolvePanelFlex,
+    type PanelFlex,
+  } from "./panel-flex";
 
   interface Props {
     /** Layout direction */
@@ -79,6 +87,7 @@
   let dragStartSizes = $state<number[]>([]);
   let activeDragIndex = $state<number | null>(null);
   let manuallySizedPanels = $state<Set<string | number>>(new Set());
+  let handleValues = $state<number[]>([]);
 
   // Initialize sizes from panel defaults - only when panel count changes
   // Use untrack to prevent reactive cascade when sizes is bindable
@@ -89,6 +98,51 @@
         sizes = panels.map((p) => p.defaultSize ?? 1);
       }
     });
+  });
+
+  onMount(() => {
+    if (!containerRef) return;
+
+    let scheduledFrame = 0;
+    const scheduleRefresh = () => {
+      if (scheduledFrame) return;
+      scheduledFrame = requestAnimationFrame(() => {
+        scheduledFrame = 0;
+        refreshHandleValues();
+      });
+    };
+    const resizeObserver = new ResizeObserver(scheduleRefresh);
+    const observePanels = () => {
+      if (!containerRef) return;
+      resizeObserver.disconnect();
+      resizeObserver.observe(containerRef);
+      for (const panel of containerRef.querySelectorAll(":scope > .panel-wrapper")) {
+        resizeObserver.observe(panel);
+      }
+      scheduleRefresh();
+    };
+    const panelObserver = new MutationObserver(observePanels);
+    panelObserver.observe(containerRef, { childList: true });
+    observePanels();
+
+    return () => {
+      if (scheduledFrame) cancelAnimationFrame(scheduledFrame);
+      panelObserver.disconnect();
+      resizeObserver.disconnect();
+    };
+  });
+
+  $effect(() => {
+    void panels;
+    void direction;
+    void gap;
+
+    const firstFrame = requestAnimationFrame(refreshHandleValues);
+    const settledTimer = setTimeout(refreshHandleValues, DURATION.emphasis);
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      clearTimeout(settledTimer);
+    };
   });
 
   // Handle resize start
@@ -116,6 +170,7 @@
     }
     manuallySizedPanels = nextManuallySizedPanels;
     activeDragIndex = index;
+    refreshHandleValues();
   }
 
   // Handle resize drag
@@ -190,6 +245,8 @@
     newSizes[index + 1] = Math.max(0.1, newSize2);
 
     sizes = newSizes;
+    const total = newSize1 + newSize2;
+    handleValues[index] = total > 0 ? (newSize1 / total) * 100 : 50;
     onSizesChange?.(newSizes);
   }
 
@@ -197,6 +254,7 @@
   function handleDragEnd() {
     dragStartSizes = [];
     activeDragIndex = null;
+    requestAnimationFrame(refreshHandleValues);
   }
 
   function handleKeydown(index: number, event: KeyboardEvent): void {
@@ -206,33 +264,183 @@
 
     event.preventDefault();
     event.stopPropagation();
-    dragStartSizes = [...sizes];
+    handleDragStart(index);
     const step = event.shiftKey ? 48 : 16;
     handleDrag(index, event.key === decreaseKey ? -step : step);
     handleDragEnd();
   }
 
-  function handleValue(index: number): number {
-    const leading = sizes[index] ?? 1;
-    const trailing = sizes[index + 1] ?? 1;
+  function measureHandleValue(index: number): number {
+    const renderedPanels = containerRef
+      ? Array.from(
+          containerRef.querySelectorAll<HTMLElement>(":scope > .panel-wrapper")
+        )
+      : [];
+    const leadingPanel = renderedPanels[index];
+    const trailingPanel = renderedPanels[index + 1];
+    const leading = leadingPanel
+      ? direction === "horizontal"
+        ? leadingPanel.clientWidth
+        : leadingPanel.clientHeight
+      : (sizes[index] ?? 1);
+    const trailing = trailingPanel
+      ? direction === "horizontal"
+        ? trailingPanel.clientWidth
+        : trailingPanel.clientHeight
+      : (sizes[index + 1] ?? 1);
     return (leading / (leading + trailing)) * 100;
   }
 
-  // Get flex style for a panel
-  function getFlexStyle(index: number): string {
-    const fixedSize = panels[index]?.fixedSize;
-    if (fixedSize) {
-      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${fixedSize}`;
-    }
-
-    const panelKey = panels[index]?.id ?? index;
-    const preferredSize = panels[index]?.preferredSize;
-    if (preferredSize && !manuallySizedPanels.has(panelKey)) {
-      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${preferredSize}`;
-    }
-
-    return `flex-grow: ${sizes[index] ?? 1}; flex-shrink: 1; flex-basis: 0px`;
+  function refreshHandleValues(): void {
+    handleValues = panels.slice(0, -1).map((_, index) =>
+      measureHandleValue(index)
+    );
   }
+
+  // A keyed panel keeps its captured definition while its outro runs. Reading
+  // `panels[index]` here used the next array instead, so a departing fixed or
+  // content-sized dock briefly became `flex: 1` and starved its neighbour.
+  function getPanelFlex(panel: PanelDefinition, index: number): PanelFlex {
+    return resolvePanelFlex(panel, {
+      flexShare: sizes[index],
+      manuallySized: manuallySizedPanels.has(panel.id ?? index),
+    });
+  }
+
+  // Get flex style for a panel
+  function getFlexStyle(panel: PanelDefinition, index: number): string {
+    return panelFlexStyle(getPanelFlex(panel, index));
+  }
+
+  /**
+   * A held dock that swaps one allocation for another is the one layout change
+   * CSS cannot carry on its own. `flex-basis: 480px -> auto` is a discrete
+   * change, so the whole group re-lays out in a single frame: the stage takes
+   * the reclaimed space instantly and every panel below the dock teleports.
+   *
+   * When both endpoints are held -- grow and shrink are both 0 -- the basis
+   * alone decides the size, so both ends can be measured in pixels and handed
+   * back to the transition already declared on `.panel-wrapper`. Anything with
+   * a live flex share keeps today's behaviour, because there the basis is not
+   * the whole story.
+   */
+  const appliedFlex = new Map<string | number, PanelFlex>();
+  const basisHandoffs = new Map<string | number, () => void>();
+  let pendingBasisHandoffs: {
+    key: string | number;
+    element: HTMLElement;
+    from: number;
+    basis: string;
+  }[] = [];
+
+  function panelWrapperFor(key: string | number): HTMLElement | null {
+    if (!containerRef) return null;
+    const wrappers = Array.from(
+      containerRef.querySelectorAll<HTMLElement>(":scope > .panel-wrapper")
+    );
+    return (
+      wrappers.find((wrapper) => (wrapper.dataset.panelId ?? "") === String(key)) ??
+      null
+    );
+  }
+
+  function measurePanel(element: HTMLElement): number {
+    const rect = element.getBoundingClientRect();
+    return direction === "horizontal" ? rect.width : rect.height;
+  }
+
+  function prefersReducedMotion(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+    );
+  }
+
+  $effect.pre(() => {
+    void panels;
+    untrack(() => {
+      pendingBasisHandoffs = [];
+      if (!containerRef || prefersReducedMotion()) return;
+
+      panels.forEach((panel, index) => {
+        const key = panel.id ?? index;
+        const previous = appliedFlex.get(key);
+        if (!previous) return;
+
+        const next = getPanelFlex(panel, index);
+        if (!needsMeasuredBasisHandoff(previous, next)) return;
+
+        const element = panelWrapperFor(key);
+        if (!element) return;
+
+        pendingBasisHandoffs.push({
+          key,
+          element,
+          from: measurePanel(element),
+          basis: next.basis,
+        });
+      });
+    });
+  });
+
+  $effect(() => {
+    void panels;
+    void sizes;
+    void manuallySizedPanels;
+
+    untrack(() => {
+      panels.forEach((panel, index) => {
+        appliedFlex.set(panel.id ?? index, getPanelFlex(panel, index));
+      });
+
+      const handoffs = pendingBasisHandoffs;
+      pendingBasisHandoffs = [];
+      for (const handoff of handoffs) startBasisHandoff(handoff);
+    });
+  });
+
+  function startBasisHandoff(handoff: {
+    key: string | number;
+    element: HTMLElement;
+    from: number;
+    basis: string;
+  }): void {
+    basisHandoffs.get(handoff.key)?.();
+
+    const { element, from, basis, key } = handoff;
+    // The declarative endpoint is already on the element, so this reads the
+    // destination geometry. Nothing has painted yet, which is what lets the
+    // pinned start below stand in for the frame the browser would have skipped.
+    const to = measurePanel(element);
+    if (Math.abs(to - from) < 0.5) return;
+
+    element.style.transition = "none";
+    element.style.flexBasis = `${from}px`;
+    void element.offsetWidth;
+    element.style.transition = "";
+    element.style.flexBasis = `${to}px`;
+
+    const settle = () => {
+      element.removeEventListener("transitionend", onTransitionEnd);
+      clearTimeout(safety);
+      basisHandoffs.delete(key);
+      // Hand the basis back so a content-sized dock resumes following its
+      // contents instead of freezing at the size it happened to land on.
+      element.style.flexBasis = basis;
+    };
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== element || event.propertyName !== "flex-basis") return;
+      settle();
+    };
+    const safety = setTimeout(settle, DURATION.emphasis + DURATION.instant);
+
+    element.addEventListener("transitionend", onTransitionEnd);
+    basisHandoffs.set(key, settle);
+  }
+
+  onDestroy(() => {
+    for (const settle of Array.from(basisHandoffs.values())) settle();
+  });
 </script>
 
 <div
@@ -248,9 +456,11 @@
     <!-- Panel wrapper with flex sizing -->
     <div
       class="panel-wrapper"
-      style={getFlexStyle(i)}
+      style={getFlexStyle(panel, i)}
+      data-panel-id={panel.id}
       data-min-size={panel.minSize}
       data-max-size={panel.maxSize}
+      data-manually-sized={manuallySizedPanels.has(panel.id ?? i) || undefined}
       transition:flexPresence={{
         duration: DURATION.emphasis,
         axis: direction === "horizontal" ? "x" : "y",
@@ -277,8 +487,9 @@
           onDrag={(delta) => handleDrag(i, delta)}
           onDragEnd={handleDragEnd}
           onKeydown={(event) => handleKeydown(i, event)}
-          ariaLabel={`Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
-          ariaValueNow={handleValue(i)}
+          ariaLabel={panel.resizeLabel ??
+            `Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
+          ariaValueNow={handleValues[i] ?? measureHandleValue(i)}
         />
       </div>
     {/if}

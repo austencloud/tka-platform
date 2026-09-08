@@ -8,11 +8,11 @@ export const CHOSEN_MANDALAS = [
     "steps": [
       {
         "id": "step-1-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "color": "blue",
             "propPlacementData": {
               "positionX": 0,
@@ -46,7 +46,7 @@ export const CHOSEN_MANDALAS = [
             "rotationDirection": "ccw",
             "handPath": null
           },
-          "red": {
+          "right": {
             "arrowLocation": "n",
             "gridMode": "diamond",
             "startOrientation": "in",
@@ -90,11 +90,11 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "id": "step-2-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "propPlacementData": {
               "rotationAngle": 0,
               "svgCenter": null,
@@ -130,7 +130,7 @@ export const CHOSEN_MANDALAS = [
             "turns": "fl",
             "motionType": "float"
           },
-          "red": {
+          "right": {
             "endOrientation": "in",
             "skewSteps": null,
             "propType": "staff",
@@ -174,10 +174,10 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-3-1784271460511",
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "skewSteps": null,
@@ -211,7 +211,7 @@ export const CHOSEN_MANDALAS = [
               "manualAdjustmentY": 0
             }
           },
-          "blue": {
+          "left": {
             "arrowLocation": "n",
             "gridMode": "diamond",
             "startOrientation": "in",
@@ -246,7 +246,7 @@ export const CHOSEN_MANDALAS = [
             "turns": 0.5
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "startPosition": "beta1",
         "endPosition": "gamma5",
         "duration": 1,
@@ -256,7 +256,7 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "motions": {
-          "blue": {
+          "left": {
             "propPlacementData": {
               "positionY": 0,
               "svgCenter": null,
@@ -290,7 +290,7 @@ export const CHOSEN_MANDALAS = [
             "handPath": null,
             "rotationDirection": "noRotation"
           },
-          "red": {
+          "right": {
             "endLocation": "n",
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -325,10 +325,10 @@ export const CHOSEN_MANDALAS = [
             "propType": "staff"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-4-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "duration": 1,
         "startPosition": "gamma5",
@@ -343,9 +343,9 @@ export const CHOSEN_MANDALAS = [
         "endPosition": "gamma11",
         "startPosition": "gamma9",
         "duration": 1,
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "startLocation": "n",
             "startOrientation": "counter",
             "gridMode": "diamond",
@@ -379,7 +379,7 @@ export const CHOSEN_MANDALAS = [
             "rotationDirection": "cw",
             "handPath": null
           },
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "out",
@@ -414,7 +414,7 @@ export const CHOSEN_MANDALAS = [
             }
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-5-1784271460511",
         "gridMode": "diamond"
       },
@@ -425,9 +425,9 @@ export const CHOSEN_MANDALAS = [
         "duration": 1,
         "startPosition": "gamma11",
         "endPosition": "beta7",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "prefloatRotationDirection": "ccw",
@@ -463,7 +463,7 @@ export const CHOSEN_MANDALAS = [
             },
             "endLocation": "w"
           },
-          "red": {
+          "right": {
             "propPlacementData": {
               "positionY": 0,
               "coordinates": null,
@@ -499,13 +499,13 @@ export const CHOSEN_MANDALAS = [
           }
         },
         "id": "step-6-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond"
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "isVisible": true,
             "endLocation": "n",
             "arrowPlacementData": {
@@ -539,7 +539,7 @@ export const CHOSEN_MANDALAS = [
             "endOrientation": "out",
             "skewSteps": null
           },
-          "red": {
+          "right": {
             "endOrientation": "clock",
             "skewSteps": null,
             "propType": "staff",
@@ -575,7 +575,7 @@ export const CHOSEN_MANDALAS = [
           }
         },
         "id": "step-7-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "stepNumber": 7,
@@ -591,9 +591,9 @@ export const CHOSEN_MANDALAS = [
         "endPosition": "gamma15",
         "startPosition": "gamma3",
         "duration": 1,
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "propPlacementData": {
               "positionX": 0,
               "svgCenter": null,
@@ -627,7 +627,7 @@ export const CHOSEN_MANDALAS = [
             "handPath": null,
             "rotationDirection": "cw"
           },
-          "blue": {
+          "left": {
             "isVisible": true,
             "endLocation": "n",
             "arrowPlacementData": {
@@ -662,7 +662,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-8-1784271460511",
         "gridMode": "diamond"
       },
@@ -674,11 +674,11 @@ export const CHOSEN_MANDALAS = [
         "duration": 1,
         "isBlank": false,
         "id": "step-9-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "positionX": 0,
@@ -712,7 +712,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "endOrientation": "clock"
           },
-          "blue": {
+          "left": {
             "startLocation": "n",
             "startOrientation": "out",
             "gridMode": "diamond",
@@ -756,7 +756,7 @@ export const CHOSEN_MANDALAS = [
         "letter": "Z-",
         "stepNumber": 10,
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "out",
@@ -790,7 +790,7 @@ export const CHOSEN_MANDALAS = [
               "positionY": 0
             }
           },
-          "blue": {
+          "left": {
             "turns": "fl",
             "motionType": "float",
             "handPath": null,
@@ -827,15 +827,15 @@ export const CHOSEN_MANDALAS = [
             "arrowLocation": "n"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-10-1784271460511",
-        "redReversal": false
+        "rightReversal": false
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "rotationDirection": "noRotation",
             "handPath": null,
             "turns": 0,
@@ -869,7 +869,7 @@ export const CHOSEN_MANDALAS = [
             "startOrientation": "out",
             "startLocation": "s"
           },
-          "blue": {
+          "left": {
             "motionType": "anti",
             "turns": 0.5,
             "rotationDirection": "ccw",
@@ -905,7 +905,7 @@ export const CHOSEN_MANDALAS = [
           }
         },
         "id": "step-11-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "stepNumber": 11,
@@ -916,7 +916,7 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "motions": {
-          "blue": {
+          "left": {
             "skewSteps": null,
             "endOrientation": "clock",
             "propType": "staff",
@@ -950,7 +950,7 @@ export const CHOSEN_MANDALAS = [
             },
             "isVisible": true
           },
-          "red": {
+          "right": {
             "color": "red",
             "propPlacementData": {
               "rotationAngle": 0,
@@ -985,9 +985,9 @@ export const CHOSEN_MANDALAS = [
             "rotationDirection": "cw"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-12-1784271460511",
         "isBlank": false,
         "startPosition": "gamma1",
@@ -1004,11 +1004,11 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma13",
         "isBlank": false,
         "id": "step-13-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "turns": 0.5,
             "rotationDirection": "ccw",
@@ -1042,7 +1042,7 @@ export const CHOSEN_MANDALAS = [
               "rotationAngle": 0
             }
           },
-          "red": {
+          "right": {
             "endOrientation": "in",
             "skewSteps": null,
             "skewDir": null,
@@ -1085,12 +1085,12 @@ export const CHOSEN_MANDALAS = [
         "endPosition": "beta3",
         "duration": 1,
         "isBlank": false,
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-14-1784271460511",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "gridMode": "diamond",
             "arrowLocation": "n",
             "startLocation": "n",
@@ -1126,7 +1126,7 @@ export const CHOSEN_MANDALAS = [
             "handPath": null,
             "rotationDirection": "noRotation"
           },
-          "red": {
+          "right": {
             "endLocation": "e",
             "arrowPlacementData": {
               "positionX": 0,
@@ -1164,11 +1164,11 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "id": "step-15-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "propPlacementData": {
               "rotationAngle": 0,
               "coordinates": null,
@@ -1202,7 +1202,7 @@ export const CHOSEN_MANDALAS = [
             "handPath": null,
             "rotationDirection": "ccw"
           },
-          "red": {
+          "right": {
             "endLocation": "w",
             "arrowPlacementData": {
               "positionY": 0,
@@ -1246,7 +1246,7 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "motions": {
-          "red": {
+          "right": {
             "propPlacementData": {
               "positionY": 0,
               "rotationAngle": 0,
@@ -1280,7 +1280,7 @@ export const CHOSEN_MANDALAS = [
             "rotationDirection": "cw",
             "handPath": null
           },
-          "blue": {
+          "left": {
             "handPath": null,
             "rotationDirection": "noRotation",
             "turns": 0,
@@ -1315,10 +1315,10 @@ export const CHOSEN_MANDALAS = [
             "startLocation": "s"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-16-1784271460511",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "endPosition": "gamma11",
         "startPosition": "gamma7",
@@ -1328,8 +1328,8 @@ export const CHOSEN_MANDALAS = [
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "19160c61-697f-4acb-ae36-48ce4ff8e50a",
@@ -1337,7 +1337,7 @@ export const CHOSEN_MANDALAS = [
     "steps": [
       {
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "endLocation": "e",
             "arrowPlacementData": {
@@ -1371,7 +1371,7 @@ export const CHOSEN_MANDALAS = [
             "endOrientation": "in",
             "skewSteps": null
           },
-          "blue": {
+          "left": {
             "color": "blue",
             "propPlacementData": {
               "coordinates": null,
@@ -1408,10 +1408,10 @@ export const CHOSEN_MANDALAS = [
             "prefloatMotionType": "anti"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-1-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "endPosition": "beta3",
         "startPosition": "gamma11",
@@ -1422,9 +1422,9 @@ export const CHOSEN_MANDALAS = [
       {
         "gridMode": "diamond",
         "id": "step-2-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "turns": 0,
             "motionType": "pro",
             "rotationDirection": "ccw",
@@ -1458,7 +1458,7 @@ export const CHOSEN_MANDALAS = [
             "gridMode": "diamond",
             "arrowLocation": "n"
           },
-          "blue": {
+          "left": {
             "propType": "staff",
             "skewDir": null,
             "skewSteps": null,
@@ -1493,7 +1493,7 @@ export const CHOSEN_MANDALAS = [
             "endLocation": "s"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "duration": 1,
         "endPosition": "alpha1",
         "startPosition": "beta3",
@@ -1502,9 +1502,9 @@ export const CHOSEN_MANDALAS = [
         "isBlank": false
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "endOrientation": "out",
             "skewSteps": null,
             "skewDir": null,
@@ -1538,7 +1538,7 @@ export const CHOSEN_MANDALAS = [
             },
             "isVisible": true
           },
-          "red": {
+          "right": {
             "handPath": null,
             "rotationDirection": "ccw",
             "motionType": "anti",
@@ -1574,7 +1574,7 @@ export const CHOSEN_MANDALAS = [
           }
         },
         "id": "step-3-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
         "isBlank": false,
         "stepNumber": 3,
@@ -1584,9 +1584,9 @@ export const CHOSEN_MANDALAS = [
         "duration": 1
       },
       {
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "endLocation": "e",
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -1620,7 +1620,7 @@ export const CHOSEN_MANDALAS = [
             "skewDir": null,
             "propType": "staff"
           },
-          "red": {
+          "right": {
             "color": "red",
             "propPlacementData": {
               "positionX": 0,
@@ -1657,7 +1657,7 @@ export const CHOSEN_MANDALAS = [
             "prefloatMotionType": "pro"
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-4-1784271453329",
         "gridMode": "diamond",
         "isBlank": false,
@@ -1674,12 +1674,12 @@ export const CHOSEN_MANDALAS = [
         "endPosition": "beta1",
         "duration": 1,
         "isBlank": false,
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-5-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "startLocation": "n",
             "startOrientation": "out",
             "gridMode": "diamond",
@@ -1713,7 +1713,7 @@ export const CHOSEN_MANDALAS = [
             "handPath": null,
             "rotationDirection": "noRotation"
           },
-          "blue": {
+          "left": {
             "propPlacementData": {
               "positionX": 0,
               "rotationAngle": 0,
@@ -1753,7 +1753,7 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "turns": 0,
             "handPath": null,
@@ -1787,7 +1787,7 @@ export const CHOSEN_MANDALAS = [
             "gridMode": "diamond",
             "arrowLocation": "n"
           },
-          "red": {
+          "right": {
             "arrowLocation": "n",
             "gridMode": "diamond",
             "startOrientation": "out",
@@ -1822,9 +1822,9 @@ export const CHOSEN_MANDALAS = [
             "motionType": "pro"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-6-1784271453329",
         "isBlank": false,
         "startPosition": "beta1",
@@ -1834,12 +1834,12 @@ export const CHOSEN_MANDALAS = [
         "stepNumber": 6
       },
       {
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-7-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "skewSteps": null,
             "endOrientation": "clock",
             "propType": "staff",
@@ -1873,7 +1873,7 @@ export const CHOSEN_MANDALAS = [
             },
             "isVisible": true
           },
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "positionX": 0,
@@ -1922,12 +1922,12 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma15",
         "isBlank": false,
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-8-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "isVisible": true,
             "arrowPlacementData": {
               "positionY": 0,
@@ -1961,7 +1961,7 @@ export const CHOSEN_MANDALAS = [
             "endOrientation": "out",
             "skewSteps": null
           },
-          "red": {
+          "right": {
             "startLocation": "n",
             "startOrientation": "clock",
             "gridMode": "diamond",
@@ -2001,11 +2001,11 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "id": "step-9-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "endOrientation": "in",
             "skewSteps": null,
             "skewDir": null,
@@ -2039,7 +2039,7 @@ export const CHOSEN_MANDALAS = [
             },
             "isVisible": true
           },
-          "blue": {
+          "left": {
             "endLocation": "w",
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -2085,7 +2085,7 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "motions": {
-          "red": {
+          "right": {
             "propPlacementData": {
               "coordinates": null,
               "svgCenter": null,
@@ -2119,7 +2119,7 @@ export const CHOSEN_MANDALAS = [
             "turns": 0,
             "motionType": "pro"
           },
-          "blue": {
+          "left": {
             "isVisible": true,
             "endLocation": "n",
             "arrowPlacementData": {
@@ -2154,10 +2154,10 @@ export const CHOSEN_MANDALAS = [
             "endOrientation": "clock"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-10-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "duration": 1,
         "startPosition": "beta7",
@@ -2167,10 +2167,10 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "gridMode": "diamond",
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-11-1784271453329",
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "counter",
@@ -2204,7 +2204,7 @@ export const CHOSEN_MANDALAS = [
             },
             "endLocation": "w"
           },
-          "blue": {
+          "left": {
             "turns": 0.5,
             "motionType": "static",
             "rotationDirection": "cw",
@@ -2239,7 +2239,7 @@ export const CHOSEN_MANDALAS = [
             "color": "blue"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "endPosition": "gamma15",
         "startPosition": "alpha5",
         "duration": 1,
@@ -2254,9 +2254,9 @@ export const CHOSEN_MANDALAS = [
         "endPosition": "gamma13",
         "startPosition": "gamma15",
         "duration": 1,
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "turns": 0.5,
             "rotationDirection": "cw",
@@ -2290,7 +2290,7 @@ export const CHOSEN_MANDALAS = [
             "gridMode": "diamond",
             "arrowLocation": "n"
           },
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "svgMirrored": false,
@@ -2328,16 +2328,16 @@ export const CHOSEN_MANDALAS = [
           }
         },
         "id": "step-12-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "gridMode": "diamond"
       },
       {
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-13-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "blue": {
+          "left": {
             "color": "blue",
             "propPlacementData": {
               "positionX": 0,
@@ -2373,7 +2373,7 @@ export const CHOSEN_MANDALAS = [
             "motionType": "float",
             "prefloatMotionType": "anti"
           },
-          "red": {
+          "right": {
             "color": "red",
             "propPlacementData": {
               "rotationAngle": 0,
@@ -2417,7 +2417,7 @@ export const CHOSEN_MANDALAS = [
       },
       {
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "endLocation": "e",
             "arrowPlacementData": {
@@ -2451,7 +2451,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "endOrientation": "out"
           },
-          "blue": {
+          "left": {
             "rotationDirection": "cw",
             "handPath": null,
             "turns": 0,
@@ -2486,10 +2486,10 @@ export const CHOSEN_MANDALAS = [
             "gridMode": "diamond"
           }
         },
-        "blueReversal": false,
+        "leftReversal": false,
         "gridMode": "diamond",
         "id": "step-14-1784271453329",
-        "redReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "duration": 1,
         "startPosition": "beta5",
@@ -2498,12 +2498,12 @@ export const CHOSEN_MANDALAS = [
         "stepNumber": 14
       },
       {
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-15-1784271453329",
         "gridMode": "diamond",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "propType": "staff",
             "skewDir": null,
             "endOrientation": "clock",
@@ -2537,7 +2537,7 @@ export const CHOSEN_MANDALAS = [
               "svgMirrored": false
             }
           },
-          "blue": {
+          "left": {
             "startLocation": "w",
             "startOrientation": "in",
             "gridMode": "diamond",
@@ -2586,9 +2586,9 @@ export const CHOSEN_MANDALAS = [
         "duration": 1,
         "endPosition": "gamma11",
         "startPosition": "gamma13",
-        "blueReversal": false,
+        "leftReversal": false,
         "motions": {
-          "red": {
+          "right": {
             "isVisible": true,
             "arrowPlacementData": {
               "coordinates": null,
@@ -2624,7 +2624,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "endOrientation": "in"
           },
-          "blue": {
+          "left": {
             "gridMode": "diamond",
             "arrowLocation": "n",
             "startLocation": "w",
@@ -2659,14 +2659,14 @@ export const CHOSEN_MANDALAS = [
             "handPath": null
           }
         },
-        "redReversal": false,
+        "rightReversal": false,
         "id": "step-16-1784271453329",
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "b9318fe2-5cb2-4437-8abe-3a7683ed96c9",
@@ -2679,7 +2679,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -2713,7 +2713,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -2750,8 +2750,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -2762,7 +2762,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -2796,7 +2796,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -2833,8 +2833,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -2845,7 +2845,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -2879,7 +2879,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -2916,8 +2916,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -2928,7 +2928,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -2962,7 +2962,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -2999,8 +2999,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3011,7 +3011,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -3045,7 +3045,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -3082,8 +3082,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3094,7 +3094,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -3128,7 +3128,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -3165,8 +3165,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3177,7 +3177,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -3211,7 +3211,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -3248,8 +3248,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3260,7 +3260,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -3294,7 +3294,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -3331,8 +3331,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3343,7 +3343,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -3377,7 +3377,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -3414,8 +3414,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3426,7 +3426,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -3460,7 +3460,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -3497,8 +3497,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3509,7 +3509,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -3543,7 +3543,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -3580,8 +3580,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3592,7 +3592,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -3626,7 +3626,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -3663,8 +3663,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3675,7 +3675,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -3709,7 +3709,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -3746,8 +3746,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3758,7 +3758,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -3792,7 +3792,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -3829,8 +3829,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3841,7 +3841,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -3875,7 +3875,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -3912,8 +3912,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -3924,7 +3924,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -3958,7 +3958,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -3995,15 +3995,15 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "club",
-    "redPropType": "club"
+    "leftPropType": "club",
+    "rightPropType": "club"
   },
   {
     "id": "044d0963-aba5-4e4b-ac4a-fd51e10b9743",
@@ -4016,7 +4016,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4050,7 +4050,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -4087,8 +4087,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4099,7 +4099,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4133,7 +4133,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -4170,8 +4170,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4182,7 +4182,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4216,7 +4216,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4253,8 +4253,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4265,7 +4265,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4299,7 +4299,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -4336,8 +4336,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4348,7 +4348,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -4382,7 +4382,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4419,8 +4419,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4431,7 +4431,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4465,7 +4465,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -4502,8 +4502,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4514,7 +4514,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4548,7 +4548,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4585,8 +4585,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4597,7 +4597,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -4631,7 +4631,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -4668,15 +4668,15 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "club",
-    "redPropType": "club"
+    "leftPropType": "club",
+    "rightPropType": "club"
   },
   {
     "id": "ca59a5a7-7adb-48ed-aba7-a939e9756206",
@@ -4689,7 +4689,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -4723,7 +4723,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -4760,8 +4760,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4772,7 +4772,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -4806,7 +4806,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -4843,8 +4843,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4855,7 +4855,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -4889,7 +4889,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -4926,8 +4926,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -4938,7 +4938,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -4972,7 +4972,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -5009,8 +5009,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5021,7 +5021,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5055,7 +5055,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -5092,8 +5092,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5104,7 +5104,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5138,7 +5138,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -5175,8 +5175,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5187,7 +5187,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5221,7 +5221,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -5258,8 +5258,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5270,7 +5270,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5304,7 +5304,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -5341,8 +5341,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5353,7 +5353,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5387,7 +5387,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -5424,8 +5424,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5436,7 +5436,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5470,7 +5470,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -5507,8 +5507,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5519,7 +5519,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5553,7 +5553,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -5590,8 +5590,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5602,7 +5602,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -5636,7 +5636,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -5673,8 +5673,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5685,7 +5685,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -5719,7 +5719,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -5756,8 +5756,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5768,7 +5768,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5802,7 +5802,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -5839,8 +5839,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5851,7 +5851,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -5885,7 +5885,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -5922,8 +5922,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -5934,7 +5934,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -5968,7 +5968,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -6005,15 +6005,15 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "2f731561-ec16-495f-a893-5424115ad51c",
@@ -6026,7 +6026,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -6060,7 +6060,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -6097,8 +6097,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6109,7 +6109,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -6143,7 +6143,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -6180,8 +6180,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6192,7 +6192,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -6226,7 +6226,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -6263,8 +6263,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6275,7 +6275,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -6309,7 +6309,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -6346,8 +6346,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6358,7 +6358,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -6392,7 +6392,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -6429,8 +6429,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6441,7 +6441,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -6475,7 +6475,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -6512,8 +6512,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6524,7 +6524,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -6558,7 +6558,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -6595,8 +6595,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6607,7 +6607,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -6641,7 +6641,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -6678,15 +6678,15 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "club",
-    "redPropType": "club"
+    "leftPropType": "club",
+    "rightPropType": "club"
   },
   {
     "id": "f4a928f1-3ca0-47cb-be8a-f055f782b58f",
@@ -6699,7 +6699,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -6733,7 +6733,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -6770,8 +6770,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6782,7 +6782,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -6816,7 +6816,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -6853,8 +6853,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6865,7 +6865,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -6899,7 +6899,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -6936,8 +6936,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -6948,7 +6948,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -6982,7 +6982,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -7019,8 +7019,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7031,7 +7031,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7065,7 +7065,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -7102,8 +7102,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": false,
+        "leftReversal": true,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7114,7 +7114,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -7148,7 +7148,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -7185,8 +7185,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": true,
-        "redReversal": false,
+        "leftReversal": true,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7197,7 +7197,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -7231,7 +7231,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -7268,8 +7268,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       },
@@ -7280,7 +7280,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -7314,7 +7314,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -7351,15 +7351,15 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false,
         "gridMode": "diamond"
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "80c5b84c-7896-44de-90c3-95ffba04c9c4",
@@ -7372,7 +7372,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -7406,7 +7406,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -7443,8 +7443,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -7454,7 +7454,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -7488,7 +7488,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -7525,8 +7525,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -7536,7 +7536,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -7570,7 +7570,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -7607,8 +7607,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -7618,7 +7618,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -7652,7 +7652,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -7689,8 +7689,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -7700,7 +7700,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -7734,7 +7734,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -7771,8 +7771,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -7782,7 +7782,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -7816,7 +7816,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -7853,8 +7853,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -7864,7 +7864,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -7898,7 +7898,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -7935,8 +7935,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -7946,7 +7946,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -7980,7 +7980,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -8017,8 +8017,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8028,7 +8028,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -8062,7 +8062,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -8099,8 +8099,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8110,7 +8110,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8144,7 +8144,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8181,8 +8181,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8192,7 +8192,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8226,7 +8226,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -8263,8 +8263,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8274,7 +8274,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -8308,7 +8308,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -8345,8 +8345,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8356,7 +8356,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -8390,7 +8390,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -8427,8 +8427,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8438,7 +8438,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -8472,7 +8472,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -8509,8 +8509,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8520,7 +8520,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -8554,7 +8554,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8591,8 +8591,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8602,7 +8602,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -8636,7 +8636,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -8673,14 +8673,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "cebec8bb-b348-45fd-a96b-9437aae3b995",
@@ -8693,7 +8693,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -8727,7 +8727,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -8764,8 +8764,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8775,7 +8775,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -8809,7 +8809,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8846,8 +8846,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8857,7 +8857,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8891,7 +8891,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -8928,8 +8928,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -8939,7 +8939,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -8973,7 +8973,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9010,8 +9010,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9021,7 +9021,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -9055,7 +9055,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -9092,8 +9092,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9103,7 +9103,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -9137,7 +9137,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9174,8 +9174,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9185,7 +9185,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9219,7 +9219,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9256,8 +9256,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9267,7 +9267,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9301,7 +9301,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -9338,8 +9338,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9349,7 +9349,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9383,7 +9383,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9420,8 +9420,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9431,7 +9431,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -9465,7 +9465,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9502,8 +9502,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9513,7 +9513,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9547,7 +9547,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9584,8 +9584,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9595,7 +9595,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9629,7 +9629,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -9666,8 +9666,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9677,7 +9677,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9711,7 +9711,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9748,8 +9748,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9759,7 +9759,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -9793,7 +9793,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9830,8 +9830,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9841,7 +9841,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9875,7 +9875,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -9912,8 +9912,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -9923,7 +9923,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -9957,7 +9957,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -9994,14 +9994,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "fan",
-    "redPropType": "fan"
+    "leftPropType": "fan",
+    "rightPropType": "fan"
   },
   {
     "id": "75ebfd20-c10d-49f7-a76b-0dd451d681be",
@@ -10014,7 +10014,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10048,7 +10048,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -10085,8 +10085,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -10096,7 +10096,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10130,7 +10130,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10167,8 +10167,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10178,7 +10178,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10212,7 +10212,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -10249,8 +10249,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10260,7 +10260,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -10294,7 +10294,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -10331,8 +10331,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10342,7 +10342,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10376,7 +10376,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -10413,8 +10413,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10424,7 +10424,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -10458,7 +10458,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -10497,8 +10497,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10508,7 +10508,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -10542,7 +10542,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -10579,8 +10579,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -10590,7 +10590,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -10624,7 +10624,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10661,8 +10661,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -10672,7 +10672,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10706,7 +10706,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10743,8 +10743,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10754,7 +10754,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10788,7 +10788,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -10825,8 +10825,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10836,7 +10836,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10870,7 +10870,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -10907,8 +10907,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -10918,7 +10918,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -10952,7 +10952,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -10989,8 +10989,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11000,7 +11000,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11034,7 +11034,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -11073,8 +11073,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11084,7 +11084,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -11118,7 +11118,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -11155,8 +11155,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -11166,7 +11166,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -11200,7 +11200,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -11237,8 +11237,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -11248,7 +11248,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -11282,7 +11282,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -11319,8 +11319,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11330,7 +11330,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -11364,7 +11364,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11401,8 +11401,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 17,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11412,7 +11412,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -11446,7 +11446,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -11483,8 +11483,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 18,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11494,7 +11494,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -11528,7 +11528,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -11565,8 +11565,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 19,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11576,7 +11576,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -11610,7 +11610,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -11649,8 +11649,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 20,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11660,7 +11660,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -11694,7 +11694,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -11731,8 +11731,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 21,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -11742,7 +11742,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -11776,7 +11776,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -11813,8 +11813,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 22,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       },
       {
@@ -11824,7 +11824,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -11858,7 +11858,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -11895,8 +11895,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 23,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11906,7 +11906,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -11940,7 +11940,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -11977,8 +11977,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 24,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -11988,7 +11988,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12022,7 +12022,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -12059,8 +12059,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 25,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12070,7 +12070,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -12104,7 +12104,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12141,8 +12141,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 26,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12152,7 +12152,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12186,7 +12186,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -12225,8 +12225,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 27,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12236,7 +12236,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -12270,7 +12270,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -12307,14 +12307,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 28,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": true,
+        "leftReversal": false,
+        "rightReversal": true,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "1c5579ea-5717-487d-af98-7e2f0dc94371",
@@ -12327,7 +12327,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -12361,7 +12361,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -12398,8 +12398,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12409,7 +12409,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -12443,7 +12443,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -12480,8 +12480,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12491,7 +12491,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -12525,7 +12525,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -12564,8 +12564,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12575,7 +12575,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -12609,7 +12609,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -12646,8 +12646,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12657,7 +12657,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -12691,7 +12691,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -12728,8 +12728,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12739,7 +12739,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -12773,7 +12773,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -12810,8 +12810,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12821,7 +12821,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -12855,7 +12855,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -12894,8 +12894,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12905,7 +12905,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -12939,7 +12939,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -12976,8 +12976,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -12987,7 +12987,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -13021,7 +13021,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -13058,8 +13058,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13069,7 +13069,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -13103,7 +13103,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -13140,8 +13140,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13151,7 +13151,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -13185,7 +13185,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -13224,8 +13224,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13235,7 +13235,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -13269,7 +13269,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -13306,8 +13306,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13317,7 +13317,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -13351,7 +13351,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -13388,8 +13388,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13399,7 +13399,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -13433,7 +13433,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -13470,8 +13470,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13481,7 +13481,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -13515,7 +13515,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -13554,8 +13554,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13565,7 +13565,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -13599,7 +13599,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -13636,14 +13636,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "blue",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "2cb49306-4294-44d2-b339-2373521a3c26",
@@ -13656,7 +13656,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -13692,7 +13692,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -13731,8 +13731,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13742,7 +13742,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -13776,7 +13776,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -13813,8 +13813,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13824,7 +13824,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "gamma9",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -13858,7 +13858,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -13895,8 +13895,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13906,7 +13906,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma9",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -13940,7 +13940,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -13977,8 +13977,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -13988,7 +13988,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "beta5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -14024,7 +14024,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -14063,8 +14063,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14074,7 +14074,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -14108,7 +14108,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -14145,8 +14145,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14156,7 +14156,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "gamma11",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -14190,7 +14190,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -14227,8 +14227,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14238,7 +14238,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma11",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -14272,7 +14272,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -14309,8 +14309,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14320,7 +14320,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "beta7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -14356,7 +14356,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -14395,8 +14395,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14406,7 +14406,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -14440,7 +14440,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -14477,8 +14477,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14488,7 +14488,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "gamma13",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -14522,7 +14522,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -14559,8 +14559,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14570,7 +14570,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma13",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -14604,7 +14604,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -14641,8 +14641,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14652,7 +14652,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "beta1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -14688,7 +14688,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -14727,8 +14727,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14738,7 +14738,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta1",
         "endPosition": "beta3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -14772,7 +14772,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -14809,8 +14809,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14820,7 +14820,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta3",
         "endPosition": "gamma15",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -14854,7 +14854,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -14891,8 +14891,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -14902,7 +14902,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma15",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -14936,7 +14936,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -14973,14 +14973,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "2957c6bd-ec4e-4c4e-8cfd-abec5c8f2a5b",
@@ -14993,7 +14993,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -15027,7 +15027,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -15064,8 +15064,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15075,7 +15075,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -15111,7 +15111,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -15150,8 +15150,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15161,7 +15161,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "gamma7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -15195,7 +15195,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "n",
@@ -15232,8 +15232,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15243,7 +15243,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma7",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "s",
@@ -15277,7 +15277,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -15314,8 +15314,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15325,7 +15325,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -15359,7 +15359,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -15396,8 +15396,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15407,7 +15407,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha7",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -15443,7 +15443,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -15482,8 +15482,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15493,7 +15493,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha7",
         "endPosition": "gamma5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -15527,7 +15527,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "w",
@@ -15564,8 +15564,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15575,7 +15575,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma5",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "e",
@@ -15609,7 +15609,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -15646,8 +15646,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15657,7 +15657,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -15691,7 +15691,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -15728,8 +15728,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15739,7 +15739,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha5",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -15775,7 +15775,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -15814,8 +15814,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15825,7 +15825,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha5",
         "endPosition": "gamma3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -15859,7 +15859,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "s",
@@ -15896,8 +15896,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15907,7 +15907,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma3",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "n",
@@ -15941,7 +15941,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "e",
@@ -15978,8 +15978,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -15989,7 +15989,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -16023,7 +16023,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -16060,8 +16060,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16071,7 +16071,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha1",
         "endPosition": "alpha3",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "s",
@@ -16107,7 +16107,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "float",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -16146,8 +16146,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16157,7 +16157,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha3",
         "endPosition": "gamma1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "w",
@@ -16191,7 +16191,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "e",
@@ -16228,8 +16228,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16239,7 +16239,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma1",
         "endPosition": "alpha1",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "w",
@@ -16273,7 +16273,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "n",
@@ -16310,14 +16310,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "red",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "4fb9d3b4-4fde-4b76-a144-e415a2f8dcfc",
@@ -16330,7 +16330,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -16364,7 +16364,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -16401,8 +16401,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16412,7 +16412,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma16",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -16446,7 +16446,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -16483,8 +16483,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16494,7 +16494,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma16",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -16528,7 +16528,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -16565,8 +16565,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16576,7 +16576,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -16610,7 +16610,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -16647,8 +16647,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16658,7 +16658,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -16692,7 +16692,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -16729,8 +16729,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16740,7 +16740,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma10",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -16774,7 +16774,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -16811,8 +16811,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16822,7 +16822,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma10",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -16856,7 +16856,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -16893,8 +16893,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16904,7 +16904,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -16938,7 +16938,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -16975,8 +16975,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -16986,7 +16986,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -17020,7 +17020,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -17057,8 +17057,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17068,7 +17068,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma12",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -17102,7 +17102,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -17139,8 +17139,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17150,7 +17150,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma12",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -17184,7 +17184,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -17221,8 +17221,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17232,7 +17232,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -17266,7 +17266,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -17303,8 +17303,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17314,7 +17314,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -17348,7 +17348,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -17385,8 +17385,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17396,7 +17396,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma14",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -17430,7 +17430,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -17467,8 +17467,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17478,7 +17478,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma14",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -17512,7 +17512,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -17549,8 +17549,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17560,7 +17560,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -17594,7 +17594,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -17631,14 +17631,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "737a29ea-663d-4bd5-ba6e-39f5c857e4f3",
@@ -17651,7 +17651,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -17685,7 +17685,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -17722,8 +17722,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17733,7 +17733,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -17767,7 +17767,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -17804,8 +17804,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17815,7 +17815,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -17849,7 +17849,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -17886,8 +17886,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17897,7 +17897,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "gamma8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -17931,7 +17931,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -17968,8 +17968,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -17979,7 +17979,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma8",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -18013,7 +18013,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -18050,8 +18050,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18061,7 +18061,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -18095,7 +18095,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -18132,8 +18132,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18143,7 +18143,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -18177,7 +18177,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -18214,8 +18214,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18225,7 +18225,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "gamma6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -18259,7 +18259,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -18296,8 +18296,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18307,7 +18307,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma6",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -18341,7 +18341,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -18378,8 +18378,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18389,7 +18389,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -18423,7 +18423,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -18460,8 +18460,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18471,7 +18471,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -18505,7 +18505,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -18542,8 +18542,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18553,7 +18553,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "gamma4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -18587,7 +18587,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -18624,8 +18624,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18635,7 +18635,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma4",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -18669,7 +18669,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -18706,8 +18706,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18717,7 +18717,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma2",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "static",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -18751,7 +18751,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -18788,8 +18788,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18799,7 +18799,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "anti",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -18833,7 +18833,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "anti",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -18870,8 +18870,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -18881,7 +18881,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "gamma2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -18915,7 +18915,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -18952,14 +18952,14 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   },
   {
     "id": "22288e8a-ace1-4a9a-8b12-7dcdc334a563",
@@ -18972,7 +18972,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "beta4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -19006,7 +19006,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -19043,8 +19043,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 1,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19054,7 +19054,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta4",
         "endPosition": "gamma16",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -19088,7 +19088,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -19125,8 +19125,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 2,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19136,7 +19136,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma16",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -19170,7 +19170,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -19207,8 +19207,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 3,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19218,7 +19218,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -19252,7 +19252,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -19289,8 +19289,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 4,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19300,7 +19300,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "beta2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -19334,7 +19334,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -19371,8 +19371,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 5,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19382,7 +19382,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta2",
         "endPosition": "gamma14",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -19416,7 +19416,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -19453,8 +19453,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 6,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19464,7 +19464,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma14",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -19498,7 +19498,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -19535,8 +19535,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 7,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19546,7 +19546,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha2",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -19580,7 +19580,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "ne",
@@ -19617,8 +19617,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 8,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19628,7 +19628,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "beta8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -19662,7 +19662,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -19699,8 +19699,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 9,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19710,7 +19710,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta8",
         "endPosition": "gamma12",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -19744,7 +19744,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "nw",
@@ -19781,8 +19781,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 10,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19792,7 +19792,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma12",
         "endPosition": "alpha8",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -19826,7 +19826,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "se",
@@ -19863,8 +19863,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 11,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19874,7 +19874,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha8",
         "endPosition": "alpha4",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -19908,7 +19908,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "nw",
@@ -19945,8 +19945,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 12,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -19956,7 +19956,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha4",
         "endPosition": "beta6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "nw",
@@ -19990,7 +19990,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "pro",
             "rotationDirection": "cw",
             "startLocation": "se",
@@ -20027,8 +20027,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 13,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20038,7 +20038,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "beta6",
         "endPosition": "gamma10",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "sw",
@@ -20072,7 +20072,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "sw",
@@ -20109,8 +20109,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 14,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20120,7 +20120,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "gamma10",
         "endPosition": "alpha6",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "pro",
             "rotationDirection": "ccw",
             "startLocation": "se",
@@ -20154,7 +20154,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "noRotation",
             "startLocation": "ne",
@@ -20191,8 +20191,8 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 15,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       },
       {
@@ -20202,7 +20202,7 @@ export const CHOSEN_MANDALAS = [
         "startPosition": "alpha6",
         "endPosition": "alpha2",
         "motions": {
-          "blue": {
+          "left": {
             "motionType": "dash",
             "rotationDirection": "ccw",
             "startLocation": "ne",
@@ -20236,7 +20236,7 @@ export const CHOSEN_MANDALAS = [
             "skewSteps": null,
             "skewDir": null
           },
-          "red": {
+          "right": {
             "motionType": "dash",
             "rotationDirection": "cw",
             "startLocation": "sw",
@@ -20273,13 +20273,13 @@ export const CHOSEN_MANDALAS = [
         },
         "stepNumber": 16,
         "duration": 1,
-        "blueReversal": false,
-        "redReversal": false,
+        "leftReversal": false,
+        "rightReversal": false,
         "isBlank": false
       }
     ],
     "variant": "both",
-    "bluePropType": "staff",
-    "redPropType": "staff"
+    "leftPropType": "staff",
+    "rightPropType": "staff"
   }
 ] as unknown as ShowcaseMandala[];

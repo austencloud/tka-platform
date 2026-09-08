@@ -19,8 +19,8 @@ const DEFAULT_MIN_CONFIDENCE = 0.5;
 
 interface FrameGroup {
   frames: DetectionFrame[];
-  blueLocation: GridLocation | null;
-  redLocation: GridLocation | null;
+  leftLocation: GridLocation | null;
+  rightLocation: GridLocation | null;
 }
 
 export function detectBeats(
@@ -51,19 +51,19 @@ function groupByPosition(
   let currentGroup: FrameGroup | null = null;
 
   for (const frame of frames) {
-    const blue = getValidLocation(frame, "blue", minConfidence);
-    const red = getValidLocation(frame, "red", minConfidence);
+    const left = getValidLocation(frame, "left", minConfidence);
+    const right = getValidLocation(frame, "right", minConfidence);
 
     const samePosition =
       currentGroup != null &&
-      blue === currentGroup?.blueLocation &&
-      red === currentGroup?.redLocation;
+      left === currentGroup?.leftLocation &&
+      right === currentGroup?.rightLocation;
 
     if (!samePosition) {
       currentGroup = {
         frames: [frame],
-        blueLocation: blue,
-        redLocation: red,
+        leftLocation: left,
+        rightLocation: right,
       };
       groups.push(currentGroup);
     } else {
@@ -112,33 +112,33 @@ function groupToBeat(
   const positions: StepPosition[] = [];
 
   // Compute average confidence for blue hand
-  if (group.blueLocation) {
-    const blueConfidences = group.frames
-      .filter((f) => f.blue && f.blue.confidence >= minConfidence)
-      .map((f) => f.blue!.confidence);
+  if (group.leftLocation) {
+    const leftConfidences = group.frames
+      .filter((f) => f.left && f.left.confidence >= minConfidence)
+      .map((f) => f.left!.confidence);
 
-    if (blueConfidences.length > 0) {
-      const sum = blueConfidences.reduce((a, b) => a + b, 0);
+    if (leftConfidences.length > 0) {
+      const sum = leftConfidences.reduce((a, b) => a + b, 0);
       positions.push({
-        hand: "blue",
-        location: group.blueLocation,
-        confidence: sum / blueConfidences.length,
+        hand: "left",
+        location: group.leftLocation,
+        confidence: sum / leftConfidences.length,
       });
     }
   }
 
   // Compute average confidence for red hand
-  if (group.redLocation) {
-    const redConfidences = group.frames
-      .filter((f) => f.red && f.red.confidence >= minConfidence)
-      .map((f) => f.red!.confidence);
+  if (group.rightLocation) {
+    const rightConfidences = group.frames
+      .filter((f) => f.right && f.right.confidence >= minConfidence)
+      .map((f) => f.right!.confidence);
 
-    if (redConfidences.length > 0) {
-      const sum = redConfidences.reduce((a, b) => a + b, 0);
+    if (rightConfidences.length > 0) {
+      const sum = rightConfidences.reduce((a, b) => a + b, 0);
       positions.push({
-        hand: "red",
-        location: group.redLocation,
-        confidence: sum / redConfidences.length,
+        hand: "right",
+        location: group.rightLocation,
+        confidence: sum / rightConfidences.length,
       });
     }
   }
@@ -149,14 +149,14 @@ function groupToBeat(
     endTime,
     frameCount: group.frames.length,
     positions,
-    positionLabel: derivePositionLabel(group.blueLocation, group.redLocation),
+    positionLabel: derivePositionLabel(group.leftLocation, group.rightLocation),
   };
 }
 
 /** Get the valid grid location for a hand, or null if below confidence */
 function getValidLocation(
   frame: DetectionFrame,
-  hand: "blue" | "red",
+  hand: "left" | "right",
   minConfidence: number
 ): GridLocation | null {
   const detected = frame[hand];
@@ -171,15 +171,15 @@ function getValidLocation(
  * Returns null if either hand is undetected.
  */
 function derivePositionLabel(
-  blue: GridLocation | null,
-  red: GridLocation | null
+  left: GridLocation | null,
+  right: GridLocation | null
 ): string | null {
-  if (!blue || !red) return null;
+  if (!left || !right) return null;
 
-  if (blue === red) return "beta";
+  if (left === right) return "beta";
 
   // Check if opposite (n/s, e/w, ne/sw, nw/se)
-  if (isOpposite(blue, red)) return "alpha";
+  if (isOpposite(left, right)) return "alpha";
 
   // Otherwise gamma (right angle on cardinal grid)
   return "gamma";

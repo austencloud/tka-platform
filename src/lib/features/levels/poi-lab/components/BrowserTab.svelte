@@ -33,8 +33,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
 
   // Get user's prop settings for prop-aware thumbnails
   const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
+    leftPropType: settingsService.settings.leftPropType,
+    rightPropType: settingsService.settings.rightPropType,
   });
 
   // Extended validation result with pending state for sequences without step data
@@ -252,8 +252,8 @@ import { getPoiSequenceValidator } from "$lib/features/levels/poi-lab/get-poi-se
           >
             <ChoreoCardThumbnail
               {sequence}
-              bluePropType={propSettings.bluePropType}
-              redPropType={propSettings.redPropType}
+              leftPropType={propSettings.leftPropType}
+              rightPropType={propSettings.rightPropType}
               onPrimaryAction={() => toggleExpand(sequence.id)}
             />
 

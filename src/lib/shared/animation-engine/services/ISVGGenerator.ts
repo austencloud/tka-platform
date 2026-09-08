@@ -5,6 +5,7 @@
  */
 
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { PropSpriteSide } from "$lib/shared/pictograph/prop/domain/prop-look";
 import type { PropSvgData } from "$lib/shared/animation-engine/domain/types/svg-types";
 import type { ThemeMode } from "$lib/shared/utils/svg-color-utils";
 
@@ -26,7 +27,8 @@ export interface ISVGGenerator {
   generatePropSvg(
     propType: string,
     color: string,
-    themeMode?: ThemeMode
+    themeMode?: ThemeMode,
+    side?: PropSpriteSide
   ): Promise<PropSvgData>;
 
   /**
@@ -35,7 +37,7 @@ export interface ISVGGenerator {
    * @param darkMode - When provided, uses this instead of global dark mode state
    * @returns PropSvgData with SVG string and viewBox dimensions
    */
-  generateBluePropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
+  generateLeftPropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
 
   /**
    * Generate red prop SVG with dynamic prop type
@@ -43,17 +45,17 @@ export interface ISVGGenerator {
    * @param darkMode - When provided, uses this instead of global dark mode state
    * @returns PropSvgData with SVG string and viewBox dimensions
    */
-  generateRedPropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
+  generateRightPropSvg(propType?: string, darkMode?: boolean): Promise<PropSvgData>;
 
   /**
    * Generate blue staff SVG
    * @deprecated Use generateBluePropSvg instead
    */
-  generateBlueStaffSvg(): string;
+  generateLeftStaffSvg(): string;
 
   /**
    * Generate red staff SVG
    * @deprecated Use generateRedPropSvg instead
    */
-  generateRedStaffSvg(): string;
+  generateRightStaffSvg(): string;
 }

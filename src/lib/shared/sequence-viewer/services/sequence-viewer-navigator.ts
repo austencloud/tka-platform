@@ -15,8 +15,14 @@ import type { ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.
 import { openSequenceOverlay } from "../state/sequence-viewer-overlay-state.svelte";
 import { cellPreWarmer } from "./cell-pre-warmer";
 import { getCached } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+import type { SequenceViewerSource } from "$lib/shared/sequence-viewer/analytics/viewer-events";
+
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface OpenSequenceViewerOptions {
+  collectionPropType?: PropType | null;
+  /** Stable product surface that handed this sequence to the viewer. */
+  source: SequenceViewerSource;
   /** Path to return to when closing (e.g., "/browse/gallery") */
   returnPath: string;
   /** Label for back button (e.g., "Browse", "My Library") */
@@ -78,6 +84,8 @@ export function openSequenceViewer(
   // Always use drawer overlay - keeps the underlying module mounted
   // so content is immediately visible behind the drawer on dismiss
   openSequenceOverlay(seqToOpen, {
+    analyticsSource: options.source,
+    collectionPropType: options.collectionPropType,
     returnLabel: options.returnLabel,
     initialBpm: options.initialBpm,
     initialStep: options.initialStep,

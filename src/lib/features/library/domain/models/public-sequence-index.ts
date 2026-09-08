@@ -98,25 +98,25 @@ export interface PublicSequenceIndex {
   readonly encoderHash?: string;
 
   /** Blue performer's solo prop decomposition (steps + hand path) */
-  readonly blueSoloProp?: SoloPropData;
+  readonly leftSoloProp?: SoloPropData;
 
   /** Red performer's solo prop decomposition (steps + hand path) */
-  readonly redSoloProp?: SoloPropData;
+  readonly rightSoloProp?: SoloPropData;
 
   /** Per-beat pairings linking blue and red motions */
   readonly stepPairings?: readonly StepPairingData[];
 
   /** Hash of blue performer's dual-prop hand path */
-  readonly bluePathHash?: string;
+  readonly leftPathHash?: string;
 
   /** Hash of red performer's dual-prop hand path */
-  readonly redPathHash?: string;
+  readonly rightPathHash?: string;
 
   /** Hash of blue performer's solo prop */
-  readonly blueSoloHash?: string;
+  readonly leftSoloHash?: string;
 
   /** Hash of red performer's solo prop */
-  readonly redSoloHash?: string;
+  readonly rightSoloHash?: string;
 
 
   /** Creator's presentation intent (prop config + effort timeline) */

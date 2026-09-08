@@ -1,0 +1,48 @@
+{
+  "sceneId": "flow-fest-sim",
+  "stylePrefix": "photorealistic modern passenger vehicle, real-world production car proportions, factory stock, clean and unmodified, all four wheels on the ground, parked, isolated complete object, no text, no background,",
+  "aiModel": "meshy-7",
+  "modelType": "standard",
+  "polycount": 20000,
+  "shouldRemesh": true,
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 200,
+  "assets": [
+    {
+      "id": "sedan-silver",
+      "prompt": "mid-size four-door family sedan, long low roofline, closed tinted windows, side mirrors, door handles, alloy wheels, front headlights and rear tail lights, full car from bumper to bumper",
+      "texturePrompt": "metallic silver automotive paint with clear coat, dark tinted glass, black rubber tyres, satin grey alloy wheels, black plastic trim, physically based automotive materials, diffuse albedo without baked lighting or reflections",
+      "textureSize": 2048
+    },
+    {
+      "id": "crossover-white",
+      "prompt": "compact five-door crossover SUV, raised ride height, roof rails, closed tinted windows, side mirrors, rear hatch, alloy wheels, full car from bumper to bumper",
+      "texturePrompt": "pearl white automotive paint, dark tinted glass, black rubber tyres, dark grey alloy wheels, black plastic lower cladding, physically based automotive materials, diffuse albedo without baked lighting or reflections",
+      "textureSize": 2048
+    },
+    {
+      "id": "wagon-green",
+      "prompt": "all-wheel-drive outdoor station wagon, long roof with black roof rack crossbars, raised ride height, closed windows, side mirrors, rear hatch, slightly dusty, full car from bumper to bumper",
+      "texturePrompt": "dark forest green metallic automotive paint with light road dust on lower panels, dark glass, black rubber tyres, gunmetal alloy wheels, black roof rack, physically based automotive materials, diffuse albedo without baked lighting or reflections",
+      "textureSize": 2048
+    },
+    {
+      "id": "pickup-grey",
+      "prompt": "full-size crew-cab pickup truck, four doors, open cargo bed with tailgate closed, tall hood, closed windows, side mirrors, large tyres, full truck from bumper to bumper",
+      "texturePrompt": "dark charcoal grey metallic automotive paint, dark glass, black rubber all-terrain tyres, black steel wheels, black plastic bed liner, physically based automotive materials, diffuse albedo without baked lighting or reflections",
+      "textureSize": 2048
+    },
+    {
+      "id": "camper-van-white",
+      "prompt": "tall high-roof cargo van converted to a camper, long wheelbase, sliding side door closed, small side window, roof vent, closed front windows, side mirrors, full van from bumper to bumper",
+      "texturePrompt": "plain white commercial van paint with light weathering, black rubber tyres, plain steel wheels with grey hubcaps, black plastic bumpers, physically based automotive materials, diffuse albedo without baked lighting or reflections",
+      "textureSize": 2048
+    },
+    {
+      "id": "hatchback-blue",
+      "prompt": "small five-door hatchback city car, short overhangs, closed windows, side mirrors, rear hatch with wiper, small alloy wheels, full car from bumper to bumper",
+      "texturePrompt": "deep navy blue metallic automotive paint, dark glass, black rubber tyres, silver alloy wheels, black plastic trim, physically based automotive materials, diffuse albedo without baked lighting or reflections",
+      "textureSize": 2048
+    }
+  ]
+}

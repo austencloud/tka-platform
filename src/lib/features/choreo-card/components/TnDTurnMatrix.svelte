@@ -39,7 +39,7 @@
     for (const catalog of catalogs) {
       const coord = parseTurnPattern(catalog.turnPattern);
       if (!coord) continue;
-      map.set(`${coord.blue},${coord.red}`, catalog);
+      map.set(`${coord.left},${coord.right}`, catalog);
     }
     return map;
   });
@@ -49,7 +49,10 @@
     for (const opt of patternOptions ?? []) {
       const coord = parseTurnPattern(opt.turnPattern);
       if (!coord) continue;
-      map.set(`${coord.blue},${coord.red}`, { turnPattern: opt.turnPattern, count: opt.sequenceCount });
+      map.set(`${coord.left},${coord.right}`, {
+        turnPattern: opt.turnPattern,
+        count: opt.sequenceCount,
+      });
     }
     return map;
   });
@@ -59,24 +62,35 @@
     return new Set((patternOptions ?? []).map((o) => o.turnPattern));
   }
 
-  function filteredPatterns(pred: (blue: number, red: number) => boolean): Set<string> {
+  function filteredPatterns(pred: (left, right) => boolean): Set<string> {
     const out = new Set<string>();
     for (const opt of patternOptions ?? []) {
       const coord = parseTurnPattern(opt.turnPattern);
-      if (coord && pred(coord.blue, coord.red)) out.add(opt.turnPattern);
+      if (coord && pred(coord.left, coord.right)) out.add(opt.turnPattern);
     }
     return out;
   }
 
   const presets = [
-    { id: "all", label: "Select All", icon: "fa-check-double", build: () => allPatterns() },
+    {
+      id: "all",
+      label: "Select All",
+      icon: "fa-check-double",
+      build: () => allPatterns(),
+    },
     {
       id: "whole",
       label: "Whole Turns",
       icon: "fa-circle",
-      build: () => filteredPatterns((b, r) => Number.isInteger(b) && Number.isInteger(r)),
+      build: () =>
+        filteredPatterns((b, r) => Number.isInteger(b) && Number.isInteger(r)),
     },
-    { id: "matched", label: "Matched", icon: "fa-equals", build: () => filteredPatterns((b, r) => b === r) },
+    {
+      id: "matched",
+      label: "Matched",
+      icon: "fa-equals",
+      build: () => filteredPatterns((b, r) => b === r),
+    },
     {
       id: "matched-whole",
       label: "Matched Whole",
@@ -84,7 +98,12 @@
       // Diagonal whole-turn cells only: 0|0, 1|1, 2|2, 3|3.
       build: () => filteredPatterns((b, r) => b === r && Number.isInteger(b)),
     },
-    { id: "clear", label: "Clear", icon: "fa-xmark", build: () => new Set<string>() },
+    {
+      id: "clear",
+      label: "Clear",
+      icon: "fa-xmark",
+      build: () => new Set<string>(),
+    },
   ] as const;
 </script>
 
@@ -97,7 +116,9 @@
             label={preset.label}
             icon={"fas " + preset.icon}
             mode="action"
-            chipColor={preset.id === "clear" ? "#f87171" : "var(--theme-accent)"}
+            chipColor={preset.id === "clear"
+              ? "#f87171"
+              : "var(--theme-accent)"}
             onclick={() => onSetPatterns?.(preset.build())}
           />
         {/each}
@@ -105,10 +126,10 @@
     {/if}
   {/snippet}
 
-  {#snippet cell(blue, red)}
-    {@const isSymmetric = blue === red}
+  {#snippet cell(left, right)}
+    {@const isSymmetric = left === right}
     {#if selectable}
-      {@const c = selectMap.get(`${blue},${red}`)}
+      {@const c = selectMap.get(`${left},${right}`)}
       {#if c}
         {@const isSelected = selected?.has(c.turnPattern) ?? false}
         <button
@@ -118,35 +139,49 @@
           class:selected={isSelected}
           role="gridcell"
           aria-selected={isSelected}
-          aria-label="Blue {blue} red {red}, {c.count} sequences{isSymmetric ? ' (matched)' : ''}{isSelected ? ', selected' : ''}"
+          aria-label="Left {left}, right {right}, {c.count} sequences{isSymmetric
+            ? ' (matched)'
+            : ''}{isSelected ? ', selected' : ''}"
           onclick={() => onToggle?.(c.turnPattern)}
         >
           <span class="turn-pair">
-            <span class="turn-blue">{blue}</span><span class="turn-sep">|</span><span class="turn-red">{red}</span>
+            <span class="turn-blue">{left}</span><span class="turn-sep">|</span
+            ><span class="turn-red">{right}</span>
           </span>
           <span class="cell-count">{c.count}</span>
         </button>
       {:else}
-        <div class="cell empty" role="gridcell" aria-label="No deck for blue {blue}, red {red}"></div>
+        <div
+          class="cell empty"
+          role="gridcell"
+          aria-label="No deck for left {left}, right {right}"
+        ></div>
       {/if}
     {:else}
-      {@const catalog = catalogMap.get(`${blue},${red}`)}
+      {@const catalog = catalogMap.get(`${left},${right}`)}
       {#if catalog}
         <button
           type="button"
           class="cell"
           class:symmetric={isSymmetric}
           role="gridcell"
-          aria-label="{catalog.totalSequences} sequences, blue {blue} red {red}{isSymmetric ? ' (symmetric)' : ''}"
+          aria-label="{catalog.totalSequences} sequences, left {left}, right {right}{isSymmetric
+            ? ' (symmetric)'
+            : ''}"
           onclick={() => onSelectCatalog?.(catalog)}
         >
           <span class="turn-pair">
-            <span class="turn-blue">{blue}</span><span class="turn-sep">|</span><span class="turn-red">{red}</span>
+            <span class="turn-blue">{left}</span><span class="turn-sep">|</span
+            ><span class="turn-red">{right}</span>
           </span>
           <span class="cell-count">{catalog.totalSequences} seq</span>
         </button>
       {:else}
-        <div class="cell empty" role="gridcell" aria-label="No deck for blue {blue}, red {red}"></div>
+        <div
+          class="cell empty"
+          role="gridcell"
+          aria-label="No deck for left {left}, right {right}"
+        ></div>
       {/if}
     {/if}
   {/snippet}
@@ -174,7 +209,10 @@
     color: var(--theme-text, #fff);
     font: inherit;
     padding: 0;
-    transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    transition:
+      background 0.15s ease,
+      transform 0.1s ease,
+      box-shadow 0.15s ease;
     position: relative;
   }
 
@@ -209,15 +247,33 @@
 
   /* Selected state (select mode) — theme accent */
   .cell.selected {
-    background: color-mix(in srgb, var(--theme-accent, #b763cd) 22%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)));
-    border-color: color-mix(in srgb, var(--theme-accent, #b763cd) 60%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-accent, #b763cd) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #b763cd) 22%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #b763cd) 60%,
+      transparent
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--theme-accent, #b763cd) 40%, transparent);
   }
 
   .cell.selected:hover {
-    background: color-mix(in srgb, var(--theme-accent, #b763cd) 32%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)));
-    border-color: color-mix(in srgb, var(--theme-accent, #b763cd) 75%, transparent);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #b763cd) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #b763cd) 32%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #b763cd) 75%,
+      transparent
+    );
+    box-shadow: 0 4px 20px
+      color-mix(in srgb, var(--theme-accent, #b763cd) 30%, transparent);
   }
 
   .cell.selected .cell-count {
@@ -234,16 +290,24 @@
     display: flex;
     align-items: baseline;
     gap: 0.12em;
-    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
+    font-family:
+      "JetBrains Mono", "SF Mono", "Fira Code", ui-monospace, monospace;
     font-size: clamp(12px, 2.8cqi, 17px);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
 
-  .turn-blue { color: #60a5fa; }
-  .turn-red { color: #f87171; }
-  .turn-sep { color: rgba(255, 255, 255, 0.2); font-weight: 400; }
+  .turn-blue {
+    color: #60a5fa;
+  }
+  .turn-red {
+    color: #f87171;
+  }
+  .turn-sep {
+    color: rgba(255, 255, 255, 0.2);
+    font-weight: 400;
+  }
 
   .cell-count {
     font-size: clamp(9px, 1.9cqi, 12px);
@@ -253,10 +317,14 @@
   }
 
   @media (max-width: 640px) {
-    .cell-count { display: none; }
+    .cell-count {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cell { transition: none; }
+    .cell {
+      transition: none;
+    }
   }
 </style>

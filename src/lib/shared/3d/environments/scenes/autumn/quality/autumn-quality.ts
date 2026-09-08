@@ -11,9 +11,9 @@ export interface AutumnQualityConfig {
    */
   shadows: boolean;
   /**
-   * Shadow map resolution. The camera spans 40m to cover tree-length shadows,
-   * so 1024 gives ~26 texels/m — enough for soft contact, visibly stepped on
-   * trunk edges. High doubles it.
+   * Shadow map resolution. The camera spans 40m to keep the sparse pond-to-owl
+   * prop casters inside one stable frustum, so 1024 gives ~26 texels/m for
+   * soft contact. High doubles it.
    */
   shadowMapSize: number;
 }

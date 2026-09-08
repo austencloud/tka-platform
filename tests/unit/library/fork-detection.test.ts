@@ -6,7 +6,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -19,12 +19,12 @@ function makeStep(id: string, overrides: Partial<StepData> = {}): StepData {
     endPosition: null,
     stepNumber: 1,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     gridMode: GridMode.DIAMOND,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
         startLocation: GridLocation.NORTH,
@@ -33,9 +33,9 @@ function makeStep(id: string, overrides: Partial<StepData> = {}): StepData {
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
         gridMode: GridMode.DIAMOND,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.ANTI,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         startLocation: GridLocation.SOUTH,
@@ -44,7 +44,7 @@ function makeStep(id: string, overrides: Partial<StepData> = {}): StepData {
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.IN,
         gridMode: GridMode.DIAMOND,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
       }),
     },
     ...overrides,
@@ -56,7 +56,7 @@ function makeSequence(overrides: Partial<Parameters<typeof createSequenceData>[0
   const step2 = makeStep("step-2", {
     stepNumber: 2,
     motions: {
-      [MotionColor.BLUE]: createMotionData({
+      [HandSide.LEFT]: createMotionData({
         motionType: MotionType.ANTI,
         rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
         startLocation: GridLocation.EAST,
@@ -65,9 +65,9 @@ function makeSequence(overrides: Partial<Parameters<typeof createSequenceData>[0
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.IN,
         gridMode: GridMode.DIAMOND,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
       }),
-      [MotionColor.RED]: createMotionData({
+      [HandSide.RIGHT]: createMotionData({
         motionType: MotionType.PRO,
         rotationDirection: RotationDirection.CLOCKWISE,
         startLocation: GridLocation.WEST,
@@ -76,7 +76,7 @@ function makeSequence(overrides: Partial<Parameters<typeof createSequenceData>[0
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
         gridMode: GridMode.DIAMOND,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
       }),
     },
   });
@@ -100,7 +100,7 @@ describe("Fork detection scenarios", () => {
     const step1Edited = makeStep("step-1", {
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
+        [HandSide.LEFT]: createMotionData({
           motionType: MotionType.PRO,
           rotationDirection: RotationDirection.CLOCKWISE,
           startLocation: GridLocation.NORTH,
@@ -109,9 +109,9 @@ describe("Fork detection scenarios", () => {
           startOrientation: Orientation.IN,
           endOrientation: Orientation.OUT,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.BLUE,
+          hand: HandSide.LEFT,
         }),
-        [MotionColor.RED]: createMotionData({
+        [HandSide.RIGHT]: createMotionData({
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
           startLocation: GridLocation.SOUTH,
@@ -120,7 +120,7 @@ describe("Fork detection scenarios", () => {
           startOrientation: Orientation.OUT,
           endOrientation: Orientation.IN,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
         }),
       },
     });
@@ -141,7 +141,7 @@ describe("Fork detection scenarios", () => {
     const step1Edited = makeStep("step-1", {
       stepNumber: 1,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
+        [HandSide.LEFT]: createMotionData({
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
           startLocation: GridLocation.NORTH,
@@ -150,9 +150,9 @@ describe("Fork detection scenarios", () => {
           startOrientation: Orientation.IN,
           endOrientation: Orientation.OUT,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.BLUE,
+          hand: HandSide.LEFT,
         }),
-        [MotionColor.RED]: createMotionData({
+        [HandSide.RIGHT]: createMotionData({
           motionType: MotionType.ANTI,
           rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
           startLocation: GridLocation.SOUTH,
@@ -161,7 +161,7 @@ describe("Fork detection scenarios", () => {
           startOrientation: Orientation.OUT,
           endOrientation: Orientation.IN,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
         }),
       },
     });
@@ -186,7 +186,7 @@ describe("Fork detection scenarios", () => {
     const newStep = makeStep("step-2", {
       stepNumber: 2,
       motions: {
-        [MotionColor.BLUE]: createMotionData({
+        [HandSide.LEFT]: createMotionData({
           motionType: MotionType.DASH,
           rotationDirection: RotationDirection.NO_ROTATION,
           startLocation: GridLocation.EAST,
@@ -195,9 +195,9 @@ describe("Fork detection scenarios", () => {
           startOrientation: Orientation.CLOCK,
           endOrientation: Orientation.COUNTER,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.BLUE,
+          hand: HandSide.LEFT,
         }),
-        [MotionColor.RED]: createMotionData({
+        [HandSide.RIGHT]: createMotionData({
           motionType: MotionType.STATIC,
           rotationDirection: RotationDirection.NO_ROTATION,
           startLocation: GridLocation.NORTH,
@@ -206,7 +206,7 @@ describe("Fork detection scenarios", () => {
           startOrientation: Orientation.IN,
           endOrientation: Orientation.IN,
           gridMode: GridMode.DIAMOND,
-          color: MotionColor.RED,
+          hand: HandSide.RIGHT,
         }),
       },
     });

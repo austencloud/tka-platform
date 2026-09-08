@@ -1,3 +1,5 @@
+import { getCanonicalCardStepColumnCounts } from "$lib/shared/render/services/card-step-column-options";
+
 export const COLUMN_COUNT_PREFERENCE_VERSION = 1 as const;
 export const GUEST_COLUMN_COUNT_PREFERENCE_OWNER = "guest";
 
@@ -32,9 +34,7 @@ function isValidExplicitColumnCount(
   return (
     typeof value === "number" &&
     Number.isInteger(value) &&
-    value >= 2 &&
-    value <= Math.min(stepCount, 8) &&
-    value % 2 === 0
+    getCanonicalCardStepColumnCounts(stepCount).includes(value)
   );
 }
 

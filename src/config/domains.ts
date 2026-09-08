@@ -13,12 +13,7 @@ import { Capacitor } from "@capacitor/core";
  * Extensible for future portals without breaking changes.
  */
 export type SiteMode =
-  | "loading"
-  | "app"
-  | "landing"
-  | "embed"
-  | "kiosk"
-  | "edu";
+  "loading" | "app" | "landing" | "embed" | "kiosk" | "edu";
 
 // Landing/brand domain
 export const LANDING_DOMAIN = "https://tkaflowarts.com";
@@ -45,6 +40,7 @@ const PUBLIC_PATH_PREFIXES = [
   // boot module persistence, which would treat `/test` as an invalid app tab.
   "/test/smart-collections",
   "/test/sequence-actions",
+  "/test/sequence-viewer-transitions",
   "/test/prop-size-audit",
   "/test/environment-transition",
   "/test/film-director",
@@ -66,13 +62,20 @@ const PUBLIC_PATH_PREFIXES = [
   "/learn/staff-spinning-choreography",
   // Canonical public course, including stable deep links to each lesson.
   "/learn/concepts",
+  "/timing-and-direction",
   "/notation",
+  // The archive lives at /history; /notation 301s to it and still serves
+  // the per-prop and per-system notation pages.
+  "/history",
+  // Shape Engine graduated out of /notation/shape-matrix (which 301s here)
+  // into its own standalone public destination.
+  "/shape-engine",
   "/composer",
-  "/glossary",
+  "/atlas",
   "/faq",
   "/guide",
   "/privacy",
-  // /roots redirects to /notation (see routes/(public)/roots/+page.ts), but the
+  // /roots redirects to /history (see routes/(public)/roots/+page.ts), but the
   // prefix stays so /roots/software still resolves in public/landing mode.
   "/roots",
   "/support",

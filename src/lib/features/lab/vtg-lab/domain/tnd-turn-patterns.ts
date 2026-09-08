@@ -11,9 +11,9 @@ function formatTurn(v: number): string {
 /** The full 7x7 = 49 blue|red turn patterns. */
 export function allTurnPatterns(): string[] {
   const out: string[] = [];
-  for (const blue of TURN_VALUES) {
-    for (const red of TURN_VALUES) {
-      out.push(`${formatTurn(blue)}|${formatTurn(red)}`);
+  for (const left of TURN_VALUES) {
+    for (const right of TURN_VALUES) {
+      out.push(`${formatTurn(left)}|${formatTurn(right)}`);
     }
   }
   return out;

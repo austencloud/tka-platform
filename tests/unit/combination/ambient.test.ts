@@ -42,7 +42,7 @@ import { createStepData } from "$lib/shared/foundation/domain/factories/create-s
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 import {
@@ -115,8 +115,8 @@ const PSI_ONE_TURN: StepData = createStepData({
   ...PSI_STEP,
   id: "psi-one-turn",
   motions: {
-    [MotionColor.BLUE]: PSI_STEP.motions.blue,
-    [MotionColor.RED]: createMotionData({ ...PSI_STEP.motions.red, turns: 1 }),
+    [HandSide.LEFT]: PSI_STEP.motions.left,
+    [HandSide.RIGHT]: createMotionData({ ...PSI_STEP.motions.right, turns: 1 }),
   },
 });
 

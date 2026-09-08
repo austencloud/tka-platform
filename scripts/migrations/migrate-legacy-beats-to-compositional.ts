@@ -58,13 +58,18 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
-    if (value !== null && typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+    if (
+      value !== null &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      !(value instanceof Date)
+    ) {
       result[key] = stripUndefined(value as Record<string, unknown>);
     } else if (Array.isArray(value)) {
       result[key] = value.map((item) =>
         item !== null && typeof item === "object" && !Array.isArray(item)
           ? stripUndefined(item as Record<string, unknown>)
-          : item,
+          : item
       );
     } else {
       result[key] = value;
@@ -76,7 +81,9 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
 /** A doc is legacy when it has no stepPairings but does carry a beats blob. */
 function isLegacyBeatsDoc(data: AnyRec): boolean {
   const seqData = (data["sequenceData"] as AnyRec) ?? {};
-  const hasPairings = Array.isArray(data["stepPairings"]) && (data["stepPairings"] as unknown[]).length > 0;
+  const hasPairings =
+    Array.isArray(data["stepPairings"]) &&
+    (data["stepPairings"] as unknown[]).length > 0;
   const beats = (seqData["beats"] as unknown[]) ?? (data["beats"] as unknown[]);
   return !hasPairings && Array.isArray(beats) && beats.length > 0;
 }
@@ -84,7 +91,8 @@ function isLegacyBeatsDoc(data: AnyRec): boolean {
 /** Build a current-schema SequenceData from the legacy beats blob. */
 function legacyToSequenceData(docId: string, data: AnyRec): SequenceData {
   const seqData = (data["sequenceData"] as AnyRec) ?? {};
-  const beats = ((seqData["beats"] as AnyRec[]) ?? (data["beats"] as AnyRec[]) ?? []);
+  const beats =
+    (seqData["beats"] as AnyRec[]) ?? (data["beats"] as AnyRec[]) ?? [];
 
   // Legacy beats already carry motions in the current MotionData shape (same
   // string enum values: cw/ccw/out/dash/...). Carry them through and normalize
@@ -92,10 +100,11 @@ function legacyToSequenceData(docId: string, data: AnyRec): SequenceData {
   const steps = beats.map((b, i) => ({
     ...b,
     isStep: true,
-    stepNumber: typeof b["beatNumber"] === "number" ? (b["beatNumber"] as number) : i + 1,
+    stepNumber:
+      typeof b["beatNumber"] === "number" ? (b["beatNumber"] as number) : i + 1,
     duration: typeof b["duration"] === "number" ? (b["duration"] as number) : 1,
-    blueReversal: Boolean(b["blueReversal"]),
-    redReversal: Boolean(b["redReversal"]),
+    leftReversal: Boolean(b["blueReversal"]),
+    rightReversal: Boolean(b["redReversal"]),
     isBlank: Boolean(b["isBlank"]),
   }));
 
@@ -105,7 +114,10 @@ function legacyToSequenceData(docId: string, data: AnyRec): SequenceData {
     (data["startPosition"] as AnyRec) ??
     (data["startingPositionBeat"] as AnyRec);
 
-  const gridMode = (data["gridMode"] as string) ?? (seqData["gridMode"] as string) ?? "diamond";
+  const gridMode =
+    (data["gridMode"] as string) ??
+    (seqData["gridMode"] as string) ??
+    "diamond";
 
   const startPosition = legacySP
     ? {
@@ -128,8 +140,10 @@ function legacyToSequenceData(docId: string, data: AnyRec): SequenceData {
     (seqData["name"] as string) ??
     docId;
 
-  const metaName = ((data["metadata"] as AnyRec)?.["name"] as string) ?? undefined;
-  const name = (data["name"] as string) ?? (seqData["name"] as string) ?? metaName ?? word;
+  const metaName =
+    ((data["metadata"] as AnyRec)?.["name"] as string) ?? undefined;
+  const name =
+    (data["name"] as string) ?? (seqData["name"] as string) ?? metaName ?? word;
 
   return {
     ...data,
@@ -174,20 +188,27 @@ async function main(): Promise<void> {
 
       // Verify the derived word matches the original — proof the transform is faithful.
       const originalWord = seq.word;
-      const derivedWord = deriveWord({ ...composed, steps: seq.steps } as SequenceData);
+      const derivedWord = deriveWord({
+        ...composed,
+        steps: seq.steps,
+      } as SequenceData);
       const wordMatch = derivedWord === originalWord;
 
       console.log(`── ${docId}`);
       console.log(`   word:            "${originalWord}"`);
       console.log(`   beats → steps:   ${beatsCount}`);
-      console.log(`   stepPairings:    ${pairings.length}  (derived word "${derivedWord}", match=${wordMatch})`);
-      console.log(`   blueSoloHash:    ${composed.blueSoloHash}`);
-      console.log(`   redSoloHash:     ${composed.redSoloHash}`);
+      console.log(
+        `   stepPairings:    ${pairings.length}  (derived word "${derivedWord}", match=${wordMatch})`
+      );
+      console.log(`   leftSoloHash:    ${composed.leftSoloHash}`);
+      console.log(`   rightSoloHash:   ${composed.rightSoloHash}`);
       console.log(`   sequenceLength:  ${beatsCount}`);
       console.log(`   contentHash:     ${contentHash}`);
 
       if (!wordMatch || pairings.length !== beatsCount) {
-        console.log(`   ⚠️  ABORT this doc — word/pairings mismatch, not writing.\n`);
+        console.log(
+          `   ⚠️  ABORT this doc — word/pairings mismatch, not writing.\n`
+        );
         skippedMismatch++;
         continue;
       }
@@ -200,12 +221,12 @@ async function main(): Promise<void> {
         gridMode: seq.gridMode,
         startPosition: seq.startPosition as unknown as AnyRec,
         stepPairings: composed.stepPairings as unknown as AnyRec,
-        blueSoloProp: composed.blueSoloProp as unknown as AnyRec,
-        redSoloProp: composed.redSoloProp as unknown as AnyRec,
-        bluePathHash: composed.bluePathHash,
-        redPathHash: composed.redPathHash,
-        blueSoloHash: composed.blueSoloHash,
-        redSoloHash: composed.redSoloHash,
+        leftSoloProp: composed.leftSoloProp as unknown as AnyRec,
+        rightSoloProp: composed.rightSoloProp as unknown as AnyRec,
+        leftPathHash: composed.leftPathHash,
+        rightPathHash: composed.rightPathHash,
+        leftSoloHash: composed.leftSoloHash,
+        rightSoloHash: composed.rightSoloHash,
         sequenceLength: beatsCount,
         contentHash,
         contentHashVersion: CONTENT_HASH_VERSION,
@@ -229,7 +250,9 @@ async function main(): Promise<void> {
       }
     } catch (err) {
       failed++;
-      console.log(`   ❌ FAILED: ${err instanceof Error ? err.message : String(err)}\n`);
+      console.log(
+        `   ❌ FAILED: ${err instanceof Error ? err.message : String(err)}\n`
+      );
     }
   }
 

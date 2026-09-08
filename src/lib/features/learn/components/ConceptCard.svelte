@@ -1,213 +1,192 @@
-<!--
-ConceptCard - Compact card for a single TKA concept
-
-Displays:
-- Left accent bar (status color)
-- Concept icon
-- Concept name
-- Time estimate
-- Checkmark for completed
--->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { HapticFeedback } from "../../../shared/application/services/haptic-feedback";
-  import { CONCEPT_CATEGORIES } from "../domain/concepts";
   import type { LearnConcept, ConceptStatus } from "../domain/types";
+  import ConceptPreview from "./ConceptPreview.svelte";
 
   let {
     concept,
     status,
     premiumGated = false,
+    prominent = false,
     onClick,
-  }: {
+  } = $props<{
     concept: LearnConcept;
     status: ConceptStatus;
     premiumGated?: boolean;
+    prominent?: boolean;
     onClick?: (concept: LearnConcept) => void;
-  } = $props();
+  }>();
 
-  const hapticService = getHapticFeedback();
-
-  const isClickable = $derived(status !== "locked");
-
-  // Status colors - referenced via --status-color CSS custom property
-  const statusColors: Record<ConceptStatus, string> = {
-    locked: "var(--theme-text-dim, #6B7280)",
-    available: "var(--prop-blue, #4A90E2)",
-    "in-progress": "var(--theme-accent, #7B68EE)",
-    completed: "var(--semantic-success, #50C878)",
-  };
-
-  const statusColor = $derived(statusColors[status as ConceptStatus]);
-
-  // Category color for icon styling
-  const categoryColor = $derived(
-    CONCEPT_CATEGORIES[concept.category]?.color ?? "#4A90E2"
+  const haptic = getHapticFeedback();
+  const action = $derived(
+    status === "completed"
+      ? "Review lesson"
+      : status === "in-progress"
+        ? "Continue"
+        : status === "locked"
+          ? "Locked"
+          : "Start lesson"
   );
 
-  function handleClick() {
-    if (!isClickable) return;
-    hapticService?.trigger("selection");
+  function openLesson() {
+    if (status === "locked") return;
+    haptic?.trigger("selection");
     onClick?.(concept);
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleClick();
-    }
   }
 </script>
 
 <button
   class="concept-card"
-  class:locked={status === "locked"}
-  class:completed={status === "completed"}
-  class:available={status === "available"}
+  class:prominent
   class:in-progress={status === "in-progress"}
-  style="--status-color: {statusColor}; --category-color: {categoryColor}"
-  onclick={handleClick}
-  onkeydown={handleKeydown}
-  disabled={!isClickable}
-  aria-label="{concept.name} - {status}"
-  tabindex={isClickable ? 0 : -1}
+  onclick={openLesson}
+  disabled={status === "locked"}
+  aria-label={`${action}: ${concept.name}`}
 >
-  <div class="card-content">
-    <span class="icon"
-      ><i class="fa-solid {concept.icon}" aria-hidden="true"></i></span
-    >
-    <span class="name">{concept.shortName}</span>
-  </div>
-  {#if status === "completed"}
-    <span class="check"
-      ><i class="fa-solid fa-check" aria-hidden="true"></i></span
-    >
-  {:else if premiumGated}
-    <span class="premium-crown" title="Premium feature">
-      <i class="fas fa-crown" aria-hidden="true"></i>
+  <span class="preview"><ConceptPreview conceptId={concept.id} /></span>
+  <span class="lesson-info">
+    {#if prominent}<span class="recommendation"
+        >{status === "in-progress"
+          ? "Pick up where you left off"
+          : "Up next"}</span
+      >{/if}
+    <span class="name">{concept.name}</span>
+    <span class="description">{concept.description}</span>
+    <span class="meta">
+      <span>{concept.estimatedMinutes} min</span>
+      {#if status === "completed"}
+        <span class="completion"
+          ><i class="fa-solid fa-check" aria-hidden="true"></i> Completed</span
+        >
+      {:else if premiumGated}
+        <span><i class="fa-solid fa-crown" aria-hidden="true"></i> Premium</span
+        >
+      {/if}
     </span>
-  {/if}
+  </span>
+  <span class="action" aria-hidden="true">
+    <span>{action}</span>
+    <i class="fa-solid fa-arrow-right"></i>
+  </span>
 </button>
 
 <style>
   .concept-card {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0.75rem;
-    min-height: 80px;
-    background: var(--theme-card-bg);
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    column-gap: 1.125rem;
+    row-gap: 0.625rem;
+    align-items: start;
+    width: 100%;
+    min-height: 11rem;
+    padding: 1.125rem;
     border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-    transition: all var(--duration-normal) ease;
-    width: 100%;
-    text-align: center;
+    border-radius: var(--radius-lg, 0.75rem);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    text-align: left;
     cursor: pointer;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast);
   }
-
-  .card-content {
+  .concept-card:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong, var(--theme-text-dim));
+  }
+  .concept-card:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 3px;
+  }
+  .concept-card:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .preview {
+    grid-row: 1 / -1;
+    align-self: center;
+    min-width: 0;
+  }
+  .lesson-info {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.375rem;
-    flex: 1;
+    min-width: 0;
   }
-
-  .concept-card:hover:not(.locked) {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong, var(--theme-stroke-strong));
-    transform: translateY(-2px);
-  }
-
-  .concept-card.locked {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .concept-card.available {
-    border-color: color-mix(in srgb, var(--status-color) 30%, transparent);
-  }
-
-  .concept-card.in-progress {
-    background: color-mix(in srgb, var(--status-color) 10%, rgba(0, 0, 0, 0.2));
-    border-color: color-mix(in srgb, var(--status-color) 40%, transparent);
-  }
-
-  .concept-card.completed {
-    background: color-mix(in srgb, var(--semantic-success, #50c878) 8%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success, #50c878) 20%, transparent);
-  }
-
-  .icon {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    color: var(--category-color);
-    opacity: 0.9;
-  }
-
   .name {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text);
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+  .description {
+    margin-top: 0.375rem;
+    color: var(--theme-text-dim);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem 0.875rem;
+    margin-top: 0.625rem;
+    color: var(--theme-text-dim);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+  .meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     white-space: nowrap;
-    letter-spacing: -0.01em;
-    width: 100%;
   }
-
-  .check {
-    position: absolute;
-    top: 0.375rem;
-    right: 0.375rem;
-    width: 16px;
-    height: 16px;
-    background: var(--status-color);
-    border-radius: 50%;
-    display: flex;
+  .completion {
+    color: var(--semantic-success);
+  }
+  .action {
+    grid-column: 2;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-compact, 12px);
-    color: white;
-    flex-shrink: 0;
+    justify-self: start;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 650;
+    line-height: 1.4;
+    white-space: nowrap;
   }
-
-  .premium-crown {
-    --premium-gold: #fbbf24;
-    position: absolute;
-    top: 0.375rem;
-    right: 0.375rem;
-    font-size: 0.625rem;
-    color: var(--premium-gold);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .action i {
+    font-size: 0.75rem;
   }
-
-  /* Focus state */
-  .concept-card:focus-visible {
-    outline: 2px solid var(--status-color);
-    outline-offset: 2px;
+  .prominent {
+    border-color: var(--theme-accent);
+    grid-template-columns: 7rem minmax(0, 1fr);
+    padding: 1.25rem;
   }
-
-  .concept-card[disabled] {
-    cursor: not-allowed;
+  .prominent .name {
+    font-size: 1.25rem;
   }
-
-  /* Reduced motion */
+  .recommendation {
+    margin-bottom: 0.5rem;
+    color: var(--theme-text-dim);
+    font-size: 0.875rem;
+  }
+  .in-progress .action {
+    color: var(--theme-accent);
+  }
+  @container learn-tab (max-width: 620px) {
+    .concept-card {
+      grid-template-columns: 4.5rem minmax(0, 1fr);
+      column-gap: 0.875rem;
+      padding: 1rem;
+      min-height: 10rem;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .concept-card {
       transition: none;
-    }
-    .concept-card:hover:not(.locked) {
-      transform: none;
     }
   }
 </style>

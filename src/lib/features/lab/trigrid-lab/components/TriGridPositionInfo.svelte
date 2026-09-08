@@ -23,16 +23,16 @@
   ].join("; ");
 
   interface Props {
-    blueLocation: GridLocation;
-    redLocation: GridLocation;
+    leftLocation: GridLocation;
+    rightLocation: GridLocation;
     mode: TriGridMode;
   }
 
-  const { blueLocation, redLocation, mode }: Props = $props();
+  const { leftLocation, rightLocation, mode }: Props = $props();
 
   const resolver = getTriGridPositionResolver();
 
-  const positionInfo = $derived(resolver.resolvePosition(blueLocation, redLocation, mode));
+  const positionInfo = $derived(resolver.resolvePosition(leftLocation, rightLocation, mode));
 
   const typeDescriptions: Record<number, string> = {
     1: "Dual-Shift (both shift)",

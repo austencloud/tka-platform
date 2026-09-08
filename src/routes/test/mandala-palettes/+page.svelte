@@ -31,16 +31,16 @@
   }
 
   function withFills(
-    blueStroke: string,
-    redStroke: string,
+    leftStroke,
+    rightStroke,
     purpleStroke: string,
     fillAlpha: number,
   ): MandalaPalette {
     return {
-      blueStroke,
-      blueFill: withAlpha(blueStroke, fillAlpha),
-      redStroke,
-      redFill: withAlpha(redStroke, fillAlpha),
+      leftStroke,
+      leftFill: withAlpha(leftStroke, fillAlpha),
+      rightStroke,
+      rightFill: withAlpha(rightStroke, fillAlpha),
       purpleStroke,
       purpleFill: withAlpha(purpleStroke, 0.2),
     };

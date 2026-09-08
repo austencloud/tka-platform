@@ -48,8 +48,8 @@ describe("scan activity connection lifecycle", () => {
           lng: -87.65,
           deviceId: null,
           userId: null,
-          bluePropType: null,
-          redPropType: null,
+          leftPropType: null,
+          rightPropType: null,
           catDogMode: null,
         },
       ]);

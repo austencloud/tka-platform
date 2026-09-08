@@ -8,7 +8,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { ICreateModuleState } from "../../types/create-module-types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getStepDataFromState, START_POSITION_BEAT_NUMBER } from "./step-data-helpers";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 const logger = createComponentLogger("PathShapeHandler");
 
@@ -19,7 +19,7 @@ export type PathShapeValue = "arc" | "linear" | "concave";
  */
 export function setPathShape(
   stepNumber: number,
-  color: MotionColor,
+  color: HandSide,
   shape: PathShapeValue,
   createModuleState: ICreateModuleState
 ): void {
@@ -75,7 +75,7 @@ export function setPathShape(
  */
 export function clearPathShape(
   stepNumber: number,
-  color: MotionColor,
+  color: HandSide,
   createModuleState: ICreateModuleState
 ): void {
   if (stepNumber === START_POSITION_BEAT_NUMBER) return;
@@ -118,7 +118,7 @@ export function clearPathShape(
  */
 export function getPathShape(
   stepNumber: number,
-  color: MotionColor,
+  color: HandSide,
   createModuleState: ICreateModuleState
 ): PathShapeValue | undefined {
   const stepData = getStepDataFromState(stepNumber, createModuleState);

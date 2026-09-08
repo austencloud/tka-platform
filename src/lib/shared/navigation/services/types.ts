@@ -5,7 +5,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ModuleId, Section } from "../domain/types";
 
-
 export type SheetType =
   | "settings"
   | "profile-settings"
@@ -27,7 +26,6 @@ export interface RouteState {
   spotlight?: string;
   animationPanel?: AnimationPanelState;
 }
-
 
 export interface ModuleMapping {
   /**
@@ -51,7 +49,6 @@ export interface DeepLinkData {
   returnPath?: string;
 }
 
-
 export interface URLSyncOptions {
   /** Milliseconds to debounce (default: 500) */
   debounce?: number;
@@ -64,7 +61,6 @@ export interface DebouncedUrlSync {
   (sequence: SequenceData | null): void;
   cancel: () => void;
 }
-
 
 export interface CompressionResult {
   encoded: string;
@@ -97,14 +93,14 @@ export interface ShareURLMetadata {
   birthday?: string;
   /** BPM value */
   bpm?: number;
-  /** Blue prop type (encoded as short string) */
-  bluePropType?: string;
-  /** Red prop type (encoded as short string) */
-  redPropType?: string;
+  /** Left-hand prop type (encoded as short string) */
+  leftPropType?: string;
+  /** Right-hand prop type (encoded as short string) */
+  rightPropType?: string;
 }
 export interface URLPropOptions {
-  bluePropType?: string;
-  redPropType?: string;
+  leftPropType?: string;
+  rightPropType?: string;
   catDogMode?: boolean;
 }
 export interface SequenceRouteIdParseResult {
@@ -123,7 +119,6 @@ export interface QRSizeEstimate {
   /** Warning message if sequence is too large for comfortable scanning */
   warning?: string;
 }
-
 
 export interface TabVisibilityInfo {
   section: Section;

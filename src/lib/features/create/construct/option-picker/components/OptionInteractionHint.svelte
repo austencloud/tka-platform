@@ -45,7 +45,7 @@
     const containerBounds = container.getBoundingClientRect();
     const anchorBounds = anchor.getBoundingClientRect();
     const obstacles = container.querySelectorAll<HTMLElement>(
-      ".utility-shell, .picker-header-slot, .controls-corner"
+      ".utility-shell, .picker-header-slot, .compact-header-slot, .controls-corner"
     );
     let element: HTMLElement | null = null;
     let bottom = containerBounds.top;

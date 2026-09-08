@@ -74,6 +74,7 @@
       ]);
       const { returnPath, returnLabel } = getReturnContext();
       openSequenceViewer(sequenceWithOwner, {
+        source: "create_workspace",
         returnPath,
         returnLabel,
         playOnOpen: true,

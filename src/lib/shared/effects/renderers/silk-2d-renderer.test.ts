@@ -10,42 +10,42 @@ import type { SilkPalette } from "../domain/silk-palettes";
 import type { EmitterTip } from "./emitter-tip";
 
 type PosBag = {
-  bluePosA?: { x: number; y: number };
-  bluePosB?: { x: number; y: number };
-  redPosA?: { x: number; y: number };
-  redPosB?: { x: number; y: number };
+  leftPosA?: { x: number; y: number };
+  leftPosB?: { x: number; y: number };
+  rightPosA?: { x: number; y: number };
+  rightPosB?: { x: number; y: number };
 };
 
 /** Convert the legacy 4-slot bag to the flat emitter contract (base props). */
 function toEmitters(s: PosBag): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (s.bluePosA)
+  if (s.leftPosA)
     out.push({
-      ...s.bluePosA,
+      ...s.leftPosA,
       propIndex: 0,
       tipIndex: 0,
       end: "A",
       color: "#3a7fd9",
     });
-  if (s.bluePosB)
+  if (s.leftPosB)
     out.push({
-      ...s.bluePosB,
+      ...s.leftPosB,
       propIndex: 0,
       tipIndex: 1,
       end: "B",
       color: "#3a7fd9",
     });
-  if (s.redPosA)
+  if (s.rightPosA)
     out.push({
-      ...s.redPosA,
+      ...s.rightPosA,
       propIndex: 1,
       tipIndex: 0,
       end: "A",
       color: "#d94f4f",
     });
-  if (s.redPosB)
+  if (s.rightPosB)
     out.push({
-      ...s.redPosB,
+      ...s.rightPosB,
       propIndex: 1,
       tipIndex: 1,
       end: "B",
@@ -119,10 +119,10 @@ function makeParams(overrides: Partial<Silk2DParams> = {}): Silk2DParams {
 /** Drive the tips along +x so each emitter records a moving ribbon. */
 function moveBag(i: number): PosBag {
   return {
-    bluePosA: { x: 100 + i * 8, y: 100 },
-    bluePosB: { x: 120 + i * 8, y: 140 },
-    redPosA: { x: 200 + i * 8, y: 100 },
-    redPosB: { x: 220 + i * 8, y: 140 },
+    leftPosA: { x: 100 + i * 8, y: 100 },
+    leftPosB: { x: 120 + i * 8, y: 140 },
+    rightPosA: { x: 200 + i * 8, y: 100 },
+    rightPosB: { x: 220 + i * 8, y: 140 },
   };
 }
 
@@ -183,11 +183,11 @@ describe("Silk2DRenderer", () => {
   });
 
   it("carries prop color into neutral silk materials", () => {
-    const blue = resolveSilk2DMaterialColors(SATIN, "#3a7fd9", 0.5);
-    const red = resolveSilk2DMaterialColors(SATIN, "#d94f4f", 0.5);
-    expect(blue.body).not.toBe(red.body);
-    expect(blue.edge).not.toBe(red.edge);
-    expect(blue.body).not.toBe("rgb(192,192,208)");
+    const left = resolveSilk2DMaterialColors(SATIN, "#3a7fd9", 0.5);
+    const right = resolveSilk2DMaterialColors(SATIN, "#d94f4f", 0.5);
+    expect(left.body).not.toBe(right.body);
+    expect(left.edge).not.toBe(right.edge);
+    expect(left.body).not.toBe("rgb(192,192,208)");
   });
 
   it("renders ribbons once enough samples accumulate", () => {

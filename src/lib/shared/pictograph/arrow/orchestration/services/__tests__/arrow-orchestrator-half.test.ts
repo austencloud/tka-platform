@@ -11,7 +11,7 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -39,13 +39,13 @@ function segmentPictograph() {
     startOrientation: Orientation.IN,
     endOrientation: Orientation.CLOCK,
     turns: 1,
-    color: MotionColor.RED,
+    hand: HandSide.RIGHT,
     segment: HALF,
   });
   const picto = {
     letter: null,
     gridMode: motion.gridMode,
-    motions: { red: motion, blue: undefined },
+    motions: { right: motion, left: undefined },
   } as unknown as PictographData;
   return { picto, motion };
 }

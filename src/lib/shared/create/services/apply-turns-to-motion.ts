@@ -16,7 +16,7 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -31,7 +31,7 @@ const logger = createComponentLogger("ApplyTurnsToMotion");
 export function applyTurnToMotion(
   turnValue: TurnValue,
   currentMotion: MotionData,
-  color: MotionColor,
+  color: HandSide,
   allSteps: readonly StepData[],
   stepIndex: number
 ): { motion: MotionData | null; warning?: string } {
@@ -58,7 +58,7 @@ export function applyTurnToMotion(
     rotationDirection = findRotationContext(allSteps, stepIndex, color);
     if (rotationDirection !== currentMotion.rotationDirection) {
       logger.log(
-        `Applied context rotation ${rotationDirection} to beat ${stepIndex + 1} ${color}`
+        `Applied context rotation ${rotationDirection} to step ${stepIndex + 1} ${color}`
       );
     }
   }
@@ -75,27 +75,27 @@ export function applyTurnToMotion(
 function findRotationContext(
   steps: readonly StepData[],
   currentStepIndex: number,
-  color: MotionColor
+  color: HandSide
 ): RotationDirection {
   for (let i = currentStepIndex - 1; i >= 0; i--) {
-    const beat = steps[i];
-    if (!beat) continue;
-    const motion = beat.motions?.[color];
+    const step = steps[i];
+    if (!step) continue;
+    const motion = step.motions?.[color];
     if (isVisibleMotion(motion) && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
       logger.log(
-        `Found backward rotation context at beat ${i + 1}: ${motion.rotationDirection}`
+        `Found backward rotation context at step ${i + 1}: ${motion.rotationDirection}`
       );
       return motion.rotationDirection;
     }
   }
 
   for (let i = currentStepIndex + 1; i < steps.length; i++) {
-    const beat = steps[i];
-    if (!beat) continue;
-    const motion = beat.motions?.[color];
+    const step = steps[i];
+    if (!step) continue;
+    const motion = step.motions?.[color];
     if (isVisibleMotion(motion) && motion.rotationDirection !== RotationDirection.NO_ROTATION) {
       logger.log(
-        `Found forward rotation context at beat ${i + 1}: ${motion.rotationDirection}`
+        `Found forward rotation context at step ${i + 1}: ${motion.rotationDirection}`
       );
       return motion.rotationDirection;
     }
@@ -111,7 +111,7 @@ function findRotationContext(
 function createUpdatedMotion(
   currentMotion: MotionData,
   turnValue: TurnValue,
-  color: MotionColor,
+  color: HandSide,
   rotationDirection?: RotationDirection
 ): MotionData {
   const currentTurns = currentMotion.turns;
@@ -181,7 +181,7 @@ function createUpdatedMotion(
 function applyHandTurns(
   motion: MotionData,
   turns: number | "fl",
-  color: MotionColor,
+  color: HandSide,
   direction: RotationDirection
 ): MotionData {
   const isDashOrStatic =
@@ -206,23 +206,23 @@ function applyHandTurns(
  */
 export function applyPendingTurnsToOption(
   option: PictographData,
-  blueTurns: number | "fl",
-  redTurns: number | "fl",
-  blueDirection: RotationDirection,
-  redDirection: RotationDirection
+  leftTurns: number | "fl",
+  rightTurns: number | "fl",
+  leftDirection: RotationDirection,
+  rightDirection: RotationDirection
 ): PictographData {
-  const blue = option.motions?.blue;
-  const red = option.motions?.red;
+  const left = option.motions?.left;
+  const right = option.motions?.right;
   // Invisible placeholder = hand not really there (both-required Step shape):
   // never bake turns-bar values into placeholders.
-  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) return option;
+  if (!isVisibleMotion(left) || !isVisibleMotion(right)) return option;
 
   return {
     ...option,
     motions: {
       ...option.motions,
-      blue: applyHandTurns(blue, blueTurns, MotionColor.BLUE, blueDirection),
-      red: applyHandTurns(red, redTurns, MotionColor.RED, redDirection),
+      left: applyHandTurns(left, leftTurns, HandSide.LEFT, leftDirection),
+      right: applyHandTurns(right, rightTurns, HandSide.RIGHT, rightDirection),
     },
   };
 }

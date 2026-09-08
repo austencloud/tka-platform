@@ -3,7 +3,7 @@ import { createStepData } from "$lib/shared/foundation/domain/factories/create-s
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
-  MotionColor,
+  HandSide,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -89,9 +89,9 @@ describe("history transition planner", () => {
       duration: 2,
       motions: {
         ...original.motions,
-        [MotionColor.BLUE]: createMotionData({
-          ...original.motions.blue,
-          color: MotionColor.BLUE,
+        [HandSide.LEFT]: createMotionData({
+          ...original.motions.left,
+          hand: HandSide.LEFT,
           endOrientation: Orientation.OUT,
         }),
       },

@@ -333,6 +333,14 @@ export class ThumbnailMetricsCollector {
     return metrics;
   }
 
+  updateRequestContext(
+    requestId: string,
+    context: Partial<ThumbnailRequestContext>
+  ): void {
+    const pending = this.pendingRequests.get(requestId);
+    if (pending) Object.assign(pending.context, context);
+  }
+
   recordUpload(succeeded: boolean): void {
     if (succeeded) {
       this.uploadSuccesses++;

@@ -15,7 +15,7 @@ import { Period } from "$lib/features/create/generate/circular/domain/models/cir
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -26,8 +26,8 @@ function step(
   stepNumber: number,
   startPosition: GridPosition | null,
   endPosition: GridPosition | null,
-  blue: Partial<Parameters<typeof createMotionData>[0]>,
-  red: Partial<Parameters<typeof createMotionData>[0]>,
+  left: Partial<Parameters<typeof createMotionData>[0]>,
+  right: Partial<Parameters<typeof createMotionData>[0]>,
 ): StepData {
   return {
     id: `step-${stepNumber}`,
@@ -35,12 +35,12 @@ function step(
     startPosition,
     endPosition,
     duration: 1,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
     isBlank: false,
     motions: {
-      [MotionColor.BLUE]: createMotionData({ color: MotionColor.BLUE, ...blue }),
-      [MotionColor.RED]: createMotionData({ color: MotionColor.RED, ...red }),
+      [HandSide.LEFT]: createMotionData({ hand: HandSide.LEFT, ...left }),
+      [HandSide.RIGHT]: createMotionData({ hand: HandSide.RIGHT, ...right }),
     },
   } as StepData;
 }

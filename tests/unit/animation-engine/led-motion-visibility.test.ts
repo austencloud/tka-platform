@@ -40,19 +40,19 @@ function ledSample(propIndex: number): LedSample {
 }
 
 function frameParams({
-  blueProp,
-  redProp,
-  blueMotionVisible,
-  redMotionVisible,
+  leftProp,
+  rightProp,
+  leftMotionVisible,
+  rightMotionVisible,
   additionalLayers = [],
 }: {
-  blueProp: PropState | null;
-  redProp: PropState | null;
-  blueMotionVisible: boolean;
-  redMotionVisible: boolean;
+  leftProp: PropState | null;
+  rightProp: PropState | null;
+  leftMotionVisible: boolean;
+  rightMotionVisible: boolean;
   additionalLayers?: Array<{
-    blueProp: PropState | null;
-    redProp: PropState | null;
+    leftProp: PropState | null;
+    rightProp: PropState | null;
   }>;
 }): RenderFrameParams {
   return {
@@ -63,23 +63,23 @@ function frameParams({
     gridMode: null,
     letter: null,
     props: {
-      blueProp,
-      redProp,
+      leftProp,
+      rightProp,
       additionalLayers,
-      bluePropDimensions: { width: 252.8, height: 77.8 },
-      redPropDimensions: { width: 252.8, height: 77.8 },
+      leftPropDimensions: { width: 252.8, height: 77.8 },
+      rightPropDimensions: { width: 252.8, height: 77.8 },
       tunnelSpectrum: false,
     },
     visibility: {
       gridVisible: false,
       propsVisible: true,
       trailsVisible: false,
-      blueMotionVisible,
-      redMotionVisible,
+      leftMotionVisible,
+      rightMotionVisible,
     },
     isPlaying: true,
-    bluePropType: "staff",
-    redPropType: "staff",
+    leftPropType: "staff",
+    rightPropType: "staff",
     tipEffectMap: { "*": { effect: "led" } },
     ledConfig: { ...DEFAULT_LED_CONFIG, enabled: true },
   };
@@ -88,16 +88,16 @@ function frameParams({
 function createHarness() {
   const update = vi.fn(
     (
-      blueProp: PropState | null,
-      redProp: PropState | null,
+      leftProp: PropState | null,
+      rightProp: PropState | null,
       config: LedSamplerConfig
     ): LedSample[] => {
       const leds: LedSample[] = [];
-      if (blueProp) leds.push(ledSample(0));
-      if (redProp) leds.push(ledSample(1));
+      if (leftProp) leds.push(ledSample(0));
+      if (rightProp) leds.push(ledSample(1));
       config.additionalLayers?.forEach((layer, index) => {
-        if (layer.blueProp) leds.push(ledSample(2 + index * 2));
-        if (layer.redProp) leds.push(ledSample(3 + index * 2));
+        if (layer.leftProp) leds.push(ledSample(2 + index * 2));
+        if (layer.rightProp) leds.push(ledSample(3 + index * 2));
       });
       return leds;
     }
@@ -126,29 +126,29 @@ function createHarness() {
 
 describe("AnimationRenderLoop LED motion visibility", () => {
   it("removes a hidden hand and its tunnel copies from the LED frame", () => {
-    const blueProp = prop(0);
-    const redProp = prop(Math.PI);
-    const blueLayerProp = prop(0.5);
-    const redLayerProp = prop(2.5);
+    const leftProp = prop(0);
+    const rightProp = prop(Math.PI);
+    const leftLayerProp = prop(0.5);
+    const rightLayerProp = prop(2.5);
     const { loop, update, renderLeds } = createHarness();
 
     loop.renderSync(
       frameParams({
-        blueProp,
-        redProp,
-        blueMotionVisible: false,
-        redMotionVisible: true,
-        additionalLayers: [{ blueProp: blueLayerProp, redProp: redLayerProp }],
+        leftProp,
+        rightProp,
+        leftMotionVisible: false,
+        rightMotionVisible: true,
+        additionalLayers: [{ leftProp: leftLayerProp, rightProp: rightLayerProp }],
       }),
       100,
       1 / 60
     );
 
-    const [visibleBlue, visibleRed, samplerConfig] = update.mock.calls[0]!;
-    expect(visibleBlue).toBeNull();
-    expect(visibleRed).toBe(redProp);
+    const [visibleLeft, visibleRight, samplerConfig] = update.mock.calls[0]!;
+    expect(visibleLeft).toBeNull();
+    expect(visibleRight).toBe(rightProp);
     expect(samplerConfig.additionalLayers).toEqual([
-      { blueProp: null, redProp: redLayerProp },
+      { leftProp: null, rightProp: rightLayerProp },
     ]);
     expect(renderLeds).toHaveBeenCalledOnce();
     expect(
@@ -161,10 +161,10 @@ describe("AnimationRenderLoop LED motion visibility", () => {
 
     loop.renderSync(
       frameParams({
-        blueProp: prop(0),
-        redProp: null,
-        blueMotionVisible: false,
-        redMotionVisible: true,
+        leftProp: prop(0),
+        rightProp: null,
+        leftMotionVisible: false,
+        rightMotionVisible: true,
       }),
       100,
       1 / 60

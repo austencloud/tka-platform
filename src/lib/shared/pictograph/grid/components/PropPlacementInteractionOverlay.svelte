@@ -4,7 +4,8 @@
   import type { PlacementGuideCoordinates } from "../services/prop-placement-view-model";
   import type { PropPlacementAimState } from "../state/prop-placement-aim-state.svelte";
   import type { PropPlacementState } from "../state/prop-placement-state.svelte";
-  import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
+  import { HandSide } from "../../shared/domain/enums/pictograph-enums";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   interface Props {
     placement: PropPlacementState;
@@ -12,8 +13,8 @@
     activePoints: PlacementGridPoint[];
     hitTargetRadius: number;
     pulseColor: string;
-    blueNoun: string;
-    redNoun: string;
+    leftNoun: string;
+    rightNoun: string;
     showGuideLines: boolean;
     guideLineType?: "alpha" | "beta" | "gamma";
     guideCoordinates: PlacementGuideCoordinates | null;
@@ -26,20 +27,20 @@
     activePoints,
     hitTargetRadius,
     pulseColor,
-    blueNoun,
-    redNoun,
+    leftNoun,
+    rightNoun,
     showGuideLines,
     guideLineType,
     guideCoordinates,
     gammaArc,
   }: Props = $props();
 
-  function isBlueAt(location: GridLocation): boolean {
-    return placement.blueLocation === location;
+  function isLeftAt(location: GridLocation): boolean {
+    return placement.leftLocation === location;
   }
 
-  function isRedAt(location: GridLocation): boolean {
-    return placement.redLocation === location;
+  function isRightAt(location: GridLocation): boolean {
+    return placement.rightLocation === location;
   }
 </script>
 
@@ -47,16 +48,23 @@
   onpointermove={aim.handlePointerMove}
   onpointerup={aim.handlePointerUp}
   onpointercancel={aim.handlePointerCancel}
+  onblur={aim.cancelLocationDrag}
+  onkeydown={aim.handleEscape}
 />
 
 <svg
   viewBox="0 0 950 950"
   class="interaction-overlay"
+  class:location-grabbed={aim.grabbedLocationColor !== null}
+  style:--landing-duration={`${DURATION.dramatic}ms`}
+  role="group"
+  aria-label="Placement points"
+  onpointerdown={aim.handleBoardPointerDown}
   bind:this={aim.overlayElement}
 >
   <g class="touch-indicators">
     {#each activePoints as point (point.location)}
-      {#if placement.canPlace}
+      {#if placement.canPlace && aim.grabbedLocationColor === null}
         <circle
           cx={point.x}
           cy={point.y}
@@ -76,7 +84,75 @@
     {/each}
   </g>
 
-  {#if aim.highlightColor && aim.dragColor === null && aim.hoverOutline}
+  {#if aim.grabbedLocationColor !== null && aim.locationDragCenter}
+    {@const color =
+      aim.grabbedLocationColor === HandSide.RIGHT
+        ? "var(--prop-red)"
+        : "var(--prop-blue)"}
+    <g class="location-drag-feedback" aria-hidden="true" style:color>
+      {#each activePoints as point (point.location)}
+        <circle cx={point.x} cy={point.y} r="48" class="drop-option" />
+      {/each}
+      {#if aim.locationDragColor !== null && aim.locationDragOrigin}
+        <circle
+          cx={aim.locationDragOrigin.x}
+          cy={aim.locationDragOrigin.y}
+          r="32"
+          class="drag-origin"
+        />
+      {/if}
+      <circle
+        cx={aim.locationDragCenter.x}
+        cy={aim.locationDragCenter.y}
+        r="65"
+        class="grab-ring"
+      />
+      {#if aim.locationTarget}
+        <line
+          x1={aim.locationDragCenter.x}
+          y1={aim.locationDragCenter.y}
+          x2={aim.locationTarget.x}
+          y2={aim.locationTarget.y}
+          class="snap-guide"
+        />
+        <circle
+          cx={aim.locationTarget.x}
+          cy={aim.locationTarget.y}
+          r="48"
+          class="drop-target-contrast"
+        />
+        <circle
+          cx={aim.locationTarget.x}
+          cy={aim.locationTarget.y}
+          r="48"
+          class="drop-target"
+        />
+        <circle
+          cx={aim.locationTarget.x}
+          cy={aim.locationTarget.y}
+          r="10"
+          class="drop-center"
+        />
+      {/if}
+    </g>
+  {/if}
+
+  {#if aim.landing}
+    {#key aim.landing}
+      <circle
+        cx={aim.landing.point.x}
+        cy={aim.landing.point.y}
+        r="54"
+        class="drop-landing"
+        aria-hidden="true"
+        stroke={aim.landing.color === HandSide.RIGHT
+          ? "var(--prop-red)"
+          : "var(--prop-blue)"}
+      />
+    {/key}
+  {/if}
+
+  {#if aim.highlightColor && aim.dragHand === null && aim.hoverOutline}
     <polygon
       points={aim.hoverOutline}
       fill="none"
@@ -91,13 +167,13 @@
       r={aim.isBeta ? 44 : 56}
       fill="none"
       class="aim-halo"
-      class:resting={aim.dragColor === null}
+      class:resting={aim.dragHand === null}
       stroke={aim.highlightStroke}
       aria-hidden="true"
     />
   {/if}
 
-  {#if aim.dragPoint && aim.dragColor}
+  {#if aim.dragPoint && aim.dragHand}
     <g class="aim-ticks" aria-hidden="true">
       {#each aim.aimDirections as direction (direction.orientation)}
         {@const radians = (direction.angle * Math.PI) / 180}
@@ -110,7 +186,7 @@
           y2={aim.dragPoint.y + sin * 138}
           class="aim-tick"
           class:aimed={direction.orientation === aim.dragAim}
-          stroke={aim.dragColor === MotionColor.RED
+          stroke={aim.dragHand === HandSide.RIGHT
             ? "var(--prop-red, #ef4444)"
             : "var(--prop-blue, #3b82f6)"}
         />
@@ -127,16 +203,17 @@
         fill="transparent"
         class="click-target"
         class:tappable={aim.isPressable(point.location)}
+        class:occupied={isLeftAt(point.location) || isRightAt(point.location)}
         onpointerdown={(event) => aim.handlePointerDown(event, point.location)}
         onpointermove={(event) => aim.updateHover(event, point.location)}
         onpointerleave={aim.clearHover}
-        onclick={() => aim.handleClick(point.location)}
+        onclick={(event) => aim.handleClick(point.location, event)}
         onkeydown={(event) => aim.handleKeydown(event, point.location)}
         role="button"
         tabindex={aim.isPressable(point.location) ? 0 : -1}
-        aria-label="{point.label} point{isBlueAt(point.location)
-          ? ` (${blueNoun})`
-          : ''}{isRedAt(point.location) ? ` (${redNoun})` : ''}"
+        aria-label="{point.label} point{isLeftAt(point.location)
+          ? ` (${leftNoun})`
+          : ''}{isRightAt(point.location) ? ` (${rightNoun})` : ''}"
         aria-disabled={!aim.isPressable(point.location)}
       />
     {/each}
@@ -146,10 +223,10 @@
     <g class="guide-lines">
       {#if guideLineType === "alpha"}
         <line
-          x1={guideCoordinates.blue.x}
-          y1={guideCoordinates.blue.y}
-          x2={guideCoordinates.red.x}
-          y2={guideCoordinates.red.y}
+          x1={guideCoordinates.left.x}
+          y1={guideCoordinates.left.y}
+          x2={guideCoordinates.right.x}
+          y2={guideCoordinates.right.y}
           stroke="rgba(0, 0, 0, 0.4)"
           stroke-width="4"
           stroke-dasharray="15 10"
@@ -158,8 +235,8 @@
       {:else if guideLineType === "beta"}
         {#each [30, 50, 70] as radius, index}
           <circle
-            cx={guideCoordinates.blue.x}
-            cy={guideCoordinates.blue.y}
+            cx={guideCoordinates.left.x}
+            cy={guideCoordinates.left.y}
             r={radius}
             fill="none"
             stroke="rgba(0, 0, 0, 0.3)"
@@ -172,8 +249,8 @@
         <line
           x1="475"
           y1="475"
-          x2={guideCoordinates.blue.x}
-          y2={guideCoordinates.blue.y}
+          x2={guideCoordinates.left.x}
+          y2={guideCoordinates.left.y}
           stroke="rgba(0, 0, 0, 0.25)"
           stroke-width="2.5"
           stroke-dasharray="10 8"
@@ -181,8 +258,8 @@
         <line
           x1="475"
           y1="475"
-          x2={guideCoordinates.red.x}
-          y2={guideCoordinates.red.y}
+          x2={guideCoordinates.right.x}
+          y2={guideCoordinates.right.y}
           stroke="rgba(0, 0, 0, 0.25)"
           stroke-width="2.5"
           stroke-dasharray="10 8"
@@ -217,6 +294,65 @@
   .point-glow {
     opacity: 0.15;
     animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+
+  .location-drag-feedback {
+    pointer-events: none;
+  }
+  .drop-option {
+    fill: none;
+    stroke: var(--theme-text);
+    stroke-width: 3;
+    opacity: 0.3;
+  }
+  .drag-origin {
+    fill: currentColor;
+    opacity: 0.18;
+  }
+  .grab-ring {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 5;
+    opacity: 0.75;
+  }
+  .snap-guide {
+    stroke: currentColor;
+    stroke-width: 3;
+    opacity: 0.6;
+  }
+  .drop-target-contrast {
+    fill: none;
+    stroke: var(--theme-text);
+    stroke-width: 12;
+  }
+  .drop-target {
+    fill: color-mix(in srgb, currentColor 16%, transparent);
+    stroke: currentColor;
+    stroke-width: 7;
+  }
+  .drop-center {
+    fill: currentColor;
+  }
+  .drop-landing {
+    fill: none;
+    stroke-width: 10;
+    transform-box: fill-box;
+    transform-origin: center;
+    pointer-events: none;
+    animation: landing-ring var(--landing-duration) var(--ease-out) both;
+  }
+  @keyframes landing-ring {
+    from {
+      opacity: 0.9;
+      scale: 0.9;
+    }
+    to {
+      opacity: 0;
+      scale: 1.5;
+    }
+  }
+  .interaction-overlay.location-grabbed .click-target:hover {
+    fill: transparent;
   }
 
   .point-solid {
@@ -318,6 +454,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .drop-landing {
+      display: none;
+      animation: none;
+      opacity: 0;
+    }
     .point-glow {
       animation: none;
       opacity: 0.2;
@@ -336,5 +477,10 @@
       animation: none;
       opacity: 0.55;
     }
+  }
+  :global([data-motion-preference="reduce"]) .drop-landing {
+    display: none;
+    animation: none;
+    opacity: 0;
   }
 </style>

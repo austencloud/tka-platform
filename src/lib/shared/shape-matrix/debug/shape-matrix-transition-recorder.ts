@@ -42,6 +42,19 @@ export interface ShapeMatrixTransitionSummary {
   missedFramePct: number;
 }
 
+interface ShapeMatrixTransitionDiagnostics {
+  summary: () => ShapeMatrixTransitionSummary[];
+  log: () => ShapeMatrixTransitionSummary[];
+  reset: () => void;
+  request: (key: string) => number;
+  frameBudgetMs: number;
+  missedVsyncThresholdMs: number;
+}
+
+declare global {
+  var __tkaShapeMatrixTransitions: ShapeMatrixTransitionDiagnostics | undefined;
+}
+
 function elapsed(start: number, end: number | null): number | null {
   return end === null ? null : end - start;
 }
@@ -125,9 +138,7 @@ export class ShapeMatrixTransitionRecorder {
   constructor(enabled = diagnosticsEnabled()) {
     this.enabled = enabled;
     if (!this.enabled) return;
-    (globalThis as unknown as Record<string, unknown>)[
-      "__tkaShapeMatrixTransitions"
-    ] = {
+    globalThis.__tkaShapeMatrixTransitions = {
       summary: () => this.summary(),
       log: () => this.logSummary(),
       reset: () => this.reset(),

@@ -23,7 +23,7 @@ const WARM_H = 168; // ~5:7 card-ish; size is irrelevant to cache keys, just kee
  */
 export function getCardAssetBundle(
   sequences: SequenceData[],
-  opts: { bluePropType: PropType; redPropType: PropType; theme: string; iconPaths?: string[] },
+  opts: { leftPropType: PropType; rightPropType: PropType; theme: string; iconPaths?: string[] },
 ): Promise<AssetBundle> {
   return buildAssetBundle(sequences, opts, async (seqs, o) => {
     const composer = getImageComposer();
@@ -36,12 +36,12 @@ export function getCardAssetBundle(
       stepSize: 300,
       stepScale: 1,
       scale: 1,
-      redVisible: true,
-      blueVisible: true,
+      rightVisible: true,
+      leftVisible: true,
       addReversalSymbols: true,
       combinedGrids: false,
-      bluePropTypeOverride: o.bluePropType,
-      redPropTypeOverride: o.redPropType,
+      leftPropTypeOverride: o.leftPropType,
+      rightPropTypeOverride: o.rightPropType,
       visibilityOverrides: {
         showTKA: true,
         showTnD: false,
@@ -53,8 +53,8 @@ export function getCardAssetBundle(
         printMode: true,
         darkMode: false,
         handPointVisibility: "all",
-        bluePropType: o.bluePropType,
-        redPropType: o.redPropType,
+        leftPropType: o.leftPropType,
+        rightPropType: o.rightPropType,
       },
     };
     // Render each sequence once at tiny size to populate the singleton svgCache

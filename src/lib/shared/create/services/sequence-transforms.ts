@@ -5,8 +5,8 @@
  * Composes beat and start position transforms.
  *
  * Supports targetHand parameter to transform only specific hand(s):
- * - "blue": Only transform blue motion
- * - "red": Only transform red motion
+ * - "left": Only transform left motion
+ * - "right": Only transform right motion
  * - "both": Transform both motions (default, original behavior)
  */
 
@@ -23,7 +23,7 @@ import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/mot
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -35,7 +35,7 @@ import {
   mirrorBeat,
   flipBeat,
   rotateBeat,
-  colorSwapBeat,
+  handSwapBeat,
   invertBeat,
   rewindBeat,
 } from "$lib/shared/create/services/step-transforms";
@@ -45,7 +45,7 @@ import {
   mirrorStartPosition,
   flipStartPosition,
   rotateStartPosition,
-  colorSwapStartPosition,
+  handSwapStartPosition,
   invertStartPosition,
 } from "$lib/shared/create/services/start-position-transforms";
 import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
@@ -60,8 +60,8 @@ export function clearSequence(sequence: SequenceData): SequenceData {
     ...step,
     isBlank: true,
     pictographData: null,
-    blueReversal: false,
-    redReversal: false,
+    leftReversal: false,
+    rightReversal: false,
   }));
 
   return updateSequenceData(sequence, { steps: clearedBeats });
@@ -172,13 +172,7 @@ export async function rotateSequence(
 
   const rotatedBeats = await Promise.all(
     sequence.steps.map((step) =>
-      rotateBeat(
-        step,
-        rotationAmount,
-        gridMode,
-        motionQueryHandler,
-        targetHand
-      )
+      rotateBeat(step, rotationAmount, gridMode, motionQueryHandler, targetHand)
     )
   );
 
@@ -208,18 +202,18 @@ export async function rotateSequence(
 }
 
 /**
- * Swap colors in sequence (blue ↔ red).
+ * Swap performer-hand assignments in the sequence (left ↔ right).
  */
-export function colorSwapSequence(sequence: SequenceData): SequenceData {
-  const swappedBeats = sequence.steps.map(colorSwapBeat);
+export function handSwapSequence(sequence: SequenceData): SequenceData {
+  const swappedBeats = sequence.steps.map(handSwapBeat);
 
   // Transform start positions (always StartPositionData, never StepData)
   const swappedStartPosition = sequence.startPosition
-    ? colorSwapStartPosition(sequence.startPosition)
+    ? handSwapStartPosition(sequence.startPosition)
     : undefined;
 
   const swappedStartingPositionStep = sequence.startingPosition
-    ? colorSwapStartPosition(sequence.startingPosition)
+    ? handSwapStartPosition(sequence.startingPosition)
     : undefined;
 
   return updateSequenceData(sequence, {
@@ -282,7 +276,7 @@ export async function invertSequence(
  * each beat (both hands), with the new start position taken from the old final
  * end.
  *
- * "blue"/"red": rewind ONE hand's path while the other hand plays forward. This
+ * "left"/"right": rewind ONE hand's path while the other hand plays forward. This
  * is an independent, valid operation — the target hand retraces its own path and
  * the other hand is untouched, so both hands stay continuous. The result is a
  * legitimate sequence with new letters and a different feel. See
@@ -350,8 +344,7 @@ async function rewindSingleHand(
 ): Promise<SequenceData> {
   const steps = sequence.steps;
   const n = steps.length;
-  const targetColor =
-    targetHand === "blue" ? MotionColor.BLUE : MotionColor.RED;
+  const targetSide = targetHand === "left" ? HandSide.LEFT : HandSide.RIGHT;
 
   const newSteps: StepData[] = [];
   for (let i = 0; i < n; i++) {
@@ -359,25 +352,25 @@ async function rewindSingleHand(
     const targetSource = steps[n - 1 - i]!; // supplies the rewound target hand
 
     const newMotions = { ...forwardStep.motions };
-    const targetSrcMotion = targetSource.motions[targetColor];
+    const targetSrcMotion = targetSource.motions[targetSide];
     if (targetSrcMotion) {
-      newMotions[targetColor] = rewindMotion(targetSrcMotion);
+      newMotions[targetSide] = rewindMotion(targetSrcMotion);
     }
 
-    const blueM = newMotions[MotionColor.BLUE];
-    const redM = newMotions[MotionColor.RED];
+    const leftM = newMotions[HandSide.LEFT];
+    const rightM = newMotions[HandSide.RIGHT];
 
     let startPosition: GridPosition | null = forwardStep.startPosition ?? null;
     let endPosition: GridPosition | null = forwardStep.endPosition ?? null;
-    if (blueM && redM) {
+    if (leftM && rightM) {
       try {
         startPosition = getGridPositionFromLocations(
-          blueM.startLocation,
-          redM.startLocation
+          leftM.startLocation,
+          rightM.startLocation
         );
         endPosition = getGridPositionFromLocations(
-          blueM.endLocation,
-          redM.endLocation
+          leftM.endLocation,
+          rightM.endLocation
         );
       } catch (error) {
         console.warn(
@@ -388,11 +381,11 @@ async function rewindSingleHand(
     }
 
     let letter: Letter | null = forwardStep.letter ?? null;
-    if (blueM && redM) {
+    if (leftM && rightM) {
       try {
         const found = await motionQueryHandler.findLetterByMotionConfiguration(
-          blueM,
-          redM,
+          leftM,
+          rightM,
           gridMode
         );
         if (found) letter = found as Letter;
@@ -410,8 +403,8 @@ async function rewindSingleHand(
         endPosition,
         letter,
         // Reversal flags must be recalculated for the new ordering.
-        blueReversal: false,
-        redReversal: false,
+        leftReversal: false,
+        rightReversal: false,
       })
     );
   }
@@ -546,24 +539,25 @@ export async function deriveSequenceLetters(
     sequence.steps.map(async (step) => {
       if (step.isBlank) return step;
 
-      const blueMotion = step.motions[MotionColor.BLUE];
-      const redMotion = step.motions[MotionColor.RED];
+      const leftMotion = step.motions[HandSide.LEFT];
+      const rightMotion = step.motions[HandSide.RIGHT];
 
       // Invisible placeholder = hand not really there (both-required Step
       // shape): keep the existing letter, exactly like the old absent-hand skip
       // (a dataframe lookup against a placeholder would rewrite the word).
-      if (!isVisibleMotion(blueMotion) || !isVisibleMotion(redMotion)) return step;
+      if (!isVisibleMotion(leftMotion) || !isVisibleMotion(rightMotion))
+        return step;
 
       // Derive gridMode per-step from the motions — never trust the stale
       // sequence-level value (a box step inside a diamond-labelled sequence
       // would otherwise be looked up under the wrong grid mode).
-      const gridMode = deriveGridMode(blueMotion, redMotion);
+      const gridMode = deriveGridMode(leftMotion, rightMotion);
 
       try {
         const foundLetter =
           await motionQueryHandler.findLetterByMotionConfiguration(
-            blueMotion,
-            redMotion,
+            leftMotion,
+            rightMotion,
             gridMode
           );
         if (foundLetter) {
@@ -591,9 +585,11 @@ export async function deriveSequenceLetters(
  * Create a start position from a beat's end state.
  * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromStepEnd(step: StepData): StartPositionData {
-  const blueMotion = step.motions[MotionColor.BLUE];
-  const redMotion = step.motions[MotionColor.RED];
+export function createStartPositionFromStepEnd(
+  step: StepData
+): StartPositionData {
+  const leftMotion = step.motions[HandSide.LEFT];
+  const rightMotion = step.motions[HandSide.RIGHT];
 
   // Derive the correct letter from the end position (alpha, beta, or gamma)
   const letter = getStaticLetterFromGridPosition(step.endPosition);
@@ -605,29 +601,29 @@ export function createStartPositionFromStepEnd(step: StepData): StartPositionDat
     endPosition: step.endPosition ?? null,
     gridPosition: step.endPosition ?? null,
     motions: {
-      [MotionColor.BLUE]: blueMotion
+      [HandSide.LEFT]: leftMotion
         ? {
-            ...blueMotion,
+            ...leftMotion,
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
-            startLocation: blueMotion.endLocation,
-            endLocation: blueMotion.endLocation,
-            arrowLocation: blueMotion.endLocation,
-            startOrientation: blueMotion.endOrientation,
-            endOrientation: blueMotion.endOrientation,
+            startLocation: leftMotion.endLocation,
+            endLocation: leftMotion.endLocation,
+            arrowLocation: leftMotion.endLocation,
+            startOrientation: leftMotion.endOrientation,
+            endOrientation: leftMotion.endOrientation,
             turns: 0,
           }
         : undefined,
-      [MotionColor.RED]: redMotion
+      [HandSide.RIGHT]: rightMotion
         ? {
-            ...redMotion,
+            ...rightMotion,
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
-            startLocation: redMotion.endLocation,
-            endLocation: redMotion.endLocation,
-            arrowLocation: redMotion.endLocation,
-            startOrientation: redMotion.endOrientation,
-            endOrientation: redMotion.endOrientation,
+            startLocation: rightMotion.endLocation,
+            endLocation: rightMotion.endLocation,
+            arrowLocation: rightMotion.endLocation,
+            startOrientation: rightMotion.endOrientation,
+            endOrientation: rightMotion.endOrientation,
             turns: 0,
           }
         : undefined,
@@ -641,9 +637,11 @@ export function createStartPositionFromStepEnd(step: StepData): StartPositionDat
  * from beat 1's starting configuration.
  * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromBeatStart(step: StepData): StartPositionData {
-  const blueMotion = step.motions[MotionColor.BLUE];
-  const redMotion = step.motions[MotionColor.RED];
+export function createStartPositionFromBeatStart(
+  step: StepData
+): StartPositionData {
+  const leftMotion = step.motions[HandSide.LEFT];
+  const rightMotion = step.motions[HandSide.RIGHT];
 
   // Derive the correct letter from the start position (alpha, beta, or gamma)
   const letter = getStaticLetterFromGridPosition(step.startPosition);
@@ -655,29 +653,29 @@ export function createStartPositionFromBeatStart(step: StepData): StartPositionD
     endPosition: step.startPosition ?? null,
     gridPosition: step.startPosition ?? null,
     motions: {
-      [MotionColor.BLUE]: blueMotion
+      [HandSide.LEFT]: leftMotion
         ? {
-            ...blueMotion,
+            ...leftMotion,
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
-            startLocation: blueMotion.startLocation,
-            endLocation: blueMotion.startLocation,
-            arrowLocation: blueMotion.startLocation,
-            startOrientation: blueMotion.startOrientation,
-            endOrientation: blueMotion.startOrientation,
+            startLocation: leftMotion.startLocation,
+            endLocation: leftMotion.startLocation,
+            arrowLocation: leftMotion.startLocation,
+            startOrientation: leftMotion.startOrientation,
+            endOrientation: leftMotion.startOrientation,
             turns: 0,
           }
         : undefined,
-      [MotionColor.RED]: redMotion
+      [HandSide.RIGHT]: rightMotion
         ? {
-            ...redMotion,
+            ...rightMotion,
             motionType: MotionType.STATIC,
             rotationDirection: RotationDirection.NO_ROTATION,
-            startLocation: redMotion.startLocation,
-            endLocation: redMotion.startLocation,
-            arrowLocation: redMotion.startLocation,
-            startOrientation: redMotion.startOrientation,
-            endOrientation: redMotion.startOrientation,
+            startLocation: rightMotion.startLocation,
+            endLocation: rightMotion.startLocation,
+            arrowLocation: rightMotion.startLocation,
+            startOrientation: rightMotion.startOrientation,
+            endOrientation: rightMotion.startOrientation,
             turns: 0,
           }
         : undefined,

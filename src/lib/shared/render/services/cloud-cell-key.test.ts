@@ -9,12 +9,12 @@ const data = {
   startPos: "alpha1",
   endPos: "alpha3",
   motions: {
-    blue: { motionType: "pro", startLocation: "n", endLocation: "e", turns: 0 },
-    red: { motionType: "pro", startLocation: "s", endLocation: "w", turns: 0 },
+    left: { motionType: "pro", startLocation: "n", endLocation: "e", turns: 0 },
+    right: { motionType: "pro", startLocation: "s", endLocation: "w", turns: 0 },
   },
 } as unknown as PictographData;
 
-const base: PreviewCellRenderOptions = { size: 300, bluePropType: undefined };
+const base: PreviewCellRenderOptions = { size: 300, leftPropType: undefined };
 
 describe("canonicalCellKeyString", () => {
   it("is independent of display size (size normalized to canonical)", () => {
@@ -43,15 +43,15 @@ describe("canonicalCellKeyString", () => {
     expect(
       canonicalCellKeyString(data, true, {
         ...base,
-        bluePropType: PropType.STAFF,
-        redPropType: PropType.POI,
+        leftPropType: PropType.STAFF,
+        rightPropType: PropType.POI,
         catDogModeEnabled: true,
       })
     ).not.toBe(
       canonicalCellKeyString(data, true, {
         ...base,
-        bluePropType: PropType.FAN,
-        redPropType: PropType.POI,
+        leftPropType: PropType.FAN,
+        rightPropType: PropType.POI,
         catDogModeEnabled: true,
       })
     );
@@ -60,11 +60,11 @@ describe("canonicalCellKeyString", () => {
   it("carries the authored club-art revision into the cloud identity", () => {
     const club = canonicalCellKeyString(data, true, {
       ...base,
-      bluePropType: PropType.CLUB,
+      leftPropType: PropType.CLUB,
     });
     const staff = canonicalCellKeyString(data, true, {
       ...base,
-      bluePropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
     });
 
     expect(club).toContain('"propAppearanceRevision":"club-art-v2"');

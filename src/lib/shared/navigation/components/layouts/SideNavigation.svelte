@@ -1,6 +1,9 @@
 <!-- SideNavigation - Landscape/Side Navigation Layout -->
 <script lang="ts">
-  import type { Section } from "$lib/shared/navigation/domain/types";
+  import type {
+    Section,
+    SectionHomeDestination,
+  } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
   import PropNavButton from "$lib/shared/navigation/components/buttons/PropNavButton.svelte";
@@ -23,6 +26,8 @@
     sections = [],
     currentSection = "",
     onSectionChange = () => {},
+    sectionHome = null,
+    onSectionHomeSelect = () => {},
     onModuleSwitcherTap = () => {},
     showModuleSwitcher = true,
     isUIVisible = true,
@@ -30,6 +35,8 @@
     sections: Section[];
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
+    sectionHome?: SectionHomeDestination | null;
+    onSectionHomeSelect?: () => void;
     onModuleSwitcherTap?: () => void;
     showModuleSwitcher?: boolean;
     isUIVisible?: boolean;
@@ -58,11 +65,26 @@
 
   <!-- Current Module's Sections -->
   <div class="sections" class:hidden={shouldHideNav}>
+    {#if sectionHome}
+      <NavButton
+        icon={sectionHome.icon}
+        label={sectionHome.optionLabel ?? sectionHome.label}
+        active={sectionHome.active}
+        color={sectionHome.color || "var(--muted-foreground)"}
+        gradient={sectionHome.gradient ||
+          sectionHome.color ||
+          "var(--muted-foreground)"}
+        type="section"
+        onClick={onSectionHomeSelect}
+        ariaLabel={sectionHome.ariaLabel ?? sectionHome.label}
+      />
+    {/if}
+
     {#each sections as section}
       <NavButton
         icon={section.icon}
         label={section.label}
-        active={currentSection === section.id}
+        active={sectionHome?.active !== true && currentSection === section.id}
         disabled={section.disabled}
         color={section.color || "var(--muted-foreground)"}
         gradient={section.gradient ||

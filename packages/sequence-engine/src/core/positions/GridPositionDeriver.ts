@@ -2,7 +2,7 @@
  * Grid Position Deriver
  *
  * Maps between grid position names (alpha1, beta5, gamma11) and hand location pairs.
- * A position represents the combination of (blue_hand_location, red_hand_location).
+ * A position represents the combination of (left_hand_location, right_hand_location).
  *
  * Ported from the app's GridPositionDeriver using string literals instead of enums.
  */
@@ -90,20 +90,20 @@ export class GridPositionDeriver {
   constructor() {
     this.locationPairsMap = new Map();
     this.positionsMap.forEach((position, locationKey) => {
-      const [blueLocation, redLocation] = locationKey.split(",");
-      this.locationPairsMap.set(position, [blueLocation!, redLocation!]);
+      const [leftLocation, rightLocation] = locationKey.split(",");
+      this.locationPairsMap.set(position, [leftLocation!, rightLocation!]);
     });
   }
 
   getGridPositionFromLocations(
-    blueLocation: string,
-    redLocation: string
+    leftLocation: string,
+    rightLocation: string
   ): string {
-    const key = `${blueLocation},${redLocation}`;
+    const key = `${leftLocation},${rightLocation}`;
     const position = this.positionsMap.get(key);
     if (!position) {
       throw new Error(
-        `No position found for locations: ${blueLocation}, ${redLocation}`
+        `No position found for locations: ${leftLocation}, ${rightLocation}`
       );
     }
     return position;

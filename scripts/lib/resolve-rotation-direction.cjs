@@ -21,26 +21,31 @@
  * the nearest motion on that hand with a real rotation direction, and
  * inherit it.
  *
- * @param {Array} steps - Array of step objects with motions.blue and motions.red
+ * @param {Array} steps - Array of step objects with current left/right motions
  * @param {number} turnValue - The turn value being applied (for the > 0 check)
  */
 function resolveRotationDirections(steps, turnValue) {
   if (turnValue === 0) return; // No turns = no rotation needed
 
-  for (const color of ["blue", "red"]) {
+  for (const hand of ["left", "right"]) {
     // Collect all rotation directions for this hand
-    const dirs = steps.map(s => s.motions?.[color]?.rotationDirection).filter(Boolean);
+    const dirs = steps
+      .map((s) => s.motions?.[hand]?.rotationDirection)
+      .filter(Boolean);
 
     // Find the dominant real direction (most common non-noRotation)
-    const realDirs = dirs.filter(d => d !== "noRotation");
+    const realDirs = dirs.filter((d) => d !== "noRotation");
     const dominant = realDirs.length > 0 ? mostCommon(realDirs) : "cw";
 
     // Apply to any motion that needs it
     for (const step of steps) {
-      const motion = step.motions?.[color];
+      const motion = step.motions?.[hand];
       if (!motion) continue;
 
-      if (motion.rotationDirection === "noRotation" || !motion.rotationDirection) {
+      if (
+        motion.rotationDirection === "noRotation" ||
+        !motion.rotationDirection
+      ) {
         motion.rotationDirection = dominant;
       }
     }
@@ -57,14 +62,17 @@ function resolveRotationDirections(steps, turnValue) {
 function validateRotationDirections(steps, context) {
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    for (const color of ["blue", "red"]) {
-      const m = step.motions?.[color];
+    for (const hand of ["left", "right"]) {
+      const m = step.motions?.[hand];
       if (!m) continue;
       const turns = m.turns ?? 0;
-      if (turns > 0 && (m.rotationDirection === "noRotation" || !m.rotationDirection)) {
+      if (
+        turns > 0 &&
+        (m.rotationDirection === "noRotation" || !m.rotationDirection)
+      ) {
         throw new Error(
-          `[${context}] Beat ${i} ${color} has ${turns} turns but rotationDirection is "${m.rotationDirection}". ` +
-          `Every motion with turns > 0 must have a valid rotation direction (cw or ccw).`
+          `[${context}] Beat ${i} ${hand} has ${turns} turns but rotationDirection is "${m.rotationDirection}". ` +
+            `Every motion with turns > 0 must have a valid rotation direction (cw or ccw).`
         );
       }
     }
@@ -79,7 +87,10 @@ function mostCommon(arr) {
   let best = arr[0];
   let bestCount = 0;
   for (const [v, c] of Object.entries(counts)) {
-    if (c > bestCount) { best = v; bestCount = c; }
+    if (c > bestCount) {
+      best = v;
+      bestCount = c;
+    }
   }
   return best;
 }

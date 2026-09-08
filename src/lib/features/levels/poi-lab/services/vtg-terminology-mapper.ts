@@ -11,30 +11,30 @@ import { PoiTimingDirection, PoiPatternRatio } from "../domain/poi-enums";
 import type { VTGTerminologyMapping } from "../domain/poi-models";
 
 export function deriveVTGTerminology(pictograph: PictographData): VTGTerminologyMapping | null {
-  const blue = pictograph.motions?.blue;
-  const red = pictograph.motions?.red;
+  const left = pictograph.motions?.left;
+  const right = pictograph.motions?.right;
 
   // Need both hands really there to derive VTG terminology (invisible
   // placeholder = hand not really there under the both-required Step shape)
-  if (!isVisibleMotion(blue) || !isVisibleMotion(red)) {
+  if (!isVisibleMotion(left) || !isVisibleMotion(right)) {
     return null;
   }
 
   // Derive timing (Together vs Split)
   // Together = both hands at same location (same phase)
   // Split = hands at opposite locations (180° out of phase)
-  const isTogether = blue.startLocation === red.startLocation;
+  const isTogether = left.startLocation === right.startLocation;
 
   // Derive direction (Same vs Opposite)
   // Compare rotation directions
-  const blueDir = blue.rotationDirection;
-  const redDir = red.rotationDirection;
+  const leftDir = left.rotationDirection;
+  const rightDir = right.rotationDirection;
 
   // Both no rotation counts as "same"
   const bothNoRotation =
-    blueDir === RotationDirection.NO_ROTATION &&
-    redDir === RotationDirection.NO_ROTATION;
-  const isSameDirection = bothNoRotation || blueDir === redDir;
+    leftDir === RotationDirection.NO_ROTATION &&
+    rightDir === RotationDirection.NO_ROTATION;
+  const isSameDirection = bothNoRotation || leftDir === rightDir;
 
   // Map to VTG timing/direction
   let vtgTiming: PoiTimingDirection;
@@ -49,13 +49,13 @@ export function deriveVTGTerminology(pictograph: PictographData): VTGTerminology
   }
 
   // Derive ratio from average turns
-  const blueTurns = typeof blue.turns === "number" ? blue.turns : 1;
-  const redTurns = typeof red.turns === "number" ? red.turns : 1;
-  const avgTurns = (blueTurns + redTurns) / 2;
+  const leftTurns = typeof left.turns === "number" ? left.turns : 1;
+  const rightTurns = typeof right.turns === "number" ? right.turns : 1;
+  const avgTurns = (leftTurns + rightTurns) / 2;
   const vtgRatio = getPatternRatio(avgTurns) as PoiPatternRatio;
 
   return {
-    tkaMotionType: `${blue.motionType}/${red.motionType}`,
+    tkaMotionType: `${left.motionType}/${right.motionType}`,
     vtgTiming,
     vtgRatio,
   };

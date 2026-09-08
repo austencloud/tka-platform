@@ -1,6 +1,90 @@
 {
   "indexes": [
     {
+      "collectionGroup": "achievements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isCompleted",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "unlockedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activityLog",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sessionId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "arenaVotes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "voterId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "collections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isPublic",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortOrder",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "collections",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isPublic",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "participants",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "default_arrow_adjustment_history",
       "queryScope": "COLLECTION",
       "fields": [
@@ -11,192 +95,6 @@
         {
           "fieldPath": "timestamp",
           "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isFeatured",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "followerCount",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "displayName",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "lastActivityDate",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "lastActivityDate",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "sequenceCount",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "sequenceCount",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "followerCount",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "followerCount",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "favoriteProp",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "favoriteProp",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publicProfileVersion",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "favoriteConfig",
-          "order": "ASCENDING"
         }
       ]
     },
@@ -229,113 +127,15 @@
       ]
     },
     {
-      "collectionGroup": "tikaConversations",
+      "collectionGroup": "feedback",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "flaggedForReview",
+          "fieldPath": "fixedInVersion",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "flaggedAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "achievements",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "isCompleted",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "unlockedAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "trainChallenges",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "isActive",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "order",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "sequences",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "visibility",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "updatedAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "sequenceId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "visibility",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "associationKeys",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "visibility",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "associationKeys",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "creatorId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "sequenceId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "visibility",
+          "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
@@ -345,47 +145,11 @@
       ]
     },
     {
-      "collectionGroup": "videos",
+      "collectionGroup": "feedback",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "sequenceId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "creatorId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "sequenceId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "visibility",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "collaboratorIds",
-          "arrayConfig": "CONTAINS"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "videos",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "collaboratorIds",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "visibility",
+          "fieldPath": "priority",
           "order": "ASCENDING"
         },
         {
@@ -395,15 +159,283 @@
       ]
     },
     {
-      "collectionGroup": "collections",
-      "queryScope": "COLLECTION_GROUP",
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "isPublic",
+          "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "updatedAt",
+          "fieldPath": "archivedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deferredUntil",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feedback",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "festivals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "moderationStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "region",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "seekingPerformers",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dates.start",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "festivals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "moderationStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dates.start",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "hallOfShame",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "featured",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hidden",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "featuredAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "hallOfShame",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hidden",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "approvedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "hallOfShame",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "submittedAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "journeyPoints",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "printId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "museumDev",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "products",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sortOrder",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "publicArtifacts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "artifactType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "publishedAt",
           "order": "DESCENDING"
         }
       ]
@@ -437,11 +469,11 @@
       ]
     },
     {
-      "collectionGroup": "feedback",
+      "collectionGroup": "sequences",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "userId",
+          "fieldPath": "createdBy",
           "order": "ASCENDING"
         },
         {
@@ -451,7 +483,127 @@
       ]
     },
     {
-      "collectionGroup": "feedback",
+      "collectionGroup": "sequences",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "canonicalSignature",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "sequences",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "showcaseVideos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "approved",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "featured",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "instagramDate",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "subscriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tikaConversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "flaggedForReview",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "flaggedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tika_conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "reviewStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "flaggedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "trainChallenges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "order",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "userReports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "reportedUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "reporterId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "userReports",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -465,11 +617,39 @@
       ]
     },
     {
-      "collectionGroup": "feedback",
+      "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "type",
+          "fieldPath": "isFeatured",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "followerCount",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
           "order": "ASCENDING"
         },
         {
@@ -479,11 +659,215 @@
       ]
     },
     {
-      "collectionGroup": "feedback",
+      "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "priority",
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "displayName",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "favoriteConfig",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "favoriteProp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "favoriteProp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "followerCount",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "followerCount",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isFeatured",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "followerCount",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastActivityDate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastActivityDate",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sequenceCount",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "publicProfileVersion",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sequenceCount",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "associationKeys",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "creatorId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "associationKeys",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "collaboratorIds",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "collaboratorIds",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "visibility",
           "order": "ASCENDING"
         },
         {
@@ -493,15 +877,11 @@
       ]
     },
     {
-      "collectionGroup": "feedback",
+      "collectionGroup": "videos",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "type",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "status",
+          "fieldPath": "sequenceId",
           "order": "ASCENDING"
         },
         {
@@ -511,19 +891,47 @@
       ]
     },
     {
-      "collectionGroup": "feedback",
+      "collectionGroup": "videos",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "type",
+          "fieldPath": "sequenceId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "status",
+          "fieldPath": "creatorId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sequenceId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "priority",
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collaboratorIds",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sequenceId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "visibility",
           "order": "ASCENDING"
         },
         {
@@ -533,29 +941,47 @@
       ]
     },
     {
-      "collectionGroup": "journeyPoints",
+      "collectionGroup": "videos",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "printId",
+          "fieldPath": "sequenceId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "timestamp",
+          "fieldPath": "visibility",
           "order": "ASCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "publicArtifacts",
+      "collectionGroup": "videos",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "artifactType",
+          "fieldPath": "visibility",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "publishedAt",
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "weeklyProgress",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isCompleted",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "year",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "weekNumber",
           "order": "DESCENDING"
         }
       ]
@@ -666,6 +1092,46 @@
       "collectionGroup": "adminMutationLocks",
       "fieldPath": "expiresAt",
       "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "shortcodes",
+      "fieldPath": "sequenceData",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "sequenceRevisions",
+      "fieldPath": "payload",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "catalogs",
+      "fieldPath": "families",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "decks",
+      "fieldPath": "families",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "publicSoloProps",
+      "fieldPath": "steps",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "publicSequences",
+      "fieldPath": "leftSoloProp",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "publicSequences",
+      "fieldPath": "rightSoloProp",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "publicSequences",
+      "fieldPath": "startPosition",
       "indexes": []
     }
   ]

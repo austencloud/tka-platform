@@ -5,6 +5,7 @@ import type { DirectRenderOptions } from "./IDirectRenderer";
 import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // The rasterized path (choreo-card cells, exports, card fronts) draws props
 // through shouldMirrorProp, while the live SVG pictograph draws them through
@@ -15,7 +16,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 const pictograph = {
   letter: "G",
   motions: {
-    blue: {
+    left: {
       motionType: "pro",
       startLocation: "e",
       endLocation: "s",
@@ -25,7 +26,7 @@ const pictograph = {
       turns: 0,
       propType: PropType.BUUGENG,
     },
-    red: {
+    right: {
       motionType: "pro",
       startLocation: "w",
       endLocation: "s",
@@ -44,8 +45,8 @@ function options(
   return {
     size: 480,
     visibility: {
-      bluePropType: PropType.BUUGENG,
-      redPropType: PropType.BUUGENG,
+      leftPropType: PropType.BUUGENG,
+      rightPropType: PropType.BUUGENG,
       ...visibility,
     },
   };
@@ -54,54 +55,54 @@ function options(
 describe("shouldMirrorProp — buugeng chirality", () => {
   it("does not mirror either prop when neither is flipped", () => {
     const o = options({});
-    expect(shouldMirrorProp("blue", pictograph, o)).toBe(false);
-    expect(shouldMirrorProp("red", pictograph, o)).toBe(false);
+    expect(shouldMirrorProp(HandSide.LEFT, pictograph, o)).toBe(false);
+    expect(shouldMirrorProp(HandSide.RIGHT, pictograph, o)).toBe(false);
   });
 
   it("mirrors only the flipped blue prop", () => {
-    const o = options({ blueBuugengFlipped: true });
-    expect(shouldMirrorProp("blue", pictograph, o)).toBe(true);
-    expect(shouldMirrorProp("red", pictograph, o)).toBe(false);
+    const o = options({ leftBuugengFlipped: true });
+    expect(shouldMirrorProp(HandSide.LEFT, pictograph, o)).toBe(true);
+    expect(shouldMirrorProp(HandSide.RIGHT, pictograph, o)).toBe(false);
   });
 
   it("mirrors only the flipped red prop", () => {
-    const o = options({ redBuugengFlipped: true });
-    expect(shouldMirrorProp("blue", pictograph, o)).toBe(false);
-    expect(shouldMirrorProp("red", pictograph, o)).toBe(true);
+    const o = options({ rightBuugengFlipped: true });
+    expect(shouldMirrorProp(HandSide.LEFT, pictograph, o)).toBe(false);
+    expect(shouldMirrorProp(HandSide.RIGHT, pictograph, o)).toBe(true);
   });
 
   it("ignores chirality for props outside the buugeng family", () => {
     const o = options({
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
-      blueBuugengFlipped: true,
-      redBuugengFlipped: true,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
+      leftBuugengFlipped: true,
+      rightBuugengFlipped: true,
     });
-    expect(shouldMirrorProp("blue", pictograph, o)).toBe(false);
-    expect(shouldMirrorProp("red", pictograph, o)).toBe(false);
+    expect(shouldMirrorProp(HandSide.LEFT, pictograph, o)).toBe(false);
+    expect(shouldMirrorProp(HandSide.RIGHT, pictograph, o)).toBe(false);
   });
 
   it("still mirrors the red HAND prop", () => {
     const o = options({
-      bluePropType: PropType.HAND,
-      redPropType: PropType.HAND,
+      leftPropType: PropType.HAND,
+      rightPropType: PropType.HAND,
     });
-    expect(shouldMirrorProp("red", pictograph, o)).toBe(true);
-    expect(shouldMirrorProp("blue", pictograph, o)).toBe(false);
+    expect(shouldMirrorProp(HandSide.RIGHT, pictograph, o)).toBe(true);
+    expect(shouldMirrorProp(HandSide.LEFT, pictograph, o)).toBe(false);
   });
 });
 
 describe("pictograph cache key — buugeng chirality", () => {
   const base: PictographVisibilityOptions = {
-    bluePropType: PropType.BUUGENG,
-    redPropType: PropType.BUUGENG,
+    leftPropType: PropType.BUUGENG,
+    rightPropType: PropType.BUUGENG,
   };
 
   it("gives a flipped render its own key", () => {
     const unflipped = pictographKeyHasher.deriveKey(pictograph, base);
     const flipped = pictographKeyHasher.deriveKey(pictograph, {
       ...base,
-      blueBuugengFlipped: true,
+      leftBuugengFlipped: true,
     });
     expect(flipped).not.toBe(unflipped);
   });
@@ -110,12 +111,12 @@ describe("pictograph cache key — buugeng chirality", () => {
     expect(
       pictographKeyHasher.deriveKey(pictograph, {
         ...base,
-        blueBuugengFlipped: true,
+        leftBuugengFlipped: true,
       })
     ).not.toBe(
       pictographKeyHasher.deriveKey(pictograph, {
         ...base,
-        redBuugengFlipped: true,
+        rightBuugengFlipped: true,
       })
     );
   });
@@ -124,22 +125,22 @@ describe("pictograph cache key — buugeng chirality", () => {
     expect(
       pictographKeyHasher.deriveKey(pictograph, {
         ...base,
-        blueBuugengFlipped: false,
-        redBuugengFlipped: false,
+        leftBuugengFlipped: false,
+        rightBuugengFlipped: false,
       })
     ).toBe(pictographKeyHasher.deriveKey(pictograph, base));
   });
 
   it("does not re-key a non-buugeng prop whose flip flag happens to be set", () => {
     const staff: PictographVisibilityOptions = {
-      bluePropType: PropType.STAFF,
-      redPropType: PropType.STAFF,
+      leftPropType: PropType.STAFF,
+      rightPropType: PropType.STAFF,
     };
     expect(
       pictographKeyHasher.deriveKey(pictograph, {
         ...staff,
-        blueBuugengFlipped: true,
-        redBuugengFlipped: true,
+        leftBuugengFlipped: true,
+        rightBuugengFlipped: true,
       })
     ).toBe(pictographKeyHasher.deriveKey(pictograph, staff));
   });

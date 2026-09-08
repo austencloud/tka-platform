@@ -31,17 +31,17 @@
   }>();
 
   const isEmpty = $derived(!preset);
-  const blueInfo = $derived(
-    preset ? getPropTypeDisplayInfo(preset.bluePropType) : null
+  const leftInfo = $derived(
+    preset ? getPropTypeDisplayInfo(preset.leftPropType) : null
   );
-  const redInfo = $derived(
-    preset ? getPropTypeDisplayInfo(preset.redPropType) : null
+  const rightInfo = $derived(
+    preset ? getPropTypeDisplayInfo(preset.rightPropType) : null
   );
   const isCatDog = $derived(
-    preset && preset.catDogMode && preset.bluePropType !== preset.redPropType
+    preset && preset.catDogMode && preset.leftPropType !== preset.rightPropType
   );
-  const blueNoRotate = $derived(preset ? NO_ROTATE_PROPS.has(preset.bluePropType) : false);
-  const redNoRotate = $derived(preset ? NO_ROTATE_PROPS.has(preset.redPropType) : false);
+  const leftNoRotate = $derived(preset ? NO_ROTATE_PROPS.has(preset.leftPropType) : false);
+  const rightNoRotate = $derived(preset ? NO_ROTATE_PROPS.has(preset.rightPropType) : false);
 
   // Keyboard shortcut label (1-9, then 0 for slot 10)
   const keyLabel = $derived(index < 9 ? String(index + 1) : "0");
@@ -100,14 +100,14 @@
   aria-label={isEmpty
     ? `Save to slot ${index + 1}`
     : isCatDog
-      ? `Preset ${index + 1}: ${blueInfo?.label} and ${redInfo?.label}`
-      : `Preset ${index + 1}: ${blueInfo?.label}`}
+      ? `Preset ${index + 1}: ${leftInfo?.label} and ${rightInfo?.label}`
+      : `Preset ${index + 1}: ${leftInfo?.label}`}
   aria-pressed={!isEmpty && selected}
   title={isEmpty
     ? "Save current props"
     : isCatDog
-      ? `${blueInfo?.label} / ${redInfo?.label} (hold to clear)`
-      : `${blueInfo?.label} (hold to clear)`}
+      ? `${leftInfo?.label} / ${rightInfo?.label} (hold to clear)`
+      : `${leftInfo?.label} (hold to clear)`}
 >
   <!-- Keyboard badge (desktop only) -->
   {#if showKeyboardBadge}
@@ -119,13 +119,13 @@
     {#if isEmpty}
       <span class="slot-number">{index + 1}</span>
       <i class="fas fa-plus empty-icon" aria-hidden="true"></i>
-    {:else if isCatDog && blueInfo && redInfo}
+    {:else if isCatDog && leftInfo && rightInfo}
       <div class="dual-props">
-        <img src={blueInfo.image} alt="" class="mini-prop" class:no-rotate={blueNoRotate} />
-        <img src={redInfo.image} alt="" class="mini-prop red" class:no-rotate={redNoRotate} />
+        <img src={leftInfo.image} alt="" class="mini-prop" class:no-rotate={leftNoRotate} />
+        <img src={rightInfo.image} alt="" class="mini-prop red" class:no-rotate={rightNoRotate} />
       </div>
-    {:else if blueInfo}
-      <img src={blueInfo.image} alt="" class="mini-prop single" class:no-rotate={blueNoRotate} />
+    {:else if leftInfo}
+      <img src={leftInfo.image} alt="" class="mini-prop single" class:no-rotate={leftNoRotate} />
     {/if}
   </span>
 

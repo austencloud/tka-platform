@@ -70,21 +70,21 @@ export class BrowserDataProvider {
   }
 
   private pictographToVariationData(p: PictographData): LetterVariationData {
-    const blueMotion = p.motions?.blue;
-    const redMotion = p.motions?.red;
+    const leftMotion = p.motions?.left;
+    const rightMotion = p.motions?.right;
 
     return {
       letter: p.letter as string,
       startPosition: p.startPosition || "",
       endPosition: p.endPosition || "",
-      blueMotionType: blueMotion?.motionType || "static",
-      blueStartLocation: blueMotion?.startLocation || "",
-      blueEndLocation: blueMotion?.endLocation || "",
-      blueRotationDirection: blueMotion?.rotationDirection || "cw",
-      redMotionType: redMotion?.motionType || "static",
-      redStartLocation: redMotion?.startLocation || "",
-      redEndLocation: redMotion?.endLocation || "",
-      redRotationDirection: redMotion?.rotationDirection || "cw",
+      leftMotionType: leftMotion?.motionType || "static",
+      leftStartLocation: leftMotion?.startLocation || "",
+      leftEndLocation: leftMotion?.endLocation || "",
+      leftRotationDirection: leftMotion?.rotationDirection || "cw",
+      rightMotionType: rightMotion?.motionType || "static",
+      rightStartLocation: rightMotion?.startLocation || "",
+      rightEndLocation: rightMotion?.endLocation || "",
+      rightRotationDirection: rightMotion?.rotationDirection || "cw",
       gridMode: p.gridMode,
     };
   }

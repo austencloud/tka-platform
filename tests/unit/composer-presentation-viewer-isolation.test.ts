@@ -15,8 +15,8 @@ const SAVED_STATE = {
     Array.from({ length: 8 }, (_, index) => ({
       position: { x: index, z: index },
       facingAngle: index * 10,
-      customBluePlane: "wall",
-      customRedPlane: "wall",
+      customLeftPlane: "wall",
+      customRightPlane: "wall",
       settings: {
         prop: "club",
         effortId: "elastic",

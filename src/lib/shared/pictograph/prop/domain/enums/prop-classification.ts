@@ -37,8 +37,6 @@ export const SMALL_UNILATERAL_PROPS = [
   "torch",
   "contactball",
   "poi", // single weighted end, gripped at the knob - same shape as contactball/club
-  // One gripped kama per hand, with one tracked blade apex.
-  "sickles",
 ] as const;
 
 /**
@@ -172,10 +170,10 @@ export function isStrictPlacedProp(propType: string): boolean {
  * If either prop is non-strict, normal handpoints are used for both.
  */
 export function pictographRequiresStrictHandpoints(
-  bluePropType: string,
-  redPropType: string
+  leftPropType: string,
+  rightPropType: string
 ): boolean {
-  return isStrictPlacedProp(bluePropType) && isStrictPlacedProp(redPropType);
+  return isStrictPlacedProp(leftPropType) && isStrictPlacedProp(rightPropType);
 }
 
 /**
@@ -242,11 +240,7 @@ export function getBilateralEndLabels(propType: string): [string, string] {
   }
 
   // Sword: Tip End / Hilt End
-  if (
-    normalizedType === "sword" ||
-    normalizedType === "energy_saber" ||
-    normalizedType === "sickles"
-  ) {
+  if (normalizedType === "sword" || normalizedType === "energy_saber") {
     return ["Tip End", "Hilt End"];
   }
 

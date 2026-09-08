@@ -14,19 +14,19 @@
     class="hand-table"
     data-tone={state.handCount === "one" ? "accent" : "blue"}
   >
-    {#if state.handCount === "two"}<span class="hand-name">Blue</span>{/if}
+    {#if state.handCount === "two"}<span class="hand-name">Left</span>{/if}
     <QftTable
-      increments={state.blueIncrements}
+      increments={state.leftIncrements}
       activeStep={state.step}
       compact={state.tableCompact}
     />
   </div>
 
-  {#if state.handCount === "two" && state.redIncrements}
+  {#if state.handCount === "two" && state.rightIncrements}
     <div class="hand-table" data-tone="red">
-      <span class="hand-name">Red</span>
+      <span class="hand-name">Right</span>
       <QftTable
-        increments={state.redIncrements}
+        increments={state.rightIncrements}
         activeStep={state.step}
         compact={state.tableCompact}
       />

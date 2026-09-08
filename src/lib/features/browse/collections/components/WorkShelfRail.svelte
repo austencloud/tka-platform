@@ -2,7 +2,7 @@
   The fixed navigation shell for the desktop Your Work rail.
 
   The shelf tabs stay visible while only the selected shelf's cards scroll.
-  Accounts with hundreds of collections can therefore reach Art, videos, and
+  Accounts with hundreds of collections can therefore reach Visuals, videos, and
   the TKA decks without crossing the collection list first. The caller keeps
   ownership of the cards and their navigation; this component only presents
   the shelf choice and its active panel.
@@ -44,8 +44,8 @@
       icon: "fa-folder",
     },
     art: {
-      label: "Art",
-      shortLabel: "Art",
+      label: "Visuals",
+      shortLabel: "Visuals",
       description: "Your tunnels, 3D scenes, and mandalas.",
       icon: "fa-palette",
     },
@@ -97,7 +97,7 @@
 
 <header class="rail-header">
   <div class="title-row">
-    <h2>Library</h2>
+    <h2>You</h2>
   </div>
   <SegmentedControl
     {options}
@@ -117,10 +117,12 @@
   role="tabpanel"
   aria-labelledby="work-shelf-tab-{value}"
 >
-  <header class="shelf-panel-header">
-    <h3>{shelves[value].label}</h3>
-    <p>{shelves[value].description}</p>
-  </header>
+  {#if value !== "collections"}
+    <header class="shelf-panel-header">
+      <h3>{shelves[value].label}</h3>
+      <p>{shelves[value].description}</p>
+    </header>
+  {/if}
 
   {@render content(value)}
 </div>

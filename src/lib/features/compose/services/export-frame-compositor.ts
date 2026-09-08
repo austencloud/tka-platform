@@ -16,7 +16,7 @@ import type { LoopReflectionAxis } from "@tka/render-composition";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getPathPoints } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -50,8 +50,8 @@ export interface FrameCompositorConfig {
   inversionPeriod: Period | undefined;
   reflectionAxis?: LoopReflectionAxis;
   overlayComponents: Set<string> | null;
-  showBluePathLines: boolean;
-  showRedPathLines: boolean;
+  showLeftPathLines: boolean;
+  showRightPathLines: boolean;
   sequenceSteps: readonly StepData[];
   /** Optional static overlay baked on top of each frame (e.g. the mandala). */
   frameOverlayDraw?: (ctx: CanvasRenderingContext2D, sizePx: number) => void;
@@ -277,7 +277,7 @@ export class ExportFrameCompositor {
     }
 
     // Render path lines (per-hand)
-    if (this.config.showBluePathLines || this.config.showRedPathLines) {
+    if (this.config.showLeftPathLines || this.config.showRightPathLines) {
       this.renderPathLines(offscreenCtx, actualCanvasSize, clampedStepIndex);
     }
 
@@ -480,13 +480,13 @@ export class ExportFrameCompositor {
       ctx.restore();
     };
 
-    const blueColor = getMotionColor(MotionColor.BLUE, "dark");
-    const redColor = getMotionColor(MotionColor.RED, "dark");
+    const leftColor = getMotionColor(HandSide.LEFT, "dark");
+    const rightColor = getMotionColor(HandSide.RIGHT, "dark");
 
-    if (this.config.showBluePathLines)
-      drawMotionPath(step.motions?.blue, blueColor);
-    if (this.config.showRedPathLines)
-      drawMotionPath(step.motions?.red, redColor);
+    if (this.config.showLeftPathLines)
+      drawMotionPath(step.motions?.left, leftColor);
+    if (this.config.showRightPathLines)
+      drawMotionPath(step.motions?.right, rightColor);
   }
 
   private drawPrerenderedGlyph(

@@ -18,8 +18,8 @@ export interface MinimalStep {
   letter: string;
   startPos: string;
   endPos: string;
-  blue: MinimalMotion | null;
-  red: MinimalMotion | null;
+  left: MinimalMotion | null;
+  right: MinimalMotion | null;
 }
 
 export interface SequenceKey {
@@ -74,8 +74,8 @@ function minimalStep(beat: StepLike): MinimalStep | null {
     letter: beat.letter || "",
     startPos: beat.startPosition || "",
     endPos: beat.endPosition || "",
-    blue: minimalMotion(beat.motions?.blue),
-    red: minimalMotion(beat.motions?.red),
+    left: minimalMotion(beat.motions?.left),
+    right: minimalMotion(beat.motions?.right),
   };
 }
 

@@ -697,7 +697,7 @@
   /* Text stays clear of the corner mark (top) and the scrim/heading zone
 	   (bottom) — see LaunchpadTile's .body/.mark for those reserved areas. */
   /* Bottom inset clears the whole .body block, not just the heading. At 3.3rem
-	   the dictionary entry ran 33px into "Glossary / TKA terms, defined." at
+	   the dictionary entry ran into the Kinetic Atlas label at
 	   1920, stacking two competing definitions on one card. */
   .dictionary-box {
     position: absolute;
@@ -1019,6 +1019,19 @@
     }
   }
 
+  /* The Atlas name is longer than the retired Glossary label. On portrait
+     tablets, the copy gets the whole compact card and the dictionary sample
+     yields instead of forcing the destination name against the top edge. */
+  @media (width >= 42rem) and (width < 60rem) and (height >= 500px) and (orientation: portrait) {
+    .tile.variant-home.t-glossary .dictionary-box {
+      display: none;
+    }
+    .tile.variant-home.t-glossary .card .body h2,
+    .tile.variant-home.t-glossary .card .body p {
+      max-width: 100%;
+    }
+  }
+
   /* Short tablet landscape still keeps all six primary destinations. The
 	   rows become icon + title buttons; descriptors and deep-link chips remain
 	   available on taller tablets and on each destination page. */
@@ -1098,7 +1111,7 @@
 
   /* Equal Fold tiles need less empty black surface than the wide tablet cards.
 	   A quiet wash and colored edge give every destination its own identity,
-	   including FAQ and Glossary, which have no visible media at this height. */
+	   including FAQ and Kinetic Atlas, which have no visible media at this height. */
   @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
     .tile.variant-home .card {
       border-color: color-mix(in oklch, var(--c) 28%, transparent);
@@ -1392,7 +1405,7 @@
   }
 
   /* The two full-width routes carry the strongest labels and explanations.
-     FAQ and Glossary are compact reference doors at the end of the group. */
+     FAQ and Kinetic Atlas are compact reference doors at the end of the group. */
   @media (width < 35rem), (width < 42rem) and (height >= 500px) {
     .tile.variant-home.t-composer .body h2 {
       max-width: 100%;

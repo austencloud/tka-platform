@@ -1,10 +1,10 @@
 /**
  * Builder State - Hand Path Builder
  *
- * Three-phase construction: blue hand → red hand → complete.
+ * Three-phase construction: left hand → right hand → complete.
  * Pure spatial paths: no rotation direction, no turn counts.
  * Each tap adds a location; min 2 locations per hand to proceed.
- * Red hand must match blue hand length before completing.
+ * Right hand must match left hand length before completing.
  *
  * Path names follow the TKA naming convention:
  *   Cardinals uppercase (N, E, S, W)
@@ -15,7 +15,7 @@
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { handPathToName } from "$lib/shared/foundation/services/hand-path-namer";
 
-export type BuilderPhase = "blue" | "red" | "complete";
+export type BuilderPhase = "left" | "right" | "complete";
 
 // Active grid locations per grid mode
 const DIAMOND_LOCATIONS = new Set<GridLocation>([
@@ -68,12 +68,12 @@ export interface HandMove {
 export interface BuilderState {
   readonly phase: BuilderPhase;
   readonly gridMode: GridMode;
-  readonly blueLocations: GridLocation[];
-  readonly redLocations: GridLocation[];
-  readonly bluePathName: string;
-  readonly redPathName: string;
+  readonly leftLocations: GridLocation[];
+  readonly rightLocations: GridLocation[];
+  readonly leftPathName: string;
+  readonly rightPathName: string;
   readonly availableLocations: GridLocation[];
-  readonly canSwitchToRed: boolean;
+  readonly canSwitchToRight: boolean;
   readonly canComplete: boolean;
   readonly activeLocations: GridLocation[];
   readonly lastLocation: GridLocation | null;
@@ -82,44 +82,44 @@ export interface BuilderState {
   addLocation(loc: GridLocation): Promise<void>;
   setAnimationCallback(cb: (move: HandMove) => Promise<void>): void;
   undo(): void;
-  switchToRed(): void;
+  switchToRight(): void;
   complete(): void;
   reset(): void;
   setGridMode(mode: GridMode): void;
 }
 
 export function createBuilderState(): BuilderState {
-  let phase = $state<BuilderPhase>("blue");
+  let phase = $state<BuilderPhase>("left");
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
-  let blueLocations = $state<GridLocation[]>([]);
-  let redLocations = $state<GridLocation[]>([]);
+  let leftLocations = $state<GridLocation[]>([]);
+  let rightLocations = $state<GridLocation[]>([]);
   let isAnimating = $state(false);
 
   // Animation callback - set by HandPathBuilderLab to animate hand movement
   let animationCallback: ((move: HandMove) => Promise<void>) | null = null;
 
   // Derived path names - live-update as locations are tapped
-  const bluePathName = $derived(
-    blueLocations.length > 0 ? handPathToName(blueLocations) : ""
+  const leftPathName = $derived(
+    leftLocations.length > 0 ? handPathToName(leftLocations) : ""
   );
-  const redPathName = $derived(
-    redLocations.length > 0 ? handPathToName(redLocations) : ""
+  const rightPathName = $derived(
+    rightLocations.length > 0 ? handPathToName(rightLocations) : ""
   );
 
   // Which locations the grid should render as tappable
   const availableLocations = $derived(getActiveLocations(gridMode));
 
   // Phase gate conditions
-  const canSwitchToRed = $derived(blueLocations.length >= 2);
+  const canSwitchToRight = $derived(leftLocations.length >= 2);
   const canComplete = $derived(
-    phase === "red" &&
-    redLocations.length >= 2 &&
-    redLocations.length === blueLocations.length
+    phase === "right" &&
+    rightLocations.length >= 2 &&
+    rightLocations.length === leftLocations.length
   );
 
   // The locations being built in the current phase
   const activeLocations = $derived(
-    phase === "blue" ? blueLocations : redLocations
+    phase === "left" ? leftLocations : rightLocations
   );
 
   // Most-recently tapped location (for visual highlight)
@@ -138,10 +138,10 @@ export function createBuilderState(): BuilderState {
     // Block during animation
     if (isAnimating) return;
 
-    // Don't allow adding to red if lengths would exceed blue
-    if (phase === "red" && redLocations.length >= blueLocations.length) return;
+    // Don't allow the right path to exceed the left path's length.
+    if (phase === "right" && rightLocations.length >= leftLocations.length) return;
 
-    const currentLocs = phase === "blue" ? blueLocations : redLocations;
+    const currentLocs = phase === "left" ? leftLocations : rightLocations;
     const previousLoc = currentLocs.length > 0
       ? currentLocs[currentLocs.length - 1]!
       : null;
@@ -157,10 +157,10 @@ export function createBuilderState(): BuilderState {
     }
 
     // After animation completes, add the location
-    if (phase === "blue") {
-      blueLocations = [...blueLocations, loc];
-    } else if (phase === "red") {
-      redLocations = [...redLocations, loc];
+    if (phase === "left") {
+      leftLocations = [...leftLocations, loc];
+    } else if (phase === "right") {
+      rightLocations = [...rightLocations, loc];
     }
   }
 
@@ -169,16 +169,16 @@ export function createBuilderState(): BuilderState {
   }
 
   function undo(): void {
-    if (phase === "blue" && blueLocations.length > 0) {
-      blueLocations = blueLocations.slice(0, -1);
-    } else if (phase === "red" && redLocations.length > 0) {
-      redLocations = redLocations.slice(0, -1);
+    if (phase === "left" && leftLocations.length > 0) {
+      leftLocations = leftLocations.slice(0, -1);
+    } else if (phase === "right" && rightLocations.length > 0) {
+      rightLocations = rightLocations.slice(0, -1);
     }
   }
 
-  function switchToRed(): void {
-    if (!canSwitchToRed) return;
-    phase = "red";
+  function switchToRight(): void {
+    if (!canSwitchToRight) return;
+    phase = "right";
   }
 
   function complete(): void {
@@ -187,9 +187,9 @@ export function createBuilderState(): BuilderState {
   }
 
   function reset(): void {
-    phase = "blue";
-    blueLocations = [];
-    redLocations = [];
+    phase = "left";
+    leftLocations = [];
+    rightLocations = [];
   }
 
   function setGridMode(mode: GridMode): void {
@@ -200,12 +200,12 @@ export function createBuilderState(): BuilderState {
   return {
     get phase() { return phase; },
     get gridMode() { return gridMode; },
-    get blueLocations() { return blueLocations; },
-    get redLocations() { return redLocations; },
-    get bluePathName() { return bluePathName; },
-    get redPathName() { return redPathName; },
+    get leftLocations() { return leftLocations; },
+    get rightLocations() { return rightLocations; },
+    get leftPathName() { return leftPathName; },
+    get rightPathName() { return rightPathName; },
     get availableLocations() { return availableLocations; },
-    get canSwitchToRed() { return canSwitchToRed; },
+    get canSwitchToRight() { return canSwitchToRight; },
     get canComplete() { return canComplete; },
     get activeLocations() { return activeLocations; },
     get lastLocation() { return lastLocation; },
@@ -215,7 +215,7 @@ export function createBuilderState(): BuilderState {
     addLocation,
     setAnimationCallback,
     undo,
-    switchToRed,
+    switchToRight,
     complete,
     reset,
     setGridMode,

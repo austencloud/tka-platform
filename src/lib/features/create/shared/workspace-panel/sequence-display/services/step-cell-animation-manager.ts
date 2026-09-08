@@ -22,9 +22,9 @@ function getPictographSignature(stepData: StepData): string {
   // Invisible placeholder = hand not really there (both-required Step shape):
   // encode only visible hands so absence-to-presence transitions still
   // retrigger the cell bloom animation.
-  const hasBlue = isVisibleMotion(stepData.motions?.blue);
-  const hasRed = isVisibleMotion(stepData.motions?.red);
-  const motionStructure = `${hasBlue ? "B" : ""}${hasRed ? "R" : ""}`;
+  const hasLeft = isVisibleMotion(stepData.motions?.left);
+  const hasRight = isVisibleMotion(stepData.motions?.right);
+  const motionStructure = `${hasLeft ? "B" : ""}${hasRight ? "R" : ""}`;
 
   return `${stepData.letter || "null"}-${motionStructure}`;
 }

@@ -44,6 +44,48 @@ describe("ThumbnailRenderQueue", () => {
     await Promise.all(renders);
   });
 
+  it("runs QR-bearing work alone without letting later thumbnails leapfrog it", async () => {
+    const queue = new ThumbnailRenderQueue();
+    queue.setMaxConcurrent(3);
+    const finishers = new Map<string, () => void>();
+    const started: string[] = [];
+    const enqueueDeferred = (id: string, exclusive = false) =>
+      queue.enqueue(
+        id,
+        () =>
+          new Promise<void>((resolve) => {
+            started.push(id);
+            finishers.set(id, resolve);
+          }),
+        { exclusive }
+      );
+
+    const normalA = enqueueDeferred("normal-a");
+    const normalB = enqueueDeferred("normal-b");
+    const qr = enqueueDeferred("qr-thumbnail", true);
+    const normalC = enqueueDeferred("normal-c");
+
+    expect(started).toEqual(["normal-a", "normal-b"]);
+    expect(queue.getStats()).toMatchObject({ active: 2, queued: 2 });
+
+    finishers.get("normal-a")!();
+    await normalA;
+    expect(started).toEqual(["normal-a", "normal-b"]);
+
+    finishers.get("normal-b")!();
+    await normalB;
+    await vi.waitFor(() => expect(started).toContain("qr-thumbnail"));
+    expect(started).toEqual(["normal-a", "normal-b", "qr-thumbnail"]);
+    expect(queue.getStats()).toMatchObject({ active: 1, queued: 1 });
+
+    finishers.get("qr-thumbnail")!();
+    await qr;
+    await vi.waitFor(() => expect(started).toContain("normal-c"));
+    finishers.get("normal-c")!();
+    await normalC;
+    expect(queue.getStats()).toMatchObject({ active: 0, queued: 0 });
+  });
+
   it("reports the typed deadline when abort-aware work rejects synchronously", async () => {
     vi.useFakeTimers();
     const queue = new ThumbnailRenderQueue();
@@ -242,15 +284,13 @@ describe("ThumbnailRenderQueue", () => {
     const first = queue.enqueue(
       "shared-thumbnail",
       execute,
-      Infinity,
-      firstConsumer.signal
+      { consumerSignal: firstConsumer.signal }
     );
     const firstHandled = first.catch((error) => error);
     const second = queue.enqueue(
       "shared-thumbnail",
       execute,
-      Infinity,
-      secondConsumer.signal
+      { consumerSignal: secondConsumer.signal }
     );
 
     firstConsumer.abort();

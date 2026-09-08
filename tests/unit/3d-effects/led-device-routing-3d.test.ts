@@ -28,9 +28,7 @@ describe("LED 3D routes by device kind", () => {
 
   it("builds the POV strip renderer for a pixel staff, at the device's LED count", () => {
     expect(source).toMatch(/if \(usePixelStaff\) \{/);
-    expect(source).toMatch(
-      /new PovStripRenderer3D\(qualityTier, ledCount\)/
-    );
+    expect(source).toMatch(/new PovStripRenderer3D\(qualityTier, ledCount\)/);
   });
 
   it("keeps the ribbon renderer on the capsule branch", () => {
@@ -43,8 +41,15 @@ describe("LED 3D routes by device kind", () => {
     expect(capsuleBranch.slice(0, elseIndex)).not.toContain("LedRenderer3D(");
   });
 
-  it("skips the per-tip supersampled ribbon input on a pixel staff", () => {
-    expect(source).toMatch(/if \(!usePixelStaff\) \{\s*const color = ledColorAt/);
+  it("skips per-tip ribbon inputs only for performers routed to pixel-staff POV", () => {
+    expect(source).toMatch(
+      /const leftUsesPov = usePixelStaff && !leftIsMoonFan/
+    );
+    expect(source).toMatch(
+      /const rightUsesPov = usePixelStaff && !rightIsMoonFan/
+    );
+    expect(source).toMatch(/if \(!leftUsesPov\) \{/);
+    expect(source).toMatch(/if \(!rightUsesPov\) \{/);
   });
 });
 
@@ -98,22 +103,40 @@ describe("LED 3D look plumbing", () => {
   });
 });
 
-describe("LED 3D disposes on a device change", () => {
+describe("LED 3D device changes", () => {
+  it("prepares the declared left and right renderer instances", () => {
+    const start = source.indexOf("function prepareInteractiveRenderers");
+    expect(start).toBeGreaterThan(0);
+    const body = source.slice(start, source.indexOf("\n  }", start));
+
+    for (const renderer of [
+      "leftLedRenderer",
+      "rightLedRenderer",
+      "leftPovRenderer",
+      "rightPovRenderer",
+    ]) {
+      expect(body).toContain(renderer);
+    }
+    expect(body).not.toMatch(/\b(?:blue|red)(?:Led|Pov)Renderer\b/);
+  });
+
   it("keys the live renderers to the device kind and LED count", () => {
-    expect(source).toMatch(/syncLedDevice\(resolvedLed\.device\.kind, ledCount\)/);
+    expect(source).toMatch(
+      /syncLedDevice\(resolvedLed\.device\.kind, ledCount\)/
+    );
     expect(source).toMatch(/const key = `\$\{kind\}:\$\{ledCount\}`/);
   });
 
-  it("disposes and clears both renderer families when that key changes", () => {
+  it("keeps capsule buffers warm and only rebuilds capacity-bound POV buffers", () => {
     const start = source.indexOf("function syncLedDevice");
     expect(start).toBeGreaterThan(0);
     const body = source.slice(start, source.indexOf("\n  }", start));
-    for (const renderer of [
-      "blueLedRenderer",
-      "redLedRenderer",
-      "bluePovRenderer",
-      "redPovRenderer",
-    ]) {
+    for (const renderer of ["leftLedRenderer", "rightLedRenderer"]) {
+      expect(body).toContain(`${renderer}?.reset();`);
+      expect(body).not.toContain(`${renderer}?.dispose();`);
+      expect(body).not.toContain(`${renderer} = null;`);
+    }
+    for (const renderer of ["leftPovRenderer", "rightPovRenderer"]) {
       expect(body).toContain(`${renderer}?.dispose();`);
       expect(body).toContain(`${renderer} = null;`);
     }
@@ -122,10 +145,10 @@ describe("LED 3D disposes on a device change", () => {
   it("still disposes every renderer when the component unmounts", () => {
     const destroy = source.slice(source.indexOf("onDestroy(() => {"));
     for (const renderer of [
-      "blueLedRenderer",
-      "redLedRenderer",
-      "bluePovRenderer",
-      "redPovRenderer",
+      "leftLedRenderer",
+      "rightLedRenderer",
+      "leftPovRenderer",
+      "rightPovRenderer",
     ]) {
       expect(destroy).toContain(`${renderer}?.dispose();`);
     }

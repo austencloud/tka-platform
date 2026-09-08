@@ -178,10 +178,11 @@ dialog.drawer-content {
   user-select: none;
 }
 
-/* Horizontal touch action for right/left placement */
+/* Side drawers still contain vertical lists. Let the browser scroll them;
+   SwipeToDismiss handles horizontal dismissal without native horizontal pan. */
 .drawer-content[data-placement="right"],
 .drawer-content[data-placement="left"] {
-  touch-action: pan-x;
+  touch-action: pan-y;
   overscroll-behavior-x: contain;
 }
 

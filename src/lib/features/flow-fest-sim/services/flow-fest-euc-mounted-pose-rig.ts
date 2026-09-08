@@ -26,6 +26,7 @@ import {
 import {
   HingeConstrainedLegIKSolver,
   KneeHingeAxisCalibrator,
+  kneeHingeReferenceAxis,
 } from "@austencloud/scene-3d";
 import {
   FLOW_FEST_EUC_CONTACT_THRESHOLDS,
@@ -280,7 +281,8 @@ export function calibrateSoleFrame(
         const weight = skinWeight.getComponent(vertex, influence);
         if (weight <= dominantWeight) continue;
         dominantWeight = weight;
-        dominantBone = skeleton.bones[skinIndex.getComponent(vertex, influence)];
+        dominantBone =
+          skeleton.bones[skinIndex.getComponent(vertex, influence)];
       }
       if (!dominantBone || dominantWeight < 0.5) continue;
       if (!owned.has(dominantBone)) continue;
@@ -511,7 +513,19 @@ export class FlowFestEucMountedPoseRig {
     this.detach();
     this.avatarRoot = avatarRoot;
     this.status = "waiting-for-rig";
+    try {
+      return this.bind(avatarRoot);
+    } catch (error) {
+      // This runs inside the frame task, and three.js asks for the next frame
+      // only after the task returns, so a throw here would stop the whole
+      // scene rendering. A rig the calibration cannot read is reported instead.
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[FlowFestEucMountedPoseRig] attach failed", error);
+      return this.reject(`rig calibration threw: ${message}`);
+    }
+  }
 
+  private bind(avatarRoot: Object3D): boolean {
     avatarRoot.updateWorldMatrix(true, true);
 
     const bones = findMountedPoseBones(avatarRoot);
@@ -524,6 +538,15 @@ export class FlowFestEucMountedPoseRig {
     });
     if (meshes.length === 0) return this.reject("rig has no skinned mesh");
 
+    // The knee hinge is referenced to this character's own hip line, the way
+    // the package's foot planter calibrates it, so a rotated rig still reads.
+    const leftUpLeg = bones.get("LeftUpLeg");
+    const rightUpLeg = bones.get("RightUpLeg");
+    const hingeReference =
+      leftUpLeg && rightUpLeg
+        ? kneeHingeReferenceAxis(leftUpLeg, rightUpLeg)
+        : new Vector3(1, 0, 0);
+
     const legs: LegRig[] = [];
     for (const side of ["left", "right"] as FlowFestEucPedalSide[]) {
       const prefix = side === "left" ? "Left" : "Right";
@@ -535,7 +558,8 @@ export class FlowFestEucMountedPoseRig {
         return this.reject(`rig is missing the ${side} leg chain`);
       }
       const sole = calibrateSoleFrame(meshes, foot, toe);
-      if (!sole) return this.reject(`rig has no skin bound to the ${side} foot`);
+      if (!sole)
+        return this.reject(`rig has no skin bound to the ${side} foot`);
 
       const chain = measureTwoBoneChain(upLeg, leg, foot);
       if (chain.upperLength < 1e-4 || chain.lowerLength < 1e-4) {
@@ -546,7 +570,7 @@ export class FlowFestEucMountedPoseRig {
         chain,
         foot,
         toe,
-        hingeAxis: this.calibrator.compute(chain.rootRestDir, chain.middleRestDir),
+        hingeAxis: this.calibrator.compute(chain, hingeReference),
         sole,
         bendSign: undefined,
       });
@@ -654,7 +678,12 @@ export class FlowFestEucMountedPoseRig {
 
     const anchors = this.anchors;
     const hips = this.hips;
-    if (!anchors || !hips || this.status !== "ready" || this.legs.length !== 2) {
+    if (
+      !anchors ||
+      !hips ||
+      this.status !== "ready" ||
+      this.legs.length !== 2
+    ) {
       return;
     }
 
@@ -712,9 +741,7 @@ export class FlowFestEucMountedPoseRig {
       );
       footRotation[leg.side] = new Quaternion()
         .setFromRotationMatrix(pedalBasis)
-        .multiply(
-          new Quaternion().setFromRotationMatrix(soleBasis).invert()
-        );
+        .multiply(new Quaternion().setFromRotationMatrix(soleBasis).invert());
 
       // Lift the contact patch by however far the shoe hangs below it, so the
       // deepest point of the sole rests on the pedal instead of through it.
@@ -742,7 +769,10 @@ export class FlowFestEucMountedPoseRig {
       )
       .multiply(
         new Quaternion().setFromEuler(
-          eulerFromPitchRoll(stance.pelvisPitchRadians, stance.pelvisRollRadians)
+          eulerFromPitchRoll(
+            stance.pelvisPitchRadians,
+            stance.pelvisRollRadians
+          )
         )
       );
     this.setBoneWorldQuaternion(hips, pelvisRotation);
@@ -762,7 +792,10 @@ export class FlowFestEucMountedPoseRig {
         .sub(hipsWorld);
     }
 
-    const support = soleTarget.left.clone().add(soleTarget.right).multiplyScalar(0.5);
+    const support = soleTarget.left
+      .clone()
+      .add(soleTarget.right)
+      .multiplyScalar(0.5);
     const lateral = clamp(
       stance.pelvisLateralMeters,
       -FLOW_FEST_EUC_MAXIMUM_PELVIS_LATERAL_METERS,
@@ -929,9 +962,9 @@ export class FlowFestEucMountedPoseRig {
     const hips = this.hips;
     if (hips) {
       this.scratch.matrix.copy(anchors.riderFrame.matrixWorld).invert();
-      const local = hips.getWorldPosition(new Vector3()).applyMatrix4(
-        this.scratch.matrix
-      );
+      const local = hips
+        .getWorldPosition(new Vector3())
+        .applyMatrix4(this.scratch.matrix);
       this.pelvisLateralOffsetMeters = local.x;
       this.pelvisForwardOffsetMeters = local.z;
     }

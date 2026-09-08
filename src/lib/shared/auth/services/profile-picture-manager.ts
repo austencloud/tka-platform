@@ -105,10 +105,13 @@ export async function uploadProfilePhoto(
   const prepared = await prepareProfilePhoto(file);
   const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
   const storage = await getStorageInstance();
-  const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}.webp`);
+  const storageRef = ref(
+    storage,
+    `avatars/${user.uid}/${Date.now()}.${prepared.fileExtension}`
+  );
 
   await uploadBytes(storageRef, prepared.blob, {
-    contentType: "image/webp",
+    contentType: prepared.contentType,
     cacheControl: "public,max-age=31536000,immutable",
     customMetadata: {
       userId: user.uid,

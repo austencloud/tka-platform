@@ -74,8 +74,8 @@ const TURN_Y_PADDING = 5;
 // Mode-specific colors for turn numbers.
 // Must match TurnsColumn.svelte STATIC_COLORS and MOTION_COLOR_MAP in svg-color-utils.ts.
 const TURN_COLORS = {
-  dark: { blue: "#3575E2", red: "#ED1C24" },
-  light: { blue: "#3D44B8", red: "#DC2626" },
+  dark: { left: "#3575E2", right: "#ED1C24" },
+  light: { left: "#3D44B8", right: "#DC2626" },
 } as const;
 
 // TurnColorInterpreter always returns "dark" mode hex values.
@@ -278,7 +278,7 @@ export class ExportGlyphPrerenderer {
     const isBlue =
       interpreterColor.toLowerCase() === INTERPRETER_BLUE_HEX.toLowerCase();
     const palette = isDarkMode ? TURN_COLORS.dark : TURN_COLORS.light;
-    return isBlue ? palette.blue : palette.red;
+    return isBlue ? palette.left : palette.right;
   }
 
   /**

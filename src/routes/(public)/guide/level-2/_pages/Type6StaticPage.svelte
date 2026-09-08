@@ -17,7 +17,7 @@
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
-    MotionColor,
+    HandSide,
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -31,8 +31,8 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
-  const B = MotionColor.BLUE;
-  const R = MotionColor.RED;
+  const B = HandSide.LEFT;
+  const R = HandSide.RIGHT;
 
   const STAFF_D =
     "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";
@@ -40,7 +40,7 @@
   const BLUE_FILL = "#2E3192";
 
   const mo = (
-    color: MotionColor,
+    color: HandSide,
     type: MotionType,
     from: GridLocation,
     to: GridLocation,
@@ -61,13 +61,13 @@
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
-  const pic = (id: string, blue: ReturnType<typeof mo>, red: ReturnType<typeof mo>) => ({
+  const pic = (id: string, left, right) => ({
     id: `l2t6-${id}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
-    motions: { blue, red },
+    motions: { left, right },
   });
-  const statPic = (color: MotionColor, loc: GridLocation, ori: Orientation, rot: RotationDirection = NOROT, turns = 0) =>
+  const statPic = (color: HandSide, loc: GridLocation, ori: Orientation, rot: RotationDirection = NOROT, turns = 0) =>
     mo(color, MotionType.STATIC, loc, loc, rot, ori, turns % 2 === 1 ? OUT : IN, turns);
 
   type Cont = { type: MotionType; from: GridLocation; to: GridLocation; rot: RotationDirection };
@@ -86,11 +86,11 @@
     end: ReturnType<typeof pic>;
     combined: ReturnType<typeof pic>;
     continuation: ReturnType<typeof pic> | null;
-    halfway: { motion: HalfwayMotion; color: MotionColor }[];
+    halfway: { motion: HalfwayMotion; color: HandSide }[];
   };
 
   const staticEnd = (turns: number): Orientation => (turns % 2 === 1 ? OUT : IN);
-  const contMo = (c: MotionColor, m: Cont) =>
+  const contMo = (c: HandSide, m: Cont) =>
     m.type === MotionType.STATIC ? statPic(c, m.from, IN) : mo(c, m.type, m.from, m.to, m.rot, IN, IN, 0);
 
   const WIDE: Cols = { start: 165, half: 257, end: 367, comb: 467 };
@@ -110,13 +110,13 @@
     endThumb: string;
     cols: Cols;
     contLetter: string | null;
-    blue: StaticHand;
-    red: StaticHand;
-    contBlue?: Cont;
-    contRed?: Cont;
+    left: StaticHand;
+    right: StaticHand;
+    contLeft?: Cont;
+    contRight?: Cont;
   }): Strip {
-    const bEnd = staticEnd(opts.blue.turns);
-    const rEnd = staticEnd(opts.red.turns);
+    const bEnd = staticEnd(opts.left.turns);
+    const rEnd = staticEnd(opts.right.turns);
     const hm = (h: StaticHand, eo: Orientation): HalfwayMotion => ({
       type: MotionType.STATIC,
       from: h.loc,
@@ -136,18 +136,18 @@
       endThumb: opts.endThumb,
       cols: opts.cols,
       contLetter: opts.contLetter,
-      start: pic("start", statPic(B, opts.blue.loc, IN), statPic(R, opts.red.loc, IN)),
-      end: pic("end", statPic(B, opts.blue.loc, bEnd, opts.blue.rot, opts.blue.turns), statPic(R, opts.red.loc, rEnd, opts.red.rot, opts.red.turns)),
+      start: pic("start", statPic(B, opts.left.loc, IN), statPic(R, opts.right.loc, IN)),
+      end: pic("end", statPic(B, opts.left.loc, bEnd, opts.left.rot, opts.left.turns), statPic(R, opts.right.loc, rEnd, opts.right.rot, opts.right.turns)),
       combined: pic(
         "full",
-        statPic(B, opts.blue.loc, bEnd, opts.blue.rot, opts.blue.turns),
-        statPic(R, opts.red.loc, rEnd, opts.red.rot, opts.red.turns)
+        statPic(B, opts.left.loc, bEnd, opts.left.rot, opts.left.turns),
+        statPic(R, opts.right.loc, rEnd, opts.right.rot, opts.right.turns)
       ),
       continuation:
-        opts.contBlue && opts.contRed ? pic("cont", contMo(B, opts.contBlue), contMo(R, opts.contRed)) : null,
+        opts.contLeft && opts.contRight ? pic("cont", contMo(B, opts.contLeft), contMo(R, opts.contRight)) : null,
       halfway: [
-        { motion: hm(opts.blue, bEnd), color: B },
-        { motion: hm(opts.red, rEnd), color: R },
+        { motion: hm(opts.left, bEnd), color: B },
+        { motion: hm(opts.right, rEnd), color: R },
       ],
     };
   }
@@ -161,20 +161,20 @@
     makeStrip({
       y: 289, letter: "α", label: "“Alpha-One”", labelY: 327, opcl: null, captions: true,
       endThumb: "in", cols: WIDE, contLetter: null,
-      blue: SH(W, 0, NOROT), red: SH(E, 1, CW),
+      left: SH(W, 0, NOROT), right: SH(E, 1, CW),
     }),
     // Γ section - both static at gamma (blue@S, red@W); 1 turn on the red hand.
     makeStrip({
       y: 509, letter: "Γ", label: "“Gamma-One”", labelY: 549, opcl: "OPEN", captions: true,
       endThumb: "in", cols: NARROW, contLetter: "W",
-      blue: SH(SO_, 0, NOROT), red: SH(W, 1, CW),
-      contBlue: STATIC(SO_), contRed: PRO(W, N, CW),
+      left: SH(SO_, 0, NOROT), right: SH(W, 1, CW),
+      contLeft: STATIC(SO_), contRight: PRO(W, N, CW),
     }),
     makeStrip({
       y: 617, letter: "Γ", label: "“Gamma-One”", labelY: 659, opcl: "CLOSE", captions: false,
       endThumb: "in", cols: NARROW, contLetter: "Y",
-      blue: SH(SO_, 0, NOROT), red: SH(W, 1, CCW),
-      contBlue: STATIC(SO_), contRed: PRO(W, SO_, CCW),
+      left: SH(SO_, 0, NOROT), right: SH(W, 1, CCW),
+      contLeft: STATIC(SO_), contRight: PRO(W, SO_, CCW),
     }),
   ];
 
@@ -197,7 +197,7 @@
   const ARROW_W = 14.5;
 
   const poses = (strip: Strip) =>
-    strip.halfway.map((h) => ({ ...halfwayPose(h.motion, h.color), fill: h.color === MotionColor.BLUE ? BLUE_FILL : RED_FILL }));
+    strip.halfway.map((h) => ({ ...halfwayPose(h.motion, h.color), fill: h.color === HandSide.LEFT ? BLUE_FILL : RED_FILL }));
 </script>
 
 <div class="t6-page">
@@ -266,7 +266,7 @@
 
     <!-- start -->
     <div class="mini" style="left:{c.start * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.start} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.start} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <!-- halfway -->
     <div class="mini" style="left:{c.half * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
@@ -280,11 +280,11 @@
     </div>
     <!-- end -->
     <div class="mini" style="left:{c.end * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.end} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.end} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <!-- combined -->
     <div class="mini" style="left:{c.comb * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={strip.combined} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={strip.combined} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
     <div class="comb-label" style="left:{c.comb * S}px; top:{(strip.y + SIZE - 12) * S}px; width:{SIZE * S}px">
       <span class="tka">{strip.letter}</span><span class="sup" style="color:{RED_FILL}">1</span>
@@ -293,7 +293,7 @@
     <!-- continuation -->
     {#if strip.continuation}
       <div class="mini" style="left:{CONT_X * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-        <PictographContainer pictographData={strip.continuation} gridMode={GridMode.DIAMOND} bluePropTypeOverride={PropType.STAFF} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+        <PictographContainer pictographData={strip.continuation} gridMode={GridMode.DIAMOND} leftPropTypeOverride={PropType.STAFF} rightPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
       </div>
       <div class="cont-letter" style="left:{CONT_X * S}px; top:{(strip.y + SIZE - 18) * S}px; width:{SIZE * S}px">{strip.contLetter}</div>
     {/if}

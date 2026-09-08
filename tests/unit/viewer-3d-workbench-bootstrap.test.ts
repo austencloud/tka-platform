@@ -97,7 +97,13 @@ describe("Viewer 3D scene workbench bootstrap", () => {
   });
 
   it("streams the scene directly instead of mounting either loading curtain", () => {
-    expect(runtimeSource).toContain('initialRevealMode="streaming"');
+    // `?renderer=worker` opts into the production curtain so a worker parity
+    // review compares like with like (5cb43b1e80). The plain workbench URL,
+    // which is the one this bootstrap protects, still streams.
+    expect(runtimeSource).toContain(
+      'initialRevealMode={workerReview ? "gated" : "streaming"}'
+    );
+    expect(runtimeSource).toContain('get("renderer") === "worker"');
     expect(runtimeSource).toContain(
       "initialRevealDeferredFeatures={STREAMED_SCENE_FEATURES}"
     );

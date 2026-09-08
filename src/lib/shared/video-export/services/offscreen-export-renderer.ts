@@ -40,6 +40,7 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
+import type { TunnelPropColorPair } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 export interface OffscreenExportInit {
   /** Square canvas size (px) for the offscreen engine. */
@@ -49,8 +50,8 @@ export interface OffscreenExportInit {
   /** When true, run synchronous warmup renders so the fluid sim (fire/charcoal) converges. */
   needsFluidWarmup: boolean;
   /** Resolved prop types (e.g. "staff"). Thread into frame ctx + trail capture config. */
-  bluePropType: string | null;
-  redPropType: string | null;
+  leftPropType: string | null;
+  rightPropType: string | null;
   /** Dark-mode override for prop colors + grid tint. null → engine boot value. */
   previewDarkMode: boolean | null;
   /** Whether to draw non-radial grid points (matches the live grid). */
@@ -61,6 +62,15 @@ export interface OffscreenExportInit {
   /** Tunnel per-prop rainbow spectrum (matches the live controller). Drives both
    *  the pre-loaded layer texture colors and the per-frame render coloring. */
   tunnelSpectrum?: boolean;
+  tunnelPropColors?: TunnelPropColorPair | null;
+  /**
+   * Viewer Blue/Red motion toggles. The live canvas applies them through
+   * engine.setMotionVisibility (CanvasSurface); the export engine is a fresh
+   * instance, so without these a hand hidden on screen still renders in the
+   * file. Omitted → both visible.
+   */
+  leftMotionVisible?: boolean;
+  rightMotionVisible?: boolean;
 }
 
 /** Synchronous render passes to converge the fluid sim before capture starts. */
@@ -73,6 +83,14 @@ const FLUID_WARMUP_FRAMES = 60;
  */
 const REFERENCE_STEP_MS = 1000 / 60;
 const REFERENCE_STEP_S = 1 / 60;
+
+/**
+ * Virtual-clock span that settles a hidden hand before capture. The per-hand
+ * prop fade managers boot fully visible and ease out over 200ms of render
+ * clock, so a hand hidden at init would otherwise fade out across the first
+ * dozen exported frames.
+ */
+const MOTION_VISIBILITY_SETTLE_MS = 400;
 
 export class OffscreenExportRenderer {
   private handle: OffscreenContextHandle | null = null;
@@ -88,7 +106,7 @@ export class OffscreenExportRenderer {
 
   constructor(
     private readonly playback: AnimationPlaybackController,
-    private readonly panelState: AnimationPanelState,
+    private readonly panelState: AnimationPanelState
   ) {}
 
   async initialize(init: OffscreenExportInit): Promise<void> {
@@ -100,14 +118,14 @@ export class OffscreenExportRenderer {
     const vm = getAnimationVisibilityManager();
     this.handle = await new RenderContextFactory().createOffscreenContext(
       init.outputCanvasSize,
-      { visibilityManager: vm, effectsConfigState: vm.effectsConfigState },
+      { visibilityManager: vm, effectsConfigState: vm.effectsConfigState }
     );
 
     // Put the engine's rAF loop under external (deterministic) control. The
     // export drives every frame through renderFrame() → renderSync(). If the loop
     // runs, it repaints from the engine's OWN internal state — which never
     // receives per-frame prop positions (those arrive only as renderFrame args) —
-    // so its bluePropState/redPropState stay at the boot default. During the
+    // so its leftPropState/rightPropState stay at the boot default. During the
     // orchestrator's `await waitForAnimationFrame()` between renderFrame() and the
     // canvas capture, an rAF render fires and (a) overwrites the frame with a
     // propless one AND (b) drives the prop fade managers with a wall clock +
@@ -128,8 +146,8 @@ export class OffscreenExportRenderer {
     // feeds the canvas2D fallback path consistently.)
     this.handle.context.trailCapturer.updateConfig({
       canvasSize: init.outputCanvasSize,
-      bluePropType: init.bluePropType,
-      redPropType: init.redPropType,
+      leftPropType: init.leftPropType,
+      rightPropType: init.rightPropType,
       trailSettings: animationSettings.trail,
       isSeamlesslyLoopable: this.playback.isSeamlesslyLoopable,
     });
@@ -140,17 +158,19 @@ export class OffscreenExportRenderer {
     // offscreen engine is driven only through renderFrame, which bypasses
     // PlaybackSync — so without this the renderer keeps its default "diamond"
     // texture and a box-mode sequence exports with a diamond grid.
-    const gridMode =
-      this.panelState.sequenceData?.gridMode ?? GridMode.DIAMOND;
-    await this.handle.context.renderer.loadGridTexture(gridMode, init.showNonRadialPoints);
+    const gridMode = this.panelState.sequenceData?.gridMode ?? GridMode.DIAMOND;
+    await this.handle.context.renderer.loadGridTexture(
+      gridMode,
+      init.showNonRadialPoints
+    );
 
     // Thread the resolved prop types into the offscreen engine's STATE before the
     // frame loop. The renderer skips drawing a prop whose image is null
-    // (canvas-2d-animation-renderer getBluePropImage), so the prop image must be
+    // (canvas-2d-animation-renderer getLeftPropImage), so the prop image must be
     // loaded — but loading the image alone is not enough: frame-parameter-builder
-    // reads the prop TYPE from state.currentBluePropType/RedPropType
+    // reads the prop TYPE from state.currentLeftPropType/currentRightPropType
     // (frame-parameter-builder.ts:227-228,244-245) and the prop DIMENSIONS from
-    // state.bluePropDimensions/redPropDimensions (frame-parameter-builder.ts:209-210).
+    // state.leftPropDimensions/rightPropDimensions (frame-parameter-builder.ts:209-210).
     // The offscreen engine is driven only through renderFrame(), which bypasses
     // PlaybackSync — so those state fields are never synced and stay at the boot
     // default ("staff", staff dimensions). A bare renderer.loadPerColorPropTextures()
@@ -159,9 +179,14 @@ export class OffscreenExportRenderer {
     // override path (sets state types + loads textures + syncs dimensions to state).
     // "staff" is the floor so a missing type still draws.
     const darkMode = init.previewDarkMode ?? vm.isDarkMode();
-    const blue = init.bluePropType ?? "staff";
-    const red = init.redPropType ?? "staff";
-    await this.handle.engine.prepareExportPropTypes(blue, red, darkMode);
+    const left = init.leftPropType ?? "staff";
+    const right = init.rightPropType ?? "staff";
+    await this.handle.engine.prepareExportPropTypes(
+      left,
+      right,
+      darkMode,
+      init.tunnelPropColors ?? null
+    );
 
     // Tunnel export: pre-load the kaleidoscope's per-layer prop textures. The
     // engine bypasses PlaybackSync.update (the live path's handleAdditionalLayers,
@@ -172,7 +197,27 @@ export class OffscreenExportRenderer {
       await this.handle.engine.prepareExportAdditionalLayers(
         init.additionalLayerCount,
         init.tunnelSpectrum ?? true,
+        init.tunnelPropColors ?? null
       );
+    }
+
+    // Mirror the live canvas's Blue/Red motion toggles. setMotionVisibility only
+    // sets a fade TARGET: the per-hand fade managers start visible and ease out
+    // over the render clock, so render two stationary sub-steps that span the
+    // fade, then wipe the stamps they left and rewind the clock — the same
+    // discard-the-warmup shape as the fluid pass below.
+    const leftMotionVisible = init.leftMotionVisible ?? true;
+    const rightMotionVisible = init.rightMotionVisible ?? true;
+    if (!leftMotionVisible || !rightMotionVisible) {
+      this.handle.engine.setMotionVisibility(
+        leftMotionVisible,
+        rightMotionVisible
+      );
+      this.renderSubStep(0, 0, REFERENCE_STEP_S);
+      this.renderSubStep(0, MOTION_VISIBILITY_SETTLE_MS, REFERENCE_STEP_S);
+      this.handle.context.trailCapturer.clearTrails();
+      this.handle.context.effectManager.trailOverlay?.clearBuffers();
+      this.resetClock();
     }
 
     if (init.needsFluidWarmup) {
@@ -200,7 +245,7 @@ export class OffscreenExportRenderer {
   renderFrame(
     beatPos: number,
     virtualTimeMs: number,
-    layerProvider?: (beat: number) => AdditionalLayerProps[],
+    layerProvider?: (beat: number) => AdditionalLayerProps[]
   ): void {
     this.renderAt(beatPos, virtualTimeMs, layerProvider);
   }
@@ -220,7 +265,7 @@ export class OffscreenExportRenderer {
   private renderAt(
     beatPos: number,
     targetTimeMs: number,
-    layerProvider?: (beat: number) => AdditionalLayerProps[],
+    layerProvider?: (beat: number) => AdditionalLayerProps[]
   ): void {
     if (!this.handle) {
       throw new Error("OffscreenExportRenderer not initialized");
@@ -239,7 +284,10 @@ export class OffscreenExportRenderer {
     const spanMs = Math.max(0, targetTimeMs - this.prevTargetMs);
     const beatAt = (clockMs: number): number => {
       if (spanMs <= 0) return beatPos;
-      const frac = Math.min(1, Math.max(0, (clockMs - this.prevTargetMs) / spanMs));
+      const frac = Math.min(
+        1,
+        Math.max(0, (clockMs - this.prevTargetMs) / spanMs)
+      );
       return prevBeat + (beatPos - prevBeat) * frac;
     };
 
@@ -249,7 +297,12 @@ export class OffscreenExportRenderer {
     while (this.accumulatorMs >= REFERENCE_STEP_MS) {
       this.internalClockMs += REFERENCE_STEP_MS;
       this.accumulatorMs -= REFERENCE_STEP_MS;
-      this.renderSubStep(beatAt(this.internalClockMs), this.internalClockMs, REFERENCE_STEP_S, layerProvider);
+      this.renderSubStep(
+        beatAt(this.internalClockMs),
+        this.internalClockMs,
+        REFERENCE_STEP_S,
+        layerProvider
+      );
       stepped = true;
     }
 
@@ -278,7 +331,7 @@ export class OffscreenExportRenderer {
     beat: number,
     clockMs: number,
     dtSeconds: number,
-    layerProvider?: (beat: number) => AdditionalLayerProps[],
+    layerProvider?: (beat: number) => AdditionalLayerProps[]
   ): void {
     const handle = this.handle!;
     // Resolve this beat's prop states WITHOUT syncing the live playback/UI state.
@@ -296,16 +349,16 @@ export class OffscreenExportRenderer {
       backgroundAlpha: 1,
       showNonRadialPoints: this.init.showNonRadialPoints,
       trailSettings: animationSettings.trail,
-      bluePropType: this.init.bluePropType,
-      redPropType: this.init.redPropType,
+      leftPropType: this.init.leftPropType,
+      rightPropType: this.init.rightPropType,
       previewDarkMode: this.init.previewDarkMode,
     };
     const props = assembleExportEngineProps(this.panelState, frameCtx);
     // Drive the offscreen frame off the sampled states + this beat (the shared
     // panelState is frozen at the export's start pose, so these overrides — not
     // panelState's stale values — are what render/capture).
-    props.blueProp = sampled.blue;
-    props.redProp = sampled.red;
+    props.leftProp = sampled.left;
+    props.rightProp = sampled.right;
     props.currentStep = beat;
 
     if (layerProvider) props.additionalLayers = layerProvider(beat);
@@ -313,13 +366,14 @@ export class OffscreenExportRenderer {
     // this to true; an explicit value honors a user who turned spectrum off (and
     // keeps the per-frame render in sync with the pre-loaded layer texture hues).
     props.tunnelSpectrum = this.init.tunnelSpectrum ?? true;
+    props.tunnelPropColors = this.init.tunnelPropColors ?? null;
 
     // Feed the capturer at the same cadence the WebGL2 overlay captures its own
     // ring, so the canvas2D fallback path (if ever active) stays consistent.
     handle.context.trailCapturer.captureFrame(
-      { blueProp: props.blueProp, redProp: props.redProp },
+      { leftProp: props.leftProp, rightProp: props.rightProp },
       Math.floor(beat),
-      clockMs,
+      clockMs
     );
 
     handle.engine.renderFrame(props, clockMs, dtSeconds);

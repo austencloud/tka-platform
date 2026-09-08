@@ -11,7 +11,7 @@ import {
   MotionType,
   Orientation,
   RotationDirection,
-  MotionColor,
+  HandSide,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -74,8 +74,8 @@ export const POSITION_GROUPS: PositionGroupData[] = [
 export interface LetterTriadData {
   letter: Letter;
   label: string;
-  blueMotion: MotionType;
-  redMotion: MotionType;
+  leftMotion: MotionType;
+  rightMotion: MotionType;
   pattern: "thesis" | "antithesis" | "synthesis";
   patternLabel: string;
   description: string;
@@ -85,8 +85,8 @@ export const LETTER_TRIAD: LetterTriadData[] = [
   {
     letter: Letter.A,
     label: "A",
-    blueMotion: MotionType.PRO,
-    redMotion: MotionType.PRO,
+    leftMotion: MotionType.PRO,
+    rightMotion: MotionType.PRO,
     pattern: "thesis",
     patternLabel: "Pro + Pro",
     description: "Both hands rotate with their movement direction",
@@ -94,8 +94,8 @@ export const LETTER_TRIAD: LetterTriadData[] = [
   {
     letter: Letter.B,
     label: "B",
-    blueMotion: MotionType.ANTI,
-    redMotion: MotionType.ANTI,
+    leftMotion: MotionType.ANTI,
+    rightMotion: MotionType.ANTI,
     pattern: "antithesis",
     patternLabel: "Anti + Anti",
     description: "Both hands rotate against their movement direction",
@@ -103,8 +103,8 @@ export const LETTER_TRIAD: LetterTriadData[] = [
   {
     letter: Letter.C,
     label: "C",
-    blueMotion: MotionType.PRO,
-    redMotion: MotionType.ANTI,
+    leftMotion: MotionType.PRO,
+    rightMotion: MotionType.ANTI,
     pattern: "synthesis",
     patternLabel: "Pro + Anti",
     description: "One hand rotates with, one against - the hybrid",
@@ -121,7 +121,7 @@ export function createLetterAPictograph(): PictographData {
     startPosition: GridPosition.ALPHA1,
     endPosition: GridPosition.ALPHA3,
     motions: {
-      blue: createMotionData({
+      left: createMotionData({
         motionType: MotionType.PRO,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
@@ -129,11 +129,11 @@ export function createLetterAPictograph(): PictographData {
         startLocation: GridLocation.SOUTH,
         endLocation: GridLocation.WEST,
         turns: 0,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
-      red: createMotionData({
+      right: createMotionData({
         motionType: MotionType.PRO,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.IN,
@@ -141,7 +141,7 @@ export function createLetterAPictograph(): PictographData {
         startLocation: GridLocation.NORTH,
         endLocation: GridLocation.EAST,
         turns: 0,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -159,7 +159,7 @@ export function createLetterBPictograph(): PictographData {
     startPosition: GridPosition.ALPHA1,
     endPosition: GridPosition.ALPHA3,
     motions: {
-      blue: createMotionData({
+      left: createMotionData({
         motionType: MotionType.ANTI,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
@@ -167,11 +167,11 @@ export function createLetterBPictograph(): PictographData {
         startLocation: GridLocation.SOUTH,
         endLocation: GridLocation.WEST,
         turns: 0,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
-      red: createMotionData({
+      right: createMotionData({
         motionType: MotionType.ANTI,
         startOrientation: Orientation.IN,
         endOrientation: Orientation.OUT,
@@ -179,7 +179,7 @@ export function createLetterBPictograph(): PictographData {
         startLocation: GridLocation.NORTH,
         endLocation: GridLocation.EAST,
         turns: 0,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
@@ -197,7 +197,7 @@ export function createLetterCPictograph(): PictographData {
     startPosition: GridPosition.ALPHA1,
     endPosition: GridPosition.ALPHA3,
     motions: {
-      blue: createMotionData({
+      left: createMotionData({
         motionType: MotionType.PRO,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.OUT,
@@ -205,11 +205,11 @@ export function createLetterCPictograph(): PictographData {
         startLocation: GridLocation.SOUTH,
         endLocation: GridLocation.WEST,
         turns: 0,
-        color: MotionColor.BLUE,
+        hand: HandSide.LEFT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),
-      red: createMotionData({
+      right: createMotionData({
         motionType: MotionType.ANTI,
         startOrientation: Orientation.OUT,
         endOrientation: Orientation.IN,
@@ -217,7 +217,7 @@ export function createLetterCPictograph(): PictographData {
         startLocation: GridLocation.NORTH,
         endLocation: GridLocation.EAST,
         turns: 0,
-        color: MotionColor.RED,
+        hand: HandSide.RIGHT,
         propType: PropType.STAFF,
         gridMode: GridMode.DIAMOND,
       }),

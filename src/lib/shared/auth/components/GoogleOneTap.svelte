@@ -45,7 +45,6 @@
   import { onMount, onDestroy } from "svelte";
   import { GOOGLE_CLIENT_ID } from "../config/google-oauth";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import { isAutomatedBrowser } from "$lib/shared/environment/environment-features";
 
   const debug = createComponentLogger("GoogleOneTap");
 
@@ -125,14 +124,6 @@
       return;
     }
 
-    // Disable FedCM in automated browser environments (Playwright, Puppeteer, etc.)
-    // FedCM explicitly blocks automated contexts for security - it will throw
-    // IdentityCredentialError if we try to use it. Fall back to legacy flow.
-    const isAutomated = isAutomatedBrowser();
-    if (isAutomated) {
-      debug.info("Automated browser detected - disabling FedCM");
-    }
-
     // Register this instance's handler. The first mount initializes GSI with
     // the shared dispatcher; subsequent mounts just subscribe.
     credentialHandlers.add(handleCredentialResponse);
@@ -148,8 +139,6 @@
         cancel_on_tap_outside: false,
         context: "signin",
         itp_support: true,
-        // Enable FedCM unless in automated environment where it will fail
-        use_fedcm_for_prompt: !isAutomated,
       };
 
       if (promptParentId) {
@@ -158,9 +147,7 @@
 
       window.google.accounts.id.initialize(config);
       gsiInitialized = true;
-      debug.success(
-        `Google One Tap initialized (FedCM: ${isAutomated ? "disabled - automated browser" : "enabled"})`
-      );
+      debug.success("Google One Tap initialized");
     }
 
     if (autoPrompt) {
@@ -183,11 +170,12 @@
   }
 
   onMount(async () => {
-    // Native shell: One Tap/FedCM don't exist in the Android WebView and the
-    // gsi script misbehaves there. Native sign-in goes through the Capacitor
-    // Firebase plugin instead (see authenticator.signInWithGoogle).
-    const { isNative } = await import("$lib/shared/platform/services/platform-detector");
-    if (isNative()) return;
+    // GIS accepts web origins only. Capacitor uses the native Firebase plugin,
+    // while Tauri uses its loopback desktop OAuth bridge; loading GIS in either
+    // shell produces an unregistered-origin failure before the user can sign in.
+    const { isWeb } =
+      await import("$lib/shared/platform/services/platform-detector");
+    if (!isWeb()) return;
 
     try {
       await loadGoogleScript();

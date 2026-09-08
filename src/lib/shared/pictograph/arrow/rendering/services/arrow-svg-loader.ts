@@ -121,7 +121,7 @@ export class ArrowSvgLoader {
     // Use explicit theme mode if provided, otherwise fall back to global state
     const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
-    const transformedCacheKey = `${path}:${motionData.color}:${themeMode}`;
+    const transformedCacheKey = `${path}:${motionData.hand}:${themeMode}`;
 
     // 🚀 OPTIMIZATION: Check transformed cache first (fastest path)
     if (this.transformedSvgCache.has(transformedCacheKey)) {
@@ -140,7 +140,7 @@ export class ArrowSvgLoader {
     // Apply color transformation to the SVG, passing theme mode
     const coloredSvgText = applyColorToSvg(
       originalSvgText,
-      motionData.color,
+      motionData.hand,
       themeMode
     );
 
@@ -171,12 +171,12 @@ export class ArrowSvgLoader {
         // Apply color transformation to split paths too
         result.shaftSrc = applyColorToSvg(
           splitData.shaftPath,
-          motionData.color,
+          motionData.hand,
           themeMode
         );
         result.tipSrc = applyColorToSvg(
           splitData.tipPath,
-          motionData.color,
+          motionData.hand,
           themeMode
         );
         result.tipBBox = splitData.tipBBox;

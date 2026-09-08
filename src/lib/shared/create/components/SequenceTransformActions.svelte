@@ -145,10 +145,10 @@
       onShiftStart && handleActionClick("shift-start", onShiftStart)}
     disabled={(!hasSequence || isTransforming || !canShiftStart) && !helpMode}
     aria-label={helpMode
-      ? "Learn about First Beat"
+      ? "Learn about First Step"
       : patternsLocked
         ? "First Step - locked, sign up to unlock"
-        : "Pick new first beat: change where the sequence starts"}
+        : "Pick a new first step: change where the sequence starts"}
   >
     {@render lockBadge()}
     <div class="btn-icon">
@@ -376,7 +376,7 @@
               ? "Learn about Duration"
               : patternsLocked
                 ? "Duration - locked, sign up to unlock"
-                : "Apply duration pattern (beat timing)"}
+                : "Apply duration pattern (step timing)"}
           >
             {@render lockBadge()}
             <div class="btn-icon">
@@ -384,7 +384,7 @@
             </div>
             <div class="btn-text">
               <span class="btn-label">Duration</span>
-              <span class="btn-desc">Beat timing</span>
+              <span class="btn-desc">Step timing</span>
             </div>
           </button>
         {/if}
@@ -932,7 +932,6 @@
   .grid-btn[class] .btn-icon {
     background: rgb(var(--btn-color));
   }
-
 
   /* Shift Start unavailable */
   .grid-btn.shift-start.unavailable {

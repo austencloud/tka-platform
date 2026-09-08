@@ -17,8 +17,8 @@ const positions = startPositionManager
   .map((p) => ({
     ...p,
     motions: {
-      blue: p.motions?.blue ? { ...p.motions.blue, propType: PropType.HAND } : undefined,
-      red: p.motions?.red ? { ...p.motions.red, propType: PropType.HAND } : undefined,
+      left: p.motions?.left ? { ...p.motions.left, propType: PropType.HAND } : undefined,
+      right: p.motions?.right ? { ...p.motions.right, propType: PropType.HAND } : undefined,
     },
   }));
 

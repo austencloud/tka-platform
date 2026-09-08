@@ -189,8 +189,8 @@
       fill={true}
       autoPlay={shouldAutoPlay}
       externalBpm={bpm}
-      bluePropType={propType}
-      redPropType={propType}
+      leftPropType={propType}
+      rightPropType={propType}
       scrubbable
       singlePlay
       beatIndicators={false}

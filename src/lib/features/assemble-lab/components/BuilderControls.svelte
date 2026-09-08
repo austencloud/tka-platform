@@ -5,7 +5,7 @@
   hand picker below it. Desktop keeps those controls in the builder header.
 -->
 <script lang="ts">
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
   import GridModePicker from "./GridModePicker.svelte";
   import BuilderHandPicker from "./BuilderHandPicker.svelte";
@@ -30,9 +30,9 @@
   const actionsDimmed = $derived(isAnimating);
   const handSelectionDisabled = $derived(isAnimating || isComplete);
   const currentStepNumber = $derived(
-    (builderState.activeHand === MotionColor.BLUE
-      ? builderState.blueSteps.length
-      : builderState.redSteps.length) + (isComplete ? 0 : 1)
+    (builderState.activeHand === HandSide.LEFT
+      ? builderState.leftSteps.length
+      : builderState.rightSteps.length) + (isComplete ? 0 : 1)
   );
 
   const phaseInstruction = $derived(
@@ -89,8 +89,8 @@
     <div class="mobile-hand-picker">
       <BuilderHandPicker
         activeHand={builderState.activeHand}
-        blueCount={builderState.blueSteps.length}
-        redCount={builderState.redSteps.length}
+        leftCount={builderState.leftSteps.length}
+        rightCount={builderState.rightSteps.length}
         disabled={handSelectionDisabled}
         onchange={(hand) => builderState.switchToHand(hand)}
       />
@@ -135,8 +135,8 @@
   <div class="desktop-hand-picker">
     <BuilderHandPicker
       activeHand={builderState.activeHand}
-      blueCount={builderState.blueSteps.length}
-      redCount={builderState.redSteps.length}
+      leftCount={builderState.leftSteps.length}
+      rightCount={builderState.rightSteps.length}
       disabled={handSelectionDisabled}
       onchange={(hand) => builderState.switchToHand(hand)}
     />

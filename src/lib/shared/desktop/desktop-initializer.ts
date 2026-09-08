@@ -3,16 +3,28 @@ import { DesktopDataSeeder } from "./desktop-data-seeder";
 
 export class DesktopInitializer {
 	private seeder = new DesktopDataSeeder();
+	private seeded: Promise<void> = Promise.resolve();
+
+	/**
+	 * Resolves once bundled data (deck catalog, public gallery index) is in
+	 * IndexedDB. Boot code that reads those tables waits on this so a first
+	 * launch finds the bundle rather than an empty cache. Already resolved on
+	 * the web.
+	 */
+	get dataSeeded(): Promise<void> {
+		return this.seeded;
+	}
 
 	async initialize(): Promise<void> {
 		if (!isDesktop()) return;
 
+		this.seeded = this.initDataSeeder();
 		await Promise.all([
 			this.initWindowState(),
 			this.initNavigation(),
 			this.initServiceWorkerTeardown(),
 			this.initUpdater(),
-			this.initDataSeeder(),
+			this.seeded,
 		]);
 	}
 
@@ -83,7 +95,8 @@ export class DesktopInitializer {
 	private async initUpdater(): Promise<void> {
 		try {
 			const { check } = await import("@tauri-apps/plugin-updater");
-			const update = await check();
+			// Offline or captive networks must not hold the desktop boot hostage.
+			const update = await check({ timeout: 5000 });
 			if (update) {
 				console.log(`[Desktop] Update available: ${update.version}`);
 				await update.downloadAndInstall();

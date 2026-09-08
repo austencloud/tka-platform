@@ -48,11 +48,11 @@ describe("createDefaultStickerUnit", () => {
   it("accepts variant / background / copies overrides", () => {
     const unit = createDefaultStickerUnit({
       primitiveRef: testRef,
-      variant: "blue",
+      variant: "left",
       background: "white",
       copies: 5,
     });
-    expect(unit.variant).toBe("blue");
+    expect(unit.variant).toBe("left");
     expect(unit.background).toBe("white");
     expect(unit.copies).toBe(5);
   });

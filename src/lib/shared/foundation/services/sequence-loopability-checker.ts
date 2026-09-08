@@ -20,7 +20,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 /** Treat invisible placeholders like the old absent hand. */
 function visibleOrUndefined(m: MotionData | undefined): MotionData | undefined {
@@ -89,21 +89,21 @@ function analyzeLocationCircularity(sequence: SequenceData): boolean {
 
   // Invisible placeholder = hand not really there (both-required Step shape):
   // it must vacuously pass exactly like the old absent hand.
-  const firstBlue = visibleOrUndefined(firstStep.motions[MotionColor.BLUE]);
-  const firstRed = visibleOrUndefined(firstStep.motions[MotionColor.RED]);
-  const lastBlue = visibleOrUndefined(lastStep.motions[MotionColor.BLUE]);
-  const lastRed = visibleOrUndefined(lastStep.motions[MotionColor.RED]);
+  const firstLeft = visibleOrUndefined(firstStep.motions[HandSide.LEFT]);
+  const firstRight = visibleOrUndefined(firstStep.motions[HandSide.RIGHT]);
+  const lastLeft = visibleOrUndefined(lastStep.motions[HandSide.LEFT]);
+  const lastRight = visibleOrUndefined(lastStep.motions[HandSide.RIGHT]);
 
   // Need at least one prop with location data to make a determination
-  const hasBlueData = firstBlue?.startLocation && lastBlue?.endLocation;
-  const hasRedData = firstRed?.startLocation && lastRed?.endLocation;
-  if (!hasBlueData && !hasRedData) return false;
+  const hasLeftData = firstLeft?.startLocation && lastLeft?.endLocation;
+  const hasRightData = firstRight?.startLocation && lastRight?.endLocation;
+  if (!hasLeftData && !hasRightData) return false;
 
   // Every prop that has data must match
-  if (hasBlueData && firstBlue!.startLocation !== lastBlue!.endLocation) {
+  if (hasLeftData && firstLeft!.startLocation !== lastLeft!.endLocation) {
     return false;
   }
-  if (hasRedData && firstRed!.startLocation !== lastRed!.endLocation) {
+  if (hasRightData && firstRight!.startLocation !== lastRight!.endLocation) {
     return false;
   }
 
@@ -134,26 +134,26 @@ function analyzeOrientationCircularity(sequence: SequenceData): boolean {
   // endOrientation equals the first step's startOrientation (props are
   // stationary in the start position). Fall back to first step when
   // start position data is missing.
-  const startBlueOri = getStartOrientation(
-    visibleOrUndefined(startPosData?.motions?.[MotionColor.BLUE]),
-    visibleOrUndefined(firstStep.motions[MotionColor.BLUE])
+  const startLeftOri = getStartOrientation(
+    visibleOrUndefined(startPosData?.motions?.[HandSide.LEFT]),
+    visibleOrUndefined(firstStep.motions[HandSide.LEFT])
   );
-  const startRedOri = getStartOrientation(
-    visibleOrUndefined(startPosData?.motions?.[MotionColor.RED]),
-    visibleOrUndefined(firstStep.motions[MotionColor.RED])
+  const startRightOri = getStartOrientation(
+    visibleOrUndefined(startPosData?.motions?.[HandSide.RIGHT]),
+    visibleOrUndefined(firstStep.motions[HandSide.RIGHT])
   );
 
-  const endBlue = visibleOrUndefined(lastStep.motions[MotionColor.BLUE]);
-  const endRed = visibleOrUndefined(lastStep.motions[MotionColor.RED]);
+  const endLeft = visibleOrUndefined(lastStep.motions[HandSide.LEFT]);
+  const endRight = visibleOrUndefined(lastStep.motions[HandSide.RIGHT]);
 
   // Compare blue prop orientation
-  if (startBlueOri != null && endBlue) {
-    if (startBlueOri !== endBlue.endOrientation) return false;
+  if (startLeftOri != null && endLeft) {
+    if (startLeftOri !== endLeft.endOrientation) return false;
   }
 
   // Compare red prop orientation
-  if (startRedOri != null && endRed) {
-    if (startRedOri !== endRed.endOrientation) return false;
+  if (startRightOri != null && endRight) {
+    if (startRightOri !== endRight.endOrientation) return false;
   }
 
   return true;

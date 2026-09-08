@@ -2,7 +2,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -30,7 +30,7 @@ const flip = (o: Orientation) => (o === IN ? OUT : IN);
 type HandStep = { anti?: boolean; still?: boolean; from: GridLocation; to: GridLocation; so: Orientation };
 const h = (anti: boolean, from: GridLocation, to: GridLocation, so: Orientation = IN): HandStep => ({ anti, from, to, so });
 const sh = (loc: GridLocation, so: Orientation = IN): HandStep => ({ still: true, from: loc, to: loc, so });
-const handMotion = (color: MotionColor, x: HandStep) => {
+const handMotion = (color: HandSide, x: HandStep) => {
   if (x.still) {
     return createMotionData({
       motionType: MotionType.STATIC,
@@ -38,7 +38,7 @@ const handMotion = (color: MotionColor, x: HandStep) => {
       endLocation: x.to,
       startOrientation: x.so,
       endOrientation: x.so,
-      color,
+      hand: color,
       propType: PropType.STAFF,
       gridMode: GridMode.DIAMOND,
     });
@@ -52,14 +52,14 @@ const handMotion = (color: MotionColor, x: HandStep) => {
     startOrientation: x.so,
     endOrientation: x.anti ? flip(x.so) : x.so,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 };
 
-type Step = { letter: Letter; blue: HandStep; red: HandStep };
-const st = (letter: Letter, blue: HandStep, red: HandStep): Step => ({ letter, blue, red });
+type Step = { letter: Letter; left: HandStep; right: HandStep };
+const st = (letter: Letter, left: HandStep, right: HandStep): Step => ({ letter, left, right });
 const { C, I, K, U, W: WL, X, Y, Z } = Letter;
 const NL = Letter.N;
 const EL = Letter.E;
@@ -72,8 +72,8 @@ type SeqDef = {
   word: string;
   tag: string;
   startLetter: Letter;
-  startBlue: GridLocation;
-  startRed: GridLocation;
+  startLeft: GridLocation;
+  startRight: GridLocation;
   steps: Step[];
 };
 const SEQS: SeqDef[] = [
@@ -83,8 +83,8 @@ const SEQS: SeqDef[] = [
     word: "IIΩXKEΣY",
     tag: "Rotated LOOP",
     startLetter: Letter.BETA,
-    startBlue: SO_,
-    startRed: SO_,
+    startLeft: SO_,
+    startRight: SO_,
     steps: [
       st(I, h(true, SO_, W), h(false, SO_, W)),
       st(I, h(true, W, N, OUT), h(false, W, N)),
@@ -113,8 +113,8 @@ const SEQS: SeqDef[] = [
     word: "CΣNZIΘUW",
     tag: "Mirrored + Swapped LOOP",
     startLetter: Letter.ALPHA,
-    startBlue: SO_,
-    startRed: N,
+    startLeft: SO_,
+    startRight: N,
     steps: [
       st(C, h(true, SO_, W), h(false, N, E)),
       st(SIG, sh(W, OUT), h(false, E, SO_)),
@@ -142,12 +142,12 @@ const stepData = (q: SeqDef, i: number): StepData => {
     id: `${q.key}-${i + 1}`,
     letter: s.letter,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(s.blue.from, s.red.from),
-    endPosition: getGridPositionFromLocations(s.blue.to, s.red.to),
+    startPosition: getGridPositionFromLocations(s.left.from, s.right.from),
+    endPosition: getGridPositionFromLocations(s.left.to, s.right.to),
     stepNumber: i + 1,
     motions: {
-      blue: handMotion(MotionColor.BLUE, s.blue),
-      red: handMotion(MotionColor.RED, s.red),
+      left: handMotion(HandSide.LEFT, s.left),
+      right: handMotion(HandSide.RIGHT, s.right),
     },
   } as unknown as StepData;
 };
@@ -157,11 +157,11 @@ const startBox = (q: SeqDef): StepData =>
     letter: q.startLetter,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    startPosition: getGridPositionFromLocations(q.startBlue, q.startRed),
-    endPosition: getGridPositionFromLocations(q.startBlue, q.startRed),
+    startPosition: getGridPositionFromLocations(q.startLeft, q.startRight),
+    endPosition: getGridPositionFromLocations(q.startLeft, q.startRight),
     motions: {
-      blue: handMotion(MotionColor.BLUE, sh(q.startBlue)),
-      red: handMotion(MotionColor.RED, sh(q.startRed)),
+      left: handMotion(HandSide.LEFT, sh(q.startLeft)),
+      right: handMotion(HandSide.RIGHT, sh(q.startRight)),
     },
   }) as unknown as StepData;
 

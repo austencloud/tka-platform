@@ -1,4 +1,4 @@
-"""Author the approved Blossom R2.1 site in Blender.
+"""Author the Blossom hanami performance garden in Blender.
 
 This is the editable source-of-truth pass for the Blossom environment. Static
 set dressing is authored here, saved as a .blend, and rendered for visual QA.
@@ -1594,10 +1594,25 @@ def create_path_ribbon(path, edging_sink, landings):
             heading = math.atan2(tangent_y, tangent_x)
             for side, edge in ((-1.0, left_edge), (1.0, right_edge)):
                 lateral = edge * side
+                edge_x = point[0] + normal_x * lateral
+                edge_y = point[1] + normal_y * lateral
+                # The ribbon tucks under junction paving; its kerb must stop
+                # outside that paving and any intersecting walk.
+                stone_clearance = PATH_EDGING_LENGTH * 0.5
+                if any(
+                    math.dist((edge_x, edge_y), position[:2]) < radius + stone_clearance
+                    for radius, position in landings
+                ) or any(
+                    other["id"] != path["id"]
+                    and polyline_distance(edge_x, edge_y, [station[:2] for station in other["centerline"]])
+                    < other["width"] * 0.5 + stone_clearance
+                    for other in MASTERPLAN["circulation"]["paths"]
+                ):
+                    continue
                 edging_sink.append(
                     (
-                        point[0] + normal_x * lateral,
-                        point[1] + normal_y * lateral,
+                        edge_x,
+                        edge_y,
                         heading,
                         arc_length,
                         side,
@@ -2011,18 +2026,21 @@ def duplicate_hierarchy(source_root, name):
     return mapping[source_root]
 
 
-def place_asset(source_root, name, position, target_height, rotation=0.0, mirror=False, width=1.0):
+def place_asset(source_root, name, position, target_height, rotation=0.0, mirror=False, width=1.0, canopy_radius=None):
     root = duplicate_hierarchy(source_root, name)
     minimum, maximum = asset_bounds(source_root)
     height = max(0.001, maximum.z - minimum.z)
     scale = target_height / height
+    horizontal_scale = scale * width if canopy_radius is None else (
+        canopy_radius * 2 / max(maximum.x - minimum.x, maximum.y - minimum.y, 0.001)
+    )
     center_x = (minimum.x + maximum.x) * 0.5
     center_y = (minimum.y + maximum.y) * 0.5
     normalize = Matrix.Translation(Vector((-center_x, -center_y, -minimum.z)))
     root.matrix_world = (
         Matrix.Translation(Vector(position))
         @ Matrix.Rotation(rotation, 4, "Z")
-        @ Matrix.Diagonal(Vector(((-scale * width if mirror else scale * width), scale, scale, 1.0)))
+        @ Matrix.Diagonal(Vector(((-horizontal_scale if mirror else horizontal_scale), horizontal_scale, scale, 1.0)))
         @ normalize
     )
     for obj in root.children_recursive:
@@ -2071,48 +2089,17 @@ def hide_source(root):
         obj.hide_viewport = True
 
 
-# Only two PlantFactory crowns have passed visual approval, against sixteen
-# authored positions. Baking each crown into an upright and a leaning cut, and
-# giving each cut its own canopy thinning, yields four distinct meshes; rotation,
-# height and width then vary per placement. The masterplan still asks for ten
-# distinct approved variants across four new families, so this is the honest
-# floor, not the finished grove.
-GROVE_VARIANTS = (
-    {
-        "id": "cherry-open-a",
-        "candidateId": "open-crown-s19",
-        "leanDegrees": 0.0,
-        "leanAzimuth": 0.0,
-        "canopyNoise": 0.22,
-        "cardSeed": 11,
-    },
-    {
-        "id": "cherry-open-a-lean",
-        "candidateId": "open-crown-s19",
-        "leanDegrees": 7.5,
-        "leanAzimuth": 34.0,
-        "canopyNoise": 0.55,
-        "cardSeed": 29,
-    },
-    {
-        "id": "cherry-open-b",
-        "candidateId": "open-crown-s71",
-        "leanDegrees": 0.0,
-        "leanAzimuth": 0.0,
-        "canopyNoise": 0.20,
-        "cardSeed": 47,
-    },
-    {
-        "id": "cherry-open-b-lean",
-        "candidateId": "open-crown-s71",
-        "leanDegrees": 6.2,
-        "leanAzimuth": 205.0,
-        "canopyNoise": 0.50,
-        "cardSeed": 83,
-    },
+# Six source silhouettes, with the broad crowns carrying most of the room.
+GROVE_VARIANTS = tuple(
+    {"id": candidate, "candidateId": candidate, "leanDegrees": 0.0,
+     "leanAzimuth": 0.0, "canopyNoise": 0.12, "cardSeed": 31 + index * 17}
+    for index, candidate in enumerate((
+        "open-crown-s19", "open-crown-s71", "weeping-s23",
+        "weeping-s83", "young-airy-s31", "young-airy-s97",
+    ))
 )
-GROVE_FOLIAGE_KEEP = 0.24
-GROVE_FOLIAGE_CARD_GAIN = 1.9
+GROVE_FOLIAGE_KEEP = 0.18
+GROVE_FOLIAGE_CARD_GAIN = 2.1
 GROVE_WOOD_DECIMATE = 0.34
 GROVE_TRUNK_SINK = 0.12
 GROVE_PATH_CLEARANCE = 0.5
@@ -2125,42 +2112,39 @@ GROVE_PATH_CLEARANCE = 0.5
 # of the hero tier, so the far tier keeps roughly 3% of the original canopy.
 GROVE_LOD_TIERS = {
     "hero": {"suffix": "", "relativeKeep": 1.0, "cardGain": 1.0, "woodRatio": 1.0},
-    "mid": {"suffix": "-mid", "relativeKeep": 0.34, "cardGain": 1.7, "woodRatio": 0.45},
-    "far": {"suffix": "-far", "relativeKeep": 0.13, "cardGain": 2.7, "woodRatio": 0.22},
+    "mid": {"suffix": "-mid", "relativeKeep": 0.18, "cardGain": 2.35, "woodRatio": 0.20},
+    "far": {"suffix": "-far", "relativeKeep": 0.045, "cardGain": 4.7, "woodRatio": 0.08},
 }
 GROVE_BACKGROUND_LAYERS = (
     {
         "id": "midground-grove",
         "tier": "mid",
-        "count": 36,
-        "band": (42.0, 78.0),
-        "heightRange": (7.0, 11.5),
+        "count": 48,
+        "band": (34.0, 55.0),
+        "heightRange": (9.0, 13.0),
     },
     {
         "id": "horizon-grove",
         "tier": "far",
-        "count": 72,
-        # The masterplan band runs to 148 m, past the authored terrain edge.
-        # Clamping to 132 m keeps every trunk on ground that actually exists.
-        "band": (76.0, 132.0),
-        "heightRange": (6.5, 12.5),
+        "count": 64,
+        # Keep the distant grove on the smaller garden's terrain.
+        "band": (52.0, 82.0),
+        "heightRange": (9.0, 14.0),
     },
 )
-GROVE_BACKGROUND_SPACING = 5.5
+GROVE_BACKGROUND_SPACING = 4.8
 GROVE_BACKGROUND_SEED = 20260825
 
 
 def resolve_grove_plan():
     """Turn the masterplan's authored positions into placeable instances.
 
-    Variants cycle around the authored ring, and sixteen positions over four
-    variants means no two neighbours ever share a mesh, including across the
-    wrap from the last position back to the first.
+    Each authored tree selects its source silhouette and canopy radius.
     """
     trees = []
     for index, tree in enumerate(MASTERPLAN["grove"]["trees"]):
         x, y = tree["position"]
-        variant = GROVE_VARIANTS[index % len(GROVE_VARIANTS)]
+        variant = next(v for v in GROVE_VARIANTS if v["candidateId"] == tree["candidateId"])
         trees.append(
             {
                 "id": tree["id"],
@@ -2172,6 +2156,7 @@ def resolve_grove_plan():
                     garden_ground_height(x, y) - GROVE_TRUNK_SINK,
                 ),
                 "height": tree["height"],
+                "canopyRadius": tree["canopyRadius"],
                 "width": clamp(
                     tree["canopyRadius"] / (0.52 * tree["height"]), 0.82, 1.30
                 ),
@@ -2224,7 +2209,7 @@ def resolve_background_grove(hero_trees):
             ):
                 continue
 
-            variant = GROVE_VARIANTS[len(placements) % len(GROVE_VARIANTS)]
+            variant = GROVE_VARIANTS[len(placements) % 2]
             occupied.append((x, y))
             placements.append(
                 {
@@ -2461,8 +2446,8 @@ def build_grove_variant(variant):
             kept, total = reduce_foliage_cards(
                 obj,
                 foliage_slots,
-                GROVE_FOLIAGE_KEEP,
-                GROVE_FOLIAGE_CARD_GAIN,
+                (0.07 if "weeping" in variant["candidateId"] else 0.85 if "young" in variant["candidateId"] else GROVE_FOLIAGE_KEEP),
+                (2.8 if "weeping" in variant["candidateId"] else 1.05 if "young" in variant["candidateId"] else GROVE_FOLIAGE_CARD_GAIN),
                 variant["cardSeed"],
             )
             print(f"  {variant['id']}: kept {kept}/{total} foliage cards")
@@ -2544,6 +2529,7 @@ def create_grove():
             math.radians(tree["rotationDegrees"]),
             False,
             tree["width"],
+            canopy_radius=tree["canopyRadius"],
         )
     # The backdrop carries its own name prefix so the composition contract keeps
     # counting the authored hero ring rather than the scatter behind it.
@@ -2557,13 +2543,14 @@ def create_grove():
             math.radians(tree["rotationDegrees"]),
             False,
             tree["width"],
+            canopy_radius=tree["height"] * 0.52 * tree["width"],
         )
 
 
 def create_torii():
     plan = COMPOSITION_PLAN["torii"]
     origin_x, origin_y = plan["center"]
-    ground_z = 0.12
+    ground_z = garden_ground_height(origin_x, origin_y)
     width_scale = plan["width"] / 10.35
     height_scale = plan["height"] / 6.40
     radial_scale = min(width_scale, height_scale)
@@ -2577,7 +2564,7 @@ def create_torii():
             0.42 * radial_scale,
             0.31 * radial_scale,
             5.9 * height_scale,
-            sides=12,
+            sides=24,
         )
         indices.extend([0] * (len(faces) - before))
     for local_center, local_size, rotation in (
@@ -3281,7 +3268,7 @@ def verify_composition_authoring():
         for obj in bpy.data.objects
         if obj.get("tka_role") == "blossom-ground-life"
     ]
-    if grass_roots:
+    if grass_roots and MASTERPLAN["activeProductionPhase"] <= 2:
         raise RuntimeError(
             "Phase 2 spatial graybox must not contain decorative grass"
         )
@@ -3305,7 +3292,7 @@ def verify_composition_authoring():
     print(
         f"  Grove variants baked from approved crowns: {len(GROVE_VARIANTS)}"
     )
-    print("  Decorative grass: gated for later production phases")
+    print("  Hanami planted edges and furnishings: authored")
 
 
 def aim_at(obj, target):
@@ -3373,7 +3360,8 @@ def setup_render():
     scene.render.image_settings.color_depth = "8"
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
-    bpy.ops.render.render(write_still=True)
+    if not os.environ.get("BLOSSOM_SKIP_RENDER"):
+        bpy.ops.render.render(write_still=True)
 
 
 ASSET_SOURCES.update(load_asset_sources())
@@ -3397,6 +3385,8 @@ COMPOSITION_PLAN["densityBudget"]["backdropTrees"] = len(
     COMPOSITION_PLAN["backgroundTrees"]
 )
 create_grove()
+from blossom_hanami_details import create_hanami_details
+create_hanami_details(globals())
 verify_composition_authoring()
 for source in ASSET_SOURCES.values():
     hide_source(source)
@@ -3404,7 +3394,7 @@ setup_render()
 
 print("\nBlossom environment authored successfully")
 print(f"Editable source: {BLEND_PATH}")
-print(f"QA render:       {QA_PATH}")
+print("QA render:       skipped" if os.environ.get("BLOSSOM_SKIP_RENDER") == "1" else f"QA render:       {QA_PATH}")
 print(f"Mesh objects:    {sum(1 for obj in bpy.data.objects if obj.type == 'MESH')}")
 print(f"Unique meshes:   {len(bpy.data.meshes)}")
 print(f"Materials:       {len(bpy.data.materials)}")

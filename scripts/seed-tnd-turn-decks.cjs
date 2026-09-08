@@ -77,16 +77,16 @@ function applyTurnsToSteps(steps, turnValue) {
   if (!steps || steps.length === 0) return steps;
 
   // Track running orientations per hand, starting from "in"
-  let blueOri = "in";
-  let redOri = "in";
+  let leftOri = "in";
+  let rightOri = "in";
 
   // First pass: clone steps and apply turn value
   const cloned = steps.map((step) => ({
     ...step,
     id: randomUUID(),
     motions: {
-      blue: { ...step.motions.blue, turns: turnValue },
-      red: { ...step.motions.red, turns: turnValue },
+      left: { ...step.motions.left, turns: turnValue },
+      right: { ...step.motions.right, turns: turnValue },
     },
   }));
 
@@ -95,32 +95,32 @@ function applyTurnsToSteps(steps, turnValue) {
 
   // Second pass: propagate orientations through the chain
   return cloned.map((step) => {
-    const blue = step.motions.blue;
-    const red = step.motions.red;
+    const left = step.motions.left;
+    const right = step.motions.right;
 
-    blue.startOrientation = blueOri;
-    red.startOrientation = redOri;
+    left.startOrientation = leftOri;
+    right.startOrientation = rightOri;
 
-    blue.endOrientation = calculateEndOrientation({
-      motionType: blue.motionType,
+    left.endOrientation = calculateEndOrientation({
+      motionType: left.motionType,
       turns: turnValue,
-      rotationDirection: blue.rotationDirection,
-      startLocation: blue.startLocation,
-      endLocation: blue.endLocation,
-      startOrientation: blueOri,
+      rotationDirection: left.rotationDirection,
+      startLocation: left.startLocation,
+      endLocation: left.endLocation,
+      startOrientation: leftOri,
     });
 
-    red.endOrientation = calculateEndOrientation({
-      motionType: red.motionType,
+    right.endOrientation = calculateEndOrientation({
+      motionType: right.motionType,
       turns: turnValue,
-      rotationDirection: red.rotationDirection,
-      startLocation: red.startLocation,
-      endLocation: red.endLocation,
-      startOrientation: redOri,
+      rotationDirection: right.rotationDirection,
+      startLocation: right.startLocation,
+      endLocation: right.endLocation,
+      startOrientation: rightOri,
     });
 
-    blueOri = blue.endOrientation;
-    redOri = red.endOrientation;
+    leftOri = left.endOrientation;
+    rightOri = right.endOrientation;
 
     return step;
   });
@@ -137,14 +137,14 @@ function cloneStartPosition(startPosition) {
     ...startPosition,
     id: randomUUID(),
     motions: {
-      blue: {
-        ...startPosition.motions.blue,
+      left: {
+        ...startPosition.motions.left,
         startOrientation: "in",
         endOrientation: "in",
         turns: 0,
       },
-      red: {
-        ...startPosition.motions.red,
+      right: {
+        ...startPosition.motions.right,
         startOrientation: "in",
         endOrientation: "in",
         turns: 0,
@@ -287,19 +287,19 @@ async function main() {
     if (sample.steps && sample.steps.length > 0) {
       const step = sample.steps[0];
       console.log(
-        `  Beat 1 blue: ${step.motions.blue.motionType} ` +
-          `[${step.motions.blue.startLocation}->${step.motions.blue.endLocation}] ` +
-          `ori: ${step.motions.blue.startOrientation}->${step.motions.blue.endOrientation}`
+        `  Beat 1 blue: ${step.motions.left.motionType} ` +
+          `[${step.motions.left.startLocation}->${step.motions.left.endLocation}] ` +
+          `ori: ${step.motions.left.startOrientation}->${step.motions.left.endOrientation}`
       );
 
       // Show what each turn value produces
       for (const v of TURN_VARIANTS) {
         const endOri = calculateEndOrientation({
-          motionType: step.motions.blue.motionType,
+          motionType: step.motions.left.motionType,
           turns: v.turns,
-          rotationDirection: step.motions.blue.rotationDirection || "cw",
-          startLocation: step.motions.blue.startLocation,
-          endLocation: step.motions.blue.endLocation,
+          rotationDirection: step.motions.left.rotationDirection || "cw",
+          startLocation: step.motions.left.startLocation,
+          endLocation: step.motions.left.endLocation,
           startOrientation: "in",
         });
         console.log(

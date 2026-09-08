@@ -43,14 +43,14 @@ export function buildDoubleFloatOptionRows<T extends PictographData>(
 
   const categorized = options.map((option, originalIndex) => {
     const letter = option.letter ? String(option.letter) : "";
-    const blue = option.motions.blue;
-    const red = option.motions.red;
+    const left = option.motions.left;
+    const right = option.motions.right;
     const { tndMode, elementalType } = deriveTnDFromPictograph(option);
 
     if (
       !letter ||
-      !isFloat(blue) ||
-      !isFloat(red) ||
+      !isFloat(left) ||
+      !isFloat(right) ||
       !tndMode ||
       !elementalType
     ) {

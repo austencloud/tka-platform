@@ -1,6 +1,6 @@
 import type { SkySunConfig } from "../../domain/models/environment-models";
 
-import layoutSource from "../../../../../../../scripts/seraphic-vault-cloudbreak-layout.json";
+import layoutSource from "../../../../../../../scripts/celestial-citadel-layout.json";
 
 interface CloudbreakLayout {
   revision: string;
@@ -31,6 +31,11 @@ interface CloudbreakLayout {
     angularDiameterDegrees: number;
   };
   cameraPresets: {
+    desktop: {
+      position: [number, number, number];
+      target: [number, number, number];
+      fovDegrees: number;
+    };
     reverse: {
       position: [number, number, number];
       target: [number, number, number];

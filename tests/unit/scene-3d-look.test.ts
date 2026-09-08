@@ -25,8 +25,8 @@ function makeScene(groups?: Partial<Record<Scene3DGroupId, boolean>>): Collected
         {
           position: { x: 0, z: 0 },
           facingAngle: 0,
-          customBluePlane: "wall",
-          customRedPlane: "wall",
+          customLeftPlane: "wall",
+          customRightPlane: "wall",
           name: null,
           settings: {
             prop: "buugeng",
@@ -43,8 +43,8 @@ function makeScene(groups?: Partial<Record<Scene3DGroupId, boolean>>): Collected
         prop: "buugeng",
         effortId: "linear",
         planeMode: "wall",
-        customBluePlane: "wall",
-        customRedPlane: "wall",
+        customLeftPlane: "wall",
+        customRightPlane: "wall",
       },
       visiblePlanes: ["wall"],
       showGridLabels: false,
@@ -54,7 +54,7 @@ function makeScene(groups?: Partial<Record<Scene3DGroupId, boolean>>): Collected
       stageGroundOffset: 0,
       effectToggles: { trails: true },
       sceneFeatures: {},
-      props: { bluePropType: "buugeng", redPropType: "buugeng" },
+      props: { leftPropType: "buugeng", rightPropType: "buugeng" },
       ...(groups ? { groups: groups as Record<Scene3DGroupId, boolean> } : {}),
     },
   };
@@ -68,8 +68,8 @@ describe("buildScene3DPersistConfig", () => {
     expect(config.performers?.[0]?.settings?.prop).toBe("buugeng");
     // The plane fields cross an `as never` cast on the way in, and the live
     // apply feeds them straight to setHandPlane — pin the passthrough.
-    expect(config.performers?.[0]?.customBluePlane).toBe("wall");
-    expect(config.performers?.[0]?.customRedPlane).toBe("wall");
+    expect(config.performers?.[0]?.customLeftPlane).toBe("wall");
+    expect(config.performers?.[0]?.customRightPlane).toBe("wall");
     expect(config.selectedPerformerIndex).toBeNull();
     expect(config.activeFormation).toBe("circle");
     expect(config.defaultProp).toBe("buugeng");

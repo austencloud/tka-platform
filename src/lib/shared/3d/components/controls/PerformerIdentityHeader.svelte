@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { AVATAR_DEFINITIONS } from "@austencloud/scene-3d";
-  import type { AvatarInstanceState } from "../../state/avatar-instance-state.svelte";
+  import { CHARACTER_DEFINITIONS } from "$lib/shared/3d/domain/character-model";
+  import type { CharacterInstanceState } from "../../state/character-instance-state.svelte";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
@@ -9,8 +9,10 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   interface Props {
-    performer: AvatarInstanceState | null;
+    performer: CharacterInstanceState | null;
     performerCount: number;
+    selectedCount: number;
+    isAllMode: boolean;
     performerColor: string;
     sequenceWord: string | null;
     sequenceSteps: number | null;
@@ -22,6 +24,8 @@
   let {
     performer,
     performerCount,
+    selectedCount,
+    isAllMode,
     performerColor,
     sequenceWord,
     sequenceSteps,
@@ -30,16 +34,16 @@
     onSettingChange,
   }: Props = $props();
 
-  const isAllMode = $derived(performer === null);
-  const avatarDefinition = $derived(
-    AVATAR_DEFINITIONS.find(
-      (avatar) => avatar.id === performer?.avatarModelId
-    ) ?? AVATAR_DEFINITIONS[0]
+  const isMultiMode = $derived(selectedCount > 1 && !isAllMode);
+  const characterDefinition = $derived(
+    CHARACTER_DEFINITIONS.find(
+      (character) => character.id === performer?.characterId
+    ) ?? CHARACTER_DEFINITIONS[0]
   );
   const performerName = $derived(
-    performer?.displayName ?? avatarDefinition?.name ?? "—"
+    performer?.displayName ?? characterDefinition?.name ?? "—"
   );
-  const avatarInitials = $derived(
+  const characterInitials = $derived(
     performerName !== "—" ? performerName.slice(0, 2).toUpperCase() : "?"
   );
 
@@ -106,25 +110,43 @@
 </script>
 
 <div class="header" style:--performer-color={performerColor}>
-  {#if isAllMode}
+  {#if isAllMode || isMultiMode}
     <div class="identity">
-      <div class="avatar-circle all-mode" aria-hidden="true">
+      <div class="character-circle all-mode" aria-hidden="true">
         <i class="fas fa-users"></i>
       </div>
       <div class="identity-meta">
-        <span class="performer-name">All Performers</span>
+        <span class="performer-name">
+          {isAllMode ? "All performers" : `${selectedCount} performers`}
+        </span>
         <div class="sub-row">
           <span class="count-badge" style:background-color={performerColor}
             >{performerCount}</span
           >
-          <span class="all-hint">Changes apply to everyone</span>
+          <span class="all-hint">
+            {isAllMode
+              ? `Changes apply to all ${performerCount}`
+              : "Changes apply to the selected group"}
+          </span>
         </div>
       </div>
     </div>
+    {#if canRemove}
+      <button
+        class="remove-button"
+        type="button"
+        onclick={onRemove}
+        aria-label={`Remove ${selectedCount} performers`}
+        title={`Remove ${selectedCount} performers`}
+      >
+        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+        <span>Remove {selectedCount}</span>
+      </button>
+    {/if}
   {:else if performer}
     <div class="identity">
-      <div class="avatar-circle" aria-hidden="true">
-        <span class="avatar-initials">{avatarInitials}</span>
+      <div class="character-circle" aria-hidden="true">
+        <span class="character-initials">{characterInitials}</span>
       </div>
       <div class="identity-meta">
         {#if isEditingName}
@@ -135,7 +157,7 @@
             onblur={commitName}
             onkeydown={handleNameKeydown}
             maxlength="24"
-            placeholder={avatarDefinition?.name ?? "Name"}
+            placeholder={characterDefinition?.name ?? "Name"}
             aria-label="Performer name"
           />
         {:else}
@@ -157,7 +179,12 @@
               aria-label={simplifyRepeatedWord(sequenceWord)}
               title={simplifyRepeatedWord(sequenceWord)}
             >
-              <TKAWordGlyph word={sequenceWord} height={16} darkMode fitToParent />
+              <TKAWordGlyph
+                word={sequenceWord}
+                height={16}
+                darkMode
+                fitToParent
+              />
             </div>
             <span class="sequence-dot" aria-hidden="true">·</span>
           {/if}
@@ -196,7 +223,7 @@
     min-width: 0;
     flex: 1;
   }
-  .avatar-circle {
+  .character-circle {
     width: 38px;
     height: 38px;
     border-radius: 10px;
@@ -209,11 +236,11 @@
     box-shadow: 0 0 12px
       color-mix(in srgb, var(--performer-color) 20%, transparent);
   }
-  .avatar-circle.all-mode {
+  .character-circle.all-mode {
     color: color-mix(in srgb, var(--performer-color) 60%, white);
     font-size: 14px;
   }
-  .avatar-initials {
+  .character-initials {
     color: var(--performer-color);
     font-size: 13px;
     font-weight: 800;
@@ -257,7 +284,7 @@
     color: var(--theme-text-tertiary);
     font-size: 12px;
     opacity: 0;
-    transition: opacity 140ms ease;
+    transition: opacity var(--transition-fast);
   }
   .performer-name-btn:hover .edit-hint,
   .performer-name-btn:focus-visible .edit-hint {

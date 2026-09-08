@@ -14,7 +14,7 @@ import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
-  MotionColor,
+  HandSide,
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -36,7 +36,7 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
 type HandSpec = { from: GridLocation; to: GridLocation; anti: boolean; so?: Orientation };
-const hand = (color: MotionColor, h: HandSpec) => {
+const hand = (color: HandSide, h: HandSpec) => {
   const dir = hpDir(h.from, h.to);
   const so = h.so ?? IN;
   return createMotionData({
@@ -47,19 +47,19 @@ const hand = (color: MotionColor, h: HandSpec) => {
     startOrientation: so,
     endOrientation: h.anti ? (so === IN ? OUT : IN) : so,
     turns: 0,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
 };
-const staticHand = (color: MotionColor, loc: GridLocation) =>
+const staticHand = (color: HandSide, loc: GridLocation) =>
   createMotionData({
     motionType: MotionType.STATIC,
     startLocation: loc,
     endLocation: loc,
     startOrientation: IN,
     endOrientation: IN,
-    color,
+    hand: color,
     propType: PropType.STAFF,
     gridMode: GridMode.DIAMOND,
   });
@@ -67,7 +67,7 @@ const staticHand = (color: MotionColor, loc: GridLocation) =>
 // ── The 12 grid cells ───────────────────────────────────────────────────────
 // [letter, blue from→to, red from→to]; anti flags from the column (Iso/Anti/
 // Hybrid = none/both/blue-only).
-type CellDef = { letter: Letter; name: string; blue: HandSpec; red: HandSpec };
+type CellDef = { letter: Letter; name: string; left: HandSpec; right: HandSpec };
 const cell = (
   letter: Letter,
   name: string,
@@ -75,13 +75,13 @@ const cell = (
   bt: GridLocation,
   rf: GridLocation,
   rt: GridLocation,
-  blueAnti: boolean,
-  redAnti: boolean
+  leftAnti: boolean,
+  rightAnti: boolean
 ): CellDef => ({
   letter,
   name,
-  blue: { from: bf, to: bt, anti: blueAnti },
-  red: { from: rf, to: rt, anti: redAnti },
+  left: { from: bf, to: bt, anti: leftAnti },
+  right: { from: rf, to: rt, anti: rightAnti },
 });
 
 type Half = { rows: CellDef[][] };
@@ -121,26 +121,26 @@ const cellStep = (c: CellDef, key: string, stepNumber: number | null = null): St
     id: `${key}${stepNumber === null ? "" : `-${stepNumber}`}`,
     letter: c.letter,
     gridMode: GridMode.DIAMOND,
-    startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
-    endPosition: getGridPositionFromLocations(c.blue.to, c.red.to),
+    startPosition: getGridPositionFromLocations(c.left.from, c.right.from),
+    endPosition: getGridPositionFromLocations(c.left.to, c.right.to),
     stepNumber,
     motions: {
-      blue: hand(MotionColor.BLUE, c.blue),
-      red: hand(MotionColor.RED, c.red),
+      left: hand(HandSide.LEFT, c.left),
+      right: hand(HandSide.RIGHT, c.right),
     },
   }) as unknown as StepData;
 
 const startFor = (c: CellDef): StepData =>
   ({
-    id: `cl-start-${c.blue.from}-${c.red.from}`,
+    id: `cl-start-${c.left.from}-${c.right.from}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
     stepNumber: 0,
-    startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
-    endPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
+    startPosition: getGridPositionFromLocations(c.left.from, c.right.from),
+    endPosition: getGridPositionFromLocations(c.left.from, c.right.from),
     motions: {
-      blue: staticHand(MotionColor.BLUE, c.blue.from),
-      red: staticHand(MotionColor.RED, c.red.from),
+      left: staticHand(HandSide.LEFT, c.left.from),
+      right: staticHand(HandSide.RIGHT, c.right.from),
     },
   }) as unknown as StepData;
 
@@ -167,8 +167,8 @@ const WORDS: WordDef[] = [
       cell(Letter.E, "E", SO_, W, SO_, E, true, true),
       {
         ...cell(Letter.K, "K", W, N, E, N, true, true),
-        blue: { from: W, to: N, anti: true, so: OUT },
-        red: { from: E, to: N, anti: true, so: OUT },
+        left: { from: W, to: N, anti: true, so: OUT },
+        right: { from: E, to: N, anti: true, so: OUT },
       },
     ],
   },
@@ -177,7 +177,7 @@ const WORDS: WordDef[] = [
     phrase: "Fruity Loops",
     steps: [
       cell(Letter.F, "F", SO_, W, SO_, E, true, false),
-      { ...cell(Letter.L, "L", W, N, E, N, true, false), blue: { from: W, to: N, anti: true, so: OUT } },
+      { ...cell(Letter.L, "L", W, N, E, N, true, false), left: { from: W, to: N, anti: true, so: OUT } },
     ],
   },
 ];

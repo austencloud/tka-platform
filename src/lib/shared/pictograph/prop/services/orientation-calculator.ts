@@ -11,7 +11,7 @@ import {
   type OrientationInput,
 } from "../../../render/core/calculations/orientation";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -30,7 +30,7 @@ import { PropType } from "../domain/enums/prop-type";
  */
 export function calculateEndOrientation(
   motion: MotionData,
-  _color: MotionColor
+  _hand: HandSide
 ): Orientation {
   const input: OrientationInput = {
     motionType: motion.motionType as string,
@@ -66,14 +66,14 @@ export function updateStartOrientations(
     throw new Error("Both steps must have motion data (not be blank)");
   }
 
-  const lastBlueMotion = lastStep.motions["blue"];
-  const lastRedMotion = lastStep.motions["red"];
+  const lastLeftMotion = lastStep.motions[HandSide.LEFT];
+  const lastRightMotion = lastStep.motions[HandSide.RIGHT];
 
   if (
-    !lastBlueMotion ||
-    !lastRedMotion ||
-    !lastBlueMotion.endOrientation ||
-    !lastRedMotion.endOrientation
+    !lastLeftMotion ||
+    !lastRightMotion ||
+    !lastLeftMotion.endOrientation ||
+    !lastRightMotion.endOrientation
   ) {
     throw new Error(
       "End orientations cannot be None. Ensure the previous beat has valid orientations."
@@ -82,17 +82,17 @@ export function updateStartOrientations(
 
   const updatedMotions = { ...nextStep.motions };
 
-  if (updatedMotions.blue) {
-    updatedMotions.blue = {
-      ...updatedMotions.blue,
-      startOrientation: lastBlueMotion.endOrientation,
+  if (updatedMotions.left) {
+    updatedMotions.left = {
+      ...updatedMotions.left,
+      startOrientation: lastLeftMotion.endOrientation,
     };
   }
 
-  if (updatedMotions.red) {
-    updatedMotions.red = {
-      ...updatedMotions.red,
-      startOrientation: lastRedMotion.endOrientation,
+  if (updatedMotions.right) {
+    updatedMotions.right = {
+      ...updatedMotions.right,
+      startOrientation: lastRightMotion.endOrientation,
     };
   }
 
@@ -104,7 +104,7 @@ export function updateStartOrientations(
 
 /**
  * Update end orientations — calculates end orientations for both
- * blue and red motions in a beat.
+ * left- and right-hand motions in a beat.
  */
 export function updateEndOrientations(beat: StepData): StepData {
   if (beat.isBlank) {
@@ -113,49 +113,49 @@ export function updateEndOrientations(beat: StepData): StepData {
 
   const updatedMotions = { ...beat.motions };
 
-  const blueMotion = beat.motions["blue"];
-  if (blueMotion) {
-    const blueMotionData: MotionData = createMotionData({
-      motionType: blueMotion.motionType || MotionType.STATIC,
+  const leftMotion = beat.motions[HandSide.LEFT];
+  if (leftMotion) {
+    const leftMotionData: MotionData = createMotionData({
+      motionType: leftMotion.motionType || MotionType.STATIC,
       rotationDirection:
-        blueMotion.rotationDirection || RotationDirection.NO_ROTATION,
-      startLocation: blueMotion.startLocation || GridLocation.NORTH,
-      endLocation: blueMotion.endLocation || GridLocation.NORTH,
-      turns: blueMotion.turns || 0,
-      startOrientation: blueMotion.startOrientation || Orientation.IN,
-      endOrientation: blueMotion.endOrientation || Orientation.IN,
-      isVisible: blueMotion.isVisible ?? true,
-      color: MotionColor.BLUE,
+        leftMotion.rotationDirection || RotationDirection.NO_ROTATION,
+      startLocation: leftMotion.startLocation || GridLocation.NORTH,
+      endLocation: leftMotion.endLocation || GridLocation.NORTH,
+      turns: leftMotion.turns || 0,
+      startOrientation: leftMotion.startOrientation || Orientation.IN,
+      endOrientation: leftMotion.endOrientation || Orientation.IN,
+      isVisible: leftMotion.isVisible ?? true,
+      hand: HandSide.LEFT,
       propType: PropType.STAFF,
-      arrowLocation: blueMotion.startLocation || GridLocation.NORTH,
+      arrowLocation: leftMotion.startLocation || GridLocation.NORTH,
     });
 
-    updatedMotions.blue = {
-      ...blueMotion,
-      endOrientation: calculateEndOrientation(blueMotionData, MotionColor.BLUE),
+    updatedMotions.left = {
+      ...leftMotion,
+      endOrientation: calculateEndOrientation(leftMotionData, HandSide.LEFT),
     };
   }
 
-  const redMotion = beat.motions["red"];
-  if (redMotion) {
-    const redMotionData: MotionData = createMotionData({
-      motionType: redMotion.motionType || MotionType.STATIC,
+  const rightMotion = beat.motions[HandSide.RIGHT];
+  if (rightMotion) {
+    const rightMotionData: MotionData = createMotionData({
+      motionType: rightMotion.motionType || MotionType.STATIC,
       rotationDirection:
-        redMotion.rotationDirection || RotationDirection.NO_ROTATION,
-      startLocation: redMotion.startLocation || GridLocation.NORTH,
-      endLocation: redMotion.endLocation || GridLocation.NORTH,
-      turns: redMotion.turns || 0,
-      startOrientation: redMotion.startOrientation || Orientation.IN,
-      endOrientation: redMotion.endOrientation || Orientation.IN,
-      isVisible: redMotion.isVisible ?? true,
-      color: MotionColor.RED,
+        rightMotion.rotationDirection || RotationDirection.NO_ROTATION,
+      startLocation: rightMotion.startLocation || GridLocation.NORTH,
+      endLocation: rightMotion.endLocation || GridLocation.NORTH,
+      turns: rightMotion.turns || 0,
+      startOrientation: rightMotion.startOrientation || Orientation.IN,
+      endOrientation: rightMotion.endOrientation || Orientation.IN,
+      isVisible: rightMotion.isVisible ?? true,
+      hand: HandSide.RIGHT,
       propType: PropType.STAFF,
-      arrowLocation: redMotion.startLocation || GridLocation.NORTH,
+      arrowLocation: rightMotion.startLocation || GridLocation.NORTH,
     });
 
-    updatedMotions.red = {
-      ...redMotion,
-      endOrientation: calculateEndOrientation(redMotionData, MotionColor.RED),
+    updatedMotions.right = {
+      ...rightMotion,
+      endOrientation: calculateEndOrientation(rightMotionData, HandSide.RIGHT),
     };
   }
 

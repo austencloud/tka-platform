@@ -110,27 +110,27 @@ export class FlippedClosureConstraint extends PerTypeClosureConstraint {
 
 export class SwappedClosureConstraint extends PerTypeClosureConstraint {
   readonly type = ConstraintType.SWAPPED_CLOSURE;
-  readonly description = `Step i + L/${this.period} has blue/red swapped from step i`;
+  readonly description = `Step i + L/${this.period} has left/right swapped from step i`;
 
   protected checkPair(
     base: PictographData,
     paired: PictographData,
     pass: number
   ): boolean {
-    // At pass 1: paired should be blue/red-swap of base.
+    // At pass 1: paired should be left/right-swap of base.
     // At pass 2 (period 4+): back to unswapped.
     // Pass parity decides which check applies.
     const shouldBeSwapped = pass % 2 === 1;
-    // Minimal: motion type check (blue→red, red→blue).
+    // Minimal: motion type check (left→right, right→left).
     if (shouldBeSwapped) {
       return (
-        base.blueMotion.motionType === paired.redMotion.motionType &&
-        base.redMotion.motionType === paired.blueMotion.motionType
+        base.leftMotion.motionType === paired.rightMotion.motionType &&
+        base.rightMotion.motionType === paired.leftMotion.motionType
       );
     }
     return (
-      base.blueMotion.motionType === paired.blueMotion.motionType &&
-      base.redMotion.motionType === paired.redMotion.motionType
+      base.leftMotion.motionType === paired.leftMotion.motionType &&
+      base.rightMotion.motionType === paired.rightMotion.motionType
     );
   }
 }
@@ -147,15 +147,15 @@ export class InvertedClosureConstraint extends PerTypeClosureConstraint {
     const shouldBeInverted = pass % 2 === 1;
     if (shouldBeInverted) {
       return (
-        invertMotionType(base.blueMotion.motionType as string) ===
-          paired.blueMotion.motionType &&
-        invertMotionType(base.redMotion.motionType as string) ===
-          paired.redMotion.motionType
+        invertMotionType(base.leftMotion.motionType as string) ===
+          paired.leftMotion.motionType &&
+        invertMotionType(base.rightMotion.motionType as string) ===
+          paired.rightMotion.motionType
       );
     }
     return (
-      base.blueMotion.motionType === paired.blueMotion.motionType &&
-      base.redMotion.motionType === paired.redMotion.motionType
+      base.leftMotion.motionType === paired.leftMotion.motionType &&
+      base.rightMotion.motionType === paired.rightMotion.motionType
     );
   }
 }

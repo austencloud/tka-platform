@@ -6,10 +6,10 @@
    * Supports selecting active performer and add/remove operations.
    */
 
-  import type { AvatarInstanceState } from "../../state/avatar-instance-state.svelte";
+  import type { CharacterInstanceState } from "../../state/character-instance-state.svelte";
 
   interface Props {
-    performerStates: AvatarInstanceState[];
+    performerStates: CharacterInstanceState[];
     activePerformerIndex: number;
     maxPerformers: number;
     onSelect: (index: number) => void;
@@ -38,7 +38,9 @@
         class="action-btn add-btn"
         onclick={onAdd}
         disabled={!canAdd}
-        aria-label={canAdd ? "Add performer" : `Maximum ${maxPerformers} performers reached`}
+        aria-label={canAdd
+          ? "Add performer"
+          : `Maximum ${maxPerformers} performers reached`}
         title={canAdd ? "Add performer" : `Maximum ${maxPerformers} performers`}
       >
         <i class="fas fa-plus" aria-hidden="true"></i>
@@ -64,7 +66,12 @@
   </div>
 
   {#if canRemove}
-    <button class="remove-btn" onclick={onRemove} aria-label="Remove last performer" title="Remove last performer">
+    <button
+      class="remove-btn"
+      onclick={onRemove}
+      aria-label="Remove last performer"
+      title="Remove last performer"
+    >
       <i class="fas fa-minus" aria-hidden="true"></i>
       <span>Remove</span>
     </button>
@@ -111,11 +118,17 @@
     color: var(--theme-on-accent, #000);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      color var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   .action-btn:hover:not(:disabled) {
-    background: var(--prop-blue-light, color-mix(in srgb, var(--theme-accent) 60%, white));
+    background: var(
+      --prop-blue-light,
+      color-mix(in srgb, var(--theme-accent) 60%, white)
+    );
     transform: scale(1.05);
   }
 
@@ -145,7 +158,10 @@
     font-size: 1.125rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .performer-chip:hover {
@@ -191,12 +207,23 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .remove-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 30%,
+      transparent
+    );
     color: var(--semantic-error, #ef4444);
   }
 

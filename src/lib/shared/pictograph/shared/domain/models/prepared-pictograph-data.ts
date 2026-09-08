@@ -14,6 +14,7 @@ import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import type { PropPosition } from "../../../prop/domain/models/prop-position";
 import type { PropAssets } from "../../../prop/domain/models/prop-assets";
 import type { ArrowAssets } from "../../../arrow/orchestration/domain/arrow-models";
+import type { HandSide } from "../enums/pictograph-enums";
 
 /**
  * Pre-calculated rendering data attached to a pictograph
@@ -23,8 +24,8 @@ export interface PreparedRenderData {
   arrowPositions: Record<string, { x: number; y: number; rotation: number }>;
   arrowAssets: Record<string, ArrowAssets>;
   arrowMirroring: Record<string, boolean>;
-  propPositions: Record<string, PropPosition>;
-  propAssets: Record<string, PropAssets>;
+  propPositions: Partial<Record<HandSide, PropPosition>>;
+  propAssets: Partial<Record<HandSide, PropAssets>>;
 }
 
 /**

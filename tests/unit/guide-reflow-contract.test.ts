@@ -52,6 +52,23 @@ describe("GUIDE_CONTENT registry", () => {
     expect(hasReflowContent("hand-positions")).toBe(true);
     expect(GUIDE_CONTENT["hand-positions"]!.length).toBeGreaterThan(0);
   }, 20_000);
+
+  it("models The Grid as one reflow source with one canonical mode explorer", async () => {
+    const { GUIDE_CONTENT, hasReflowContent } =
+      await import("../../src/routes/(public)/guide/level-1/_data/guide-content");
+    const content = GUIDE_CONTENT["the-grid"]!;
+
+    expect(hasReflowContent("the-grid")).toBe(true);
+    expect(
+      content.filter((block) => block.kind === "gridExplorer")
+    ).toHaveLength(1);
+    expect(content.filter((block) => block.kind === "gridFigure")).toHaveLength(
+      0
+    );
+    expect(blockProseText(content)).toContain(
+      "Together, diamond and box form an 8-point grid:"
+    );
+  }, 20_000);
 });
 
 describe("frame toggle wiring", () => {
@@ -91,12 +108,30 @@ describe("crawl route (paginated, one surface)", () => {
     expect(ts).toContain("entries");
     expect(ts).toContain("GUIDE_BODY_PAGES");
   });
-  it("the host renders the flow/sheet switcher over one topic's single source", () => {
+  it("the host renders crawlable flow content with a sheet fallback but no topic mode switch", () => {
     const src = read(host);
     expect(src).toContain("FlowFrame"); // flow (mobile-first, crawlable) view
-    expect(src).toContain("BUILT"); // sheet (book layout) view
-    expect(src).toContain("SegmentedControl"); // the sheet<->flow switcher
+    expect(src).toContain("BUILT"); // fallback for topics not migrated to reflow
     expect(src).toContain("GUIDE_CONTENT"); // single-source content lookup
+    expect(src).not.toContain("SegmentedControl");
+    expect(src).not.toContain("guideFramePrefs");
+    expect(src).toContain('slug === "the-grid" ? "grid-reference"');
+  });
+  it("does not fork The Grid into fixed-sheet and compact web DOMs", () => {
+    const src = read(host);
+    expect(src).toContain("const useFlow = $derived(canFlow)");
+    expect(src).not.toContain("TheGridCompactPage");
+    expect(src).not.toContain("isAuthoredGrid");
+    expect(src).not.toContain("grid-sheet-view");
+  });
+  it("reuses the canonical grid renderer and shared interaction primitives", () => {
+    const src = read(
+      "src/routes/(public)/guide/level-1/_components/GuideGridExplorer.svelte"
+    );
+    expect(src).toContain("GridSvg");
+    expect(src).toContain("SegmentedControl");
+    expect(src).toContain("Crossfade");
+    expect(src).not.toContain("<circle");
   });
   it("delegates companion wiring to the shared GuideCompanionHost (also used by level-2)", () => {
     const src = read(host);

@@ -31,7 +31,7 @@ export interface HandTimeline {
 /** Grid position for a single hand at a specific beat */
 export interface StepPosition {
   /** Which hand */
-  hand: "blue" | "red";
+  hand: "left" | "right";
   /** Detected grid location */
   location: GridLocation;
   /** Average confidence across frames in this beat */

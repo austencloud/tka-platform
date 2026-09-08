@@ -125,10 +125,10 @@ export interface EngineGenerationParams {
   reflectionAxis?: ReflectionAxis;
   /** Beam search width */
   beamWidth?: number;
-  /** Override starting orientation for blue prop (e.g. "in", "out", "clock", "counter") */
-  blueStartOrientation?: string;
-  /** Override starting orientation for red prop (e.g. "in", "out", "clock", "counter") */
-  redStartOrientation?: string;
+  /** Override starting orientation for the left prop (e.g. "in", "out", "clock", "counter") */
+  leftStartOrientation?: string;
+  /** Override starting orientation for the right prop (e.g. "in", "out", "clock", "counter") */
+  rightStartOrientation?: string;
 }
 
 export interface EngineGenerationResult {
@@ -194,8 +194,8 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
     blockedStartPositions: params.blockedStartPositions,
     mustNotContainLetters: params.mustNotContainLetters,
     mustContainLetters: params.mustContainLetters,
-    blueStartOrientation: params.blueStartOrientation,
-    redStartOrientation: params.redStartOrientation,
+    leftStartOrientation: params.leftStartOrientation,
+    rightStartOrientation: params.rightStartOrientation,
   };
 
   // Word or length (one is required, caller validates)
@@ -346,14 +346,14 @@ export function convertToSequenceResult(
     variation: 0,
     startPosition: (step.startPosition ?? "") as string,
     endPosition: (step.endPosition ?? "") as string,
-    blueMotion: {
-      ...step.motions.blue,
-      color: "blue",
-    } as SequenceStep["blueMotion"],
-    redMotion: {
-      ...step.motions.red,
-      color: "red",
-    } as SequenceStep["redMotion"],
+    leftMotion: {
+      ...step.motions.left,
+      hand: "left",
+    } as SequenceStep["leftMotion"],
+    rightMotion: {
+      ...step.motions.right,
+      hand: "right",
+    } as SequenceStep["rightMotion"],
     stepNumber: step.stepNumber ?? i,
     isBridge: step.isBridge ?? false,
   }));

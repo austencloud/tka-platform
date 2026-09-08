@@ -82,6 +82,19 @@ describe("One Stage ownership", () => {
     expect(stage).toContain("<StageTimeline");
   });
 
+  it("restores keyboard focus to the nearest surviving selected object", () => {
+    const stage = read(STAGE);
+    const timeline = read(
+      "src/lib/features/stage/components/StageTimeline.svelte"
+    );
+
+    expect(stage).toContain("focusStageTarget");
+    expect(stage).toContain('"data-stage-performer-id"');
+    expect(stage).toContain('"data-stage-formation-id"');
+    expect(timeline).toContain("data-stage-performer-id={performer.id}");
+    expect(timeline).toContain("data-stage-formation-id={formation.id}");
+  });
+
   it("keeps saved-scene handoffs out of the first-run starter", () => {
     const stage = read(STAGE);
 
@@ -158,5 +171,28 @@ describe("One Stage ownership", () => {
         "src/lib/shared/sequence-viewer/state/fullscreen-controller.svelte.ts"
       )
     ).toThrow();
+  });
+});
+
+describe("TIKA distinct sequences wiring", () => {
+  it("applies assign-distinct-sequences through the stage document, not the viewer", () => {
+    const stage = read(STAGE);
+    expect(stage).toContain("resolveDirectorSequenceAssignments");
+    expect(stage).toContain("listLibrarySequences");
+    expect(stage).not.toContain("loadSequenceScoped(");
+    // The plan runs through one executor so every verb shares the undo closure.
+    expect(stage).toContain("executeTikaDirectorPlan(");
+    const executor = read(
+      "src/lib/features/stage/services/tika-director-executor.ts"
+    );
+    expect(executor).toContain("stageState.assignPerformerSequences(");
+  });
+
+  it("keeps rig sequence loads out of the direction revision guard", () => {
+    const stage = read(STAGE);
+    expect(stage).toContain("describeCastForDirectorRevision(");
+    expect(stage).not.toMatch(
+      /cast: viewer\.performerManager\.performers\.map\(\(performer\) =>\s*performer\.captureEditingSnapshot\(\)\s*\),/
+    );
   });
 });

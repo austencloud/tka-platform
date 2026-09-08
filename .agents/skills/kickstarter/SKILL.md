@@ -11,7 +11,7 @@ Track and advance the Kickstarter campaign for physical TKA Choreo Card decks.
 
 ## Key Files
 
-- **Spec:** `docs/superpowers/specs/2026-04-27-kickstarter-campaign-design.md`
+- **Spec:** `docs/superpowers/specs/backlog/2026-04-27-kickstarter-campaign-design.md`
 - **Visual mockup:** `static/kickstarter-preview.html`
 - **Print export:** `src/lib/features/choreo-card/components/ChoreoCardExport.svelte`
 - **Card renderer:** `src/lib/features/choreo-card/components/ChoreoCard.svelte`
@@ -33,7 +33,7 @@ Track and advance the Kickstarter campaign for physical TKA Choreo Card decks.
 
 On invocation, read the spec file first:
 ```
-Read docs/superpowers/specs/2026-04-27-kickstarter-campaign-design.md
+Read docs/superpowers/specs/backlog/2026-04-27-kickstarter-campaign-design.md
 ```
 
 Then assess current phase and ask what to work on:

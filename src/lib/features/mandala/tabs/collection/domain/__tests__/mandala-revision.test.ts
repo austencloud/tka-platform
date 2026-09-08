@@ -19,8 +19,8 @@ function mandalaFixture(
     name: "Bloom",
     steps: [],
     variant: "both",
-    bluePropType: "staff",
-    redPropType: "staff",
+    leftPropType: "staff",
+    rightPropType: "staff",
     createdAt: 123,
     ...overrides,
   };
@@ -29,7 +29,7 @@ function mandalaFixture(
 describe("mandalaRevisionPayload", () => {
   it("omits absent optionals instead of writing undefined", () => {
     expect(Object.keys(mandalaRevisionPayload(mandalaFixture())).sort()).toEqual(
-      ["bluePropType", "redPropType", "steps", "variant"]
+      ["leftPropType", "rightPropType", "steps", "variant"]
     );
   });
 
@@ -53,7 +53,7 @@ describe("createMandalaRevision", () => {
   it("changes when digest-covered content changes", async () => {
     const a = await createMandalaRevision(mandalaFixture(), 1);
     const b = await createMandalaRevision(
-      mandalaFixture({ variant: "blue" }),
+      mandalaFixture({ variant: "left" }),
       1
     );
     expect(a.revisionId).not.toBe(b.revisionId);
@@ -93,7 +93,7 @@ describe("prepareMandalaRevision", () => {
   it("mints a new revision when content changes", async () => {
     const first = await prepareMandalaRevision(mandalaFixture());
     const second = await prepareMandalaRevision(
-      mandalaFixture({ variant: "red" }),
+      mandalaFixture({ variant: "right" }),
       first
     );
     expect(second.currentRevisionId).not.toBe(first.currentRevisionId);
@@ -136,8 +136,8 @@ describe("mandalaPublicPayload", () => {
     const payload = mandalaPublicPayload(mandalaFixture());
     expect("poster" in payload).toBe(false);
     expect(Object.keys(payload).sort()).toEqual([
-      "bluePropType",
-      "redPropType",
+      "leftPropType",
+      "rightPropType",
       "steps",
       "variant",
     ]);

@@ -20,8 +20,8 @@ export interface SequenceStep {
   startPosition: string;
   endPosition: string;
   stepNumber: number;
-  blueMotion: SequenceStepMotion;
-  redMotion: SequenceStepMotion;
+  leftMotion: SequenceStepMotion;
+  rightMotion: SequenceStepMotion;
 }
 export interface GeneratedSequenceResult {
   word: string;
@@ -230,17 +230,17 @@ export class TikaSequenceGenerator {
       startPosition: pictograph.startPosition,
       endPosition: pictograph.endPosition,
       stepNumber,
-      blueMotion: {
-        motionType: pictograph.blueMotion.motionType,
-        startLocation: pictograph.blueMotion.startLocation,
-        endLocation: pictograph.blueMotion.endLocation,
-        rotationDirection: pictograph.blueMotion.rotationDirection,
+      leftMotion: {
+        motionType: pictograph.leftMotion.motionType,
+        startLocation: pictograph.leftMotion.startLocation,
+        endLocation: pictograph.leftMotion.endLocation,
+        rotationDirection: pictograph.leftMotion.rotationDirection,
       },
-      redMotion: {
-        motionType: pictograph.redMotion.motionType,
-        startLocation: pictograph.redMotion.startLocation,
-        endLocation: pictograph.redMotion.endLocation,
-        rotationDirection: pictograph.redMotion.rotationDirection,
+      rightMotion: {
+        motionType: pictograph.rightMotion.motionType,
+        startLocation: pictograph.rightMotion.startLocation,
+        endLocation: pictograph.rightMotion.endLocation,
+        rotationDirection: pictograph.rightMotion.rotationDirection,
       },
     };
   }

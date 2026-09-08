@@ -190,8 +190,8 @@ describe("PerformerRig hierarchy matches old pipeline (wall mode)", () => {
 
     for (const beat of beats) {
       for (const [hand, snap] of [
-        ["blue", beat.blue],
-        ["red", beat.red],
+        ["blue", beat.left],
+        ["red", beat.right],
       ] as [string, PropSnapshotEntry][]) {
         const label = `${scenario.label} — ${snap.label}`;
 
@@ -233,8 +233,8 @@ describe("PerformerRig hierarchy matches old pipeline (dual-wheel mode)", () => 
 
     for (const beat of beats) {
       for (const [hand, snap] of [
-        ["blue", beat.blue],
-        ["red", beat.red],
+        ["blue", beat.left],
+        ["red", beat.right],
       ] as [string, PropSnapshotEntry][]) {
         const label = `${scenario.label} — ${snap.label}`;
 
@@ -286,7 +286,7 @@ describe("PerformerRig with groundOffset (museum)", () => {
     const beat = scenario.beats[0];
     if (!beat) return;
 
-    const snap = beat.blue;
+    const snap = beat.left;
     const shoulderHeight = scenario.avatarPosition.y;
     const planeLocal = planeAngleToWorldPosition(
       Plane.WALL,
@@ -324,8 +324,8 @@ describe("Prop rotation matches old pipeline", () => {
 
     for (const beat of beats) {
       for (const [hand, snap] of [
-        ["blue", beat.blue],
-        ["red", beat.red],
+        ["blue", beat.left],
+        ["red", beat.right],
       ] as [string, PropSnapshotEntry][]) {
         const label = `${scenario.label} — ${snap.label}`;
 
@@ -371,7 +371,7 @@ describe("Tip positions computed from hierarchy", () => {
     const beat = scenario.beats[0];
     if (!beat) return;
 
-    const snap = beat.blue;
+    const snap = beat.left;
     const shoulderHeight = scenario.avatarPosition.y;
 
     const planeLocal = planeAngleToWorldPosition(
@@ -431,7 +431,7 @@ describe("Tip positions computed from hierarchy", () => {
     if (!scenario) return;
 
     for (const beat of scenario.beats) {
-      const snap = beat.blue;
+      const snap = beat.left;
       const shoulderHeight = scenario.avatarPosition.y;
 
       const planeLocal = planeAngleToWorldPosition(
@@ -503,8 +503,8 @@ describe("Museum snapshots with groundOffset", () => {
 
     for (const beat of beats) {
       for (const [hand, snap] of [
-        ["blue", beat.blue],
-        ["red", beat.red],
+        ["blue", beat.left],
+        ["red", beat.right],
       ] as [string, PropSnapshotEntry][]) {
         const label = `${scenario.label} — ${snap.label}`;
 

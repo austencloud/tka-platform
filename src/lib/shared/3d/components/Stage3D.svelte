@@ -50,6 +50,8 @@
      * planks, which several environments need as their performer surface.
      */
     showDirectionCues?: boolean;
+    /** Scene-local material grade without creating a second stage owner. */
+    appearance?: "standard" | "autumn";
   }
 
   let {
@@ -58,6 +60,7 @@
     height = STAGE.STAGE_DECK_HEIGHT,
     overrideGroundY,
     showDirectionCues = true,
+    appearance = "standard",
   }: Props = $props();
 
   // Ground level tracks the visible floor of whatever environment is
@@ -123,6 +126,32 @@
     "#7a5737",
   ];
 
+  const plankColors = $derived(
+    appearance === "autumn"
+      ? ["#40291d", "#4b3021", "#38241a", "#543524", "#432a1c", "#4a2d20"]
+      : PLANK_COLORS
+  );
+
+  const cuePalette = $derived(
+    appearance === "autumn"
+      ? {
+          downstage: "#c88950",
+          upstage: "#4f4968",
+          right: "#8f5258",
+          left: "#637b67",
+          intensity: 0.32,
+          toneMapped: true,
+        }
+      : {
+          downstage: "#ffb347",
+          upstage: "#3d5a80",
+          right: "#f87171",
+          left: "#4ade80",
+          intensity: 1,
+          toneMapped: false,
+        }
+  );
+
   interface Plank {
     z: number;
     color: string;
@@ -137,7 +166,7 @@
     for (let i = 0; i < count; i++) {
       result.push({
         z: start + i * stride,
-        color: PLANK_COLORS[i % PLANK_COLORS.length]!,
+        color: plankColors[i % plankColors.length]!,
       });
     }
     return result;
@@ -152,7 +181,9 @@
     [-(halfW - LEG_INSET), -(halfD - LEG_INSET)],
   ]);
 
-  const legCenterY = $derived(DECK_TOP - PLANK_THICKNESS - DECK_HEIGHT / 2 + 0.02);
+  const legCenterY = $derived(
+    DECK_TOP - PLANK_THICKNESS - DECK_HEIGHT / 2 + 0.02
+  );
 
   // Skirt beams wrap around the perimeter just below the deck top.
   const skirtCenterY = $derived(DECK_TOP - PLANK_THICKNESS - SKIRT_HEIGHT / 2);
@@ -168,8 +199,8 @@
   // Positions are in local stage-group space (Y=0 is ground level).
   // Posts sit at the outer corners of the deck.
   const torchPositions = $derived([
-    { x: halfW, z: halfD },    // stage-right downstage corner
-    { x: -halfW, z: halfD },   // stage-left downstage corner
+    { x: halfW, z: halfD }, // stage-right downstage corner
+    { x: -halfW, z: halfD }, // stage-left downstage corner
   ]);
 
   // ─── Upstage stairs (-Z edge) ──────────────────────────────────────
@@ -178,14 +209,14 @@
   // is narrower (in Z depth) than the deck planks and uses the same
   // wood color palette so they read as part of the same structure.
 
-  const STAIR_WIDTH = 0.8;        // X extent - centered on stage
-  const STAIR_DEPTH = 0.22;       // Z extent per tread
+  const STAIR_WIDTH = 0.8; // X extent - centered on stage
+  const STAIR_DEPTH = 0.22; // Z extent per tread
   const STEP_COUNT = 3;
   const stepHeight = $derived(DECK_TOP / STEP_COUNT); // Even divisions to reach ground
 
   interface StairStep {
-    y: number;   // center Y of this step box
-    z: number;   // center Z position
+    y: number; // center Y of this step box
+    z: number; // center Z position
     height: number;
     color: string;
   }
@@ -199,7 +230,7 @@
         y: topOfStep - stepHeight / 2,
         z: -(halfD + STAIR_DEPTH * (i + 0.5)),
         height: stepHeight,
-        color: PLANK_COLORS[(i + 2) % PLANK_COLORS.length]!,
+        color: plankColors[(i + 2) % plankColors.length]!,
       });
     }
     return steps;
@@ -231,20 +262,28 @@
   -->
   <!-- Front and back beams (run along X) -->
   <T.Mesh position={[0, skirtCenterY, halfD - skirtInset]}>
-    <T.BoxGeometry args={[width - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
+    <T.BoxGeometry
+      args={[width - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]}
+    />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
   <T.Mesh position={[0, skirtCenterY, -(halfD - skirtInset)]}>
-    <T.BoxGeometry args={[width - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
+    <T.BoxGeometry
+      args={[width - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]}
+    />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
   <!-- Side beams (run along Z) -->
   <T.Mesh position={[halfW - skirtInset, skirtCenterY, 0]}>
-    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, depth - skirtInset * 2]} />
+    <T.BoxGeometry
+      args={[SKIRT_THICKNESS, SKIRT_HEIGHT, depth - skirtInset * 2]}
+    />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
   <T.Mesh position={[-(halfW - skirtInset), skirtCenterY, 0]}>
-    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, depth - skirtInset * 2]} />
+    <T.BoxGeometry
+      args={[SKIRT_THICKNESS, SKIRT_HEIGHT, depth - skirtInset * 2]}
+    />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
 
@@ -278,10 +317,10 @@
     <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, halfD - 0.01]}>
       <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
       <T.MeshStandardMaterial
-        color="#ffb347"
-        emissive="#ffb347"
-        emissiveIntensity={1.4}
-        toneMapped={false}
+        color={cuePalette.downstage}
+        emissive={cuePalette.downstage}
+        emissiveIntensity={1.4 * cuePalette.intensity}
+        toneMapped={cuePalette.toneMapped}
       />
     </T.Mesh>
 
@@ -293,10 +332,10 @@
     <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, -(halfD - 0.01)]}>
       <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
       <T.MeshStandardMaterial
-        color="#3d5a80"
-        emissive="#3d5a80"
-        emissiveIntensity={0.45}
-        toneMapped={false}
+        color={cuePalette.upstage}
+        emissive={cuePalette.upstage}
+        emissiveIntensity={0.45 * cuePalette.intensity}
+        toneMapped={cuePalette.toneMapped}
       />
     </T.Mesh>
 
@@ -308,84 +347,86 @@
     <T.Mesh position={[halfW - 0.01, DECK_TOP + STRIP_HEIGHT / 2, 0]}>
       <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
       <T.MeshStandardMaterial
-        color="#f87171"
-        emissive="#f87171"
-        emissiveIntensity={0.75}
-        toneMapped={false}
+        color={cuePalette.right}
+        emissive={cuePalette.right}
+        emissiveIntensity={0.75 * cuePalette.intensity}
+        toneMapped={cuePalette.toneMapped}
       />
     </T.Mesh>
     <T.Mesh position={[-(halfW - 0.01), DECK_TOP + STRIP_HEIGHT / 2, 0]}>
       <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
       <T.MeshStandardMaterial
-        color="#4ade80"
-        emissive="#4ade80"
-        emissiveIntensity={0.75}
-        toneMapped={false}
+        color={cuePalette.left}
+        emissive={cuePalette.left}
+        emissiveIntensity={0.75 * cuePalette.intensity}
+        toneMapped={cuePalette.toneMapped}
       />
     </T.Mesh>
 
-    <!--
+    {#if appearance === "standard"}
+      <!--
       Big orange triangle on the downstage half of the floor, pointing
       at the audience. CircleGeometry with segments=3 gives an
       equilateral triangle; thetaStart=-π/2 places the first vertex at
       local -Y so after lay-flat (rotation.x = -π/2) the apex points
       at world +Z (downstage).
     -->
-    <T.Mesh
-      position={[0, DECK_TOP + 0.003, halfD * 0.35]}
-      rotation={[-Math.PI / 2, 0, 0]}
-    >
-      <T.CircleGeometry args={[0.55, 3, -Math.PI / 2]} />
-      <T.MeshStandardMaterial
-        color="#ffb347"
-        emissive="#ffb347"
-        emissiveIntensity={1.0}
-        toneMapped={false}
-      />
-    </T.Mesh>
+      <T.Mesh
+        position={[0, DECK_TOP + 0.003, halfD * 0.35]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <T.CircleGeometry args={[0.55, 3, -Math.PI / 2]} />
+        <T.MeshStandardMaterial
+          color={cuePalette.downstage}
+          emissive={cuePalette.downstage}
+          emissiveIntensity={cuePalette.intensity}
+          toneMapped={cuePalette.toneMapped}
+        />
+      </T.Mesh>
 
-    <!--
+      <!--
       Small cardinal dots at the other three edges, tinted to match the
       corresponding edge strip so direction is legible at a glance.
     -->
-    {@const dotInset = 0.38}
-    {@const dotY = DECK_TOP + 0.003}
-    <T.Mesh
-      position={[0, dotY, -(halfD - dotInset)]}
-      rotation={[-Math.PI / 2, 0, 0]}
-    >
-      <T.CircleGeometry args={[0.14, 24]} />
-      <T.MeshStandardMaterial
-        color="#3d5a80"
-        emissive="#3d5a80"
-        emissiveIntensity={0.6}
-        toneMapped={false}
-      />
-    </T.Mesh>
-    <T.Mesh
-      position={[halfW - dotInset, dotY, 0]}
-      rotation={[-Math.PI / 2, 0, 0]}
-    >
-      <T.CircleGeometry args={[0.14, 24]} />
-      <T.MeshStandardMaterial
-        color="#f87171"
-        emissive="#f87171"
-        emissiveIntensity={0.8}
-        toneMapped={false}
-      />
-    </T.Mesh>
-    <T.Mesh
-      position={[-(halfW - dotInset), dotY, 0]}
-      rotation={[-Math.PI / 2, 0, 0]}
-    >
-      <T.CircleGeometry args={[0.14, 24]} />
-      <T.MeshStandardMaterial
-        color="#4ade80"
-        emissive="#4ade80"
-        emissiveIntensity={0.8}
-        toneMapped={false}
-      />
-    </T.Mesh>
+      {@const dotInset = 0.38}
+      {@const dotY = DECK_TOP + 0.003}
+      <T.Mesh
+        position={[0, dotY, -(halfD - dotInset)]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <T.CircleGeometry args={[0.14, 24]} />
+        <T.MeshStandardMaterial
+          color={cuePalette.upstage}
+          emissive={cuePalette.upstage}
+          emissiveIntensity={0.6 * cuePalette.intensity}
+          toneMapped={cuePalette.toneMapped}
+        />
+      </T.Mesh>
+      <T.Mesh
+        position={[halfW - dotInset, dotY, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <T.CircleGeometry args={[0.14, 24]} />
+        <T.MeshStandardMaterial
+          color={cuePalette.right}
+          emissive={cuePalette.right}
+          emissiveIntensity={0.8 * cuePalette.intensity}
+          toneMapped={cuePalette.toneMapped}
+        />
+      </T.Mesh>
+      <T.Mesh
+        position={[-(halfW - dotInset), dotY, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <T.CircleGeometry args={[0.14, 24]} />
+        <T.MeshStandardMaterial
+          color={cuePalette.left}
+          emissive={cuePalette.left}
+          emissiveIntensity={0.8 * cuePalette.intensity}
+          toneMapped={cuePalette.toneMapped}
+        />
+      </T.Mesh>
+    {/if}
   {/if}
 
   <!--
@@ -394,23 +435,23 @@
   -->
   {#each torchPositions as torch}
     <!-- Wooden post - base sits on deck top -->
-    <T.Mesh
-      position={[torch.x, DECK_TOP + TORCH_HEIGHT / 2, torch.z]}
-    >
-      <T.CylinderGeometry args={[TORCH_POST_RADIUS, TORCH_POST_RADIUS * 1.3, TORCH_HEIGHT, 8]} />
+    <T.Mesh position={[torch.x, DECK_TOP + TORCH_HEIGHT / 2, torch.z]}>
+      <T.CylinderGeometry
+        args={[TORCH_POST_RADIUS, TORCH_POST_RADIUS * 1.3, TORCH_HEIGHT, 8]}
+      />
       <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
     </T.Mesh>
     <!-- Flame holder (wider cap at top of post) -->
-    <T.Mesh
-      position={[torch.x, DECK_TOP + TORCH_HEIGHT - 0.05, torch.z]}
-    >
+    <T.Mesh position={[torch.x, DECK_TOP + TORCH_HEIGHT - 0.05, torch.z]}>
       <T.CylinderGeometry args={[0.08, 0.06, 0.1, 8]} />
-      <T.MeshStandardMaterial color="#2a1a0c" roughness={0.85} metalness={0.15} />
+      <T.MeshStandardMaterial
+        color="#2a1a0c"
+        roughness={0.85}
+        metalness={0.15}
+      />
     </T.Mesh>
     <!-- Glowing flame -->
-    <T.Mesh
-      position={[torch.x, DECK_TOP + TORCH_HEIGHT + 0.08, torch.z]}
-    >
+    <T.Mesh position={[torch.x, DECK_TOP + TORCH_HEIGHT + 0.08, torch.z]}>
       <T.SphereGeometry args={[0.1, 8, 6]} />
       <T.MeshStandardMaterial
         color="#ff8822"
@@ -435,11 +476,7 @@
     the forest floor. Same wood tones as the deck planks.
   -->
   {#each stairSteps as step}
-    <T.Mesh
-      position={[0, step.y, step.z]}
-      castShadow
-      receiveShadow
-    >
+    <T.Mesh position={[0, step.y, step.z]} castShadow receiveShadow>
       <T.BoxGeometry args={[STAIR_WIDTH, step.height, STAIR_DEPTH]} />
       <T.MeshStandardMaterial
         color={step.color}

@@ -16,8 +16,8 @@
 
   // Prop types (using settings defaults)
   const settings = getSettings();
-  const bluePropType = settings.bluePropType || settings.propType;
-  const redPropType = settings.redPropType || settings.propType;
+  const leftPropType = settings.leftPropType || settings.propType;
+  const rightPropType = settings.rightPropType || settings.propType;
 
   onMount(async () => {
     // Load a real sequence from the user's data
@@ -177,13 +177,13 @@
       <!-- Animation canvas -->
       <div class="canvas-container">
         <AnimatorCanvas
-          blueProp={null}
-          redProp={null}
+          leftProp={null}
+          rightProp={null}
           {sequenceData}
           {currentStep}
           {isPlaying}
-          bluePropType={bluePropType}
-          redPropType={redPropType}
+          leftPropType={leftPropType}
+          rightPropType={rightPropType}
           gridVisible={true}
           backgroundAlpha={1}
           previewDarkMode={true}

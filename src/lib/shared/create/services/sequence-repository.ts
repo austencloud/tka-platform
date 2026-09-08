@@ -179,8 +179,8 @@ export class SequenceRepository {
   }
 
   /**
-   * Find all sequences that reference a specific hand path, on either the blue
-   * or red performer's side. Queries Firestore directly because the
+   * Find all sequences that reference a specific hand path, on either the left
+   * or right performer's side. Queries Firestore directly because the
    * local persistence layer (Dexie) doesn't index these hash fields.
    */
   async getByPathHash(pathHash: string): Promise<SequenceData[]> {
@@ -191,10 +191,13 @@ export class SequenceRepository {
       const firestore = await getFirestoreInstance();
       const ref = collection(firestore, getUserSequencesPath(uid));
 
-      // Firestore OR query: match on bluePathHash OR redPathHash
+      // Canonical writes use left/right. The legacy predicates keep sequences
+      // saved by older clients discoverable without rewriting user documents.
       const q = query(
         ref,
         or(
+          where("leftPathHash", "==", pathHash),
+          where("rightPathHash", "==", pathHash),
           where("bluePathHash", "==", pathHash),
           where("redPathHash", "==", pathHash)
         )
@@ -210,8 +213,8 @@ export class SequenceRepository {
   }
 
   /**
-   * Find all sequences that reference a specific solo prop, on either the blue
-   * or red performer's side. Queries Firestore directly because the
+   * Find all sequences that reference a specific solo prop, on either the left
+   * or right performer's side. Queries Firestore directly because the
    * local persistence layer (Dexie) doesn't index these hash fields.
    */
   async getBySoloHash(soloHash: string): Promise<SequenceData[]> {
@@ -222,10 +225,12 @@ export class SequenceRepository {
       const firestore = await getFirestoreInstance();
       const ref = collection(firestore, getUserSequencesPath(uid));
 
-      // Firestore OR query: match on blueSoloHash OR redSoloHash
+      // Query both schema generations for the same reason as getByPathHash.
       const q = query(
         ref,
         or(
+          where("leftSoloHash", "==", soloHash),
+          where("rightSoloHash", "==", soloHash),
           where("blueSoloHash", "==", soloHash),
           where("redSoloHash", "==", soloHash)
         )

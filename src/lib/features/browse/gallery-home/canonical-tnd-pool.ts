@@ -17,6 +17,11 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { resolveTnDFamilyCards } from "$lib/features/lab/vtg-lab/services/resolve-tnd-family-cards";
+import {
+  buildTnDSeedClasses,
+  getTnDFamilyOptions,
+} from "$lib/features/choreo-card/services/deck-composer";
+import { loadTndBaseWords } from "$lib/features/choreo-card/services/tnd-base-word-snapshot";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { processReversals } from "$lib/shared/create/services/reversal-detector";
 import { transformSequence } from "$lib/features/choreo-card/services/reversal-seed-service";
@@ -40,6 +45,7 @@ function safeTurn(pattern: string): string {
 }
 
 let poolPromise: Promise<readonly SequenceData[]> | null = null;
+let basePoolPromise: Promise<readonly SequenceData[]> | null = null;
 
 /**
  * Resolve the full canonical pool (all six families × all 49 turn patterns).
@@ -54,6 +60,42 @@ export function loadCanonicalTnDSequences(): Promise<readonly SequenceData[]> {
     });
   }
   return poolPromise;
+}
+
+/** Resolve only the 19 zero-turn representatives used by Learning Letters. */
+export function loadCanonicalTnDBaseSequences(): Promise<
+  readonly SequenceData[]
+> {
+  if (!basePoolPromise) {
+    basePoolPromise = resolveBasePool().catch((err) => {
+      basePoolPromise = null;
+      throw err;
+    });
+  }
+  return basePoolPromise;
+}
+
+async function resolveBasePool(): Promise<readonly SequenceData[]> {
+  const snapshots = await loadTndBaseWords();
+  const byId = new Map(snapshots.map((sequence) => [sequence.id, sequence]));
+  const families = getTnDFamilyOptions(buildTnDSeedClasses(snapshots), [
+    "diamond",
+  ]);
+
+  return families.flatMap((family) =>
+    family.entries.flatMap((entry) => {
+      const sequence = byId.get(entry.sequenceId);
+      if (!sequence) return [];
+      return [
+        updateSequenceData(sequence, {
+          author: CANONICAL_TND_AUTHOR,
+          dateAdded: TND_BIRTHDAY,
+          birthday: TND_BIRTHDAY,
+          metadata: { ...sequence.metadata, familyId: family.familyId },
+        }),
+      ];
+    })
+  );
 }
 
 async function resolvePool(): Promise<readonly SequenceData[]> {

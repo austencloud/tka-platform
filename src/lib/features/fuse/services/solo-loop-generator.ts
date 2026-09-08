@@ -28,14 +28,14 @@ import {
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
 import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";
 import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
-import { extractBlueSoloProp } from "$lib/shared/foundation/services/sequence-decomposer";
+import { extractLeftSoloProp } from "$lib/shared/foundation/services/sequence-decomposer";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -46,6 +46,11 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { startOrientationsForLevel } from "$lib/features/create/generate/domain/level-orientation-policy";
+import {
+  DEFAULT_GENERATION_STYLE,
+  type GenerationMotionTypeFilter,
+  type GenerationStyleAxis,
+} from "$lib/shared/create/domain/generation-style";
 
 export interface GeneratedSoloLoop {
   readonly solo: SoloPropData;
@@ -56,9 +61,9 @@ export interface SoloLoopGenerationRecipe {
   readonly gridMode: GridMode;
   readonly level: TurnLevel;
   readonly maxTurnIntensity: number;
-  readonly constraintPreset: "smooth" | "mixed" | "choppy";
-  readonly handPathMode: "smooth" | "mixed" | "choppy";
-  readonly motionTypeFilter: "no-dash" | "prefer-dash" | null;
+  readonly constraintPreset: GenerationStyleAxis;
+  readonly handPathMode: GenerationStyleAxis;
+  readonly motionTypeFilter: GenerationMotionTypeFilter;
   readonly startLocation: GridLocation | null;
   readonly startOrientation: Orientation | null;
   readonly traversalDirection: SoloLoopTraversalDirection | null;
@@ -71,9 +76,7 @@ export const DEFAULT_SOLO_LOOP_RECIPE: SoloLoopGenerationRecipe = Object.freeze(
     gridMode: GridMode.DIAMOND,
     level: 2,
     maxTurnIntensity: 1,
-    constraintPreset: "mixed",
-    handPathMode: "mixed",
-    motionTypeFilter: null,
+    ...DEFAULT_GENERATION_STYLE,
     startLocation: null,
     startOrientation: null,
     traversalDirection: null,
@@ -128,7 +131,7 @@ async function loadMotionTemplatesForGrid(
     .then((pictographs) => {
       const unique = new Map<string, MotionData>();
       for (const pictograph of pictographs) {
-        for (const color of [MotionColor.BLUE, MotionColor.RED] as const) {
+        for (const color of [HandSide.LEFT, HandSide.RIGHT] as const) {
           const motion = pictograph.motions[color];
           if (!isVisibleMotion(motion)) continue;
           // Float is allocated from a pro/anti shift at Level 3. Treating an
@@ -393,7 +396,7 @@ function allocateSoloTurns(
     recipe.level,
     recipe.level === 1 ? 0 : recipe.maxTurnIntensity,
     { random }
-  ).blue;
+  ).left;
 }
 
 function toSoloStep(motion: EngineMotionData): SoloPropStepData {
@@ -431,7 +434,7 @@ function generatedFromMotions(
     steps[0]!.startOrientation,
     { name }
   );
-  const loopSpec = loopSpecToWire({ blue: detection.spec }).blue;
+  const loopSpec = loopSpecToWire({ left: detection.spec }).left;
   if (!loopSpec)
     throw new Error("Generated solo LOOP is missing its prop spec");
   return { solo, loopSpec };
@@ -753,8 +756,8 @@ async function loadRandomFlowerSolo(
     random,
     recipe
   );
-  const solo = extractBlueSoloProp(
-    await buildFuseFlowerPath(variation.flower, "blue", variation)
+  const solo = extractLeftSoloProp(
+    await buildFuseFlowerPath(variation.flower, "left", variation)
   );
   if (
     recipe.startLocation !== null &&
@@ -770,6 +773,9 @@ export function flowerMatchesRecipe(
   recipe: SoloLoopGenerationRecipe
 ): boolean {
   if (recipe.level === 1) return flower.turns === 0;
+  // FloatFlower.turns is the literal "fl", not a number — a float path has no
+  // turn intensity to compare against a level 2/3 recipe's numeric cap.
+  if (typeof flower.turns !== "number") return false;
   if (flower.turns > recipe.maxTurnIntensity) return false;
   return recipe.level === 3 || Number.isInteger(flower.turns);
 }
@@ -809,7 +815,7 @@ export function fitSoloPathToLoop(
     // period remains a closed loop, but asking the detector to classify the
     // whole tiled sequence can hide the original component. Preserve the
     // source period's spec while materializing the requested number of steps.
-    const loopSpec = loopSpecToWire({ blue: sourceDetection.spec }).blue;
+    const loopSpec = loopSpecToWire({ left: sourceDetection.spec }).left;
     if (!loopSpec)
       throw new Error("Selected solo LOOP is missing its prop spec");
     const steps = repeated.map(toSoloStep);
@@ -845,7 +851,7 @@ export function fitSoloPathToLoop(
     steps[0]!.startOrientation,
     { name: source.name ?? "Selected solo LOOP" }
   );
-  const loopSpec = loopSpecToWire({ blue: detection.spec }).blue;
+  const loopSpec = loopSpecToWire({ left: detection.spec }).left;
   if (!loopSpec) throw new Error("Selected solo LOOP is missing its prop spec");
   return { solo, loopSpec };
 }

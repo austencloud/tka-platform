@@ -1,14 +1,25 @@
-# Research Before Building — ENFORCED
+---
+paths:
+  - "src/**/*"
+  - "packages/**/*"
+  - "mcp-server/**/*"
+  - "scripts/**/*"
+  - "tests/**/*"
+---
 
-Frameworks ship most plumbing, and the ecosystem moves faster than training
-data. Before writing infrastructure code — event handling, raycasting,
-animation, physics, state patterns, build tooling — check whether the
-framework or its extras package already provides it: web search
-"[framework] [feature] [current year]", context7, npm. A hand-rolled 175-line
-ManualRaycaster once cost hours of debugging when Threlte's `interactivity()`
-did the same thing in one line.
+# Framework Research Contract
 
-The test: would a senior developer who uses this framework daily already know
-a built-in for this? If probably yes, search before building. And if a
-hand-rolled first attempt doesn't work, research alternatives before attempt
-two — don't keep debugging a solution the framework may have obsoleted.
+Before implementing framework-level infrastructure such as event handling,
+raycasting, animation, physics, state coordination, or build tooling:
+
+- inspect installed versions and existing repository owners;
+- check current official framework and maintained extension documentation;
+- prefer a supported capability over a parallel local implementation when it
+  satisfies the product requirement;
+- verify signatures, defaults, lifecycle behavior, and compatibility against
+  the installed version; and
+- if an approach fails for structural reasons, research alternatives before
+  deepening it.
+
+Research is proportional. Do not browse for stable local facts that the code or
+installed package metadata answers directly.

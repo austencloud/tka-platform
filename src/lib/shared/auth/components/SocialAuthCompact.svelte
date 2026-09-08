@@ -31,7 +31,7 @@
     isExpectedAuthInterruption,
   } from "$lib/shared/auth/services/auth-error-messages";
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
-  import LastUsedBadge from "./LastUsedBadge.svelte";
+  import LastUsedBadge from "$lib/shared/components/LastUsedBadge.svelte";
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
   import { trackAuthProviderResult } from "$lib/shared/analytics/auth-events";
   import { page } from "$app/state";

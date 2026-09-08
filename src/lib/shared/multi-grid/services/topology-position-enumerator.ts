@@ -25,9 +25,9 @@ export function enumeratePositionPairs(topology: GridTopology): PositionPair[] {
   const handPoints = enumerateHandPoints(topology);
   const pairs: PositionPair[] = [];
 
-  for (const blue of handPoints) {
-    for (const red of handPoints) {
-      pairs.push({ blue, red });
+  for (const left of handPoints) {
+    for (const right of handPoints) {
+      pairs.push({ left, right });
     }
   }
 

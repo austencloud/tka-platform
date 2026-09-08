@@ -260,7 +260,7 @@
       <a class="hero-link hero-chip" href="/guide">
         <i class="fas fa-book-open" aria-hidden="true"></i><span>Guide</span>
       </a>
-      <a class="hero-link hero-chip" href="/notation">
+      <a class="hero-link hero-chip" href="/history">
         <i class="fas fa-language" aria-hidden="true"></i><span>History</span>
       </a>
       <a class="hero-link hero-chip" href="/shop">

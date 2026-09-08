@@ -9,7 +9,7 @@ import {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  MotionColor,
+  HandSide,
   MotionType,
   Orientation,
   RotationDirection,
@@ -17,12 +17,12 @@ import {
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 function staticMotion(
-  color: MotionColor,
+  color: HandSide,
   location: GridLocation,
   orientation: Orientation
 ) {
   return createMotionData({
-    color,
+    hand: color,
     motionType: MotionType.STATIC,
     rotationDirection: RotationDirection.NO_ROTATION,
     startLocation: location,
@@ -35,9 +35,9 @@ function staticMotion(
   });
 }
 
-function movingMotion(color: MotionColor) {
+function movingMotion(color: HandSide) {
   return createMotionData({
-    color,
+    hand: color,
     motionType: MotionType.PRO,
     rotationDirection: RotationDirection.CLOCKWISE,
     startLocation: GridLocation.NORTH,
@@ -60,8 +60,8 @@ function start(
     startPosition: position,
     endPosition: position,
     motions: {
-      blue: staticMotion(MotionColor.BLUE, location, blueOrientation),
-      red: staticMotion(MotionColor.RED, location, Orientation.OUT),
+      left: staticMotion(HandSide.LEFT, location, blueOrientation),
+      right: staticMotion(HandSide.RIGHT, location, Orientation.OUT),
     },
   });
 }
@@ -82,8 +82,8 @@ function fixture() {
         startPosition: GridPosition.BETA1,
         endPosition: GridPosition.BETA3,
         motions: {
-          blue: movingMotion(MotionColor.BLUE),
-          red: movingMotion(MotionColor.RED),
+          left: movingMotion(HandSide.LEFT),
+          right: movingMotion(HandSide.RIGHT),
         },
       }),
     ],
@@ -105,7 +105,7 @@ describe("updateSequenceStartPosition", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.sequence.steps[0]!.motions.blue.startOrientation).toBe(
+    expect(result.sequence.steps[0]!.motions.left.startOrientation).toBe(
       Orientation.CLOCK
     );
     expect(result.sequence.steps).toHaveLength(1);

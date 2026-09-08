@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "source": "Adobe Mixamo",
+  "acquisition": "manual-only",
+  "downloadSettings": {
+    "format": "FBX Binary",
+    "pose": "T-pose",
+    "skin": "with skin",
+    "framesPerSecond": null,
+    "keyframeReduction": null
+  },
+  "selectionRule": "Choose the named character when it is present in the signed-in Mixamo catalog; otherwise choose the closest candidate matching the slot criteria and record the actual source identity in its provenance sidecar.",
+  "slots": [
+    {
+      "priority": 1,
+      "suggestedName": "Malcolm",
+      "role": "large stylized masculine silhouette",
+      "avoid": "another average-proportion casual adult"
+    },
+    {
+      "priority": 2,
+      "suggestedName": "Michelle",
+      "role": "realistic feminine casual baseline",
+      "avoid": "long loose garments that obscure leg deformation"
+    },
+    {
+      "priority": 3,
+      "suggestedName": "Robot Kyle",
+      "role": "hard-surface nonhuman control",
+      "avoid": "rigid shoulder armor that blocks overhead motion"
+    },
+    {
+      "priority": 4,
+      "suggestedName": "Vanguard",
+      "role": "armored heroic silhouette",
+      "avoid": "weapons or separate accessories"
+    },
+    {
+      "priority": 5,
+      "suggestedName": "Kaya",
+      "role": "athletic feminine silhouette",
+      "avoid": "hair geometry intersecting shoulders at rest"
+    },
+    {
+      "priority": 6,
+      "suggestedName": "Liam",
+      "role": "slender masculine silhouette",
+      "avoid": "near-duplicate clothing and proportions already represented"
+    },
+    {
+      "priority": 7,
+      "suggestedName": "Peasant Girl",
+      "role": "historical clothing and softer silhouette",
+      "avoid": "floor-length cloth without usable skin weights"
+    },
+    {
+      "priority": 8,
+      "suggestedName": "Ortiz",
+      "role": "older or heavier realistic body diversity",
+      "avoid": "a face-only variation on an existing body"
+    },
+    {
+      "priority": 9,
+      "suggestedName": "Paladin J Nordstrom",
+      "role": "fantasy costume silhouette",
+      "avoid": "cape geometry unless it remains visually acceptable unanimated"
+    },
+    {
+      "priority": 10,
+      "suggestedName": "Amy",
+      "role": "compact casual feminine silhouette",
+      "avoid": "outfit overlap with the Michelle slot"
+    },
+    {
+      "priority": 11,
+      "suggestedName": "Vincent",
+      "role": "formal masculine clothing",
+      "avoid": "coat tails with severe leg clipping"
+    },
+    {
+      "priority": 12,
+      "suggestedName": "Exo Gray",
+      "role": "science-fiction silhouette",
+      "avoid": "opaque helmet or hands without usable finger bones"
+    }
+  ]
+}

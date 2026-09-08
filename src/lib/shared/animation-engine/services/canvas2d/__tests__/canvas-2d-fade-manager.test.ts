@@ -41,19 +41,19 @@ describe("Canvas2DFadeManager duration parameterization", () => {
   it("two independently-constructed instances run on independent clocks/durations", () => {
     // Mirrors the renderer's blue/red prop crossfade managers: one color's
     // transition must not affect the other's timer.
-    const blue = new Canvas2DFadeManager(DURATION.emphasis);
-    const red = new Canvas2DFadeManager(DURATION.emphasis);
+    const left = new Canvas2DFadeManager(DURATION.emphasis);
+    const right = new Canvas2DFadeManager(DURATION.emphasis);
 
-    blue.startFadeTransition();
-    blue.updateFadeProgress(1000); // blue starts fading at virtual t=1000
+    left.startFadeTransition();
+    left.updateFadeProgress(1000); // blue starts fading at virtual t=1000
 
     // Red never started — must report the steady "not fading" state regardless
     // of what time blue is being driven at.
-    const redState = red.updateFadeProgress(1000);
+    const redState = right.updateFadeProgress(1000);
     expect(redState.isComplete).toBe(true);
     expect(redState.currentAlpha).toBe(1);
 
-    const blueMid = blue.updateFadeProgress(1000 + DURATION.emphasis / 2);
+    const blueMid = left.updateFadeProgress(1000 + DURATION.emphasis / 2);
     expect(blueMid.isComplete).toBe(false);
     expect(blueMid.currentAlpha).toBeCloseTo(0.5, 2);
   });

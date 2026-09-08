@@ -65,22 +65,22 @@ export class FusedExecutor {
     previousStep: SequenceStep,
     stepNumber: number
   ): SequenceStep {
-    const blueSource = this.flags.swap
-      ? sourceStep.motions.red
-      : sourceStep.motions.blue;
-    const redSource = this.flags.swap
-      ? sourceStep.motions.blue
-      : sourceStep.motions.red;
+    const leftSource = this.flags.swap
+      ? sourceStep.motions.right
+      : sourceStep.motions.left;
+    const rightSource = this.flags.swap
+      ? sourceStep.motions.left
+      : sourceStep.motions.right;
 
-    const blueMotion = this.transformMotion(
-      blueSource,
-      previousStep.motions.blue
+    const leftMotion = this.transformMotion(
+      leftSource,
+      previousStep.motions.left
     );
-    const redMotion = this.transformMotion(redSource, previousStep.motions.red);
+    const rightMotion = this.transformMotion(rightSource, previousStep.motions.right);
 
     const endPosition = gridPositionDeriver.getGridPositionFromLocations(
-      blueMotion.endLocation,
-      redMotion.endLocation
+      leftMotion.endLocation,
+      rightMotion.endLocation
     );
 
     const letter = this.flags.invert
@@ -93,7 +93,7 @@ export class FusedExecutor {
       letter,
       startPosition: previousStep.endPosition as SequenceStep["startPosition"],
       endPosition: endPosition as SequenceStep["endPosition"],
-      motions: { blue: blueMotion, red: redMotion },
+      motions: { left: leftMotion, right: rightMotion },
     };
   }
 
@@ -149,14 +149,14 @@ export class FusedExecutor {
       startPosition: previousStep.endPosition as SequenceStep["startPosition"],
       endPosition: sourceStep.endPosition as SequenceStep["endPosition"],
       motions: {
-        blue: {
-          ...sourceStep.motions.blue,
-          startLocation: previousStep.motions.blue
+        left: {
+          ...sourceStep.motions.left,
+          startLocation: previousStep.motions.left
             .endLocation as MotionData["startLocation"],
         },
-        red: {
-          ...sourceStep.motions.red,
-          startLocation: previousStep.motions.red
+        right: {
+          ...sourceStep.motions.right,
+          startLocation: previousStep.motions.right
             .endLocation as MotionData["startLocation"],
         },
       },

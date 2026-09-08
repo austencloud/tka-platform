@@ -252,8 +252,8 @@ export async function loadFullSequenceData(sourceRef: string): Promise<SequenceD
       ownerId: raw.ownerId as string | undefined,
       ownerDisplayName: raw.ownerDisplayName as string | undefined,
       // Pass through compositional fields from Firestore
-      blueSoloProp: raw.blueSoloProp as SequenceData["blueSoloProp"],
-      redSoloProp: raw.redSoloProp as SequenceData["redSoloProp"],
+      leftSoloProp: raw.leftSoloProp as SequenceData["leftSoloProp"],
+      rightSoloProp: raw.rightSoloProp as SequenceData["rightSoloProp"],
       stepPairings: raw.stepPairings as SequenceData["stepPairings"],
     };
 
@@ -304,4 +304,3 @@ function serializeRating(r: ArenaRating): Record<string, unknown> {
     enteredPoolAt: Timestamp.fromDate(r.enteredPoolAt),
   };
 }
-
