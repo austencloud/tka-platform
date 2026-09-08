@@ -35,6 +35,7 @@ export function installQrBakeNodeRuntime(canvas, staticRoot) {
       return new Response(bytes, { headers: { "content-type": mime } });
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
+      diagnostics.getStore()?.push(`Missing static asset: ${input}`);
       return new Response("Missing static asset", { status: 404 });
     }
   };
@@ -49,14 +50,21 @@ export function installQrBakeNodeRuntime(canvas, staticRoot) {
     });
   };
   globalThis.createImageBitmap = async (blob) => {
-    const bytes = Buffer.from(await blob.arrayBuffer());
-    // librsvg handles nested clipping in artwork that the Canvas SVG decoder
-    // does not support. Canvas still owns all placement and composition.
-    const image = await canvas.loadImage(
-      blob.type.includes("svg") ? await sharp(bytes).png().toBuffer() : bytes
-    );
-    image.close = () => {};
-    return image;
+    try {
+      const bytes = Buffer.from(await blob.arrayBuffer());
+      // librsvg handles nested clipping in artwork that the Canvas SVG decoder
+      // does not support. Canvas still owns all placement and composition.
+      const image = await canvas.loadImage(
+        blob.type.includes("svg") ? await sharp(bytes).png().toBuffer() : bytes
+      );
+      image.close = () => {};
+      return image;
+    } catch (error) {
+      // UI drawing may swallow a decode error. Publication must reject every
+      // affected cell, even when the UI suppresses repeated warnings.
+      diagnostics.getStore()?.push(`Image decode failed: ${error.message}`);
+      throw error;
+    }
   };
   return async (render) => {
     const messages = [];
