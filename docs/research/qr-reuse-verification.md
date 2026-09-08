@@ -31,9 +31,8 @@ Verification:
 
 The `prepared-qrs` Storage rules were deployed on September 8 after explicit
 authorization. The live rules were preserved outside that added block. Public
-downloads were verified against the deployed bucket. The application change
-still needs local integration and the normal release before production viewers
-use this path.
+downloads were verified against the deployed bucket. Production viewers use
+the new lookup path after the application change goes through the normal release.
 
 ## Bulk baking
 
@@ -53,9 +52,9 @@ Four sequence lanes bound QR work. Cancellation and failed-code lists reuse
 the existing backfill contract; pass a failed-code list through `listCodes` to
 retry. Already published artwork is reused.
 
-The bulk extension passed 17 focused tests and Svelte check with zero errors
-and warnings. The task branch remains blocked from integration by the primary
-checkout's existing `MERGE_HEAD`.
+The completed implementation passed 39 focused tests after updating from main,
+plus the Node publication-error regression. Svelte check reported zero errors
+and warnings.
 
 ## Admin runner
 
@@ -104,3 +103,34 @@ invalidates old images for those spellings while preserving normal cell keys.
 A census of the snapshot found only `C4OF` affected. Four regression tests cover
 both angle entry points and the scoped invalidation, and its restored right
 prop was directly inspected through the public image in a fresh browser tab.
+
+## Final cloud audit
+
+The initial full pass processed all 22,072 records. A follow-up inventory found
+one newly created code and baked it too. Combining that pass with the orientation
+repair gives **22,069 ready links out of 22,073**.
+
+- **38,316** distinct prepared QR artifacts exist in public Storage. Identical
+  sequence/configuration keys share artwork across historical duplicate codes.
+- **123,596** canonical pictograph objects were verified present.
+- No prepared QR artifacts or unexpected canonical cells were missing.
+- **42** public QR downloads, including both repaired `C4OF` themes, decoded to
+  their exact existing short links and prop parameters.
+- The final full pass alone uploaded 87,710 missing pictographs; earlier
+  preparation and repair passes filled additional cells.
+
+Four legacy records remain excluded from readiness. Their 18 unresolved cell
+hashes are retained in the failure report; publishing a ready QR would falsely
+claim its scan assets were complete.
+
+| Code     | Existing blocker                                                                                           |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| `EbMSwi` | Shift-arrow data contains a same-location `e → e` pair. The alternate encoded payload has no usable steps. |
+| `VxjWho` | Shift-arrow data contains an unsupported `w → e` pair.                                                     |
+| `GMT6`   | Requires the absent `anti_8.0.svg` arrow artwork.                                                          |
+| `JPO9`   | Requires the same absent eight-turn arrow artwork.                                                         |
+
+No choreography, shortcode ownership, destinations, or scan counters were
+rewritten. Evidence and resumable snapshots are in the task-owned
+`E:/tka-qr-bake-runtime` directory: `final-verification.json`,
+`reconciled-report.json`, and `reconciled-manifest.json`.
