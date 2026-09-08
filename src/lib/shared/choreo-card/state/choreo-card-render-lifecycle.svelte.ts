@@ -11,6 +11,7 @@ import type {
 import type { createCrossfaderState } from "$lib/shared/choreo-card/state/crossfader-state.svelte";
 
 export interface ChoreoCardRenderLifecycleDeps {
+  readonly primaryPropColors?: { left: string; right: string } | null;
   readonly sequence: SequenceData;
   readonly leftPropType: PropType | undefined;
   readonly rightPropType: PropType | undefined;
@@ -65,6 +66,7 @@ export function createChoreoCardRenderLifecycle(
   function renderKeys(deps: ChoreoCardRenderLifecycleDeps) {
     return buildChoreoCardRenderKeys({
       sequence: deps.sequence,
+      primaryPropColors: deps.primaryPropColors,
       leftPropType: deps.leftPropType,
       rightPropType: deps.rightPropType,
       catDogModeEnabled: deps.catDogModeEnabled,

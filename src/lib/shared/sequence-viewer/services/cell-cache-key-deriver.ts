@@ -120,6 +120,7 @@ function mapToVisibility(
     (options.handPathMode ?? false) || options.browseViewMode?.subject === "hands";
 
   return {
+    primaryPropColors: options.primaryPropColors,
     showTKA: options.showTKA ?? true,
     showTnD: options.showTnD ?? false,
     showElemental: options.showElemental ?? false,

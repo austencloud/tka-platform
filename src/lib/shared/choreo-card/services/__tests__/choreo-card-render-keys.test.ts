@@ -67,6 +67,13 @@ function routeMode(
 }
 
 describe("buildChoreoCardRenderKeys — overlay vs structural routing", () => {
+  it("repaints a changed palette without moving the card cells", () => {
+    const before = baseInputs();
+    const after = { ...before, primaryPropColors: { left: "#00ff88", right: "#ff8800" } };
+    expect(buildChoreoCardRenderKeys(after).imageKey).not.toBe(buildChoreoCardRenderKeys(before).imageKey);
+    expect(routeMode(before, after)).toBe("crossfade");
+    expect(buildChoreoCardRenderKeys({ ...after, primaryPropColors: null })).toEqual(buildChoreoCardRenderKeys(before));
+  });
   it("non-radial toggle is overlay-only → crossfade (the bug: it used to swap)", () => {
     const before = baseInputs();
     const after = { ...before, showNonRadial: true };
