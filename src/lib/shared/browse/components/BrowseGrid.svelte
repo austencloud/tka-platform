@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { collectionPropSettings } from "$lib/shared/library/domain/collection-prop";
   import { onDestroy } from "svelte";
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import VirtualizedSequenceGrid, {
@@ -20,6 +22,7 @@
   import type { BrowseEngine } from "../engine/types";
 
   interface Props {
+    collectionPropType?: PropType | null;
     engine: BrowseEngine;
     thumbnailService: BrowseThumbnailProvider | null;
     onAction?: (
@@ -68,6 +71,7 @@
     onSectionGridReady,
     onActiveSectionChange,
     collectionContext,
+    collectionPropType,
   }: Props = $props();
 
   // Derived state from engine — sections take priority over virtualization
@@ -126,11 +130,16 @@
   const addDifficultyLevel = $derived(!handPathMode && !isSoloMode);
 
   // Prop settings
-  const propSettings = $derived({
-    leftPropType: settingsService.settings.leftPropType,
-    rightPropType: settingsService.settings.rightPropType,
-    catDogMode: settingsService.settings.catDogMode,
-  });
+  const propSettings = $derived(
+    collectionPropSettings(
+      {
+        leftPropType: settingsService.settings.leftPropType,
+        rightPropType: settingsService.settings.rightPropType,
+        catDogMode: settingsService.settings.catDogMode,
+      },
+      collectionPropType
+    )
+  );
 
   const isCatDog = $derived(
     isCatDogMode(
@@ -219,6 +228,7 @@
     {#each dedupeByWord(engine.sequences as SequenceData[]) as sequence (sequence.id)}
       {@const seqVariations = getVariationsForSequence(sequence)}
       <ChoreoCardThumbnail
+        {collectionPropType}
         {sequence}
         variations={seqVariations}
         onPrimaryAction={onAction

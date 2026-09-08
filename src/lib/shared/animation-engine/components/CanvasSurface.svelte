@@ -34,6 +34,7 @@ captureEffectDiagnostics to the context menu.
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -476,6 +477,7 @@ captureEffectDiagnostics to the context menu.
       onAdditionalLayerTextureStatusChange,
       tunnelSpectrum,
       tunnelPropColors,
+      primaryPropColors: getSettings().primaryPropColors ?? null,
       tunnelSelectedLayer,
       gridVisible,
       gridOpacity,

@@ -13,6 +13,7 @@
  * impossible: add a toggle here once and all paths honor it.
  */
 
+import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import {
@@ -157,6 +158,7 @@ export function buildCardRenderOptions(
       getAnimationVisibilityManager().getPathPolicy()
     ),
     visibilityOverrides: {
+      primaryPropColors: getSettings().primaryPropColors ?? null,
       darkMode: input.darkMode,
       showQRCode: effectiveInfoCell.showQRCode,
       showGrid: vm.getGridVisibility(),

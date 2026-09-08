@@ -124,6 +124,7 @@ export interface AnimationEngineProps {
   tunnelSpectrum?: boolean;
   /** Exact Left/Right colors for Custom Tunnel mode. */
   tunnelPropColors?: TunnelPropColorPair | null;
+  primaryPropColors?: TunnelPropColorPair | null;
   /** Tunnel performer spotlight: the selected performer (0 = base, k = copy arm
    *  k), or null. When set, every other copy dims in the render. Default null. */
   tunnelSelectedLayer?: number | readonly number[] | null;

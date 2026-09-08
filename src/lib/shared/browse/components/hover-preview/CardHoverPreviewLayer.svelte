@@ -14,6 +14,8 @@
 	AnimationEngine exists at a time no matter how big the grid is.
 -->
 <script lang="ts">
+  import { collectionPropSettings } from "$lib/shared/library/domain/collection-prop";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onDestroy, untrack } from "svelte";
   import { flyFade, popIn } from "$lib/shared/transitions/motion";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -35,11 +37,13 @@
 
   const {
     sequence,
+    collectionPropType = null,
     instant = false,
     onReady,
     headerFrac = 0,
   }: {
     sequence: SequenceData;
+    collectionPropType?: PropType | null;
     /** Height of the baked sheet's header band as a fraction of the card box
      * (from computeSheetRegionMap). The live header renders in exactly that
      * band, so toggling the preview never moves the word — it's the same
@@ -125,7 +129,11 @@
 
     const orchestrator = new SequenceAnimationOrchestrator(
       new AnimationStateManager(),
-      getViewerAnimationPropConfig
+      () =>
+        collectionPropSettings(
+          getViewerAnimationPropConfig(),
+          collectionPropType
+        )
     );
     const animState = createAnimationPanelState();
 

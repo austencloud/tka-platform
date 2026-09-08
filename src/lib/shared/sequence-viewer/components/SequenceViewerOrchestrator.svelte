@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { collectionPropSettings } from "$lib/shared/library/domain/collection-prop";
   import { onMount, onDestroy, type Snippet } from "svelte";
   import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
   import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/get-sequence-animation-orchestrator";
@@ -88,7 +89,7 @@
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { logShareAction } from "$lib/shared/analytics/services/posthog-activity-logger";
   import {
-    getSettings,
+    getSettings as getAppSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -146,6 +147,7 @@
   interface Props {
     sequence: SequenceData | null;
     isMobile: boolean;
+    collectionPropType?: PropType | null;
     initialBpm?: number;
     initialPlaybackMode?: PlaybackMode;
     initialStep?: number;
@@ -192,6 +194,7 @@
   let {
     sequence,
     isMobile,
+    collectionPropType = null,
     initialBpm = 60,
     initialPlaybackMode = "continuous",
     initialStep = 0,
@@ -440,6 +443,10 @@
     resolvedCardAutoLayout = layout;
   }
 
+  function getSettings() {
+    return collectionPropSettings(getAppSettings(), collectionPropType);
+  }
+
   const imgComp = createImageCompositionSync();
 
   const authQueue = createAuthActionQueue();
@@ -621,6 +628,7 @@
       imageComposition: imgComp,
       getSequence: () => sequence,
       getHandPathMode: () => handPathMode,
+      getCollectionPropLocked: () => collectionPropType != null,
       getInitialLeftVisible: () => initialLeftVisible,
       getInitialRightVisible: () => initialRightVisible,
       getAnimationServicesReady: () => interactive.animationServicesReady,
@@ -1138,6 +1146,7 @@
     getCardReady: () => cardReady,
     getResolvedCardAutoLayout: () => resolvedCardAutoLayout,
     getIsHandPath: () => propVisibility.isHandPath,
+    getCollectionPropLocked: () => collectionPropType != null,
     getLeftPropType: () => propVisibility.activeLeftProp,
     getRightPropType: () => propVisibility.activeRightProp,
     getCatDogModeEnabled: () => propVisibility.activeCatDog,

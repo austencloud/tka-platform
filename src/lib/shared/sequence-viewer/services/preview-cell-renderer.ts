@@ -19,6 +19,7 @@ import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode"
  * All visibility and prop settings that affect the rendered output.
  */
 export interface PreviewCellRenderOptions {
+  primaryPropColors?: { left: string; right: string } | null;
   /** Render size in pixels (e.g., 480 for high-res) - this is the height; width = size * widthMultiplier */
   size: number;
 
@@ -288,6 +289,7 @@ export async function renderCell(
   const suppressOverlays = isHandPath || isSoloView || isMotionSolo;
 
   const renderOptions: LayerRenderOptions = {
+    primaryPropColors: options.primaryPropColors,
     size: options.size,
     widthMultiplier: options.widthMultiplier,
     darkMode: isDark,

@@ -27,6 +27,7 @@ with pre-prepared data for better performance.
 -->
 
 <script lang="ts">
+  import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import { onMount, untrack, tick } from "svelte";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
@@ -657,6 +658,7 @@ with pre-prepared data for better performance.
   class:loading={isLoading}
   role={hasA11yLabel ? "img" : undefined}
   aria-label={hasA11yLabel ? a11yLabel : undefined}
+  aria-busy={Boolean(pictographData) && !preparedData}
 >
   {#if preparedData}
     {#if disableTransitions}
@@ -733,7 +735,7 @@ with pre-prepared data for better performance.
             {arrowsClickable}
             {showArrow}
             darkMode={effectiveDarkMode}
-                {printMode}
+            {printMode}
             {transparentBackground}
             {leftColorOverride}
             {rightColorOverride}
@@ -756,6 +758,14 @@ with pre-prepared data for better performance.
     {/if}
   {:else}
     <div class="empty-state">
+      {#if pictographData}
+        <div class="loading-indicator">
+          <PanelSpinner
+            size={6}
+            color={effectiveDarkMode ? "white" : "black"}
+          />
+        </div>
+      {/if}
       <svg width="100%" height="100%" viewBox="0 0 950 950">
         <rect
           width="950"
@@ -783,6 +793,13 @@ with pre-prepared data for better performance.
     height: 100%;
     /* Allow pointer events to pass through to interactive SVG elements */
     pointer-events: none;
+  }
+
+  .loading-indicator {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
   }
 
   .empty-state {
