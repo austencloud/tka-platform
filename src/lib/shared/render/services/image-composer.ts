@@ -35,6 +35,7 @@ import { composeCardImage as composeCardImageFn } from "./card-composer";
 import { ensureCardFonts } from "./gelasio-fonts";
 // mandala geometry calculate() loaded dynamically to keep its dependency graph out of the worker bundle until needed
 import { renderMandalaToCanvas } from "../../mandala/services/mandala-renderer";
+import { applyMandalaHandColors } from "../../mandala/domain/mandala-palette";
 import { pairTipEnds } from "../../pictograph/prop/domain/prop-tip-ends";
 import { getMandalaPlacements } from "../../sequence-viewer/services/get-mandala-placements";
 import {
@@ -830,7 +831,7 @@ export class ImageComposer {
 
       if (placements.length === 0) return;
 
-      const palette = isDarkMode
+      const defaultPalette = isDarkMode
         ? {
             leftStroke: DARK_MOTION_BLUE_STROKE,
             leftFill: DARK_MOTION_BLUE_FILL,
@@ -848,6 +849,8 @@ export class ImageComposer {
             purpleFill: LIGHT_MOTION_PURPLE_FILL,
           };
 
+      const visibility = await this.getVisibilitySettings(options.visibilityOverrides);
+      const palette = applyMandalaHandColors(defaultPalette, visibility.primaryPropColors);
       const mandalaScale = 0.85;
       const mandalaSize = Math.floor(stepSize * mandalaScale);
       const padding = (stepSize - mandalaSize) / 2;
