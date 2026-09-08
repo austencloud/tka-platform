@@ -242,6 +242,9 @@
   class:device-fit={timingDirectionOnly}
   class:is-intro={!activeMotion && !isComparison}
   class:has-focused-comparison={comparisonFocused}
+  style:--intro-artifact-height={topic?.id === "placement"
+    ? "min(48rem, max(30rem, 46cqw))"
+    : "min(32rem, max(18rem, 30cqw))"}
   onkeydown={handleKeydown}
   tabindex="0"
   role="application"
@@ -592,6 +595,16 @@
     min-height: 0;
   }
 
+  .device-fit.is-intro :global(.lesson-stage-frame) {
+    grid-template-rows: auto minmax(
+        0,
+        min(var(--intro-artifact-height), calc(100cqh - 18rem))
+      ) auto;
+    align-content: center;
+    max-width: 110rem;
+    margin-inline: auto;
+  }
+
   .device-fit :global(.artifact-inner.wide) {
     width: 100%;
     height: 100%;
@@ -635,10 +648,19 @@
     }
   }
 
+  @container learn-tab (max-width: 650px) {
+    .device-fit.is-intro :global(.lesson-stage-frame) {
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      align-content: stretch;
+    }
+  }
+
   @media (max-height: 540px) and (min-width: 641px) {
     .motions-experience.device-fit :global(.lesson-stage-frame) {
       padding-top: 0.75rem;
       gap: 0.5rem;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      align-content: stretch;
     }
 
     .device-fit :global(.stage-heading) {
