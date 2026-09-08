@@ -591,8 +591,9 @@
     box-shadow: none;
   }
 
-  .toolbar .btn-icon {
+  .toolbar .grid-btn .btn-icon {
     color: white;
+    background: none;
   }
 
   .toolbar .rotation-pair .btn-text {

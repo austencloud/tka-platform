@@ -1,10 +1,18 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import SequenceTransformActions from "$lib/shared/create/components/SequenceTransformActions.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getToggledGridMode } from "$lib/shared/create/services/rotation-helpers";
+  import { createPropPlacementMotionState } from "$lib/shared/pictograph/grid/state/prop-placement-motion.svelte";
+  import {
+    buildPlacementTransformTransition,
+    type PlacementTransition,
+  } from "$lib/shared/pictograph/grid/services/prop-placement-view-model";
+  import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { reducedMotion } from "$lib/shared/transitions/motion";
   import {
     POSITION_KINDS,
     POSITION_LETTERS,
@@ -18,6 +26,14 @@
     POSITION_KINDS.map((kind) => positionExample(kind, GridMode.DIAMOND))
   );
   let announcement = $state("");
+  let betaSwapped = $state(false);
+  let transitions = $state<PlacementTransition[]>([]);
+  let epoch = $state(0);
+  const motion = createPropPlacementMotionState();
+  const ready = new Set<number>();
+  type Action = "rotate" | "mirror" | "flip" | "swap";
+  const pending: { action: Action; rotationSteps: number }[] = [];
+  onDestroy(() => motion.destroy());
   const descriptions = {
     alpha: "Opposite points",
     beta: "The same point",
@@ -26,14 +42,21 @@
   const examples = $derived(
     POSITION_KINDS.map((kind, index) => ({
       kind,
-      data: positionPairPreview(pairs[index]!, gridMode),
+      data: { ...positionPairPreview(pairs[index]!, gridMode), betaSwapped },
     }))
   );
 
-  function transform(
-    action: "rotate" | "mirror" | "flip" | "swap",
-    rotationSteps = 1
-  ) {
+  function transform(action: Action, rotationSteps = 1) {
+    pending.push({ action, rotationSteps });
+    playNext();
+  }
+
+  function playNext() {
+    if (motion.active) return;
+    const next = pending.shift();
+    if (!next) return;
+    const { action, rotationSteps } = next;
+    const previous = examples.map((example) => example.data);
     pairs = pairs.map((pair) =>
       transformPosition(
         pair.left,
@@ -47,17 +70,50 @@
     );
     if (action === "rotate")
       gridMode = getToggledGridMode(gridMode, rotationSteps);
+    if (action === "swap") betaSwapped = !betaSwapped;
     announcement = `${action === "rotate" ? "Rotated 45 degrees" : action === "mirror" ? "Mirrored left and right" : action === "flip" ? "Flipped up and down" : "Hands swapped"}. Alpha, Beta and Gamma are unchanged. ${gridMode === GridMode.BOX ? "Box" : "Diamond"} grid.`;
+    if (reducedMotion()) {
+      playNext();
+      return;
+    }
+    transitions = examples.map((example, index) =>
+      buildPlacementTransformTransition(
+        previous[index]!,
+        example.data,
+        action === "mirror" || action === "flip" ? "linear" : "arc",
+        rotationSteps < 0
+          ? RotationDirection.COUNTER_CLOCKWISE
+          : RotationDirection.CLOCKWISE
+      )
+    );
+    ready.clear();
+    epoch += 1;
+    motion.prepare(transitions[0]!, () => {
+      transitions = [];
+      playNext();
+    });
+  }
+
+  function pictographReady(index: number) {
+    if (!motion.active) return;
+    ready.add(index);
+    if (ready.size === examples.length) motion.start();
   }
 </script>
 
 <div class="placement-comparison">
   <div class="position-examples" role="group" aria-label="Placement examples">
-    {#each examples as example (example.kind)}
+    {#each examples as example, index (example.kind)}
       <section class="position-example" aria-label={`${example.kind} position`}>
         <div class="pictograph">
           <PictographContainer
             pictographData={example.data}
+            motionStartData={transitions[index]?.startData}
+            motionStep={transitions[index]?.transitionStep}
+            motionProgress={motion.active ? motion.progress : null}
+            readyEpoch={epoch}
+            onReady={() => pictographReady(index)}
+            disableTransitions
             {gridMode}
             darkMode
             showGrid
