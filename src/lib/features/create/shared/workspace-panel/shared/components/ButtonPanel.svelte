@@ -24,6 +24,7 @@
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
   import ShareButton from "./buttons/ShareButton.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { workspaceButtonsInZone } from "../workspace-button-layout";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
@@ -109,8 +110,19 @@
   });
 
   function handleFullSequencePlay() {
-    onViewSequence?.();
-    if (!isConstructTab) return;
+    if (!isConstructTab) {
+      onViewSequence?.();
+      return;
+    }
+    if (panelState.workspacePlayback) {
+      panelState.stopWorkspacePlayback();
+      return;
+    }
+    if (!currentSequence) return;
+    panelState.startWorkspacePlayback(
+      currentSequence,
+      CreateModuleState.getActiveTabSequenceState().currentSequenceRevision
+    );
 
     logConstructFullPlay(currentSequence?.steps.length ?? 0);
     constructTutorialState.recordFullPlay();
@@ -164,7 +176,12 @@
         {#each leftButtons as btn (btn.id)}
           {#if btn.id === "clear" && canClearSequence && onClearSequence}
             <div transition:presenceTransition>
-              <ClearSequencePanelButton onclick={onClearSequence} />
+              <ClearSequencePanelButton
+                onclick={() => {
+                  panelState.stopWorkspacePlayback();
+                  onClearSequence?.();
+                }}
+              />
             </div>
           {/if}
         {/each}
@@ -181,14 +198,34 @@
             {#each centerButtons as btn (btn.id)}
               {#if btn.id === "view" && showViewSequenceButton && onViewSequence}
                 <div
+                  class="play-controls"
                   class:tutorial-target={isPlayTutorialTarget}
                   data-tutorial-target={isPlayTutorialTarget
                     ? "play-sequence"
                     : undefined}
                 >
+                  {#if isConstructTab}
+                    <div
+                      class="expand-viewer-action"
+                      title="Open sequence viewer"
+                    >
+                      <PanelButton
+                        ariaLabel="Expand sequence viewer"
+                        accentColor="var(--theme-accent)"
+                        onclick={() => {
+                          panelState.stopWorkspacePlayback();
+                          onViewSequence?.();
+                        }}
+                      >
+                        <i class="fas fa-expand" aria-hidden="true"></i>
+                      </PanelButton>
+                    </div>
+                  {/if}
                   <ViewSequenceButton
                     onclick={handleFullSequencePlay}
                     isActive={isExportPanelOpen}
+                    isStopping={isConstructTab &&
+                      !!panelState.workspacePlayback}
                     purpose="play"
                   />
                 </div>
@@ -312,6 +349,22 @@
     border-radius: 999px;
     outline: 3px solid color-mix(in srgb, var(--theme-accent) 76%, transparent);
     outline-offset: 4px;
+  }
+
+  .play-controls {
+    position: relative;
+  }
+
+  .expand-viewer-action {
+    position: absolute;
+    right: calc(100% + 8px);
+    bottom: 0;
+  }
+
+  .expand-viewer-action :global(.panel-btn) {
+    width: var(--min-touch-target);
+    padding-inline: 0;
+    border-radius: 50%;
   }
 
   /* Remove mobile tap highlight (blue selection box) */

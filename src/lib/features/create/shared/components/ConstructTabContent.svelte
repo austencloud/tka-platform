@@ -21,7 +21,7 @@
   import type { StartPositionPath } from "../../construct/services/construct-analytics";
   import { getCreateModuleContext } from "../context/create-module-context";
 
-  const { constructTutorialState } = getCreateModuleContext();
+  const { constructTutorialState, panelState } = getCreateModuleContext();
   // Props
   let {
     shouldShowStartPositionPicker,
@@ -77,7 +77,7 @@
     : "options"}
 >
   <ConstructTutorialGuide />
-  <div class="content-container">
+  <div class="content-container" inert={!!panelState.workspacePlayback}>
     <div class="construct-scroll-area transparent-scroll">
       <!-- Start position → option picker is one continuous construct flow, so
            it transitions in place rather than cutting (crossfade-primitive.md).
@@ -120,10 +120,17 @@
       </div>
     </div>
   </div>
+  {#if panelState.workspacePlayback}
+    <div class="playback-note" role="status">
+      <i class="fas fa-play" aria-hidden="true"></i>
+      <span>Stop playback to keep building</span>
+    </div>
+  {/if}
 </div>
 
 <style>
   .construct-tab-content {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -139,6 +146,24 @@
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
+  }
+
+  .content-container[inert] {
+    opacity: 0.45;
+  }
+
+  .playback-note {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    pointer-events: none;
   }
 
   .construct-scroll-area {

@@ -14,31 +14,39 @@
     onclick,
     isActive = false,
     purpose = "open-viewer",
+    isStopping = false,
   } = $props<{
     onclick?: () => void;
     isActive?: boolean;
     purpose?: "open-viewer" | "play";
+    isStopping?: boolean;
   }>();
 
   const icon = $derived(
-    purpose === "play" ? "fa-play" : WORKSPACE_BUTTON_ICON.view.icon
+    isStopping
+      ? "fa-stop"
+      : purpose === "play"
+        ? "fa-play"
+        : WORKSPACE_BUTTON_ICON.view.icon
   );
   const accessibleLabel = $derived(
-    purpose === "play"
-      ? WORKSPACE_BUTTON_ICON.view.actionLabel
-      : "Open sequence viewer"
+    isStopping
+      ? "Stop playback and return to card"
+      : purpose === "play"
+        ? WORKSPACE_BUTTON_ICON.view.actionLabel
+        : "Open sequence viewer"
   );
   const visibleLabel = $derived(
-    purpose === "play" ? WORKSPACE_BUTTON_ICON.view.visibleLabel : "View"
+    isStopping
+      ? "Stop"
+      : purpose === "play"
+        ? WORKSPACE_BUTTON_ICON.view.visibleLabel
+        : "View"
   );
 
   /**
-   * The presenter's role for this button follows its purpose. In the create
-   * workspace it OPENS THE VIEWER; only public demos use it for inline
-   * playback. Annotating both cases as "play" left the presenter with nothing
-   * carrying "viewer" outside the already-open viewer, so its open-viewer
-   * intention was unreachable while play-it pressed this and narrated a viewer
-   * open as playback.
+   * The presenter's role follows the action: Construct and public demos play
+   * inline; other creation methods can open the full viewer.
    */
   const ghostKind = $derived(
     isActive ? undefined : purpose === "play" ? "play" : "viewer"
