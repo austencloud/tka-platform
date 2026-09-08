@@ -181,8 +181,6 @@ const CATALOG_CLASSIFICATION: Record<
 			lastVerifiedYear: 2026,
 			note: "The VTG 4 announcement is dated August 29, 2026. The public web apps were reviewed on September 8, 2026.",
 		},
-		evidenceNote:
-			"In February 2026, the VTG Crew reported that the phone app was down and development on hold, while directing readers to the web version. The VTG 3 web app was accessible when reviewed on September 8, 2026.",
 	},
 	"nine-square": {
 		lane: "languages",
@@ -277,11 +275,6 @@ const CATALOG_SOURCE_SUPPORTS: Record<
 			supports:
 				"The original VTG 3 grid and animations in a publicly accessible web app. Its About page credits Yee, Cantor and McKenney.",
 			basis: "directly-observed",
-		},
-		{
-			supports:
-				"The VTG Crew’s February 2026 report that the phone app was down and development paused, with a link to the surviving web app.",
-			basis: "creators-account",
 		},
 		{
 			supports:

@@ -141,7 +141,7 @@ describe("four-lane history archive ledger", () => {
     }
   });
 
-  it("retains VTG 3's published artifacts instead of treating its draft or app outage as non-publication", () => {
+  it("retains VTG 3's public draft and released app", () => {
     const vtg = archiveEntry("vtg");
     const works = vtg.catalogEntry?.subWorks ?? [];
     const vtg3 = works.filter((work) => work.name.startsWith("VTG 3"));
@@ -160,13 +160,6 @@ describe("four-lane history archive ledger", () => {
         "https://play.google.com/store/apps/details?hl=en_US&id=net.firestaff.mcp.VTGv3",
       ])
     );
-
-    const phoneStatus = vtg.citations.find((citation) =>
-      citation.href.startsWith("https://www.facebook.com/")
-    );
-    expect(phoneStatus?.basis).toBe("creators-account");
-    expect(phoneStatus?.supports).toMatch(/phone app was down/);
-    expect(phoneStatus?.supports).toMatch(/web app/);
 
     const chronicle = readFileSync(
       path.join(
@@ -204,7 +197,7 @@ describe("four-lane history archive ledger", () => {
     // Source descriptions are matched by position in the catalog. An added
     // source must not silently receive the generic fallback claim.
     for (const citation of vtg.citations) {
-      expect(citation.supports).toMatch(/VTG|Yee|MCP|Mentive|phone app/);
+      expect(citation.supports).toMatch(/VTG|Yee|MCP|Mentive/);
     }
   });
 

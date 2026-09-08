@@ -118,10 +118,6 @@ export const VTG_DECADE: VtgEvent[] = [
     what: "The public VTG 3 document is marked Draft #1. Its six-by-six snapshot grid labels the hands’ and props’ timing and direction separately. An Android app by Michael Caden Pike (MCP) and Yee was available by July, with animations, transitions and quizzes.",
   },
   {
-    when: "February 2026",
-    what: "The VTG Crew reports that the phone app is down and development on hold, while directing readers to the VTG 3 web app. That web app remained publicly accessible when reviewed on September 8, 2026.",
-  },
-  {
     when: "27 August 2026",
     what: "The VTG Crew presents Mentive’s SpiroAnim translation of the VTG 3 grid into elemental terminology.",
   },
