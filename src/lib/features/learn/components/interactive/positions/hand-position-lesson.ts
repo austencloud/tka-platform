@@ -13,12 +13,18 @@ import { rotateLocation } from "$lib/shared/create/services/rotation-helpers";
 import { mirrorLocation } from "$lib/shared/pictograph/shared/domain/geometry/mirror-vertical";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   POSITION_TYPE_INFO,
   type PositionType,
 } from "../../../domain/constants/position-quiz-data";
 
 export const POSITION_KINDS: PositionType[] = ["alpha", "beta", "gamma"];
+export const POSITION_LETTERS: Record<PositionType, Letter> = {
+  alpha: Letter.ALPHA,
+  beta: Letter.BETA,
+  gamma: Letter.GAMMA,
+};
 
 // Verbatim definitions from the written Level 1 Guide.
 export const POSITION_DEFINITIONS: Record<PositionType, string> = {
@@ -80,7 +86,7 @@ export function positionPairPreview(
   example: { left: GridLocation; right: GridLocation },
   gridMode: GridMode
 ) {
-  return buildPlacementPictographData({
+  const data = buildPlacementPictographData({
     gridMode,
     leftLocation: example.left,
     rightLocation: example.right,
@@ -91,6 +97,8 @@ export function positionPairPreview(
     betaSwapped: false,
     previewPictographData: null,
   });
+  const kind = positionKindFor(example.left, example.right);
+  return { ...data, letter: kind ? POSITION_LETTERS[kind] : null };
 }
 
 /** Keep the learner's first hand in place so the visual target shows a single edit. */
