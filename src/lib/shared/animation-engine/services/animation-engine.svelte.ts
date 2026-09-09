@@ -717,6 +717,11 @@ export class AnimationEngine {
     });
   }
 
+  /** The live render target used for direct, settings-faithful GIF capture. */
+  getCanvas(): HTMLCanvasElement | null {
+    return this.lifecycleManager.animationRenderer?.getCanvas() ?? null;
+  }
+
   dispose(): void {
     this.lifecycleManager.dispose({
       onCanvasReady: (canvas) => this.callbacks.onCanvasReady?.(canvas),
