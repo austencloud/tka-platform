@@ -374,4 +374,30 @@
       gap: 4px;
     }
   }
+
+  @container position-builder (min-width: 1000px) and (min-height: 560px) {
+    .builder-layout {
+      width: min(100%, calc(100cqh + 24rem), 90rem);
+      height: min(100%, 64rem);
+      align-self: center;
+      padding: 24px;
+      gap: clamp(32px, 4cqw, 80px);
+      border: 0;
+      background: transparent;
+    }
+
+    .builder-controls {
+      width: clamp(17rem, 22cqw, 22rem);
+      gap: 32px;
+    }
+
+    .orientation-controls {
+      gap: 28px;
+    }
+
+    .prop-label,
+    .control-label {
+      font-size: 16px;
+    }
+  }
 </style>
