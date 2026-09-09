@@ -5,6 +5,14 @@ wholesale. Each row names the behavior owner. Verify the path in current code
 before relying on it. Add a row only for shared behavior or an intentional
 keep-separate decision, not for every component.
 
+Sidebar prop pairs compose `SelectedPropPreview.svelte` with
+`PropCompositionPreview.svelte`. Searches: prop button, paired composition,
+fan appearance, primary prop colors. `prop-look.ts` owns build artwork and
+`prop-composition-recipes.ts` owns placement; the Prop Button Lab tunes those
+same recipes. Navigation reads the existing app settings for both hands,
+chirality and colors. Drawer activation, haptics and navigation geometry keep
+their existing owners.
+
 Standalone 3D workspaces compose `shared/3d/components/Viewer3DFullscreen.svelte`,
 which owns the scene canvas, adaptive `SceneControlWorkspace`, and shared
 timeline/tempo controls. Local character generators extend its HUD and inspector

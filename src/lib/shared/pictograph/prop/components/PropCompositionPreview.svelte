@@ -19,8 +19,19 @@
     getCompositionRecipe,
     type CompositionRecipe,
   } from "../domain/prop-composition-recipes";
-  import { propTileArtwork, type PropTileArtwork } from "../domain/prop-look";
+  import {
+    propTileArtwork,
+    propGlyphArtwork,
+    type PropTileArtwork,
+  } from "../domain/prop-look";
   import { onMount } from "svelte";
+  import type { PropRenderAppearance } from "../domain/prop-look";
+  import {
+    resolveViewerCustomColorPair,
+    type ViewerCustomColorPair,
+  } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
+  import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+  import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let {
     propType,
@@ -29,6 +40,12 @@
     darkBackground = false,
     neutral = false,
     useSavedOverrides = true,
+    pairedGlyph = false,
+    rightPropType = propType,
+    appearanceOverride,
+    colors,
+    leftFlipped = false,
+    rightFlipped = false,
   }: {
     propType: PropType;
     size?: number;
@@ -40,7 +57,22 @@
     /** Standalone review surfaces can use the canonical recipe without loading
      *  the authenticated app settings graph. */
     useSavedOverrides?: boolean;
+    /** Compact navigation shows two recolorable silhouettes, including fan builds. */
+    pairedGlyph?: boolean;
+    rightPropType?: PropType;
+    appearanceOverride?: PropRenderAppearance;
+    colors?: ViewerCustomColorPair | null;
+    leftFlipped?: boolean;
+    rightFlipped?: boolean;
   } = $props();
+
+  const id = $props.id();
+  const palette = $derived(
+    resolveViewerCustomColorPair(colors, {
+      left: getMotionColor(HandSide.LEFT, darkBackground ? "dark" : "light"),
+      right: getMotionColor(HandSide.RIGHT, darkBackground ? "dark" : "light"),
+    })
+  );
 
   type GetSettings =
     (typeof import("$lib/shared/application/state/app-state.svelte"))["getSettings"];
@@ -66,10 +98,25 @@
   // until they arrive the tile draws the plain glyph rather than guessing a
   // look and flashing to another one a moment later.
   const settingsReady = $derived(!useSavedOverrides || getSettings !== null);
-  const lookAppearance = $derived({
-    propLook: getSettings?.().propArtwork ?? null,
-    fanAppearance: getSettings?.().fanAppearance ?? null,
-  });
+  const lookAppearance = $derived(
+    appearanceOverride ?? {
+      propLook: getSettings?.().propArtwork ?? null,
+      fanAppearance: getSettings?.().fanAppearance ?? null,
+    }
+  );
+  const leftGlyph = $derived(
+    propGlyphArtwork(propType, "left", lookAppearance, displayInfo.image)
+  );
+  const rightGlyph = $derived(
+    propGlyphArtwork(
+      rightPropType,
+      "right",
+      lookAppearance,
+      getPropTypeDisplayInfo(rightPropType).image
+    )
+  );
+  // Different families need separate slots; a crossed staff recipe can hide a fan.
+  const mixedPair = $derived(propType !== rightPropType);
   const plainArt = $derived({
     href: displayInfo.image,
     styled: false,
@@ -96,7 +143,7 @@
     return (
       savedOverrides[base] ??
       savedOverrides[propType] ??
-      getCompositionRecipe(propType)
+      getCompositionRecipe(propType, pairedGlyph)
     );
   });
 
@@ -155,7 +202,59 @@
   {/if}
 {/snippet}
 
-{#if neutral}
+{#if pairedGlyph}
+  <svg
+    class="prop-composition-preview"
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    aria-hidden="true"
+  >
+    <defs>
+      {#each ["left", "right"] as hand}
+        <filter
+          id={`${id}-${hand}`}
+          x="-10%"
+          y="-10%"
+          width="120%"
+          height="120%"
+          color-interpolation-filters="sRGB"
+        >
+          <!-- Fine fan spokes otherwise lose their color to subpixel coverage. -->
+          <feComponentTransfer in="SourceAlpha" result="solid">
+            <feFuncA type="linear" slope="4" />
+          </feComponentTransfer>
+          <feMorphology
+            in="solid"
+            operator="dilate"
+            radius="1.2"
+            result="ink"
+          />
+          <feFlood
+            flood-color={hand === "left" ? palette.left : palette.right}
+          />
+          <feComposite in2="ink" operator="in" />
+        </filter>
+      {/each}
+    </defs>
+    <g
+      transform={mixedPair ? "translate(28, 42) scale(0.34)" : leftTransform}
+      filter={`url(#${id}-left)`}
+    >
+      <g transform={leftFlipped ? "scale(-1, 1)" : undefined}>
+        {@render propImage(leftGlyph, false)}
+      </g>
+    </g>
+    <g
+      transform={mixedPair ? "translate(72, 58) scale(0.34)" : rightTransform}
+      filter={`url(#${id}-right)`}
+    >
+      <g transform={rightFlipped ? "scale(-1, 1)" : undefined}>
+        {@render propImage(rightGlyph, false)}
+      </g>
+    </g>
+  </svg>
+{:else if neutral}
   <svg
     class="prop-composition-preview neutral"
     class:dark-bg={darkBackground}

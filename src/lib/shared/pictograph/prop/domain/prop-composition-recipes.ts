@@ -166,8 +166,18 @@ const DEFAULT_RECIPE: CompositionRecipe = {
  * Gets the composition recipe for a prop type.
  * Variants inherit from their base family.
  */
-export function getCompositionRecipe(propType: PropType): CompositionRecipe {
+export function getCompositionRecipe(
+  propType: PropType,
+  compact = false
+): CompositionRecipe {
   const base = getBasePropType(propType);
+  if (compact && (base === PropType.FAN || base === PropType.BIGFAN)) {
+    return {
+      left: { x: 29, y: 44, rotation: 180, scale: 0.38 },
+      right: { x: 71, y: 56, rotation: 0, scale: 0.38 },
+      pairScale: 1,
+    };
+  }
   return FAMILY_RECIPES[base] ?? FAMILY_RECIPES[propType] ?? DEFAULT_RECIPE;
 }
 
