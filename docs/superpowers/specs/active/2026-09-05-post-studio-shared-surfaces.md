@@ -209,3 +209,19 @@ check reports zero errors and warnings.
 Gate 6 now includes separate top-selected and bottom-selected Card/Studio replays.
 Its trace reports the selected half, live Card-settings identities, and sampled
 motion-settings fade frames so the two cases can be reviewed independently.
+
+### Dissolve pacing correction · 2026-09-09
+
+The first sidebar fix retained the controls but kept the 150ms, front-loaded
+button-feedback easing. That was technically a fade, yet visually too close to
+a pop. A busy Card return also skipped middle rAF samples, so counting fade
+frames alone was not sufficient evidence of a readable handoff.
+
+Motion and Card settings now use the shared 350ms duration with ease-in-out,
+and their persistent layers advertise opacity compositing before the switch.
+The live preview's Studio entry passed through 12%, 21%, 33%, 46%, 57%, 67%,
+74%, 80%, 85% and 89% opacity over roughly 150ms of its middle range. The
+return also retained intermediate opacity instead of immediately hiding the
+outgoing controls. These are measured CSS samples, not a claim of fixed frame
+rate while the Card recomposes. Visibility waits for the full dissolve; reduced
+motion clears both duration and delay. No geometry or artwork motion changed.
