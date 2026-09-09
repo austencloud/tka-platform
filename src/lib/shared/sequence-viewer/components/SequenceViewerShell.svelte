@@ -651,6 +651,18 @@
   const studioUsesSideInspector = $derived(
     layout.showPostStudio && studioCanShareSideInspector
   );
+  const motionInspectorVisible = $derived(
+    layout.isVideoExportActive ||
+      (studioUsesSideInspector &&
+        studioSurfaces.inspectorContent === "animation")
+  );
+  const cardInspectorVisible = $derived(
+    layout.isImageExportActive ||
+      (studioUsesSideInspector && studioSurfaces.inspectorContent === "card")
+  );
+  const studioInspectorVisible = $derived(
+    studioUsesSideInspector && studioSurfaces.inspectorContent === "studio"
+  );
   $effect(() => {
     studioSurfaces.setExternalInspectorTarget(
       studioCanShareSideInspector ? studioInspectorOrigin : null
@@ -689,7 +701,11 @@
     class="shared-animator-inspector"
     use:ownInspector
     use:reparentToInspector={{
-      target: studioSurfaces.inspectorTarget ?? animatorInspectorOrigin,
+      // Desktop shares the same stationary settings layer. Moving its contents
+      // into a hidden layer on exit would empty the outgoing fade in one frame.
+      target: studioCanShareSideInspector
+        ? animatorInspectorOrigin
+        : (studioSurfaces.inspectorTarget ?? animatorInspectorOrigin),
       animate: true,
       onMoving: (moving) =>
         studioSurfaces.setSurfaceMoving("inspector", moving),
@@ -1200,16 +1216,16 @@
                      Card/inspector seam; there is no second mount-intro. -->
                 <div
                   class="inspector-content-layer studio-settings-layer"
-                  data-active={studioUsesSideInspector}
-                  inert={!studioUsesSideInspector}
-                  aria-hidden={!studioUsesSideInspector}
+                  data-active={studioInspectorVisible}
+                  inert={!studioInspectorVisible}
+                  aria-hidden={!studioInspectorVisible}
                   bind:this={studioInspectorOrigin}
                 ></div>
                 <div
                   class="inspector-content-layer motion-settings-layer"
-                  data-active={layout.isVideoExportActive}
-                  inert={!layout.isVideoExportActive || undefined}
-                  aria-hidden={!layout.isVideoExportActive}
+                  data-active={motionInspectorVisible}
+                  inert={!motionInspectorVisible || undefined}
+                  aria-hidden={!motionInspectorVisible}
                   data-effects-inspector
                 >
                   {#if ctx.previewBlobUrl}
@@ -1264,9 +1280,10 @@
                 {#if !isMobile}
                   <div
                     class="inspector-content-layer card-settings-layer"
-                    data-active={layout.isImageExportActive}
-                    inert={!layout.isImageExportActive || undefined}
-                    aria-hidden={!layout.isImageExportActive}
+                    data-active={cardInspectorVisible}
+                    inert={!cardInspectorVisible || undefined}
+                    aria-hidden={!cardInspectorVisible}
+                    data-shared-card-inspector
                   >
                     <!-- Card settings share the persistent inspector layers on
                          desktop. A direct Card-to-Motion switch can now fade
@@ -1748,9 +1765,26 @@
       visibility 0s linear 0s;
   }
 
+  /* These are whole workspaces of controls, not button feedback. A fast,
+     front-loaded fade reads as a pop beside the travelling Card. Let the
+     existing layers dissolve over the same deliberate beat in either direction. */
+  .inspector-content-layer:is(.motion-settings-layer, .card-settings-layer) {
+    will-change: opacity;
+    transition:
+      opacity var(--duration-dramatic) var(--ease-in-out),
+      visibility 0s linear var(--duration-dramatic);
+  }
+
+  .inspector-content-layer:is(
+      .motion-settings-layer,
+      .card-settings-layer
+    )[data-active="true"] {
+    transition-delay: 0s, 0s;
+  }
+
   .motion-settings-layer {
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end;
     overflow-x: hidden;
     overflow-y: auto;
   }
@@ -1794,9 +1828,7 @@
      width while the zero-width inspector track is closed. PanelGroup then
      reveals that stable surface through a moving clip instead of asking every
      control row to rewrap at each intermediate width. */
-  .viewer-and-export.desktop
-    .motion-settings-layer
-    > :global(.export-panel.sidebar) {
+  .viewer-and-export.desktop .motion-settings-layer .animator-inspector-origin {
     width: var(--export-sidebar-width);
     min-width: var(--export-sidebar-width);
     flex: 0 0 var(--export-sidebar-width);
@@ -1863,7 +1895,7 @@
 
   :global(.panel-wrapper[data-manually-sized="true"])
     .motion-settings-layer
-    > :global(.export-panel.sidebar) {
+    .animator-inspector-origin {
     width: 100%;
     min-width: 0;
     flex-basis: 100%;
@@ -1879,6 +1911,7 @@
 
   :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {
     transition-duration: 0ms, 0s;
+    transition-delay: 0s, 0s;
   }
 
   /* PanelGroup owns the dock's structural motion. Keep Card settings composed

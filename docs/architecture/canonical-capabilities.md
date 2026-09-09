@@ -61,7 +61,11 @@ Sequence Viewer ↔ Post Studio surface continuity uses the same
 `createViewerStudioSurfaces` owns the canvas/inspector/Card/transport loan and composition-clock
 handoff; Studio slots request the mounted surfaces through its optional context.
 Standalone Studio and additional simultaneous animation slots retain their own
-renderers. The desktop inspector keeps its original outer track; compact Studio
+renderers. Desktop motion and Card settings stay in the shell's persistent layers;
+`inspectorContent` remembers the selected Studio source kind across mode changes.
+Card-to-Studio switches fade between different settings or retain the same Card
+settings, without reparenting their contents into an outgoing hidden layer.
+The desktop inspector keeps its original outer track; compact Studio
 uses destinations for the same surfaces. The canvas flight captures its visual
 child before the transport changes allocation. Searches: Post Studio, persistent
 canvas, shared inspector, shared Choreo Card, shared playback bar, live handoff.
