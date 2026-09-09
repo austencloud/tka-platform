@@ -15,6 +15,7 @@
 
   let {
     fill = false,
+    horizontal = false,
     appearance,
     onchange,
   }: {
@@ -24,13 +25,15 @@
      * instead of sitting at their natural size above empty space.
      */
     fill?: boolean;
+    horizontal?: boolean;
     appearance: FanAppearance;
     onchange: (appearance: FanAppearance) => void;
   } = $props();
 
   const normalizedAppearance = $derived(normalizeFanAppearance(appearance));
   const showCover = $derived(
-    normalizedAppearance.build === "fire" || normalizedAppearance.build === "day"
+    normalizedAppearance.build === "fire" ||
+      normalizedAppearance.build === "day"
   );
 
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -100,6 +103,7 @@
 <div
   class="fan-style-options"
   class:fill
+  class:horizontal
   class:cols-2={fillLayout?.cols === 2}
   class:cols-3={fillLayout?.cols === 3}
   style:--fill-rows={fillLayout?.rows}
@@ -228,5 +232,57 @@
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
+  }
+  .fan-style-options.horizontal {
+    container-type: size;
+    height: 100%;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding: 2px 2px 8px;
+  }
+  .fan-style-options.horizontal :global(.fan-appearance-picker) {
+    container-type: normal;
+    display: flex;
+    gap: 20px;
+    width: max-content;
+    min-width: 100%;
+    height: 100%;
+  }
+  .fan-style-options.horizontal :global(.build-choice),
+  .fan-style-options.horizontal :global(.modifier-grid) {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+  .fan-style-options.horizontal :global(.picker) {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .fan-style-options.horizontal :global(.option-grid) {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(9.5rem, 28cqw, 13rem);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 10px;
+    min-height: 0;
+  }
+  .fan-style-options.horizontal :global(.option) {
+    scroll-snap-align: start;
+    min-height: 44px;
+  }
+  .fan-style-options.horizontal :global(.preview-frame) {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+  .fan-style-options.horizontal :global(.option-label) {
+    font-size: var(--font-size-min, 14px);
+    min-height: 44px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: 6px 10px;
   }
 </style>
