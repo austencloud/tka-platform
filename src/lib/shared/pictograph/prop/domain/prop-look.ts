@@ -1,4 +1,5 @@
 import {
+  fanAppearanceArtwork,
   fanPreviewImage,
   isFanPropType,
   normalizeFanAppearance,
@@ -146,6 +147,17 @@ export const FAN_PREVIEW_CROP: PropTileCrop = {
   height: 220,
 };
 
+// Fan glyphs share a hand-centered 260×207 canvas. Remove its empty left
+// half so both grips remain readable in a compact navigation pair.
+export const FAN_GLYPH_CROP: PropTileCrop = {
+  imageWidth: 260,
+  imageHeight: 207,
+  x: 90,
+  y: -5,
+  width: 172,
+  height: 217,
+};
+
 /**
  * The image a picker tile or preview should draw for a prop under the user's
  * current look: the fan build's artwork for fans, the pre-lit model capture
@@ -183,6 +195,25 @@ export function propTileArtwork(
     };
   }
   return { href: fallback, styled: false, prelit: false };
+}
+
+/** Navigation needs a recolorable pair, even when the picker uses a fan photo. */
+export function propGlyphArtwork(
+  propType: string,
+  side: PropSpriteSide,
+  appearance: PropRenderAppearance,
+  fallback: string
+): PropTileArtwork {
+  if (isFanPropType(propType)) {
+    const fan = normalizeFanAppearance(appearance.fanAppearance);
+    return {
+      href: fanAppearanceArtwork(fan.build, fan.cover) ?? fallback,
+      styled: true,
+      prelit: false,
+      crop: FAN_GLYPH_CROP,
+    };
+  }
+  return propTileArtwork(propType, side, appearance, fallback);
 }
 
 /**
