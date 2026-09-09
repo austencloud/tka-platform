@@ -916,11 +916,11 @@ Controls moved below the grid for better UX
     .start-pos-picker.build-path {
       max-width: none;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
       grid-template-rows: auto minmax(0, 1fr);
-      grid-template-areas: "hint sel" "view view";
-      gap: 24px;
-      padding: clamp(24px, 2.5vw, 64px);
+      grid-template-areas: ". hint sel" "view view view";
+      gap: 12px;
+      padding: 14px clamp(24px, 2.5vw, 64px) clamp(24px, 2.5vw, 64px);
       box-sizing: border-box;
       background: var(--theme-panel-bg);
     }
@@ -931,20 +931,22 @@ Controls moved below the grid for better UX
     }
 
     .start-pos-picker.build-path .workspace-heading {
-      min-height: 0;
-      padding: 0 0 0 var(--picker-leading-action-offset, 0px);
+      min-height: 56px;
+      align-items: center;
+      padding: 0;
     }
 
     .start-pos-picker.build-path :global(.workspace-hint) {
-      text-align: left;
+      text-align: center;
       font-size: clamp(24px, 1.7vw, 36px);
     }
 
     .start-pos-picker.build-path .path-selector {
       grid-area: sel;
       margin: 0;
-      width: 18rem;
+      width: min(100%, 18rem);
       align-self: center;
+      justify-self: end;
     }
 
     .start-pos-picker.build-path .picker-view {
