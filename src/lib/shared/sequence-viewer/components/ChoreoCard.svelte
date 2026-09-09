@@ -404,6 +404,9 @@
 
   // True only under a scan-origin /sequence route — cells use the cloud cache.
   const cloudProbeEnabled = getScanCardCloudProbe();
+  const effectivePrimaryPropColors = $derived(
+    cloudProbeEnabled ? null : (primaryPropColors ?? getSettings().primaryPropColors)
+  );
 
   const qrState = createChoreoCardQrState(
     () => ({
@@ -643,9 +646,7 @@
       fanAppearance: cloudProbeEnabled
         ? undefined
         : getSettings().fanAppearance,
-      primaryPropColors: cloudProbeEnabled
-        ? null
-        : (primaryPropColors ?? getSettings().primaryPropColors),
+      primaryPropColors: effectivePrimaryPropColors,
       // A scan represents the printed card, not the scanner's personal export
       // toggles. Pin the same canonical visibility used when QR creation
       // verifies cloud assets; retain the sequence's participating hands.
@@ -706,9 +707,7 @@
       fanAppearance: cloudProbeEnabled
         ? undefined
         : getSettings().fanAppearance,
-      primaryPropColors: cloudProbeEnabled
-        ? null
-        : (primaryPropColors ?? getSettings().primaryPropColors),
+      primaryPropColors: effectivePrimaryPropColors,
       sequence,
       leftPropType,
       rightPropType,
@@ -986,6 +985,7 @@
       <!-- Grid section with individual pictograph cells -->
       <CardGridLayout
         {sequence}
+        primaryPropColors={effectivePrimaryPropColors}
         {cells}
         {visibleCells}
         {effectiveColumns}

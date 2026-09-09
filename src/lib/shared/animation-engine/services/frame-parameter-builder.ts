@@ -251,6 +251,8 @@ export class FrameParameterBuilder {
     const fp = this.frameParams;
     fp.stepData = props.stepData ?? null;
     fp.currentStep = props.currentStep ?? 0;
+    fp.primaryPropColors =
+      props.tunnelPropColors ?? props.primaryPropColors ?? null;
     fp.virtualTime = props.virtualTime;
     fp.trailSettings = this.getEffectiveTrailSettings(
       state,
@@ -635,7 +637,10 @@ export class FrameParameterBuilder {
       state.currentRightPropType
     );
     const signature = colors ? `${colors.left}:${colors.right}` : "";
-    if (source !== this.trailColorSource || signature !== this.trailColorSignature) {
+    if (
+      source !== this.trailColorSource ||
+      signature !== this.trailColorSignature
+    ) {
       this.trailColorSource = source;
       this.trailColorSignature = signature;
       this.coloredTrailSettings = resolveTrailColors(source, colors);
