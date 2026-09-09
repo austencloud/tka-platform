@@ -32,6 +32,7 @@ even when Svelte recreates the component instance.
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import {
     applyColorToSvg,
+    getMotionColor,
     SELECTIVE_COLOR_PROP_TYPES,
   } from "$lib/shared/utils/svg-color-utils";
 
@@ -127,6 +128,10 @@ even when Svelte recreates the component instance.
       ? applyColorToSvg(propAssets.imageSrc, colorOverride, {
           makeClassNamesUnique: true,
           colorSuffix: colorOverride.replace(/[^a-z0-9]/gi, ""),
+          sourceColors: [
+            getMotionColor(motionData.hand, "dark"),
+            getMotionColor(motionData.hand, "light"),
+          ],
           selectiveColorMode: (
             SELECTIVE_COLOR_PROP_TYPES as readonly string[]
           ).includes(String(renderedPropType ?? "").toLowerCase()),

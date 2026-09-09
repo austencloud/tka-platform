@@ -238,6 +238,10 @@ Delegates all rendering to child components.
 
       const s = getSettings();
       const options = await preparer!.prepareBatch(turned, {
+        themeMode: darkMode ? "dark" : "light",
+        fanAppearance: s.fanAppearance,
+        leftBuugengFlipped: s.leftBuugengFlipped,
+        rightBuugengFlipped: s.rightBuugengFlipped,
         leftPropType: leftPropTypeOverride ?? s.leftPropType,
         rightPropType: rightPropTypeOverride ?? s.rightPropType,
       });

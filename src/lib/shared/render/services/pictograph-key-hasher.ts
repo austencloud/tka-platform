@@ -8,6 +8,11 @@ import {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { isBuugengFamilyProp } from "$lib/shared/render/core/constants/prop-classification";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  isFanPropType,
+  fanAppearanceSignature,
+  normalizeFanAppearance,
+} from "$lib/shared/pictograph/prop/domain/fan-appearance";
 // getSettings loaded dynamically to avoid pulling $app/environment into worker bundle
 
 interface MotionKeyData {
@@ -43,7 +48,9 @@ interface PictographKeyInput {
   propAppearanceRevision?: string;
   turnGlyphRevision?: string;
   visibility: {
+    fanAppearance?: string;
     primaryPropColors?: { left: string; right: string };
+    primaryPropColorRevision?: string;
     showTKA: boolean;
     showTnD: boolean;
     showElemental: boolean;
@@ -282,8 +289,16 @@ export class PictographKeyHasher {
       ...(propAppearanceRevision && { propAppearanceRevision }),
       ...(turnGlyphRevision && { turnGlyphRevision }),
       visibility: {
+        ...(visibility.fanAppearance &&
+          (isFanPropType(resolvedLeftProp) ||
+            isFanPropType(resolvedRightProp)) && {
+            fanAppearance: fanAppearanceSignature(
+              normalizeFanAppearance(visibility.fanAppearance)
+            ),
+          }),
         ...(visibility.primaryPropColors && {
           primaryPropColors: visibility.primaryPropColors,
+          primaryPropColorRevision: "material-colors-v2",
         }),
         showTKA: visibility.showTKA ?? true,
         showTnD: visibility.showTnD ?? false,
