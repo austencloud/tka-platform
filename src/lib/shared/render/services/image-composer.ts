@@ -194,6 +194,7 @@ export class ImageComposer {
         }
       }
       return {
+        fanAppearance: overrides.fanAppearance,
         primaryPropColors: overrides.primaryPropColors,
         showTKA: overrides.showTKA,
         showTnD: overrides.showTnD,
@@ -230,6 +231,7 @@ export class ImageComposer {
     const appSettings = getSettings();
 
     const globalSettings: PictographVisibilityOptions = {
+      fanAppearance: appSettings.fanAppearance,
       primaryPropColors: appSettings.primaryPropColors,
       showTKA: visibilityManager.getGlyphVisibility("tkaGlyph"),
       showTnD: visibilityManager.getGlyphVisibility("tndGlyph"),
@@ -247,6 +249,7 @@ export class ImageComposer {
 
     if (overrides) {
       return {
+        fanAppearance: overrides.fanAppearance ?? globalSettings.fanAppearance,
         primaryPropColors: overrides.primaryPropColors !== undefined ? overrides.primaryPropColors : globalSettings.primaryPropColors,
         showTKA: overrides.showTKA ?? globalSettings.showTKA,
         showTnD: overrides.showTnD ?? globalSettings.showTnD,
@@ -504,6 +507,7 @@ export class ImageComposer {
     const catDogModeEnabled = !!(leftProp && rightProp && leftProp !== rightProp);
 
     const previewOptions: PreviewCellRenderOptions = {
+      fanAppearance: visibilitySettings.fanAppearance,
       size: stepSize,
       leftPropType: leftProp,
       rightPropType: rightProp,
@@ -926,6 +930,7 @@ export class ImageComposer {
     );
     const preparedPictograph = await preparer.prepareSingle(pictographData, {
       themeMode,
+      fanAppearance: visibilitySettings.fanAppearance,
       leftPropType: visibilitySettings.leftPropType,
       rightPropType: visibilitySettings.rightPropType,
       handPathMode: visibilitySettings.handPathMode ?? false,

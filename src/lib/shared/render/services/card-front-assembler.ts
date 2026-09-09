@@ -294,6 +294,7 @@ export function buildCellLayerOptions(
     rawHandVisibility === "none" ? "active" : rawHandVisibility;
 
   const options: LayerRenderOptions = {
+    fanAppearance: visibility.fanAppearance,
     size: stepSize,
     darkMode: visibility.darkMode ?? false,
     showNonRadialPoints: visibility.showNonRadialPoints ?? false,

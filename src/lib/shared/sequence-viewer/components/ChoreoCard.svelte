@@ -637,6 +637,9 @@
 
     return {
       ...baseOptions,
+      fanAppearance: cloudProbeEnabled
+        ? undefined
+        : getSettings().fanAppearance,
       primaryPropColors: cloudProbeEnabled
         ? null
         : getSettings().primaryPropColors,
@@ -697,6 +700,9 @@
   renderLifecycle = createChoreoCardRenderLifecycle(
     () => ({
       handPathMode,
+      fanAppearance: cloudProbeEnabled
+        ? undefined
+        : getSettings().fanAppearance,
       primaryPropColors: cloudProbeEnabled
         ? null
         : getSettings().primaryPropColors,

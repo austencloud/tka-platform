@@ -41,6 +41,7 @@ with pre-prepared data for better performance.
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PropType } from "../../prop/domain/enums/prop-type";
   import {
+    type FanAppearance,
     fanAppearanceSignature,
     normalizeFanAppearance,
   } from "../../prop/domain/fan-appearance";
@@ -106,6 +107,7 @@ with pre-prepared data for better performance.
     transparentBackground = false,
     // Explicit prop types for export/thumbnail rendering
     // When provided, passed to PictographPreparer for consistency during async operations
+    fanAppearanceOverride = undefined,
     leftPropTypeOverride = undefined,
     rightPropTypeOverride = undefined,
     leftColorOverride = undefined,
@@ -177,6 +179,7 @@ with pre-prepared data for better performance.
     /** Skip the background fill so the glyph floats on the host surface. */
     transparentBackground?: boolean;
     /** Explicit prop type for the left hand. Export/thumbnail rendering provides this for consistency. */
+    fanAppearanceOverride?: FanAppearance;
     leftPropTypeOverride?: PropType;
     /** Explicit prop type for the right hand. Export/thumbnail rendering provides this for consistency. */
     rightPropTypeOverride?: PropType;
@@ -482,7 +485,7 @@ with pre-prepared data for better performance.
       // The fan build picks the prop artwork, so choosing DoodleGrip Fire
       // over the notation fan has to re-prepare every fan pictograph.
       fanAppearance: fanAppearanceSignature(
-        normalizeFanAppearance(settings.fanAppearance)
+        normalizeFanAppearance(fanAppearanceOverride ?? settings.fanAppearance)
       ),
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
       leftMotion: leftFingerprint,
@@ -544,7 +547,9 @@ with pre-prepared data for better performance.
           rightPropType: effectiveRightPropType,
           leftBuugengFlipped: getSettings().leftBuugengFlipped ?? false,
           rightBuugengFlipped: getSettings().rightBuugengFlipped ?? false,
-          fanAppearance: normalizeFanAppearance(getSettings().fanAppearance),
+          fanAppearance: normalizeFanAppearance(
+            fanAppearanceOverride ?? getSettings().fanAppearance
+          ),
           showLeftMotion: preparationShowLeftMotion,
           showRightMotion: preparationShowRightMotion,
         };
