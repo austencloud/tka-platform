@@ -25,4 +25,11 @@ declare module "gifenc" {
     palette: number[][],
     format?: "rgb565" | "rgb444" | "rgba4444"
   ): Uint8Array;
+
+  const commonJsExports: {
+    GIFEncoder: typeof GIFEncoder;
+    quantize: typeof quantize;
+    applyPalette: typeof applyPalette;
+  };
+  export default commonJsExports;
 }

@@ -1,4 +1,9 @@
-import { GIFEncoder, applyPalette, quantize } from "gifenc";
+import * as gifencModule from "gifenc";
+
+// SSR loads gifenc's CommonJS entry; browser builds may select its ESM entry.
+const { GIFEncoder, applyPalette, quantize } = gifencModule.GIFEncoder
+  ? gifencModule
+  : gifencModule.default;
 
 const GIF_FPS = 10;
 const MAX_GIF_DIMENSION = 384;
