@@ -3,11 +3,13 @@
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { RenderActivityGate } from "$lib/shared/render-gating/render-activity-gate";
+  import type { ViewerCustomColorPair } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
 
   let {
     sequence,
     ariaLabel,
     neutralMarkers = false,
+    primaryPropColors,
     showElementalGlyph = false,
     interactive = true,
     playbackAllowed = true,
@@ -27,6 +29,7 @@
     ariaLabel: string;
     /** Timing/direction examples compare motions, not a particular body part. */
     neutralMarkers?: boolean;
+    primaryPropColors?: ViewerCustomColorPair;
     showElementalGlyph?: boolean;
     interactive?: boolean;
     playbackAllowed?: boolean;
@@ -64,6 +67,7 @@
 >
   <InlineAnimationPlayer
     {sequence}
+    {primaryPropColors}
     autoPlay
     chrome="minimal"
     fill
