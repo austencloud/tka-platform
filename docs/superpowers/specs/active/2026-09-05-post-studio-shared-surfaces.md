@@ -175,3 +175,37 @@ mobile selection uses aria-current rather than desktop aria-pressed. Focused
 tests cover transformed sizing, zero-size parking, dependent docking and reversal,
 and the canvas-only moving state: 15 tests pass. Svelte check reports zero errors
 and warnings.
+
+## Card / Studio sidebar continuity · 2026-09-09
+
+The animation-half sidebar disappeared in one frame on Studio-to-Card: its
+effective opacity fell from 1 to 0 while the outgoing Studio wrapper was still
+fully visible. Reparenting had moved the controls into the hidden motion layer,
+leaving an empty wrapper to fade. The Card half also mounted a second settings
+panel instead of retaining the shell's existing Card controls.
+
+Desktop now keeps both settings panels in their original shell layers. Studio
+publishes the selected source kind through the viewer-local surface owner, which
+retains it across visits. Animation selection crossfades motion and Card settings;
+Card selection keeps the same controls visible throughout. Other source kinds
+retain Studio's inspector. Compact and standalone Studio keep their existing Edit
+presentation. The Card artwork and its approved animation were not changed.
+
+The motion settings width rule now targets its actual origin wrapper, with right
+alignment during the outer track resize. Measured motion-control sideways travel
+was 0px at 1440×900, 1920×1080, 2560×1440 and 3840×2160. The respective outgoing
+fades contained 5, 3, 3 and 4 intermediate-opacity frames instead of a one-frame
+disappearance. With the Card half selected, Card settings opacity stayed at 1 and
+the DOM identity was retained. Both selections survived round trips at all seven
+viewport tiers, including 375×667, 960×412 and 820×1180. Compact Card settings may
+remount in the Edit view; desktop identity guarantees do not claim otherwise.
+
+Screenshots were inspected at all tiers, although this Windows host still
+crops/scales its 4K capture; the 4K position and identity results are DOM measures.
+Reduced motion retained both desktop settings nodes and the selected half without
+flight overlays. Focused surface/reparenting tests pass (13 tests), and Svelte
+check reports zero errors and warnings.
+
+Gate 6 now includes separate top-selected and bottom-selected Card/Studio replays.
+Its trace reports the selected half, live Card-settings identities, and sampled
+motion-settings fade frames so the two cases can be reviewed independently.
