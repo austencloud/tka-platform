@@ -59,3 +59,23 @@ The seven viewport sizes listed above each rendered 50 cards without horizontal
 overflow. Also inspected mobile cards and 200% CSS zoom. No browser console
 errors. The focused artwork and composition suites passed all 24 tests; Svelte
 check reported zero errors and warnings.
+
+## Change Prop picker parity
+
+The account-backed picker now passes primary colors into its production grid.
+Family and variant tiles use the same paired renderer as navigation, including
+fan builds, artwork crops, saved arrangements and each hand's chirality. The
+former duplicate grid renderer is now a thin adapter to that shared owner.
+Metadata-only pickers retain their neutral presentation.
+
+A picker governing one Cat Dog hand previews one prop in that hand's color.
+The A/B controls also use the shared cropped artwork and exact custom color,
+replacing their baked blue image and approximate red hue filter.
+
+Verified the production PropGrid with disposable local fixture state at
+1440x1100 and 375x812. Family drill-down and Torch/Trigeng selection worked;
+changing left green to orange changed tile and chirality colors while right
+remained red. Left/right modes rendered one corresponding hand per tile.
+Paired mode rendered both, and the grip controls updated the chosen silhouette.
+No horizontal overflow or browser console errors. All 28 focused color,
+composition and artwork tests passed, and Svelte check was clean.
