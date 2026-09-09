@@ -132,6 +132,23 @@ export function allocateTurns(
   const turnsLeft = allocateSingleHand(stepCount, turnsPool, random, options);
   const turnsRight = allocateSingleHand(stepCount, turnsPool, random, options);
 
+  // A short LOOP repeats a tiny seed. If both hands roll only zeros, selecting
+  // Level 2 appears to do nothing across the entire generated sequence.
+  // Keep explicit zero requests above, but give a random figure an actual turn.
+  if (
+    stepCount > 0 &&
+    [...turnsLeft, ...turnsRight].every((turn) => turn === 0)
+  ) {
+    const positiveTurns = turnsPool.filter(
+      (turn): turn is number => typeof turn === "number" && turn > 0
+    );
+    if (positiveTurns.length > 0) {
+      const hand = randomChoice([turnsLeft, turnsRight], random);
+      const index = Math.floor(random() * stepCount) % stepCount;
+      hand[index] = randomChoice(positiveTurns, random);
+    }
+  }
+
   return {
     left: turnsLeft,
     right: turnsRight,
