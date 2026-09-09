@@ -69,20 +69,18 @@
 
   function revealHeading(): void {
     void tick().then(() => {
-      // Run after the control's focus scroll, then only adjust the lesson's
-      // own scroll region. Hovering a card part never calls this path.
+      // A focused control can scroll both the lesson and the public page.
+      // Reveal the heading through both ancestors on scrollable layouts.
       requestAnimationFrame(() => {
         const heading = headingElement;
-        const scroller = heading?.closest<HTMLElement>(
-          ".concept-detail-content"
-        );
-        if (!heading || !scroller) return;
-        const headingTop =
-          heading.getBoundingClientRect().top -
-          scroller.getBoundingClientRect().top +
-          scroller.scrollTop;
-        scroller.scrollTo({
-          top: Math.max(0, headingTop - 12),
+        if (
+          !heading ||
+          !window.matchMedia("(max-width: 700px), (max-height: 600px)").matches
+        )
+          return;
+        heading.scrollIntoView({
+          block: "center",
+          inline: "nearest",
           behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
             .matches
             ? "auto"
