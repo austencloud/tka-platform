@@ -23,7 +23,6 @@ import {
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 import { resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
 import type { ReflectionAxis } from "@tka/sequence-engine/loop";
-import type { TurnLanes } from "@tka/sequence-engine/generation";
 import type {
   GenerationMotionTypeFilter,
   GenerationStyleAxis,
@@ -98,11 +97,6 @@ export interface UIGenerationConfig {
   length: number;
   level: number; // 1-4
   turnIntensity: number;
-  /**
-   * An exact repeating turn figure drawn on the strip. Absent means the card is
-   * in Intensity mode and the generator rolls its own turns under the cap.
-   */
-  turnPattern?: TurnLanes | null;
   gridMode: GridMode;
   propContinuity: string; // "continuous" | "random" - legacy, derived from constraintPreset for backwards compat
   period: string; // "halved" | "quartered"
@@ -179,7 +173,6 @@ export function uiConfigToGenerationOptions(
     propContinuity: derivedPropContinuity,
     turnIntensity:
       uiConfig.turnIntensity !== undefined ? uiConfig.turnIntensity : undefined,
-    turnPattern: uiConfig.turnPattern ?? undefined,
     period: period ? (period as GenerationOptions["period"]) : undefined,
     loopType: uiConfig.loopType
       ? (uiConfig.loopType as GenerationOptions["loopType"])
