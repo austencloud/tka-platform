@@ -82,6 +82,7 @@ Last audit: 2025-12-27
     preloadAdditionalLayers = [],
     tunnelSpectrum = true,
     tunnelPropColors = null,
+    primaryPropColors,
     tunnelSelectedLayer = null,
     gridVisible = true,
     gridOpacity = undefined,
@@ -160,6 +161,7 @@ Last audit: 2025-12-27
     preloadAdditionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
     tunnelPropColors?: TunnelPropColorPair | null;
+    primaryPropColors?: TunnelPropColorPair;
     tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
     /** Optional externally choreographed grid alpha. The Sequence Viewer uses
@@ -785,6 +787,7 @@ Last audit: 2025-12-27
       {preloadAdditionalLayers}
       {tunnelSpectrum}
       {tunnelPropColors}
+      {primaryPropColors}
       {tunnelSelectedLayer}
       {gridVisible}
       {gridOpacity}
@@ -839,6 +842,7 @@ Last audit: 2025-12-27
          Rendered via SplitCanvasView (CanvasSurface leaves) - never a self-import. -->
     {#if showSplitCanvases}
       <SplitCanvasView
+        {primaryPropColors}
         {leftProp}
         {rightProp}
         {gridVisible}
