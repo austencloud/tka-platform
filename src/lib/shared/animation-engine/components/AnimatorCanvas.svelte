@@ -476,9 +476,15 @@ Last audit: 2025-12-27
   }
 
   function handlePointerDown(e: PointerEvent) {
+    // Right-clicks and auxiliary buttons open the context menu; they are never
+    // canvas taps and must not leave a play/pause gesture armed for pointerup.
+    if (e.button !== 0) {
+      pointerStart = null;
+      return;
+    }
     pointerStart = { x: e.clientX, y: e.clientY, t: e.timeStamp };
     longPressFired = false;
-    if (e.button !== 0 || e.pointerType === "mouse" || !hasContextMenu) return;
+    if (e.pointerType === "mouse" || !hasContextMenu) return;
     const x = e.clientX;
     const y = e.clientY;
     longPressTimer = setTimeout(() => {
@@ -498,6 +504,10 @@ Last audit: 2025-12-27
   }
 
   function handlePointerUp(e: PointerEvent) {
+    if (e.button !== 0) {
+      pointerStart = null;
+      return;
+    }
     cancelLongPress();
     if (!tapToToggle || longPressFired || !pointerStart) {
       pointerStart = null;
@@ -587,6 +597,15 @@ Last audit: 2025-12-27
   // here so the disassemble transition can drive pauseResize/resumeResize and
   // the context menu can read effect diagnostics. Undefined until the leaf mounts.
   let engine = $state<AnimationEngine>();
+  // CanvasSurface resolves its renderer asynchronously. Hold the ready canvas
+  // in local reactive state so context-menu exports appear only after there is
+  // a real live surface to capture.
+  let liveCanvas = $state<HTMLCanvasElement | null>(null);
+
+  function handleCanvasReady(canvas: HTMLCanvasElement | null): void {
+    liveCanvas = canvas;
+    onCanvasReady(canvas);
+  }
 
   // Use $derived to read visibilityManagerOverride reactively (avoids state_referenced_locally)
   const visibilityManager = $derived(
@@ -710,6 +729,8 @@ Last audit: 2025-12-27
 
   function handleContextMenu(e: MouseEvent) {
     if (!hasContextMenu) return;
+    cancelLongPress();
+    pointerStart = null;
     e.preventDefault();
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
   }
@@ -831,7 +852,7 @@ Last audit: 2025-12-27
       {initialQualityTier}
       {beatIndicators}
       contextId={resolvedContextId}
-      {onCanvasReady}
+      onCanvasReady={handleCanvasReady}
       onInitialized={onInitializedCallback}
       {onEffectError}
       {onAdditionalLayerTextureStatusChange}
@@ -972,6 +993,12 @@ Last audit: 2025-12-27
       {onToggle3DView}
       extraItems={extraContextMenuItems}
       {visibilityManager}
+      canvas={liveCanvas}
+      {currentStep}
+      {isPlaying}
+      {bpm}
+      {onPlaybackToggle}
+      {onProgressBarSeek}
     />
   {/if}
 </div>
