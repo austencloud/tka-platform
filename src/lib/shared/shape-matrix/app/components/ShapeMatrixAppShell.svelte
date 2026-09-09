@@ -30,7 +30,7 @@
   import { runMandalaMorph } from "../services/shape-matrix-mandala-morph";
   import { runShapeMatrixDetailReveal } from "../services/shape-matrix-reveal";
   import { growFade, motionDuration } from "$lib/shared/transitions/motion";
-  import ShapeMatrixPropWorkspace from "./ShapeMatrixPropWorkspace.svelte";
+  import ShapeMatrixFocusWorkspace from "./ShapeMatrixFocusWorkspace.svelte";
   import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
 
   interface Props {
@@ -41,26 +41,29 @@
 
   const { variant = "standalone" }: Props = $props();
   const appState = getShapeMatrixAppContext();
-  const propMode = $derived(appState.compact && appState.propPickerOpen);
+  const focusMode = $derived(
+    appState.compact &&
+      (appState.propPickerOpen || animationState.activeSection !== null)
+  );
   let appElement: HTMLElement | undefined;
-  const propMotion = createLayoutMotion({
+  const focusMotion = createLayoutMotion({
     getRoot: () => appElement,
-    groups: [{ selector: "[data-prop-layout]", datasetKey: "propLayout" }],
+    groups: [{ selector: "[data-focus-layout]", datasetKey: "focusLayout" }],
     getDuration: () => motionDuration(DURATION.emphasis),
   });
-  let previousPropMode: boolean | undefined;
+  let previousFocusMode: boolean | undefined;
   $effect.pre(() => {
-    const next = propMode;
-    if (previousPropMode === undefined) {
-      previousPropMode = next;
+    const next = focusMode;
+    if (previousFocusMode === undefined) {
+      previousFocusMode = next;
       return;
     }
-    if (previousPropMode === next) return;
-    previousPropMode = next;
-    untrack(() => propMotion.capture());
-    void tick().then(() => propMotion.play());
+    if (previousFocusMode === next) return;
+    previousFocusMode = next;
+    untrack(() => focusMotion.capture());
+    void tick().then(() => focusMotion.play());
   });
-  $effect(() => () => propMotion.cancel());
+  $effect(() => () => focusMotion.cancel());
   let turnPopover: ShapeMatrixTurnPopover | undefined;
 
   /** Native Back uses the same dismissal owners as the web interface. */
@@ -413,12 +416,12 @@
 <main
   class="shape-app"
   bind:this={appElement}
-  class:prop-mode={propMode}
+  class:focus-mode={focusMode}
   data-shape-matrix-app
   class:compact-detail={appState.compact && appState.activeView === "detail"}
   class:theory
 >
-  <header class="topbar" inert={propMode} aria-hidden={propMode}>
+  <header class="topbar" inert={focusMode} aria-hidden={focusMode}>
     {#if appState.compact}
       <div class="compact-context">
         {#if appState.activeView === "detail"}
@@ -571,9 +574,9 @@
     </div>
   </div>
 
-  {#if propMode}
-    <div class="prop-workspace-slot" data-prop-layout="picker">
-      <ShapeMatrixPropWorkspace />
+  {#if focusMode}
+    <div class="focus-workspace-slot" data-focus-layout="picker">
+      <ShapeMatrixFocusWorkspace />
     </div>
   {/if}
 </main>
@@ -581,92 +584,92 @@
 <style>
   /* The same renderer survives this recomposition. FLIP moves its existing
      frame and grows the picker from the dock; only surrounding chrome fades. */
-  .shape-app.prop-mode {
+  .shape-app.focus-mode {
     grid-template-rows: minmax(0, min(50cqh, 100cqw)) minmax(0, 1fr);
     gap: 0.5rem;
   }
-  .prop-mode .topbar {
+  .focus-mode .topbar {
     position: absolute;
     inset: 0 0 auto;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
   }
-  .prop-mode .workspace {
+  .focus-mode .workspace {
     grid-row: 1;
     padding: 0;
     overflow: visible;
   }
-  .prop-workspace-slot {
+  .focus-workspace-slot {
     grid-row: 2;
     min-width: 0;
     min-height: 0;
     z-index: 3;
   }
-  .prop-mode :global(.drill-stage),
-  .prop-mode :global(.theory-detail) {
+  .focus-mode :global(.drill-stage),
+  .focus-mode :global(.theory-detail) {
     padding: 0;
   }
-  .prop-mode :global(.drill),
-  .prop-mode :global(.detail-body) {
+  .focus-mode :global(.drill),
+  .focus-mode :global(.detail-body) {
     grid-template-rows: minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "media";
     gap: 0;
   }
-  .prop-mode :global(.media-stage) {
+  .focus-mode :global(.media-stage) {
     grid-template-rows: minmax(0, 1fr);
     grid-template-areas: "hero";
     place-items: stretch;
   }
-  .prop-mode :global(.detail-flow) {
+  .focus-mode :global(.detail-flow) {
     grid-area: hero;
     overflow: hidden;
     gap: 0;
   }
-  .prop-mode :global(.hero-stage) {
+  .focus-mode :global(.hero-stage) {
     grid-template-rows: minmax(0, 1fr);
     width: min(100cqw, 100cqh);
     height: 100%;
     justify-self: center;
   }
-  .prop-mode :global(.stage-frame) {
+  .focus-mode :global(.stage-frame) {
     width: min(100cqw, 100cqh);
     height: 100%;
     align-self: center;
     min-height: 0;
   }
-  .prop-mode :global(.stage-window) {
+  .focus-mode :global(.stage-window) {
     min-height: 0;
   }
   .topbar,
-  .shape-app :global([data-prop-mode-chrome]) {
+  .shape-app :global([data-focus-mode-chrome]) {
     transition:
       opacity var(--transition-normal),
       visibility var(--transition-normal);
   }
-  .prop-mode :global([data-prop-mode-chrome]) {
+  .focus-mode :global([data-focus-mode-chrome]) {
     position: absolute;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
   }
   @container shape-matrix-app (min-aspect-ratio: 1.25) {
-    .shape-app.prop-mode {
+    .shape-app.focus-mode {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
     }
-    .prop-mode .workspace {
+    .focus-mode .workspace {
       grid-column: 1;
     }
-    .prop-workspace-slot {
+    .focus-workspace-slot {
       grid-row: 1;
       grid-column: 2;
     }
   }
   @media (prefers-reduced-motion: reduce) {
     .topbar,
-    .shape-app :global([data-prop-mode-chrome]) {
+    .shape-app :global([data-focus-mode-chrome]) {
       transition: none;
     }
   }

@@ -22,6 +22,12 @@ const assets = [
   "images/props/appearances",
   "images/props/build-previews",
   "images/elements/norm",
+  "images/elements/water-v2.webp",
+  "images/elements/fire-v2.webp",
+  "images/elements/earth-v2.webp",
+  "images/elements/air-v2.webp",
+  "images/elements/sun-v4.webp",
+  "images/elements/moon-v2.webp",
   "fonts/tka/tka.woff2",
   "fonts/css/fontawesome.min.css",
   "fonts/css/solid.min.css",
@@ -31,7 +37,12 @@ const assets = [
 
 await mkdir(join(appRoot, "dist"), { recursive: true });
 for (const asset of assets) {
-  await cp(join(staticRoot, asset), join(appRoot, "dist", asset), { recursive: true });
+  await cp(join(staticRoot, asset), join(appRoot, "dist", asset), {
+    recursive: true,
+  });
 }
-await cp(join(appRoot, "assets/icon-source.png"), join(appRoot, "dist/shape-engine-icon.png"));
+await cp(
+  join(appRoot, "assets/icon-source.png"),
+  join(appRoot, "dist/shape-engine-icon.png")
+);
 console.log(`Bundled ${assets.length} asset groups for offline use.`);

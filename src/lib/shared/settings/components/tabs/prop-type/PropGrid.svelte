@@ -642,7 +642,8 @@
           </div>
           {#if drill.kind === "fan-look"}
             <FanStyleOptionsCore
-              fill={fillHeight > 0}
+              fill={fillHeight > 0 && layout !== "rail"}
+              horizontal={layout === "rail"}
               appearance={normalizedFanAppearance}
               onchange={onFanAppearanceChange}
             />
@@ -774,7 +775,15 @@
     padding-inline: 0.625rem;
   }
   .rail-toolbar .look-chip {
-    max-width: 11rem;
+    max-width: 100%;
+    width: max-content;
+    flex: 0 0 auto;
+  }
+  .rail-toolbar .look-name {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .rail-toolbar .look-thumb {
     width: 40px;
@@ -819,7 +828,7 @@
     grid-template-rows: minmax(0, 1fr);
   }
   .rail .drill-view > :global(.fan-style-options) {
-    overflow-y: auto;
+    flex: 1;
     min-height: 0;
   }
   @container prop-rail (max-height: 15rem) {
