@@ -10,6 +10,9 @@
     options: readonly PropBuildPreviewOption<T>[];
     onchange: (value: T) => void;
     density?: "primary" | "secondary";
+    /** Compact fan rails use measured artwork scaling; ordinary 8:3 pickers
+     * keep the source framing so their previews never crop. */
+    useImageScale?: boolean;
   }
 
   let {
@@ -18,6 +21,7 @@
     options,
     onchange,
     density = "primary",
+    useImageScale = false,
   }: Props = $props();
 
   function moveSelection(event: KeyboardEvent, index: number): void {
@@ -83,7 +87,9 @@
               src={option.image}
               alt=""
               draggable="false"
-              style:--preview-scale={option.imageScale ?? 1}
+              style:--preview-scale={useImageScale
+                ? (option.imageScale ?? 1)
+                : 1}
             />
           </Crossfade>
         </span>

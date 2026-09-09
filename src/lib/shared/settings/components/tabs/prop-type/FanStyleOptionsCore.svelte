@@ -109,6 +109,7 @@
   .fan-style-options.fill :global(.option-grid) {
     flex: 1;
     min-height: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-rows: minmax(0, 1fr);
   }
 

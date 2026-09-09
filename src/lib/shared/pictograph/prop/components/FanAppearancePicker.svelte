@@ -82,6 +82,7 @@
       label={compact ? undefined : "Build"}
       value={compact ? compactLook : appearance.build}
       options={compact ? compactLookOptions : buildOptions}
+      useImageScale={compact}
       onchange={(next) =>
         compact
           ? chooseCompactLook(next as CompactFanLook)
