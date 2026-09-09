@@ -552,8 +552,8 @@
   // NAVIGATION
   // ============================================================================
 
-  function handleClose() {
-    if (isDemo) return;
+  function handleClose(reason?: "navigate") {
+    if (isDemo || reason === "navigate") return;
     if (handoffData?.returnPath) {
       void goto(handoffData.returnPath);
       return;

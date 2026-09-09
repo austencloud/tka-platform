@@ -35,7 +35,7 @@
     playOnOpen: boolean;
     playbackReleased: boolean;
     onReadyForReveal: () => void;
-    onClose: () => void;
+    onClose: (reason?: "navigate") => void;
     shortCode: string | null;
     analyticsSource: SequenceViewerSource;
     shareOnOpen: boolean;
