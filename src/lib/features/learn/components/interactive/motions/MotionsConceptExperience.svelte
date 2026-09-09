@@ -188,7 +188,7 @@
   function complete(): void {
     persistence.reset();
     haptic?.trigger("success");
-    onComplete?.();
+    onComplete?.(timingDirectionOnly ? "reading-choreo-cards" : undefined);
   }
 
   function handlePrimaryAction(): void {
@@ -328,6 +328,7 @@
               <TimingDirectionBoard
                 bind:this={comparisonBoard}
                 modes={ELEMENTAL_MODES}
+                showChoreoCards={!timingDirectionOnly}
                 articleHrefFor={(mode) =>
                   `/timing-and-direction/${mode.timing.toLowerCase()}-time-${mode.direction.toLowerCase()}-direction`}
                 active={isComparison && comparisonPresented}

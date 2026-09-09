@@ -23,6 +23,9 @@
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import SkeletonLoader from "$lib/shared/foundation/ui/SkeletonLoader.svelte";
   import ArtifactRegionSpotlight from "$lib/shared/components/ArtifactRegionSpotlight.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import { DEFAULT_VIEWER_CUSTOM_COLORS } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
+  import { CARD_SIZES } from "$lib/features/choreo-card/domain/card-sizes";
 
   let {
     highlight = null,
@@ -32,6 +35,9 @@
     frontUrl = undefined,
     showShuffle = true,
     onstatuschange,
+    handPathCard = false,
+    qrUrl,
+    cardTitle,
   }: {
     highlight?: string | null;
     onhighlight?: (id: string | null) => void;
@@ -50,6 +56,12 @@
     /** Reports readiness so the surrounding legend can disable spotlight
      *  controls until there is a real card to point at. */
     onstatuschange?: (status: "loading" | "ready" | "error") => void;
+    /** Use the live card renderer for a hand-path teaching card. */
+    handPathCard?: boolean;
+    /** A published scan URL for a teaching card, never a newly-created code. */
+    qrUrl?: string;
+    /** Plain-language title used before learners have met TKA letters. */
+    cardTitle?: string;
   } = $props();
 
   const showFront = $derived(face === "both" || face === "front");
@@ -63,6 +75,8 @@
   // the print layout for that step count, and back regions are measured off the
   // live CardBack DOM.
   type Shown = { sequence: SequenceData; frontUrl: string; stepCount: number };
+  const pokerCardAspectRatio =
+    CARD_SIZES.poker.widthInches / CARD_SIZES.poker.heightInches;
   let shown = $state<Shown | null>(null);
   let shuffling = $state(false);
   let previewState = $state<"loading" | "ready" | "error">("loading");
@@ -87,6 +101,15 @@
     setPreviewState("loading");
     (async () => {
       let front = baked;
+      if (handPathCard) {
+        if (cancelled || attempt !== loadAttempt) return;
+        shown = {
+          sequence: seq,
+          frontUrl: "",
+          stepCount: seq.steps?.length ?? 4,
+        };
+        return;
+      }
       if (!front) {
         try {
           const { renderCoverFront } =
@@ -456,7 +479,27 @@
             onclick={frontTap}
             oncontextmenu={openCardMenu}
           >
-            {#if shown.frontUrl}
+            {#if handPathCard}
+              <ChoreoCard
+                primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
+                sequence={shown.sequence}
+                handPathMode
+                darkMode
+                cardAspectRatio={pokerCardAspectRatio}
+                showWord={false}
+                customTitleText={cardTitle ?? "Hand paths"}
+                showDifficultyLevel={false}
+                includeStartPosition
+                columnCount={2}
+                showNotes={false}
+                showLoopGlyph={false}
+                showQRCode
+                {qrUrl}
+                showStepNumbers
+                forceContain
+                onReady={() => setPreviewState("ready")}
+              />
+            {:else if shown.frontUrl}
               <img src={shown.frontUrl} alt="Front of a real Choreo Card" />
             {:else}
               <div

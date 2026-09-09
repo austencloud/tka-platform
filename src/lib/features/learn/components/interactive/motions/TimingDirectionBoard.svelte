@@ -22,6 +22,7 @@
     onFocusChange,
     articleHrefFor,
     showDirectionRowLabels = false,
+    showChoreoCards = true,
     active = true,
     onReady,
   }: {
@@ -29,6 +30,8 @@
     onFocusChange?: (focused: boolean) => void;
     articleHrefFor?: (mode: TimingDirectionMode) => string;
     showDirectionRowLabels?: boolean;
+    /** Keep the zoomable timing board usable before the card-reading lesson. */
+    showChoreoCards?: boolean;
     active?: boolean;
     onReady?: () => void;
   } = $props();
@@ -288,50 +291,50 @@
               framed={false}
             />
           </div>
-          <div
-            class="mode-card"
-            aria-label={`${fullNameFor(mode)} hand paths by step`}
-          >
-            <DualSourceCrossfade
-              active={isFocused ? "second" : "first"}
-              duration={DURATION.emphasis}
+          {#if showChoreoCards}<div
+              class="mode-card"
+              aria-label={`${fullNameFor(mode)} hand paths by step`}
             >
-              {#snippet first()}{/snippet}
-              {#snippet second()}
-                {#if mountedCards.has(mode.id)}
-                  <ChoreoCard
-                    primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
-                    sequence={mode.sequence}
-                    handPathMode
-                    darkMode
-                    frameColors={{
-                      accent: mode.element.accentColor,
-                      dark: mode.element.darkComplement,
-                    }}
-                    cardAspectRatio={pokerCardAspectRatio}
-                    showWord={false}
-                    customTitleText={mode.element.name}
-                    showDifficultyLevel={false}
-                    includeStartPosition
-                    columnCount={2}
-                    showNotes
-                    customNotesText={definitionFor(mode)}
-                    showLoopGlyph={false}
-                    showQRCode
-                    qrUrl={HAND_PATH_REFERENCE_SCAN_URLS[mode.id]}
-                    onReady={() => cardPrepared(mode.id)}
-                    showStepNumbers
-                    forceContain
-                    showHighlight
-                    highlightedStepIndex={isFocused
-                      ? highlightedStepIndex
-                      : null}
-                    onStepClick={seekToCardStep}
-                  />
-                {/if}
-              {/snippet}
-            </DualSourceCrossfade>
-          </div>
+              <DualSourceCrossfade
+                active={isFocused ? "second" : "first"}
+                duration={DURATION.emphasis}
+              >
+                {#snippet first()}{/snippet}
+                {#snippet second()}
+                  {#if mountedCards.has(mode.id)}
+                    <ChoreoCard
+                      primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
+                      sequence={mode.sequence}
+                      handPathMode
+                      darkMode
+                      frameColors={{
+                        accent: mode.element.accentColor,
+                        dark: mode.element.darkComplement,
+                      }}
+                      cardAspectRatio={pokerCardAspectRatio}
+                      showWord={false}
+                      customTitleText={mode.element.name}
+                      showDifficultyLevel={false}
+                      includeStartPosition
+                      columnCount={2}
+                      showNotes
+                      customNotesText={definitionFor(mode)}
+                      showLoopGlyph={false}
+                      showQRCode
+                      qrUrl={HAND_PATH_REFERENCE_SCAN_URLS[mode.id]}
+                      onReady={() => cardPrepared(mode.id)}
+                      showStepNumbers
+                      forceContain
+                      showHighlight
+                      highlightedStepIndex={isFocused
+                        ? highlightedStepIndex
+                        : null}
+                      onStepClick={seekToCardStep}
+                    />
+                  {/if}
+                {/snippet}
+              </DualSourceCrossfade>
+            </div>{/if}
         </div>
 
         {#if !isFocused}
