@@ -41,6 +41,7 @@
     neutral = false,
     useSavedOverrides = true,
     pairedGlyph = false,
+    singleHand,
     rightPropType = propType,
     appearanceOverride,
     colors,
@@ -59,6 +60,8 @@
     useSavedOverrides?: boolean;
     /** Compact navigation shows two recolorable silhouettes, including fan builds. */
     pairedGlyph?: boolean;
+    /** Per-hand pickers preview only the hand they change. */
+    singleHand?: "left" | "right";
     rightPropType?: PropType;
     appearanceOverride?: PropRenderAppearance;
     colors?: ViewerCustomColorPair | null;
@@ -239,26 +242,38 @@
         </filter>
       {/each}
     </defs>
-    <g
-      transform={mixedPair ? "translate(28, 42) scale(0.34)" : leftTransform}
-      filter={`url(#${id}-left)`}
-    >
+    {#if singleHand !== "right"}
       <g
-        transform={`rotate(${leftGlyph.rotation ?? 0}) scale(${leftFlipped ? -1 : 1}, 1)`}
+        transform={singleHand
+          ? "translate(50, 50) scale(0.55)"
+          : mixedPair
+            ? "translate(28, 42) scale(0.34)"
+            : leftTransform}
+        filter={`url(#${id}-left)`}
       >
-        {@render propImage(leftGlyph, false)}
+        <g
+          transform={`rotate(${leftGlyph.rotation ?? 0}) scale(${leftFlipped ? -1 : 1}, 1)`}
+        >
+          {@render propImage(leftGlyph, false)}
+        </g>
       </g>
-    </g>
-    <g
-      transform={mixedPair ? "translate(72, 58) scale(0.34)" : rightTransform}
-      filter={`url(#${id}-right)`}
-    >
+    {/if}
+    {#if singleHand !== "left"}
       <g
-        transform={`rotate(${rightGlyph.rotation ?? 0}) scale(${rightFlipped ? -1 : 1}, 1)`}
+        transform={singleHand
+          ? "translate(50, 50) scale(0.55)"
+          : mixedPair
+            ? "translate(72, 58) scale(0.34)"
+            : rightTransform}
+        filter={`url(#${id}-right)`}
       >
-        {@render propImage(rightGlyph, false)}
+        <g
+          transform={`rotate(${rightGlyph.rotation ?? 0}) scale(${rightFlipped ? -1 : 1}, 1)`}
+        >
+          {@render propImage(rightGlyph, false)}
+        </g>
       </g>
-    </g>
+    {/if}
   </svg>
 {:else if neutral}
   <svg

@@ -7,6 +7,8 @@
   import type { CompositionRecipe } from "$lib/shared/pictograph/prop/domain/prop-composition-recipes";
   import { getPropTypeDisplayInfo } from "./prop-type-registry";
   import PropSelectionButton from "./PropSelectionButton.svelte";
+  import type { ViewerCustomColorPair } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
+  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 
   let {
     propType,
@@ -21,6 +23,11 @@
     fanAppearance,
     propLook,
     recipeOverrides,
+    colors,
+    singleHand,
+    leftFlipped = false,
+    rightFlipped = false,
+    previewPair = true,
   } = $props<{
     propType: PropType;
     selected?: boolean;
@@ -34,6 +41,11 @@
     fanAppearance: FanAppearance;
     propLook?: PropLook;
     recipeOverrides?: Partial<Record<PropType, CompositionRecipe>>;
+    colors?: ViewerCustomColorPair | null;
+    singleHand?: "left" | "right";
+    leftFlipped?: boolean;
+    rightFlipped?: boolean;
+    previewPair?: boolean;
   }>();
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
@@ -57,7 +69,13 @@
   {#snippet art()}
     <PropGridPreview
       {propType}
-      neutral
+      neutral={!previewPair}
+      darkBackground
+      {colors}
+      {singleHand}
+      leftFlipped={isBuugengFamilyProp(propType) && leftFlipped}
+      rightFlipped={propType === PropType.HAND ||
+        (isBuugengFamilyProp(propType) && rightFlipped)}
       {fanAppearance}
       {propLook}
       {recipeOverrides}

@@ -44,6 +44,7 @@
   import type { PropChiralitySeam } from "./prop-chirality-seam";
   import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import type { Snippet } from "svelte";
+  import type { ViewerCustomColorPair } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
 
   let {
     selectedPropType,
@@ -73,6 +74,7 @@
     premiumNudge,
     propLook,
     recipeOverrides,
+    colors,
   } = $props<{
     selectedPropType: PropType | null;
     color?: "blue" | "red" | (string & {});
@@ -137,6 +139,7 @@
     premiumNudge?: Snippet<[{ dismiss: () => void }]>;
     propLook?: PropLook;
     recipeOverrides?: Partial<Record<PropType, CompositionRecipe>>;
+    colors?: ViewerCustomColorPair | null;
   }>();
 
   const allowedPropSet = $derived(
@@ -567,6 +570,15 @@
         fanAppearance={normalizedFanAppearance}
         {propLook}
         {recipeOverrides}
+        {colors}
+        previewPair={showAppearance}
+        singleHand={chirality?.hands.length === 1
+          ? chirality.hands[0]?.hand
+          : undefined}
+        leftFlipped={chirality?.hands.find((state) => state.hand === "left")
+          ?.flipped}
+        rightFlipped={chirality?.hands.find((state) => state.hand === "right")
+          ?.flipped}
       />
       {#if premium && premiumBadge}
         <span class="crown-glyph">
@@ -601,6 +613,15 @@
         fanAppearance={normalizedFanAppearance}
         {propLook}
         {recipeOverrides}
+        {colors}
+        previewPair={showAppearance}
+        singleHand={chirality?.hands.length === 1
+          ? chirality.hands[0]?.hand
+          : undefined}
+        leftFlipped={chirality?.hands.find((state) => state.hand === "left")
+          ?.flipped}
+        rightFlipped={chirality?.hands.find((state) => state.hand === "right")
+          ?.flipped}
       />
     {/if}
   {/snippet}
@@ -737,6 +758,8 @@
       <PropChiralityRow
         propType={selectedPropType}
         hands={chirality.hands}
+        {colors}
+        {propLook}
         onChange={chirality.onChange}
       />
     </div>
