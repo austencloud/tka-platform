@@ -506,8 +506,8 @@
   }
 
   @media (min-width: 1100px) and (min-height: 700px) {
-    /* Match Build's 56px heading row so recovery shares the title's baseline. */
-    .tool-panel-container:has(:global(.start-pos-picker.build-path))
+    /* Match the picker's shared 56px heading row so recovery shares the title's baseline. */
+    .tool-panel-container:has(:global(.start-pos-picker))
       .clear-recovery-action {
       top: calc(14px + (56px - var(--min-touch-target, 44px)) / 2);
       left: clamp(24px, 2.5vw, 64px);
