@@ -101,7 +101,7 @@
     nextModeId: TimingDirectionModeId | null
   ): Promise<void> {
     requestedModeId = nextModeId;
-    if (nextModeId && !readyCards.has(nextModeId)) {
+    if (nextModeId && showChoreoCards && !readyCards.has(nextModeId)) {
       mountedCards = new Set([...mountedCards, nextModeId]);
       return;
     }
@@ -268,7 +268,11 @@
           {/if}
         </header>
 
-        <div class="study-surfaces" inert={!!focusedMode && !isFocused}>
+        <div
+          class="study-surfaces"
+          class:cards-hidden={!showChoreoCards}
+          inert={!!focusedMode && !isFocused}
+        >
           <div class="mode-player">
             <HandMotionPlayer
               primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
@@ -639,9 +643,18 @@
     padding: clamp(0.5rem, 0.8cqw, 0.8rem);
   }
 
+  .is-focused .study-surfaces.cards-hidden {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
   .is-focused .mode-player {
     width: 100%;
     aspect-ratio: 1;
+  }
+
+  .is-focused .study-surfaces.cards-hidden .mode-player {
+    width: min(100%, 100cqh);
   }
 
   .is-focused .mode-card {

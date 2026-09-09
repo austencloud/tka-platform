@@ -98,7 +98,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     concepts: [
       "Start position",
       "Numbered hand-path steps",
-      "Published QR scan link",
+      "Scan to watch the sequence",
     ],
   },
   {

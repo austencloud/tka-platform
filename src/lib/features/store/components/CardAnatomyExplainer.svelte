@@ -33,6 +33,7 @@
     beginnerCard = undefined,
     initialHighlight = null,
     highlight = $bindable(initialHighlight),
+    onhighlightchange,
   }: {
     /** Drive a SPECIFIC card. Absent ⇒ CardAnatomy self-loads a shuffleable
      *  example (the marketing page). */
@@ -48,6 +49,8 @@
     initialHighlight?: string | null;
     /** Controlled spotlight region for guided teaching hosts. */
     highlight?: string | null;
+    /** Reports a card-part choice to guided hosts without replacing the card owner. */
+    onhighlightchange?: (id: string | null) => void;
   } = $props();
 
   const sequence = $derived(beginnerCard?.sequence ?? card?.sequence);
@@ -65,8 +68,12 @@
   const backLegend = $derived(isBeginner ? [] : BACK_LEGEND);
 
   // Which region is lit. Legend rows/chips and the cards drive it both ways.
+  function setHighlight(id: string | null) {
+    highlight = id;
+    onhighlightchange?.(id);
+  }
   function toggle(id: string) {
-    highlight = highlight === id ? null : id;
+    setHighlight(isBeginner ? id : highlight === id ? null : id);
   }
 
   // Both-faces vs single-face keys off THIS box's width. Default wide so the
@@ -88,7 +95,7 @@
   let face = $state<"front" | "back">("front");
   function switchFace(f: "front" | "back") {
     face = f;
-    highlight = null;
+    setHighlight(null);
   }
   const legendById = $derived(
     new Map([...frontLegend, ...backLegend].map((i) => [i.id, i]))
@@ -103,7 +110,7 @@
   let cardStatus = $state<"loading" | "ready" | "error">("loading");
   function setCardStatus(status: "loading" | "ready" | "error"): void {
     cardStatus = status;
-    if (status !== "ready") highlight = null;
+    if (status === "error") setHighlight(null);
   }
   const activateCardsWhenNear = activateWhenNear;
   const wideCardProps = $derived({
@@ -114,7 +121,10 @@
     handPathCard: isBeginner,
     qrUrl: beginnerCard?.qrUrl,
     cardTitle: beginnerCard?.title,
-    onhighlight: (id: string | null) => (highlight = id),
+    onhighlight: (id: string | null) => {
+      if (isBeginner && id === null) return;
+      setHighlight(id);
+    },
     onstatuschange: setCardStatus,
   });
   const narrowCardProps = $derived({ ...wideCardProps, face });
@@ -228,9 +238,9 @@
               class:active={highlight === item.id}
               disabled={cardStatus !== "ready"}
               onpointerenter={(e) =>
-                e.pointerType === "mouse" && (highlight = item.id)}
+                e.pointerType === "mouse" && setHighlight(item.id)}
               onpointerleave={(e) =>
-                e.pointerType === "mouse" && (highlight = null)}
+                e.pointerType === "mouse" && !isBeginner && setHighlight(null)}
               onclick={() => toggle(item.id)}
             >
               <span class="legend-term">{item.term}</span>
@@ -270,9 +280,9 @@
               class:active={highlight === item.id}
               disabled={cardStatus !== "ready"}
               onpointerenter={(e) =>
-                e.pointerType === "mouse" && (highlight = item.id)}
+                e.pointerType === "mouse" && setHighlight(item.id)}
               onpointerleave={(e) =>
-                e.pointerType === "mouse" && (highlight = null)}
+                e.pointerType === "mouse" && !isBeginner && setHighlight(null)}
               onclick={() => toggle(item.id)}
             >
               <span class="legend-term">{item.term}</span>
