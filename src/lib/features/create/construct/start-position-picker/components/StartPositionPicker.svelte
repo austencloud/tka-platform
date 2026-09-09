@@ -373,7 +373,7 @@ Controls moved below the grid for better UX
       value={pickerPath}
       onchange={handlePathChange}
       color="accent"
-      size="sm"
+      size={pickerPath === "build" ? "md" : "sm"}
       ariaLabel="Start position method"
     />
   </div>
@@ -909,6 +909,49 @@ Controls moved below the grid for better UX
     .start-pos-picker.build-path .workspace-heading {
       min-height: 0;
       padding-top: 0;
+    }
+  }
+
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .start-pos-picker.build-path {
+      max-width: none;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-areas: "hint sel" "view view";
+      gap: 24px;
+      padding: clamp(24px, 2.5vw, 64px);
+      box-sizing: border-box;
+      background: var(--theme-panel-bg);
+    }
+
+    .start-pos-picker.build-path .heading-region {
+      grid-area: hint;
+      align-self: center;
+    }
+
+    .start-pos-picker.build-path .workspace-heading {
+      min-height: 0;
+      padding: 0 0 0 var(--picker-leading-action-offset, 0px);
+    }
+
+    .start-pos-picker.build-path :global(.workspace-hint) {
+      text-align: left;
+      font-size: clamp(24px, 1.7vw, 36px);
+    }
+
+    .start-pos-picker.build-path .path-selector {
+      grid-area: sel;
+      margin: 0;
+      width: 18rem;
+      align-self: center;
+    }
+
+    .start-pos-picker.build-path .picker-view {
+      grid-area: view;
+      border-top: 1px solid var(--theme-stroke);
+      padding-top: 16px;
+      box-sizing: border-box;
     }
   }
 </style>
