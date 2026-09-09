@@ -817,6 +817,10 @@
       playbackController.stop();
     }
     playbackController.togglePlayback();
+    // Most UI can tolerate the 50ms polling mirror above, but a direct export
+    // must know synchronously whether its temporary playback actually paused.
+    // Read the controller's authoritative state immediately after toggling.
+    isPlaying = animationState.isPlaying;
   }
 
   function handleBpmChange(newBpm: number) {

@@ -587,6 +587,15 @@ Last audit: 2025-12-27
   // here so the disassemble transition can drive pauseResize/resumeResize and
   // the context menu can read effect diagnostics. Undefined until the leaf mounts.
   let engine = $state<AnimationEngine>();
+  // CanvasSurface resolves its renderer asynchronously. Hold the ready canvas
+  // in local reactive state so context-menu exports appear only after there is
+  // a real live surface to capture.
+  let liveCanvas = $state<HTMLCanvasElement | null>(null);
+
+  function handleCanvasReady(canvas: HTMLCanvasElement | null): void {
+    liveCanvas = canvas;
+    onCanvasReady(canvas);
+  }
 
   // Use $derived to read visibilityManagerOverride reactively (avoids state_referenced_locally)
   const visibilityManager = $derived(
@@ -831,7 +840,7 @@ Last audit: 2025-12-27
       {initialQualityTier}
       {beatIndicators}
       contextId={resolvedContextId}
-      {onCanvasReady}
+      onCanvasReady={handleCanvasReady}
       onInitialized={onInitializedCallback}
       {onEffectError}
       {onAdditionalLayerTextureStatusChange}
@@ -972,6 +981,12 @@ Last audit: 2025-12-27
       {onToggle3DView}
       extraItems={extraContextMenuItems}
       {visibilityManager}
+      canvas={liveCanvas}
+      {currentStep}
+      {isPlaying}
+      {bpm}
+      {onPlaybackToggle}
+      {onProgressBarSeek}
     />
   {/if}
 </div>
