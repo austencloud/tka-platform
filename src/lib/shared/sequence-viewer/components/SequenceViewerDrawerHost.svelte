@@ -329,7 +329,7 @@
     removeCurrentUrlParams(["v"]);
   }
 
-  function handleDismiss() {
+  function handleDismiss(reason?: "navigate") {
     const path = overlay.dismissPath;
     const wasOpen = overlay.isOpen;
     const wasFromUrl = overlay.openedFromUrl;
@@ -337,6 +337,10 @@
     clearNativeScanViewerReady();
     clearNativeLoader();
     closeSequenceOverlay();
+
+    // Remix and Compose choose their own destination. A queued Back would
+    // otherwise undo that navigation after the workspace has opened.
+    if (reason === "navigate") return;
 
     if (path) {
       goto(path, { replaceState: true });

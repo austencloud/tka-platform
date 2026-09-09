@@ -160,7 +160,7 @@
     initialPlaybackMode?: PlaybackMode;
     initialStep?: number;
     initialViewMode?: ViewMode;
-    onClose: () => void;
+    onClose: (reason?: "navigate") => void;
     onUrlParamChange?: (key: string, value: string) => void;
     /** Reports tempo changes made through viewer controls. Internal practice
      *  ramp changes stay private so hosts can persist deliberate choices. */
@@ -1063,7 +1063,7 @@
     }
   }
 
-  function handleClose() {
+  function handleClose(reason?: "navigate") {
     libraryActions.finishPropChoice(false);
     playback.stopPracticeIfActive();
 
@@ -1075,7 +1075,7 @@
     viewerLanSync.disconnect();
 
     accessibilityHelper.restoreFocus();
-    onClose();
+    onClose(reason);
   }
 
   const destinationActions = createViewerDestinationActions(
