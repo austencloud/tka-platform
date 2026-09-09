@@ -13,6 +13,17 @@ same recipes. Navigation reads the existing app settings for both hands,
 chirality and colors. Drawer activation, haptics and navigation geometry keep
 their existing owners.
 
+Hand identity colors reuse `viewer-custom-colors.ts` for normalization and
+`mandala-palette.ts` for overlap blending. Searches: primary prop colors,
+hand-color key, mandala overlap, start-position legend. `PictographRenderer`
+owns the SVG start key; `StartTile` and `LiveCardPictograph` compose that owner.
+`ChoreoCard` resolves its palette once for cells and `CardGridLayout` mandalas.
+Animation frame parameters carry the same hand pair independently of effect
+styling, and `mandala-guide-painter.ts` derives overlap from its actual path
+colors. New color-bearing annotations consume that resolved pair rather than
+introducing baked blue/red or purple. Explicit artwork palettes retain their
+existing override semantics.
+
 Standalone 3D workspaces compose `shared/3d/components/Viewer3DFullscreen.svelte`,
 which owns the scene canvas, adaptive `SceneControlWorkspace`, and shared
 timeline/tempo controls. Local character generators extend its HUD and inspector

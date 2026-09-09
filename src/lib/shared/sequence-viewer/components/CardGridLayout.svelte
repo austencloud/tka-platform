@@ -52,6 +52,7 @@
   }
 
   interface Props {
+    primaryPropColors?: { left: string; right: string } | null;
     sequence: SequenceData;
     cells: CellData[];
     visibleCells: CellData[];
@@ -124,6 +125,7 @@
     flipDuration,
     cellWidth,
     activeDarkMode,
+    primaryPropColors,
     leftPropType,
     rightPropType,
     onStepClick,
@@ -543,6 +545,7 @@
         >
           <div class="pictograph-cell mandala-cell" class:light-bg={isLightBackground}>
             <SequenceMandala
+              {primaryPropColors}
               {sequence}
               mode="card-back"
               style="stroke"
@@ -656,6 +659,7 @@
       >
         <div class="pictograph-cell mandala-cell" class:light-bg={isLightBackground}>
           <SequenceMandala
+            {primaryPropColors}
             {sequence}
             mode="card-back"
             style="stroke"
