@@ -505,6 +505,15 @@
     pointer-events: auto;
   }
 
+  @media (min-width: 1100px) and (min-height: 700px) {
+    /* Match the picker's shared 56px heading row so recovery shares the title's baseline. */
+    .tool-panel-container:has(:global(.start-pos-picker))
+      .clear-recovery-action {
+      top: calc(14px + (56px - var(--min-touch-target, 44px)) / 2);
+      left: clamp(24px, 2.5vw, 64px);
+    }
+  }
+
   /* Short viewports on Generate tab: give the tool panel a bit more room
      so the card grid fits comfortably. Default 5fr:4fr (~55:44) becomes
      1fr:1fr (50:50) on short screens so cards aren't squeezed. */
