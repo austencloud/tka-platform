@@ -531,9 +531,36 @@
   {/snippet}
   {#if layout === "rail"}
     <header class="rail-toolbar">
-      <div class="rail-heading">{@render heading?.()}</div>
-      {#if showSize}{@render sizeControl()}{/if}
-      {#if showFanLook}{@render fanControl()}{/if}
+      {#if drill !== null}
+        <button
+          type="button"
+          class="drill-back"
+          aria-label="Back to all props"
+          onclick={() => void closeDrill()}
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        </button>
+        <div class="rail-heading">
+          <strong class="drill-title">{drillTitle}</strong>
+        </div>
+        {#if drill.kind === "fan-look" && fanLook?.id === "flat-grip" && fanLook.designCredit}
+          <a
+            class="rail-credit"
+            href={fanLook.designCredit.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Forged Creations source"
+          >
+            <span class="credit-long">{fanLook.designCredit.originator}</span>
+            <span class="credit-short" aria-hidden="true">Forged</span>
+            <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+        {/if}
+      {:else}
+        <div class="rail-heading">{@render heading?.()}</div>
+        {#if showSize}{@render sizeControl()}{/if}
+        {#if showFanLook}{@render fanControl()}{/if}
+      {/if}
       <div class="rail-actions">{@render actions?.()}</div>
     </header>
   {/if}
@@ -645,22 +672,25 @@
         <section
           class="drill-view"
           class:fill={fillHeight > 0}
+          class:fan-look-drill={drill.kind === "fan-look"}
           style:height={fillHeight > 0 ? `${fillHeight}px` : undefined}
           aria-label={drillTitle}
           data-escape-shortcut-local
           onkeydown={handleDrillKeydown}
         >
-          <div class="drill-bar">
-            <button
-              type="button"
-              class="drill-back"
-              aria-label="Back to all props"
-              onclick={() => void closeDrill()}
-            >
-              <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            </button>
-            <span class="drill-title">{drillTitle}</span>
-          </div>
+          {#if layout !== "rail"}
+            <div class="drill-bar">
+              <button
+                type="button"
+                class="drill-back"
+                aria-label="Back to all props"
+                onclick={() => void closeDrill()}
+              >
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
+              </button>
+              <span class="drill-title">{drillTitle}</span>
+            </div>
+          {/if}
           {#if drill.kind === "fan-look"}
             <FanStyleOptionsCore
               fill={fillHeight > 0 && layout !== "rail"}
@@ -789,6 +819,39 @@
     flex: 0 0 auto;
     margin-left: auto;
   }
+  .rail-credit {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: var(--min-touch-target, 44px);
+    margin-left: 0.25rem;
+    color: var(--theme-accent, #8b6cff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .rail-credit:hover,
+  .rail-credit:focus-visible {
+    text-decoration: underline;
+  }
+  .credit-short {
+    display: none;
+  }
+  @media (max-width: 480px) {
+    .rail-toolbar {
+      column-gap: 0.375rem;
+    }
+    .rail-credit {
+      margin-left: 0.1rem;
+    }
+    .credit-long {
+      display: none;
+    }
+    .credit-short {
+      display: inline;
+    }
+  }
   .rail-toolbar .size-toggle {
     padding: 0;
     gap: 0;
@@ -845,6 +908,14 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 0.375rem;
+  }
+  /* Fan Look has no inner back bar or modifier row. Give its one choice rail
+     the entire drilled area instead of preserving the family drill's auto row. */
+  .rail .drill-view.fan-look-drill {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .rail .drill-view.fan-look-drill > :global(.fan-style-options) {
+    height: 100%;
   }
   .rail .drill-tiles.flat-grid {
     grid-template-columns: repeat(var(--family-count), minmax(8.5rem, 1fr));

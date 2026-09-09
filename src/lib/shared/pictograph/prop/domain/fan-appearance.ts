@@ -33,6 +33,17 @@ export interface PropBuildPreviewOption<T extends string> {
   };
 }
 
+export const COMPACT_FAN_LOOKS = [
+  "pictograph",
+  "fire",
+  "lotus",
+  "flat-grip",
+  "day",
+  "moon",
+  "covered-fire",
+] as const;
+export type CompactFanLook = (typeof COMPACT_FAN_LOOKS)[number];
+
 /**
  * New users see the measured DoodleGrip Fire build so the 2D canvas matches the
  * realistic 3D fan out of the box; Pictograph stays one tap away in the picker.
@@ -264,6 +275,10 @@ export function fanBuildPreviewOptions(
       id: "fire",
       label: "DoodleGrip Fire",
       image: fanPreviewImage({ ...appearance, build: "fire" }),
+      // Its 279px outer width sits inside the same 640px render as the Flat
+      // Grip's 536px width. Scaling its complete image 536 / 279 keeps the
+      // artwork equal in the tall rail without distorting it.
+      imageScale: 1.92,
       designCredit: {
         originator: "Doodle",
         sourceUrl: "https://forgedfans.com/products/doodlegrip-fire-fans",
@@ -273,6 +288,8 @@ export function fanBuildPreviewOptions(
       id: "lotus",
       label: "Lotus Fire",
       image: fanPreviewImage({ ...appearance, build: "lotus" }),
+      // Its 296px outer width needs the same treatment: 536 / 296, uniformly.
+      imageScale: 1.81,
       designCredit: {
         originator: "Home of Poi",
         sourceUrl:
@@ -305,6 +322,29 @@ export function fanBuildPreviewOptions(
         originator: "Lighttoys",
         sourceUrl: "https://www.lighttoys.cz/product/moon-fans-ft/",
       },
+    },
+  ];
+}
+
+/**
+ * The compact 2D Fan Look rail makes one visual decision at a time. Covers
+ * remain a full appearance modifier for 3D and settings, while its existing
+ * DoodleGrip Fire covered rendering is an honest, direct visual choice here.
+ */
+export function compactFanLookPreviewOptions(
+  appearance: FanAppearance
+): readonly PropBuildPreviewOption<CompactFanLook>[] {
+  return [
+    ...fanBuildPreviewOptions({ ...appearance, cover: "bare" }),
+    {
+      id: "covered-fire",
+      label: "Covered Fan",
+      image: fanPreviewImage({
+        ...appearance,
+        build: "fire",
+        cover: "covered",
+      }),
+      imageScale: 1.92,
     },
   ];
 }

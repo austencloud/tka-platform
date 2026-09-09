@@ -5,6 +5,7 @@ import {
   DEFAULT_FAN_APPEARANCE,
   fanAppearanceArtwork,
   fanBuildPreviewOptions,
+  compactFanLookPreviewOptions,
   normalizeFanAppearance,
   parseFanRenderKey,
   resolveFanRenderKey,
@@ -95,5 +96,22 @@ describe("fan appearance", () => {
         ({ id }) => id === "lotus"
       )?.image
     ).toBe("/images/props/build-previews/fan-lotus-bare-complete.webp?v=6");
+  });
+
+  it("keeps the compact 2D covered fan as one direct, honest choice", () => {
+    const options = compactFanLookPreviewOptions(DEFAULT_FAN_APPEARANCE);
+    const covered = options.find(({ id }) => id === "covered-fire");
+    const fire = options.find(({ id }) => id === "fire");
+
+    expect(covered).toMatchObject({
+      label: "Covered Fan",
+      image: "/images/props/build-previews/fan-fire-covered-complete.webp",
+    });
+    expect(fire?.image).toBe(
+      "/images/props/build-previews/fan-fire-bare-complete.webp"
+    );
+    expect(options.map(({ id }) => id)).not.toContain("bare");
+    expect(fire?.imageScale).toBe(1.92);
+    expect(options.find(({ id }) => id === "lotus")?.imageScale).toBe(1.81);
   });
 });
