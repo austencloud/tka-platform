@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as CloudCellCache from "./pictograph-cloud-cache";
 
 const knownCloudHashes = new Set<string>();
 let renderMakesCellAvailable = true;
@@ -92,9 +93,9 @@ describe("warmSequenceCells", () => {
     expect(renderCell).toHaveBeenCalledTimes(3);
     expect(cloudDownload).toHaveBeenCalledTimes(3);
     expect(cloudDownload.mock.calls).toEqual([
-      ["hash-alpha", { probeUnknown: true, signal: undefined }],
-      ["hash-A", { probeUnknown: true, signal: undefined }],
-      ["hash-B", { probeUnknown: true, signal: undefined }],
+      ["hash-alpha", { probeUnknown: false, signal: undefined }],
+      ["hash-A", { probeUnknown: false, signal: undefined }],
+      ["hash-B", { probeUnknown: false, signal: undefined }],
     ]);
     const options = renderCell.mock.calls[0]![3] as {
       size: number;
@@ -126,15 +127,26 @@ describe("warmSequenceCells", () => {
     expect(renderCell).not.toHaveBeenCalled();
   });
 
-  it("reuses server images on a fresh browser without rendering or uploading", async () => {
-    cloudDownload.mockResolvedValue(
-      new Blob(["already published"], { type: "image/webp" })
+  it("prepares a fresh browser's unknown cells without speculative GET requests", async () => {
+    const cache = await vi.importActual<typeof CloudCellCache>(
+      "./pictograph-cloud-cache"
     );
-    expect(knownCloudHashes.size).toBe(0);
-    const result = await warmSequenceCells(sequence, { requireComplete: true });
-    expect(result.ready).toBe(3);
-    expect(cloudDownload).toHaveBeenCalledTimes(3);
-    expect(renderCell).not.toHaveBeenCalled();
+    cache._resetForTest();
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    vi.stubGlobal("fetch", fetchMock);
+    cloudDownload.mockImplementation(cache.download);
+    try {
+      const result = await warmSequenceCells(sequence, {
+        requireComplete: true,
+      });
+      expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
+      expect(renderCell).toHaveBeenCalledTimes(3);
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      cloudDownload.mockReset().mockResolvedValue(null);
+      cache._resetForTest();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("warms the participating hand only for solo choreography", async () => {
