@@ -5,7 +5,7 @@
   import type { PropBuildPreviewOption } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 
   interface Props {
-    label: string;
+    label?: string;
     value: T;
     options: readonly PropBuildPreviewOption<T>[];
     onchange: (value: T) => void;
@@ -48,12 +48,18 @@
   }
 </script>
 
-<section class="picker" class:secondary={density === "secondary"}>
-  <div class="picker-heading">
-    <span class="picker-label">{label}</span>
-  </div>
+<section
+  class="picker"
+  class:secondary={density === "secondary"}
+  class:headingless={!label}
+>
+  {#if label}
+    <div class="picker-heading">
+      <span class="picker-label">{label}</span>
+    </div>
+  {/if}
 
-  <div class="option-grid" role="radiogroup" aria-label={label}>
+  <div class="option-grid" role="radiogroup" aria-label={label ?? "Options"}>
     {#each options as option, index (option.id)}
       <button
         type="button"
