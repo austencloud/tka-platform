@@ -476,9 +476,15 @@ Last audit: 2025-12-27
   }
 
   function handlePointerDown(e: PointerEvent) {
+    // Right-clicks and auxiliary buttons open the context menu; they are never
+    // canvas taps and must not leave a play/pause gesture armed for pointerup.
+    if (e.button !== 0) {
+      pointerStart = null;
+      return;
+    }
     pointerStart = { x: e.clientX, y: e.clientY, t: e.timeStamp };
     longPressFired = false;
-    if (e.button !== 0 || e.pointerType === "mouse" || !hasContextMenu) return;
+    if (e.pointerType === "mouse" || !hasContextMenu) return;
     const x = e.clientX;
     const y = e.clientY;
     longPressTimer = setTimeout(() => {
@@ -498,6 +504,10 @@ Last audit: 2025-12-27
   }
 
   function handlePointerUp(e: PointerEvent) {
+    if (e.button !== 0) {
+      pointerStart = null;
+      return;
+    }
     cancelLongPress();
     if (!tapToToggle || longPressFired || !pointerStart) {
       pointerStart = null;
@@ -719,6 +729,8 @@ Last audit: 2025-12-27
 
   function handleContextMenu(e: MouseEvent) {
     if (!hasContextMenu) return;
+    cancelLongPress();
+    pointerStart = null;
     e.preventDefault();
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
   }

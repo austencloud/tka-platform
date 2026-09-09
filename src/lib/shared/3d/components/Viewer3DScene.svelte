@@ -414,14 +414,14 @@
   onMount(() => {
     let mounted = true;
 
-    // Prop fallbacks still belong to app settings. Environment choice does not.
-    if (!leftPropTypeOverride || !rightPropTypeOverride) {
-      void import("$lib/shared/settings/state/settings-state.svelte").then(
-        ({ settingsService }) => {
-          if (mounted) viewerSettings = settingsService;
-        }
-      );
-    }
+    // Prop type overrides choose the choreography's props, but Buugeng
+    // chirality stays a personal setting. Load settings for both so a Browse
+    // viewer with explicit prop types still shows the selected handedness.
+    void import("$lib/shared/settings/state/settings-state.svelte").then(
+      ({ settingsService }) => {
+        if (mounted) viewerSettings = settingsService;
+      }
+    );
 
     if (enableEffects) {
       onEffectsRuntimeReadyChange?.(false);

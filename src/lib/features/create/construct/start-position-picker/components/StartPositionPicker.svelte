@@ -349,7 +349,11 @@ Controls moved below the grid for better UX
 >
   {#if !embedded}
     <div class="heading-region">
-      <Crossfade key={suppressHeading} animateHeight duration={DURATION.emphasis}>
+      <Crossfade
+        key={suppressHeading}
+        animateHeight
+        duration={DURATION.emphasis}
+      >
         {#if !suppressHeading}
           <div class="workspace-heading">
             {#if heading}
@@ -369,7 +373,7 @@ Controls moved below the grid for better UX
       value={pickerPath}
       onchange={handlePathChange}
       color="accent"
-      size="sm"
+      size={pickerPath === "build" ? "md" : "sm"}
       ariaLabel="Start position method"
     />
   </div>
@@ -878,4 +882,78 @@ Controls moved below the grid for better UX
     }
   }
 
+  .start-pos-picker.build-path {
+    max-width: 58rem;
+    margin-inline: auto;
+  }
+
+  .start-pos-picker.build-path .workspace-heading {
+    min-height: 68px;
+    padding-top: 20px;
+  }
+
+  .start-pos-picker.build-path :global(.workspace-hint) {
+    font-family: inherit;
+    font-size: clamp(1.125rem, 3cqi, 1.75rem);
+    font-weight: 600;
+    letter-spacing: normal;
+    white-space: normal;
+  }
+
+  .start-pos-picker.build-path .path-selector {
+    width: min(calc(100% - 24px), 18rem);
+    margin: 0 auto;
+  }
+
+  @media (max-height: 620px) and (min-width: 60rem) {
+    .start-pos-picker.build-path .workspace-heading {
+      min-height: 0;
+      padding-top: 0;
+    }
+  }
+
+  @media (min-width: 1100px) and (min-height: 700px) {
+    .start-pos-picker.build-path {
+      max-width: none;
+      display: grid;
+      grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-areas: ". hint sel" "view view view";
+      gap: 12px;
+      padding: 14px clamp(24px, 2.5vw, 64px) clamp(24px, 2.5vw, 64px);
+      box-sizing: border-box;
+      background: var(--theme-panel-bg);
+    }
+
+    .start-pos-picker.build-path .heading-region {
+      grid-area: hint;
+      align-self: center;
+    }
+
+    .start-pos-picker.build-path .workspace-heading {
+      min-height: 56px;
+      align-items: center;
+      padding: 0;
+    }
+
+    .start-pos-picker.build-path :global(.workspace-hint) {
+      text-align: center;
+      font-size: clamp(24px, 1.7vw, 36px);
+    }
+
+    .start-pos-picker.build-path .path-selector {
+      grid-area: sel;
+      margin: 0;
+      width: min(100%, 18rem);
+      align-self: center;
+      justify-self: end;
+    }
+
+    .start-pos-picker.build-path .picker-view {
+      grid-area: view;
+      border-top: 1px solid var(--theme-stroke);
+      padding-top: 16px;
+      box-sizing: border-box;
+    }
+  }
 </style>
