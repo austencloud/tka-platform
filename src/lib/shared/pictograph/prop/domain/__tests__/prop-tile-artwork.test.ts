@@ -5,6 +5,15 @@ import { PROP_MODEL_SPRITES } from "../prop-model-sprites.generated";
 const glyph = "/images/props/buttons/x.svg";
 
 describe("navigation prop artwork", () => {
+  it("keeps the fire staff shaft visible in navigation while retaining the model in pickers", () => {
+    const appearance = { propLook: "model" as const };
+    expect(
+      propGlyphArtwork("fire_double_staff", "left", appearance, glyph).href
+    ).toBe(glyph);
+    expect(
+      propTileArtwork("fire_double_staff", "left", appearance, glyph).href
+    ).toContain("/model/");
+  });
   it.each(["fan", "bigfan"])(
     "keeps flat grips in both %s glyphs without substituting a tile photo",
     (type) => {
@@ -47,10 +56,51 @@ describe("navigation prop artwork", () => {
   it("retains the selected model and its per-hand crop for non-fans", () => {
     const appearance = { propLook: "model" as const };
     for (const side of ["left", "right"] as const) {
-      expect(propGlyphArtwork("club", side, appearance, glyph)).toEqual(
-        propTileArtwork("club", side, appearance, glyph)
-      );
+      expect(propGlyphArtwork("club", side, appearance, glyph)).toEqual({
+        ...propTileArtwork("club", side, appearance, glyph),
+        rotation: 180,
+      });
     }
+  });
+
+  it.each([
+    "chicken",
+    "guitar",
+    "ukulele",
+    "triquetra",
+    "contactball",
+    "bigcontactball",
+  ])(
+    "centers %s on its painted half without changing the picker artwork",
+    (type) => {
+      const crop = propGlyphArtwork(type, "left", {}, glyph).crop!;
+      expect(crop.x).toBeGreaterThan(crop.imageWidth * 0.2);
+      expect(crop.width).toBeLessThan(crop.imageWidth * 0.8);
+      expect(propTileArtwork(type, "left", {}, glyph).crop).toBeUndefined();
+    }
+  );
+
+  it("uses each notation fan's own canvas instead of the physical fan crop", () => {
+    const fanAppearance = {
+      build: "pictograph" as const,
+      frameColor: "black" as const,
+      cover: "bare" as const,
+    };
+    const small = propGlyphArtwork(
+      "fan",
+      "left",
+      { fanAppearance },
+      glyph
+    ).crop!;
+    const big = propGlyphArtwork(
+      "bigfan",
+      "left",
+      { fanAppearance },
+      glyph
+    ).crop!;
+    expect(big.imageWidth).toBeGreaterThan(small.imageWidth);
+    expect(big.imageHeight).toBeGreaterThan(small.imageHeight);
+    expect(big).not.toEqual(propGlyphArtwork("bigfan", "left", {}, glyph).crop);
   });
 });
 

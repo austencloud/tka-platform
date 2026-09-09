@@ -227,7 +227,9 @@
           <feMorphology
             in="solid"
             operator="dilate"
-            radius="1.2"
+            radius={(hand === "left" ? leftGlyph.prelit : rightGlyph.prelit)
+              ? 2.4
+              : 1.2}
             result="ink"
           />
           <feFlood
@@ -241,7 +243,9 @@
       transform={mixedPair ? "translate(28, 42) scale(0.34)" : leftTransform}
       filter={`url(#${id}-left)`}
     >
-      <g transform={leftFlipped ? "scale(-1, 1)" : undefined}>
+      <g
+        transform={`rotate(${leftGlyph.rotation ?? 0}) scale(${leftFlipped ? -1 : 1}, 1)`}
+      >
         {@render propImage(leftGlyph, false)}
       </g>
     </g>
@@ -249,7 +253,9 @@
       transform={mixedPair ? "translate(72, 58) scale(0.34)" : rightTransform}
       filter={`url(#${id}-right)`}
     >
-      <g transform={rightFlipped ? "scale(-1, 1)" : undefined}>
+      <g
+        transform={`rotate(${rightGlyph.rotation ?? 0}) scale(${rightFlipped ? -1 : 1}, 1)`}
+      >
         {@render propImage(rightGlyph, false)}
       </g>
     </g>
