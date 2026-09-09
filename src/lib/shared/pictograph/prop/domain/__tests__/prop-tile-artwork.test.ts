@@ -1,8 +1,58 @@
 import { describe, expect, it } from "vitest";
-import { propTileArtwork } from "../prop-look";
+import { propTileArtwork, propGlyphArtwork } from "../prop-look";
 import { PROP_MODEL_SPRITES } from "../prop-model-sprites.generated";
 
 const glyph = "/images/props/buttons/x.svg";
+
+describe("navigation prop artwork", () => {
+  it.each(["fan", "bigfan"])(
+    "keeps flat grips in both %s glyphs without substituting a tile photo",
+    (type) => {
+      const appearance = {
+        fanAppearance: {
+          build: "flat-grip" as const,
+          frameColor: "black" as const,
+          cover: "bare" as const,
+        },
+      };
+      for (const side of ["left", "right"] as const) {
+        const art = propGlyphArtwork(type, side, appearance, glyph);
+        expect(art.href).toContain("fan-flat-grip.svg");
+        expect(art.fill).toBeUndefined();
+        expect(art.prelit).toBe(false);
+        expect(art.crop!.x).toBeGreaterThan(0);
+      }
+    }
+  );
+
+  it("keeps the cover and notation choices distinct", () => {
+    const fanAppearance = {
+      build: "fire" as const,
+      frameColor: "black" as const,
+      cover: "covered" as const,
+    };
+    expect(
+      propGlyphArtwork("fan", "left", { fanAppearance }, glyph).href
+    ).toContain("fan-fire-covered.svg");
+    expect(
+      propGlyphArtwork(
+        "fan",
+        "left",
+        { fanAppearance: { ...fanAppearance, build: "pictograph" } },
+        glyph
+      ).href
+    ).toBe(glyph);
+  });
+
+  it("retains the selected model and its per-hand crop for non-fans", () => {
+    const appearance = { propLook: "model" as const };
+    for (const side of ["left", "right"] as const) {
+      expect(propGlyphArtwork("club", side, appearance, glyph)).toEqual(
+        propTileArtwork("club", side, appearance, glyph)
+      );
+    }
+  });
+});
 
 describe("propTileArtwork", () => {
   it("draws the pre-lit model capture per hand for the model look", () => {
@@ -41,9 +91,7 @@ describe("propTileArtwork", () => {
     expect(
       propTileArtwork("club", "left", { propLook: "pictograph" }, glyph)
     ).toEqual({ href: glyph, styled: false, prelit: false });
-    expect(propTileArtwork("energy_saber", "left", {}, glyph).href).toBe(
-      glyph
-    );
+    expect(propTileArtwork("energy_saber", "left", {}, glyph).href).toBe(glyph);
   });
 
   it("draws the rendered preview of the chosen fan build", () => {
