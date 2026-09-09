@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
+  import type { ViewerCustomColorPair } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
   import {
     createRenderActivityGate,
     renderGateTarget,
@@ -115,6 +116,7 @@
     showControls = true,
     leftPropType = null,
     rightPropType = null,
+    primaryPropColors,
     externalBpm = null,
     externalPlaying = null,
     externalPlaybackMode = null,
@@ -342,6 +344,7 @@
      *  visitor's in-app settings nor mutates them. Forwarded to AnimatorCanvas
      *  so the engine-side reads scope the same way. */
     visibilityManagerOverride?: AnimationVisibilityStateManager;
+    primaryPropColors?: ViewerCustomColorPair;
     /** Optional prop timing/direction relationship for the canvas's top-right corner. */
     propElementalType?: ElementalType | null;
     /** Let annotation chrome use a rectangular host while preserving the
@@ -907,6 +910,7 @@
         {effectsConfigState}
         {leftPropType}
         {rightPropType}
+        {primaryPropColors}
         positionGlyphVisible={showPositionGlyph}
         {propElementalType}
         {glyphFrame}

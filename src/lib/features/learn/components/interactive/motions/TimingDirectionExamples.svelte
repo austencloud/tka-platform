@@ -11,12 +11,20 @@
   import { downbeatPulse } from "./timing-intro-phase";
   import type { TimingLessonTopic } from "./timing-lesson-stage";
   import PlacementComparison from "./PlacementComparison.svelte";
+  import { DEFAULT_VIEWER_CUSTOM_COLORS } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
 
   let { topic, active = true }: { topic: TimingLessonTopic; active?: boolean } =
     $props();
   let elapsed = $state(0);
   let quiet = $state(true);
   let reversed = $state([false, false]);
+  let selectedRhythm = $state("Together");
+
+  function selectRhythm(label: string): void {
+    if (label === selectedRhythm) return;
+    selectedRhythm = label;
+    elapsed = 0;
+  }
   const rhythms = [
     { label: "Together", offset: 0, caption: "Downbeats land together." },
     { label: "Split", offset: 0.5, caption: "Downbeats alternate evenly." },
@@ -63,7 +71,12 @@
   });
 </script>
 
-<div class="examples-stage" use:renderGateTarget={gate}>
+<div
+  class="examples-stage"
+  style:--lesson-left={DEFAULT_VIEWER_CUSTOM_COLORS.left}
+  style:--lesson-right={DEFAULT_VIEWER_CUSTOM_COLORS.right}
+  use:renderGateTarget={gate}
+>
   <Crossfade key={topic} fill>
     <div class="examples-scroll">
       <div class="teaching-band">
@@ -72,40 +85,52 @@
         {:else if topic === "timing"}
           <div class="examples" role="group" aria-label="Timing examples">
             {#each rhythms as rhythm}
-              <section class="example" aria-label={`${rhythm.label} timing`}>
-                <div class="pulse-picture">
-                  <svg
-                    viewBox="0 0 260 156"
-                    role="img"
-                    aria-label={rhythm.caption}
-                  >
-                    {#each [0, rhythm.offset] as phase, index}
-                      {@const strength = quiet
-                        ? 0
-                        : downbeatPulse(elapsed, phase)}
-                      <g class:blue={index === 0} class:red={index === 1}>
-                        <circle
-                          class="pulse-ring"
-                          cx={index === 0 ? 70 : 190}
-                          cy="78"
-                          r={34 + 12 * (1 - strength)}
-                          opacity={0.15 + strength * 0.55}
-                        />
-                        <circle
-                          fill="currentColor"
-                          cx={index === 0 ? 70 : 190}
-                          cy="78"
-                          r={23 + 5 * strength}
-                          opacity={0.5 + 0.5 * strength}
-                        />
-                      </g>
-                    {/each}
-                  </svg>
-                </div>
-                <div class="caption">
-                  <h2>{rhythm.label}</h2>
-                  <p>{rhythm.caption}</p>
-                </div>
+              <section
+                class="example timing-example"
+                class:selected={selectedRhythm === rhythm.label}
+                aria-label={`${rhythm.label} timing`}
+              >
+                <PanelButton
+                  fullWidth
+                  ariaLabel={`${rhythm.label} timing: ${rhythm.caption}`}
+                  ariaPressed={selectedRhythm === rhythm.label}
+                  onclick={() => selectRhythm(rhythm.label)}
+                >
+                  <div class="pulse-picture">
+                    <svg
+                      viewBox="0 0 260 156"
+                      role="img"
+                      aria-label={rhythm.caption}
+                    >
+                      {#each [0, rhythm.offset] as phase, index}
+                        {@const strength =
+                          quiet || selectedRhythm !== rhythm.label
+                            ? 0
+                            : downbeatPulse(elapsed, phase)}
+                        <g class:blue={index === 0} class:red={index === 1}>
+                          <circle
+                            class="pulse-ring"
+                            cx={index === 0 ? 70 : 190}
+                            cy="78"
+                            r={34 + 12 * (1 - strength)}
+                            opacity={0.15 + strength * 0.55}
+                          />
+                          <circle
+                            fill="currentColor"
+                            cx={index === 0 ? 70 : 190}
+                            cy="78"
+                            r={23 + 5 * strength}
+                            opacity={0.5 + 0.5 * strength}
+                          />
+                        </g>
+                      {/each}
+                    </svg>
+                  </div>
+                  <div class="caption">
+                    <h2>{rhythm.label}</h2>
+                    <p>{rhythm.caption}</p>
+                  </div>
+                </PanelButton>
               </section>
             {/each}
           </div>
@@ -218,6 +243,30 @@
     background: var(--theme-panel-bg);
     padding: 0.75rem;
   }
+  .timing-example :global(.panel-btn) {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    height: 100%;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: var(--theme-panel-bg);
+    transform: scale(0.94);
+    transition:
+      transform var(--transition-emphasis),
+      box-shadow var(--transition-emphasis),
+      border-color var(--transition-emphasis),
+      background-color var(--transition-emphasis);
+  }
+  .timing-example.selected :global(.panel-btn) {
+    transform: translateY(-0.3rem) scale(1);
+    border-color: var(--theme-accent);
+    box-shadow: var(--shadow-elevated);
+  }
+  .timing-example .pulse-picture {
+    border: 0;
+    background: none;
+  }
   svg {
     width: 100%;
     display: block;
@@ -240,16 +289,17 @@
   }
   p {
     margin: 0.65rem 0 0;
+    font-weight: 400;
     color: var(--theme-text-dim);
     font-size: clamp(1rem, 1.15cqw, 1.25rem);
     line-height: 1.45;
     text-wrap: balance;
   }
   .blue {
-    color: var(--prop-blue, #3d44b8);
+    color: var(--lesson-left);
   }
   .red {
-    color: var(--prop-red, #ed1c24);
+    color: var(--lesson-right);
   }
   .pulse-ring {
     fill: none;
@@ -282,6 +332,24 @@
       grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
       gap: 0.75rem;
     }
+    .timing-example {
+      display: block;
+    }
+    .timing-example :global(.panel-btn) {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 0.75rem;
+      padding: 0.5rem;
+    }
+    .timing-example svg {
+      height: 4rem;
+    }
+    .timing-example h2 {
+      font-size: 1.125rem;
+    }
+    .timing-example p {
+      font-size: 0.875rem;
+    }
     .pulse-picture {
       padding: 0.25rem;
     }
@@ -309,6 +377,15 @@
       align-items: center;
       gap: 0.75rem;
     }
+    .timing-example {
+      display: block;
+    }
+    .timing-example :global(.panel-btn) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
     h2 {
       font-size: 1.25rem;
     }
@@ -321,7 +398,8 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .turn {
+    .turn,
+    .timing-example :global(.panel-btn) {
       transition: none;
     }
   }
@@ -341,6 +419,11 @@
     }
   }
   :global([data-motion-preference="reduce"]) .turn {
+    transition: none;
+  }
+  :global([data-motion-preference="reduce"])
+    .timing-example
+    :global(.panel-btn) {
     transition: none;
   }
 </style>

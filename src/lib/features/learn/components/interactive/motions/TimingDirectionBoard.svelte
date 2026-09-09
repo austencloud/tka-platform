@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
+  import { DEFAULT_VIEWER_CUSTOM_COLORS } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { CARD_SIZES } from "$lib/features/choreo-card/domain/card-sizes";
   import { HAND_PATH_REFERENCE_SCAN_URLS } from "$lib/features/choreo-card/domain/hand-path-reference-card-manifest";
@@ -267,6 +268,7 @@
         <div class="study-surfaces" inert={!!focusedMode && !isFocused}>
           <div class="mode-player">
             <HandMotionPlayer
+              primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
               sequence={mode.sequence}
               ariaLabel={`${fullNameFor(mode)}: ${definitionFor(mode)}`}
               showElementalGlyph={false}
@@ -298,6 +300,7 @@
               {#snippet second()}
                 {#if mountedCards.has(mode.id)}
                   <ChoreoCard
+                    primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
                     sequence={mode.sequence}
                     handPathMode
                     darkMode
