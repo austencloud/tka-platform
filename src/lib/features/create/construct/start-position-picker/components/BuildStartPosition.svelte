@@ -377,8 +377,8 @@
 
   @container position-builder (min-width: 1000px) and (min-height: 560px) {
     .builder-layout {
-      width: min(100%, calc(100cqh + 24rem), 90rem);
-      height: min(100%, 64rem);
+      width: min(100%, calc(100cqh + 24rem), 110rem);
+      height: min(100%, 84rem);
       align-self: center;
       padding: 24px;
       gap: clamp(32px, 4cqw, 80px);
