@@ -10,7 +10,7 @@ export const TIMING_LESSON_TOPICS = [
   {
     id: "timing",
     title: "Timing",
-    description: "Timing compares when the downbeats happen.",
+    description: "Choose a rhythm to watch its downbeats.",
   },
   {
     id: "direction",

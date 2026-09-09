@@ -209,3 +209,38 @@ check reports zero errors and warnings.
 Gate 6 now includes separate top-selected and bottom-selected Card/Studio replays.
 Its trace reports the selected half, live Card-settings identities, and sampled
 motion-settings fade frames so the two cases can be reviewed independently.
+
+### Dissolve pacing correction · 2026-09-09
+
+The first sidebar fix retained the controls but kept the 150ms, front-loaded
+button-feedback easing. That was technically a fade, yet visually too close to
+a pop. A busy Card return also skipped middle rAF samples, so counting fade
+frames alone was not sufficient evidence of a readable handoff.
+
+Motion and Card settings now use the shared 350ms duration with ease-in-out,
+and their persistent layers advertise opacity compositing before the switch.
+The live preview's Studio entry passed through 12%, 21%, 33%, 46%, 57%, 67%,
+74%, 80%, 85% and 89% opacity over roughly 150ms of its middle range. The
+return also retained intermediate opacity instead of immediately hiding the
+outgoing controls. These are measured CSS samples, not a claim of fixed frame
+rate while the Card recomposes. Visibility waits for the full dissolve; reduced
+motion clears both duration and delay. No geometry or artwork motion changed.
+
+### Reflow on return to the phone · 2026-09-09
+
+The shared Card could land in a 366×287 phone slot while its Auto grid picker
+still read a 760×847 focused-view destination. Clearing the viewer destination
+did not clear the sizing state's separate container override. This kept the
+portrait grid even though the outer Card already fit the phone.
+
+When both the destination and its motion phase are released, the sizing owner
+now returns the grid picker to live container measurements. A collapsing viewer
+pane still holds its destination during motion. No column count is forced and
+the existing Card flight/reflow animation is unchanged.
+
+Two regression cases failed before the fix with 760×847 instead of 366×287:
+direct release into Studio and release after a collapsing pane. Both now pass,
+including subsequent live resizing and reuse of a new viewer destination. All
+six focused sizing tests pass. Three browser round trips at 1440×900 retained
+the same Card node: focused mode chose 3×4, and the phone consistently returned
+to 4×3 with a 344×287 Card in its 367×287 slot.

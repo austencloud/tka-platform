@@ -1765,6 +1765,23 @@
       visibility 0s linear 0s;
   }
 
+  /* These are whole workspaces of controls, not button feedback. A fast,
+     front-loaded fade reads as a pop beside the travelling Card. Let the
+     existing layers dissolve over the same deliberate beat in either direction. */
+  .inspector-content-layer:is(.motion-settings-layer, .card-settings-layer) {
+    will-change: opacity;
+    transition:
+      opacity var(--duration-dramatic) var(--ease-in-out),
+      visibility 0s linear var(--duration-dramatic);
+  }
+
+  .inspector-content-layer:is(
+      .motion-settings-layer,
+      .card-settings-layer
+    )[data-active="true"] {
+    transition-delay: 0s, 0s;
+  }
+
   .motion-settings-layer {
     display: flex;
     justify-content: flex-end;
@@ -1894,6 +1911,7 @@
 
   :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {
     transition-duration: 0ms, 0s;
+    transition-delay: 0s, 0s;
   }
 
   /* PanelGroup owns the dock's structural motion. Keep Card settings composed

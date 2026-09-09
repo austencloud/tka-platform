@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { DEFAULT_VIEWER_CUSTOM_COLORS } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import SequenceTransformActions from "$lib/shared/create/components/SequenceTransformActions.svelte";
@@ -117,6 +118,8 @@
       <section class="position-example" aria-label={`${example.kind} position`}>
         <div class="pictograph">
           <PictographContainer
+            leftColorOverride={DEFAULT_VIEWER_CUSTOM_COLORS.left}
+            rightColorOverride={DEFAULT_VIEWER_CUSTOM_COLORS.right}
             pictographData={example.data}
             motionStartData={transitions[index]?.startData}
             motionStep={transitions[index]?.transitionStep}

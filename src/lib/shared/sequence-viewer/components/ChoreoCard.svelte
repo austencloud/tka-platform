@@ -16,6 +16,7 @@
   // Note: transition/animation imports (fade, fly, scale, flip, cubicOut) moved to
   // extracted sub-components (CardHeader, CardFooter, CardGridLayout, CellRenderer).
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { ViewerCustomColorPair } from "../domain/viewer-custom-colors";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
   import type { ViewerPaneBox } from "./viewer-panel-layout";
   import { onDestroy, tick } from "svelte";
@@ -105,6 +106,7 @@
     // Prop overrides
     leftPropType?: PropType;
     rightPropType?: PropType;
+    primaryPropColors?: ViewerCustomColorPair;
     catDogModeEnabled?: boolean;
     // Step highlighting (for animation sync)
     highlightedStepIndex?: number | null; // 0-indexed step to highlight (null = none)
@@ -169,6 +171,7 @@
     browseViewMode,
     darkMode = false,
     frameColors,
+    primaryPropColors,
     cardAspectRatio,
     customTitleText: requestedTitleText,
     customNotesText = "Created using Flow Arts Composer",
@@ -642,7 +645,7 @@
         : getSettings().fanAppearance,
       primaryPropColors: cloudProbeEnabled
         ? null
-        : getSettings().primaryPropColors,
+        : (primaryPropColors ?? getSettings().primaryPropColors),
       // A scan represents the printed card, not the scanner's personal export
       // toggles. Pin the same canonical visibility used when QR creation
       // verifies cloud assets; retain the sequence's participating hands.
@@ -705,7 +708,7 @@
         : getSettings().fanAppearance,
       primaryPropColors: cloudProbeEnabled
         ? null
-        : getSettings().primaryPropColors,
+        : (primaryPropColors ?? getSettings().primaryPropColors),
       sequence,
       leftPropType,
       rightPropType,
