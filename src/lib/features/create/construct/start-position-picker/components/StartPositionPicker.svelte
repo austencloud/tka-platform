@@ -349,7 +349,11 @@ Controls moved below the grid for better UX
 >
   {#if !embedded}
     <div class="heading-region">
-      <Crossfade key={suppressHeading} animateHeight duration={DURATION.emphasis}>
+      <Crossfade
+        key={suppressHeading}
+        animateHeight
+        duration={DURATION.emphasis}
+      >
         {#if !suppressHeading}
           <div class="workspace-heading">
             {#if heading}
@@ -878,4 +882,33 @@ Controls moved below the grid for better UX
     }
   }
 
+  .start-pos-picker.build-path {
+    max-width: 58rem;
+    margin-inline: auto;
+  }
+
+  .start-pos-picker.build-path .workspace-heading {
+    min-height: 68px;
+    padding-top: 20px;
+  }
+
+  .start-pos-picker.build-path :global(.workspace-hint) {
+    font-family: inherit;
+    font-size: clamp(1.125rem, 3cqi, 1.75rem);
+    font-weight: 600;
+    letter-spacing: normal;
+    white-space: normal;
+  }
+
+  .start-pos-picker.build-path .path-selector {
+    width: min(calc(100% - 24px), 18rem);
+    margin: 0 auto;
+  }
+
+  @media (max-height: 620px) and (min-width: 60rem) {
+    .start-pos-picker.build-path .workspace-heading {
+      min-height: 0;
+      padding-top: 0;
+    }
+  }
 </style>
