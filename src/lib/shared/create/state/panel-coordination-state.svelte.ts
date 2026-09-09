@@ -176,20 +176,10 @@ export interface CustomizeOverlayProps {
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
   };
-  /** Absent means the generator rolls its own turns under the intensity ceiling. */
-  turnPattern: { left: (number | "fl")[]; right: (number | "fl")[] } | null;
-  /** The ceiling from the bento's Turn Intensity card, which caps the strip's values. */
-  turnIntensity: number;
-  sequenceLength: number;
-  /** A LOOP's seed block, when one is active. Restricts the periods offered. */
-  loopPeriod?: number;
   onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
   onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
-  onTurnPatternChange: (
-    lanes: { left: (number | "fl")[]; right: (number | "fl")[] } | null
-  ) => void;
   /** "Reset all" — every persisted generation setting back to first-run. */
   onResetAll: (() => void) | null;
 }

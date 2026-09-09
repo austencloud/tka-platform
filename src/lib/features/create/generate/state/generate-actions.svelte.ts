@@ -549,7 +549,6 @@ export function createGenerationActionsState(
                 handPathMode: cfg?.handPathMode,
                 motionTypeFilter: cfg?.motionTypeFilter,
                 turnIntensity: cfg?.turnIntensity,
-                turnPattern: cfg?.turnPattern,
                 loopEnabled: cfg?.loopEnabled,
                 loopType: cfg?.loopType,
                 period: cfg?.period,
