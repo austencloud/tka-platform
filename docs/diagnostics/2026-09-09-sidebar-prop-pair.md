@@ -79,3 +79,25 @@ remained red. Left/right modes rendered one corresponding hand per tile.
 Paired mode rendered both, and the grip controls updated the chosen silhouette.
 No horizontal overflow or browser console errors. All 28 focused color,
 composition and artwork tests passed, and Svelte check was clean.
+
+## Detail-preserving color correction
+
+The shared alpha flood and dilation introduced above erased guitar accents and
+expanded the double star's outline. Paired vector previews now use the canonical
+SVG color transformer, preserving original paths, cutouts, white strings and fan
+wick materials. Custom colors change the painted body or fan frame. Larger
+picker artwork has no edge-strengthening filter; only fans at 40px or smaller
+receive extra alpha coverage for their fine spokes, without dilation.
+
+Captured model previews use a color matrix based on the capture palette instead
+of an alpha silhouette. It preserves neutral details and edge alpha while
+recoloring chromatic paint. The existing poses, crop windows, selected builds
+and per-hand settings remain in use.
+
+Verified the production PropGridButton with guitar, ukulele, chicken, both
+double stars and flat-grip fans at 1440x1000 and 375x812, alongside 36px and 40px
+navigation previews. Strings, cutouts and separate star interiors are visible.
+Changing left green to orange preserved right red; all 36 fixture images loaded
+and there was no horizontal overflow or browser console warning/error. Also
+inspected gallery vectors, fan builds and model guitar/star/ring previews.
+All 35 focused color, composition and artwork tests passed.
