@@ -1,8 +1,8 @@
 <!--
 CustomizeExpandedOverlay.svelte - Customize panel, one decision at a time.
 
-A SettingsDrillPanel over four settings: Style, Start Position, End Position,
-Start Orientation. The root list shows each one's current value; choosing a row
+A SettingsDrillPanel over Style, Start Position, and End Position.
+The root list shows each one's current value; choosing a row
 gives that setting the whole panel. Single column at every size — see
 SettingsDrillPanel's header for why the two-pane variant was removed.
 
@@ -48,7 +48,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import GenerationSettingsOverlay from "./GenerationSettingsOverlay.svelte";
-  import TurnPatternSection from "../modals/customize/TurnPatternSection.svelte";
   import {
     clampStartOrientationToLevel,
     startOrientationsForLevel,
@@ -62,11 +61,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     level = 3,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
-    turnPattern = null,
-    turnIntensity = 1,
-    sequenceLength = 8,
-    loopPeriod = undefined,
-    onTurnPatternChange = () => {},
     styleBaseline = PRODUCTION_STYLE_BASELINE,
     onConstraintPresetChange,
     onHandPathModeChange,
@@ -82,13 +76,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     level?: number;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
-    turnPattern?: { left: (number | "fl")[]; right: (number | "fl")[] } | null;
-    turnIntensity?: number;
-    sequenceLength?: number;
-    loopPeriod?: number;
-    onTurnPatternChange?: (
-      lanes: { left: (number | "fl")[]; right: (number | "fl")[] } | null
-    ) => void;
     styleBaseline?: CustomizeStyleBaseline;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
@@ -105,7 +92,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   });
 
   // Always opens on the root list — picking WHICH factor to change is itself
-  // the first decision, and the list shows all four current values, so nothing
+  // the first decision, and the list shows all current values, so nothing
   // is buried the way it was when one accordion section was open at a time.
   // (The accordion's "remember the last open section" localStorage existed
   // because a collapsed section hid its value; the root list doesn't.)
@@ -198,15 +185,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     return `${n} positions`;
   });
 
-  // What the engine will actually do. A pattern REPLACES the intensity ceiling
-  // rather than combining with it, so the row reports whichever one is in force.
-  const turnPatternDisplay = $derived.by(() => {
-    if (!turnPattern) return `Random, ≤${turnIntensity}`;
-    const lane = (values: readonly (number | "fl")[]) =>
-      values.length ? values.map(String).join("·") : "0";
-    return `Left ${lane(turnPattern.left)} · Right ${lane(turnPattern.right)}`;
-  });
-
   // The shared picker speaks blocklist; end positions are an allowlist. Invert
   // at this seam so the primitive is reused unchanged (never-hand-roll) and
   // both position screens look and behave identically: all cells bright = no
@@ -263,7 +241,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
       disabled: !isFreeformMode,
       disabledReason: "Set by LOOP",
     },
-    { id: "turnPattern", label: "Turn Pattern", value: turnPatternDisplay },
   ]);
 
   function handleClose() {
@@ -438,19 +415,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
               {gridMode}
             />
           </div>
-        {:else if id === "turnPattern"}
-          <div class="drill-fill pattern-fill">
-            <TurnPatternSection
-              {turnPattern}
-              {level}
-              {turnIntensity}
-              leftStartOrientation={localLeftOri}
-              rightStartOrientation={localRightOri}
-              {sequenceLength}
-              {loopPeriod}
-              {onTurnPatternChange}
-            />
-          </div>
         {/if}
       {/snippet}
     </SettingsDrillPanel>
@@ -517,15 +481,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     display: flex;
     flex-direction: column;
     gap: 14px;
-  }
-
-  /* The section owns its own vertical rhythm and grows its strip into whatever
-     height is left, so the wrapper only has to hand it the full column.
-     (`.drill-fill` already claims the remaining height from the drill panel.) */
-  .pattern-fill {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
   }
 
   .spread :global(.style-panel) {
