@@ -32,6 +32,12 @@
   } from "$lib/shared/sequence-viewer/domain/viewer-custom-colors";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
   import { HandSide } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { assetFetch } from "$lib/shared/net/asset-fetch";
+  import {
+    colorPropPreview,
+    modelPreviewColorMatrix,
+  } from "../domain/prop-preview-color";
+  import { isFanPropType } from "../domain/fan-appearance";
 
   let {
     propType,
@@ -118,6 +124,58 @@
       getPropTypeDisplayInfo(rightPropType).image
     )
   );
+  let sources = $state<Record<string, string>>({});
+  $effect(() => {
+    if (!pairedGlyph) return;
+    const paths = [
+      ...new Set(
+        [leftGlyph, rightGlyph]
+          .filter((art) => !art.prelit)
+          .map((art) => art.href)
+      ),
+    ];
+    let current = true;
+    void Promise.all(
+      paths.map(async (path) => {
+        const response = await assetFetch(path);
+        if (!response.ok)
+          throw new Error(`Prop preview artwork: ${response.status}`);
+        return [path, await response.text()] as const;
+      })
+    )
+      .then((entries) => {
+        if (current) sources = Object.fromEntries(entries);
+      })
+      .catch((error) =>
+        console.warn("Could not load detailed prop preview", error)
+      );
+    return () => {
+      current = false;
+    };
+  });
+
+  function coloredArtwork(
+    art: PropTileArtwork,
+    type: PropType,
+    color: string
+  ): PropTileArtwork {
+    if (art.prelit) return art;
+    const source = sources[art.href];
+    return {
+      ...art,
+      href: source
+        ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(colorPropPreview(source, type, color))}`
+        : "",
+    };
+  }
+  const coloredLeft = $derived(
+    coloredArtwork(leftGlyph, propType, palette.left)
+  );
+  const coloredRight = $derived(
+    coloredArtwork(rightGlyph, rightPropType, palette.right)
+  );
+  const smallLeftFan = $derived(size <= 40 && isFanPropType(propType));
+  const smallRightFan = $derived(size <= 40 && isFanPropType(rightPropType));
   // Different families need separate slots; a crossed staff recipe can hide a fan.
   const mixedPair = $derived(propType !== rightPropType);
   const plainArt = $derived({
@@ -223,24 +281,22 @@
           height="120%"
           color-interpolation-filters="sRGB"
         >
-          <!-- Fine fan spokes otherwise lose their color to subpixel coverage. -->
-          <feComponentTransfer in="SourceAlpha" result="solid">
-            <feFuncA type="linear" slope="4" />
-          </feComponentTransfer>
-          <feMorphology
-            in="solid"
-            operator="dilate"
-            radius={(hand === "left" ? leftGlyph.prelit : rightGlyph.prelit)
-              ? 2.4
-              : 1.2}
-            result="ink"
+          <feColorMatrix
+            type="matrix"
+            values={modelPreviewColorMatrix(
+              hand === "left" ? palette.left : palette.right,
+              hand as "left" | "right"
+            )}
           />
-          <feFlood
-            flood-color={hand === "left" ? palette.left : palette.right}
-          />
-          <feComposite in2="ink" operator="in" />
         </filter>
       {/each}
+      <!-- Only tiny fan spokes need extra alpha coverage. Preserve their RGB
+           detail and never expand the edges of the larger picker artwork. -->
+      <filter id={`${id}-fan-coverage`} color-interpolation-filters="sRGB">
+        <feComponentTransfer
+          ><feFuncA type="linear" slope="3" /></feComponentTransfer
+        >
+      </filter>
     </defs>
     {#if singleHand !== "right"}
       <g
@@ -249,12 +305,16 @@
           : mixedPair
             ? "translate(28, 42) scale(0.34)"
             : leftTransform}
-        filter={`url(#${id}-left)`}
+        filter={leftGlyph.prelit
+          ? `url(#${id}-left)`
+          : smallLeftFan
+            ? `url(#${id}-fan-coverage)`
+            : undefined}
       >
         <g
           transform={`rotate(${leftGlyph.rotation ?? 0}) scale(${leftFlipped ? -1 : 1}, 1)`}
         >
-          {@render propImage(leftGlyph, false)}
+          {@render propImage(coloredLeft, false)}
         </g>
       </g>
     {/if}
@@ -265,12 +325,16 @@
           : mixedPair
             ? "translate(72, 58) scale(0.34)"
             : rightTransform}
-        filter={`url(#${id}-right)`}
+        filter={rightGlyph.prelit
+          ? `url(#${id}-right)`
+          : smallRightFan
+            ? `url(#${id}-fan-coverage)`
+            : undefined}
       >
         <g
           transform={`rotate(${rightGlyph.rotation ?? 0}) scale(${rightFlipped ? -1 : 1}, 1)`}
         >
-          {@render propImage(rightGlyph, false)}
+          {@render propImage(coloredRight, false)}
         </g>
       </g>
     {/if}
