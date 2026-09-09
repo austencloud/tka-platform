@@ -650,6 +650,17 @@
         sharedInspectorIdentity: elementIdentity(
           "[data-shared-studio-inspector]"
         ),
+        motionInspectorOpacity: elementOpacity(
+          "[data-shared-studio-inspector]"
+        ),
+        cardInspectorOpacity: elementOpacity("[data-shared-card-inspector]"),
+        sharedCardInspectorIdentity: elementIdentity(
+          "[data-shared-card-inspector] .export-panel"
+        ),
+        selectedStudioHalf:
+          document
+            .querySelector(".region-surface[aria-pressed='true']")
+            ?.getAttribute("aria-label") ?? null,
         sharedCardIdentity: elementIdentity(
           "[data-shared-studio-card] .choreo-card-root"
         ),
@@ -985,11 +996,26 @@
     const source: ReviewModeLabel =
       command === "studio-3d"
         ? "3D Animation"
-        : command === "practice-card"
+        : command === "practice-card" || command.startsWith("studio-card-")
           ? "Card"
           : "2D Animation";
     if (!(await chooseMode(source, version))) return;
     if (source === "3D Animation" && !(await waitFor3DReady(version))) return;
+
+    if (command.startsWith("studio-card-")) {
+      if (!(await chooseMode("Post Studio", version))) return;
+      const halves = Array.from(
+        document.querySelectorAll<HTMLButtonElement>(".region-surface")
+      ).sort(
+        (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top
+      );
+      const selected =
+        halves[command.endsWith("bottom") ? halves.length - 1 : 0];
+      if (!selected) throw new Error("Studio has no selectable phone halves");
+      selected.click();
+      await wait(dwell);
+      if (!(await chooseMode("Card", version))) return;
+    }
 
     beginGeometryTrace(
       command,
