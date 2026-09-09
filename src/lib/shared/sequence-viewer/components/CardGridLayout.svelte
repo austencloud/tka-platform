@@ -571,7 +571,7 @@
   >
     {#if startCell && includeStartPosition}
       <div
-        class="cell-flip-wrapper"
+        class="cell-flip-wrapper start-cell-wrapper"
         style="grid-column: 1; grid-row: 1;"
         transition:scale|local={{ duration: scaleDuration, easing: cubicOut }}
       >
@@ -580,7 +580,7 @@
     {/if}
     {#each visibleCells as cell (cell.index)}
       <div
-        class="cell-flip-wrapper"
+        class="cell-flip-wrapper step-cell-wrapper"
         style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
         animate:safeFlip={{ duration: flipDuration, easing: cubicOut }}
       >

@@ -22,6 +22,7 @@
     onFocusChange,
     articleHrefFor,
     showDirectionRowLabels = false,
+    showChoreoCards = true,
     active = true,
     onReady,
   }: {
@@ -29,6 +30,8 @@
     onFocusChange?: (focused: boolean) => void;
     articleHrefFor?: (mode: TimingDirectionMode) => string;
     showDirectionRowLabels?: boolean;
+    /** Keep the zoomable timing board usable before the card-reading lesson. */
+    showChoreoCards?: boolean;
     active?: boolean;
     onReady?: () => void;
   } = $props();
@@ -98,7 +101,7 @@
     nextModeId: TimingDirectionModeId | null
   ): Promise<void> {
     requestedModeId = nextModeId;
-    if (nextModeId && !readyCards.has(nextModeId)) {
+    if (nextModeId && showChoreoCards && !readyCards.has(nextModeId)) {
       mountedCards = new Set([...mountedCards, nextModeId]);
       return;
     }
@@ -265,7 +268,11 @@
           {/if}
         </header>
 
-        <div class="study-surfaces" inert={!!focusedMode && !isFocused}>
+        <div
+          class="study-surfaces"
+          class:cards-hidden={!showChoreoCards}
+          inert={!!focusedMode && !isFocused}
+        >
           <div class="mode-player">
             <HandMotionPlayer
               primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
@@ -288,50 +295,50 @@
               framed={false}
             />
           </div>
-          <div
-            class="mode-card"
-            aria-label={`${fullNameFor(mode)} hand paths by step`}
-          >
-            <DualSourceCrossfade
-              active={isFocused ? "second" : "first"}
-              duration={DURATION.emphasis}
+          {#if showChoreoCards}<div
+              class="mode-card"
+              aria-label={`${fullNameFor(mode)} hand paths by step`}
             >
-              {#snippet first()}{/snippet}
-              {#snippet second()}
-                {#if mountedCards.has(mode.id)}
-                  <ChoreoCard
-                    primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
-                    sequence={mode.sequence}
-                    handPathMode
-                    darkMode
-                    frameColors={{
-                      accent: mode.element.accentColor,
-                      dark: mode.element.darkComplement,
-                    }}
-                    cardAspectRatio={pokerCardAspectRatio}
-                    showWord={false}
-                    customTitleText={mode.element.name}
-                    showDifficultyLevel={false}
-                    includeStartPosition
-                    columnCount={2}
-                    showNotes
-                    customNotesText={definitionFor(mode)}
-                    showLoopGlyph={false}
-                    showQRCode
-                    qrUrl={HAND_PATH_REFERENCE_SCAN_URLS[mode.id]}
-                    onReady={() => cardPrepared(mode.id)}
-                    showStepNumbers
-                    forceContain
-                    showHighlight
-                    highlightedStepIndex={isFocused
-                      ? highlightedStepIndex
-                      : null}
-                    onStepClick={seekToCardStep}
-                  />
-                {/if}
-              {/snippet}
-            </DualSourceCrossfade>
-          </div>
+              <DualSourceCrossfade
+                active={isFocused ? "second" : "first"}
+                duration={DURATION.emphasis}
+              >
+                {#snippet first()}{/snippet}
+                {#snippet second()}
+                  {#if mountedCards.has(mode.id)}
+                    <ChoreoCard
+                      primaryPropColors={DEFAULT_VIEWER_CUSTOM_COLORS}
+                      sequence={mode.sequence}
+                      handPathMode
+                      darkMode
+                      frameColors={{
+                        accent: mode.element.accentColor,
+                        dark: mode.element.darkComplement,
+                      }}
+                      cardAspectRatio={pokerCardAspectRatio}
+                      showWord={false}
+                      customTitleText={mode.element.name}
+                      showDifficultyLevel={false}
+                      includeStartPosition
+                      columnCount={2}
+                      showNotes
+                      customNotesText={definitionFor(mode)}
+                      showLoopGlyph={false}
+                      showQRCode
+                      qrUrl={HAND_PATH_REFERENCE_SCAN_URLS[mode.id]}
+                      onReady={() => cardPrepared(mode.id)}
+                      showStepNumbers
+                      forceContain
+                      showHighlight
+                      highlightedStepIndex={isFocused
+                        ? highlightedStepIndex
+                        : null}
+                      onStepClick={seekToCardStep}
+                    />
+                  {/if}
+                {/snippet}
+              </DualSourceCrossfade>
+            </div>{/if}
         </div>
 
         {#if !isFocused}
@@ -636,9 +643,18 @@
     padding: clamp(0.5rem, 0.8cqw, 0.8rem);
   }
 
+  .is-focused .study-surfaces.cards-hidden {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
   .is-focused .mode-player {
     width: 100%;
     aspect-ratio: 1;
+  }
+
+  .is-focused .study-surfaces.cards-hidden .mode-player {
+    width: min(100%, 100cqh);
   }
 
   .is-focused .mode-card {
