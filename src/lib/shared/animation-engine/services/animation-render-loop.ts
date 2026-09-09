@@ -2044,8 +2044,10 @@ export class AnimationRenderLoop {
         rightPropType: params.rightPropType,
         trackingMode: params.trailSettings.trackingMode,
         pathOptions: params.mandalaPathOptions,
-        leftColor: params.trailSettings.leftColor,
-        rightColor: params.trailSettings.rightColor,
+        leftColor:
+          params.primaryPropColors?.left ?? params.trailSettings.leftColor,
+        rightColor:
+          params.primaryPropColors?.right ?? params.trailSettings.rightColor,
         sequenceKey: params.sequenceContentHash,
       }
     );

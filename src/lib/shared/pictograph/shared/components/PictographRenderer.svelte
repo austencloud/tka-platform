@@ -83,6 +83,7 @@ Usage:
     // Beat number display
     stepNumber = null,
     showStepNumber = false,
+    showHandColorKey = undefined,
     previewMode = false,
     // Keep overlays mounted while hidden so opacity fades can play (live DOM only).
     // Export omits this so hidden overlays still hard-unmount for raw SVG capture.
@@ -167,6 +168,8 @@ Usage:
     activeLocations?: GridLocation[];
     stepNumber?: number | null;
     showStepNumber?: boolean;
+    /** Start-cell key shares the pictograph viewBox and scales with its glyphs. */
+    showHandColorKey?: boolean;
     previewMode?: boolean;
     /** Keep overlays mounted while hidden so opacity fades play (live DOM, not export) */
     animateVisibility?: boolean;
@@ -223,7 +226,9 @@ Usage:
   const rightGlyphOffset = $derived(
     glyphLayout === "edges" ? expandedWidth - BASE_SIZE : coreContentOffset
   );
-  const tkaOffset = $derived(glyphLayout === "card-custom" ? coreContentOffset : 0);
+  const tkaOffset = $derived(
+    glyphLayout === "card-custom" ? coreContentOffset : 0
+  );
 
   // Derived beat context
   const isStartPosition = $derived(stepNumber === 0);
@@ -419,8 +424,12 @@ Usage:
 
   // Parse direction from turns tuple for direction dot
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
-  const effectiveLeftColor = $derived(leftColorOverride ?? getSettings().primaryPropColors?.left);
-  const effectiveRightColor = $derived(rightColorOverride ?? getSettings().primaryPropColors?.right);
+  const effectiveLeftColor = $derived(
+    leftColorOverride ?? getSettings().primaryPropColors?.left
+  );
+  const effectiveRightColor = $derived(
+    rightColorOverride ?? getSettings().primaryPropColors?.right
+  );
 </script>
 
 <div class="pictograph-renderer">
@@ -648,7 +657,46 @@ Usage:
     />
 
     <!-- Reversal indicators -->
-    <g transform="translate({glyphLayout === 'edges' ? 0 : coreContentOffset}, 0)">
+    {#if (showHandColorKey ?? isStartPosition) && hasValidData}
+      <g
+        class="hand-color-key"
+        transform="translate({expandedWidth / 2}, 850)"
+        aria-label="Left and right prop colors"
+        font-family="Arial, sans-serif"
+        font-size="64"
+        font-weight="600"
+        fill={darkMode === undefined
+          ? "var(--dm-text-color)"
+          : darkMode
+            ? "#ffffff"
+            : "#231f20"}
+      >
+        {#if leftMotionVisible && isVisibleMotion(pictograph.motions?.left)}
+          <circle
+            cx="-145"
+            cy="0"
+            r="28"
+            fill={effectiveLeftColor ?? "var(--dm-motion-blue)"}
+          />
+          <text x="-99" y="22">L</text>
+        {/if}
+        {#if rightMotionVisible && isVisibleMotion(pictograph.motions?.right)}
+          <circle
+            cx="65"
+            cy="0"
+            r="28"
+            fill={effectiveRightColor ?? "var(--dm-motion-red)"}
+          />
+          <text x="111" y="22">R</text>
+        {/if}
+      </g>
+    {/if}
+
+    <g
+      transform="translate({glyphLayout === 'edges'
+        ? 0
+        : coreContentOffset}, 0)"
+    >
       <ReversalIndicators
         leftColorOverride={effectiveLeftColor}
         rightColorOverride={effectiveRightColor}
