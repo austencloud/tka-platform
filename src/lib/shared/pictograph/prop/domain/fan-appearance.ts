@@ -270,6 +270,7 @@ export function fanBuildPreviewOptions(
       id: "pictograph",
       label: "Pictograph",
       image: fanPreviewImage({ ...appearance, build: "pictograph" }),
+      imageScale: 1.76,
     },
     {
       id: "fire",
@@ -300,6 +301,7 @@ export function fanBuildPreviewOptions(
       id: "flat-grip",
       label: "Flat Grip Fire",
       image: fanPreviewImage({ ...appearance, build: "flat-grip" }),
+      imageScale: 1,
       designCredit: {
         originator: "Forged Creations",
         sourceUrl: "https://forgedfans.com/products/flat-grip-fire-fans",
@@ -309,6 +311,7 @@ export function fanBuildPreviewOptions(
       id: "day",
       label: "DoodleGrip Day",
       image: fanPreviewImage({ ...appearance, build: "day" }),
+      imageScale: 2.02,
       designCredit: {
         originator: "Doodle",
         sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
@@ -318,6 +321,7 @@ export function fanBuildPreviewOptions(
       id: "moon",
       label: "Moon LED",
       image: fanPreviewImage({ ...appearance, build: "moon" }),
+      imageScale: 1.54,
       designCredit: {
         originator: "Lighttoys",
         sourceUrl: "https://www.lighttoys.cz/product/moon-fans-ft/",
@@ -344,7 +348,7 @@ export function compactFanLookPreviewOptions(
         build: "fire",
         cover: "covered",
       }),
-      imageScale: 1.92,
+      imageScale: 1.91,
     },
   ];
 }
