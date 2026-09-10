@@ -37,7 +37,7 @@ describe("path preview links", () => {
     );
     visibility.setPathPolicy({ pathShape: "arc", motionAwarePaths: false });
     const payload = captureAnSlice({
-      settings: createAnimationSettingsState({ persist: false }),
+      settings: createAnimationSettingsState({ ephemeral: true }),
       visibility,
     });
     expect(payload?.pathPreview).toBe(true);
@@ -48,7 +48,7 @@ describe("path preview links", () => {
     visibility.restoreSavedPaths();
     expect(
       captureAnSlice({
-        settings: createAnimationSettingsState({ persist: false }),
+        settings: createAnimationSettingsState({ ephemeral: true }),
         visibility,
       })?.pathPreview
     ).toBeUndefined();

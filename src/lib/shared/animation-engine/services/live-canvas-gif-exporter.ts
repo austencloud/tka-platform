@@ -1,9 +1,23 @@
 import * as gifencModule from "gifenc";
 
 // SSR loads gifenc's CommonJS entry; browser builds may select its ESM entry.
-const { GIFEncoder, applyPalette, quantize } = gifencModule.GIFEncoder
-  ? gifencModule
-  : gifencModule.default;
+const gifencNamespace = gifencModule as typeof gifencModule & {
+  default?: typeof gifencModule;
+};
+const { GIFEncoder, applyPalette, quantize } =
+  typeof gifencNamespace.GIFEncoder === "function"
+    ? gifencNamespace
+    : gifencNamespace.default!;
+
+/**
+ * Read fresh on every call. `document.visibilityState` is a readonly property,
+ * so a single inline comparison narrows it for the rest of the function and
+ * survives every `await` - which would silently delete the guard that catches
+ * the visitor switching tabs part-way through a capture.
+ */
+function isTabHidden(): boolean {
+  return document.visibilityState === "hidden";
+}
 
 const GIF_FPS = 10;
 const MAX_GIF_DIMENSION = 384;
@@ -152,7 +166,7 @@ export async function exportLiveCanvasAsGif(
       "The animation is still loading. Try GIF export again in a moment."
     );
   }
-  if (document.visibilityState === "hidden") {
+  if (isTabHidden()) {
     throw new Error("Keep this tab visible while the animation is exported.");
   }
 
@@ -184,7 +198,7 @@ export async function exportLiveCanvasAsGif(
       );
     }
 
-    if (document.visibilityState === "hidden") {
+    if (isTabHidden()) {
       throw new Error(
         "GIF capture paused. Keep this tab visible while the animation is exported."
       );
@@ -205,7 +219,9 @@ export async function exportLiveCanvasAsGif(
   }
 
   encoder.finish();
-  return new Blob([encoder.bytes()], { type: "image/gif" });
+  // A Uint8Array over ArrayBufferLike is a perfectly good BlobPart at runtime;
+  // the current lib.dom union just does not spell it that way.
+  return new Blob([encoder.bytes() as BlobPart], { type: "image/gif" });
 }
 
 export function downloadGif(blob: Blob, filename: string): void {
