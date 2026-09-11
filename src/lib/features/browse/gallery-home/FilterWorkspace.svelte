@@ -415,6 +415,11 @@ the below-seam actions mutate the engine in place.
     .gallery-rule-strip {
       display: grid;
       grid-template-columns: max-content minmax(0, 1fr);
+      /* The first row holds either the empty-state sentence or a 44px chip.
+         A floor keeps the strip the same height in both states, so the
+         first applied rule does not nudge the value cards below it. */
+      grid-auto-rows: minmax(var(--min-touch-target, 44px), auto);
+      align-items: center;
       gap: 0.4rem 0.6rem;
       padding: 0.5rem 0.75rem;
     }

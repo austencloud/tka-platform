@@ -432,8 +432,14 @@
       height: 2.6rem;
       font-size: clamp(1.2rem, 34cqh, 2.6rem);
     }
-    .mini-tile.catalog .mini-title {
-      font-size: 1.2rem;
+    /* 1.2rem "Performances" needs about 140px; a two-column tile at the
+       default 440px pane leaves the label 126px, and it broke as
+       "Performa / nces" at 3840×2160. The larger label waits for the
+       three-column catalog (CategoryRail steps at 620px of column). */
+    @container drill (min-width: 620px) {
+      .mini-tile.catalog .mini-title {
+        font-size: 1.2rem;
+      }
     }
     .mini-tile.catalog .rule-dot {
       width: 1.5rem;

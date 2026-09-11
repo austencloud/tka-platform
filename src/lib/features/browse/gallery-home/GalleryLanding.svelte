@@ -388,12 +388,12 @@
       margin-right: 0.6rem;
     }
   }
-  /* From 700px the auto-fill above already lands on four columns, which
-     leaves the sequence picker's ten minis 4+4+2. Pin the count and let the
-     last pair take the width the missing pair would have had
-     (`4k-native-layout.md` rule 2). Scoped to exactly ten so the six-tile
-     3x2 rule and any other count keep their own shape. */
-  @container drill (min-width: 700px) and (max-width: 899.98px) {
+  /* From 700px the auto-fill above already lands on four columns, and the
+     desktop tiers pin four, which leaves the sequence picker's ten minis
+     4+4+2 at every width. Let the last pair take the width the missing pair
+     would have had (`4k-native-layout.md` rule 2). Scoped to exactly ten so
+     the six-tile 3x2 rule and any other count keep their own shape. */
+  @container drill (min-width: 700px) {
     .mini-grid:has(> :global(:nth-child(10):last-child)) {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
