@@ -728,10 +728,28 @@
       bpm={studioSurfaces.controls?.bpm ?? ctx.bpmLocal}
       renderMode={studioSurfaces.active ? "2d" : ctx.renderMode}
       playbackMode={ctx.playbackMode}
-      selectedPropType={studioSurfaces.controls?.propType ?? ctx.leftPropType}
+      selectedPropType={studioSurfaces.controls?.propType ??
+        (ctx.catDogModeEnabled && ctx.propHand === "right"
+          ? ctx.rightPropType
+          : ctx.leftPropType)}
       fanAppearance={ctx.fanAppearance}
       onFanAppearanceChange={ctx.handleFanAppearanceChange}
-      propChirality={createGlobalChiralitySeam()}
+      propChirality={createGlobalChiralitySeam(
+        ctx.catDogModeEnabled ? ctx.propHand : undefined
+      )}
+      handProps={studioSurfaces.active ||
+      ctx.effectiveSequence?.sequenceKind === "hand-path" ||
+      ctx.leftPropType === undefined ||
+      ctx.rightPropType === undefined
+        ? undefined
+        : {
+            catDog: ctx.catDogModeEnabled ?? false,
+            hand: ctx.propHand,
+            leftPropType: ctx.leftPropType,
+            rightPropType: ctx.rightPropType,
+            onToggleCatDog: ctx.handleCatDogToggle,
+            onHandChange: ctx.setPropHand,
+          }}
       sequence={ctx.effectiveSequence}
       showInlineExportProgress={false}
       showTempoControls={false}
@@ -740,7 +758,13 @@
         ? undefined
         : (prop) => {
             studioSurfaces.controls?.setProp(prop);
-            interactions.handlePropChange(prop, "video_export");
+            interactions.handlePropChange(
+              prop,
+              "video_export",
+              !studioSurfaces.active && ctx.catDogModeEnabled
+                ? ctx.propHand
+                : "both"
+            );
           }}
       onPlaybackToggle={() => {
         if (studioSurfaces.controls) studioSurfaces.controls.toggle();

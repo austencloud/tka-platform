@@ -3,6 +3,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import type { PendingActionType } from "../services/pending-action-queue";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { ViewerPropHand } from "./viewer-prop-visibility-state.svelte";
 import type { FanAppearance } from "$lib/shared/pictograph/prop/domain/fan-appearance";
 import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
 import type {
@@ -32,7 +33,12 @@ type Viewer3DState = ReturnType<typeof createViewer3DState>;
 interface ViewerOrchestratorContextHandlers {
   setResolvedCardAutoLayout: (layout: ResolvedAutoLayout | null) => void;
   onRenderProgress: (loaded: number, total: number) => void;
-  handlePropTypeChange: (propType: PropType) => void;
+  handlePropTypeChange: (
+    propType: PropType,
+    hand?: ViewerPropHand | "both"
+  ) => void;
+  setPropHand: (hand: ViewerPropHand) => void;
+  handleCatDogToggle: () => void;
   handleFanAppearanceChange: (appearance: FanAppearance) => void;
   enterEditMode: (pane: "animation" | "image" | "video-upload") => void;
   exitEditMode: () => void;
@@ -85,6 +91,7 @@ interface ViewerOrchestratorContextInputs {
   getLeftPropType: () => PropType;
   getRightPropType: () => PropType;
   getCatDogModeEnabled: () => boolean;
+  getPropHand: () => ViewerPropHand;
   getFanAppearance: () => FanAppearance;
   getIsLoggedIn: () => boolean;
   getIsOwned: () => boolean;
@@ -147,6 +154,9 @@ export function createViewerOrchestratorContextState(
     leftPropType: inputs.getLeftPropType(),
     rightPropType: inputs.getRightPropType(),
     catDogModeEnabled: inputs.getCatDogModeEnabled(),
+    propHand: inputs.getPropHand(),
+    setPropHand: inputs.handlers.setPropHand,
+    handleCatDogToggle: inputs.handlers.handleCatDogToggle,
     handlePropTypeChange: inputs.handlers.handlePropTypeChange,
     fanAppearance: inputs.getFanAppearance(),
     handleFanAppearanceChange: inputs.handlers.handleFanAppearanceChange,
