@@ -922,6 +922,12 @@
     aspect-ratio: 1;
     width: auto;
     min-width: 0;
+    /* The label is the decision (`.mini-title` above): in a two-column row
+       the art grows with the cell, and at 94px rows it left "Performances"
+       116px, which is one letter short — it broke as "Performanc / es" at
+       2560×1440. The art yields its square before the longest word yields
+       a letter. */
+    max-width: calc(100% - 8.5rem);
   }
   @container cat-cell (min-height: 6.25rem) {
     .mini-tile.catalog {
