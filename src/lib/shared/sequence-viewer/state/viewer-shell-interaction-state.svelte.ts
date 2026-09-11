@@ -1,5 +1,6 @@
 import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { ViewerPropHand } from "./viewer-prop-visibility-state.svelte";
 import type {
   ScanAnalyticsValue,
   ScanExportStage,
@@ -312,11 +313,15 @@ export function createViewerShellInteractionState(
     });
   }
 
-  function handlePropChange(propType: PropType, source: string): void {
+  function handlePropChange(
+    propType: PropType,
+    source: string,
+    hand: ViewerPropHand | "both" = "both"
+  ): void {
     const ctx = inputs.getContext();
     const previousLeft = ctx.leftPropType ? String(ctx.leftPropType) : null;
     const previousRight = ctx.rightPropType ? String(ctx.rightPropType) : null;
-    ctx.handlePropTypeChange(propType);
+    ctx.handlePropTypeChange(propType, hand);
     const left = ctx.leftPropType ? String(ctx.leftPropType) : null;
     const right = ctx.rightPropType ? String(ctx.rightPropType) : null;
     dependencies.captureScanSettingChanged({
