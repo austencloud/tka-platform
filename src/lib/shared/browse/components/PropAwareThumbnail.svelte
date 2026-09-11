@@ -45,6 +45,7 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -176,6 +177,10 @@
       leftPropType,
       rightPropType,
       catDogModeEnabled,
+      // The same palette the live PictographRenderer reads, so a card in a
+      // picker matches the sheet it gets added to. Null keeps the card on the
+      // shared default-color cache class.
+      primaryPropColors: getSettings().primaryPropColors ?? null,
       lightMode,
       variant,
       addWord,

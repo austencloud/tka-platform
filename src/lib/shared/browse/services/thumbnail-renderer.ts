@@ -343,6 +343,9 @@ export class ThumbnailRenderer {
 
       // Visibility settings - respect user preferences from input
       visibilityOverrides: {
+        // Pinned explicitly: the palette is part of the cache key, so the
+        // composer must never fall back to the global setting on its own.
+        primaryPropColors: input.primaryPropColors ?? null,
         showTKA: input.visibility?.showTKA ?? true, // Default ON, user can toggle
         showTnD: false, // Never shown in thumbnails
         showElemental: false, // Never shown in thumbnails
