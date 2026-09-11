@@ -49,6 +49,8 @@ export interface BuildGalleryRenderInputParams {
   leftPropType?: PropType;
   rightPropType?: PropType;
   catDogModeEnabled?: boolean;
+  /** Chosen hand palette. Leave unset for the shared default-color class. */
+  primaryPropColors?: { left: string; right: string } | null;
   lightMode?: boolean;
   variant?: ThumbnailVariant;
   // Composition overrides (undefined = variant defaults)
@@ -191,6 +193,7 @@ export function buildGalleryRenderInput(
     leftPropType,
     rightPropType,
     catDogModeEnabled = false,
+    primaryPropColors,
     lightMode = false,
     variant = "gallery",
     addWord,
@@ -218,6 +221,7 @@ export function buildGalleryRenderInput(
     leftPropType,
     rightPropType,
     catDogModeEnabled,
+    primaryPropColors,
     lightMode,
     variant,
     loopType: sequence.loopType ?? null,
