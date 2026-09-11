@@ -35,7 +35,7 @@
     /** Other sequence surfaces provide only the callbacks that are valid in
         their context; absent callbacks remove those tiles. */
     secondarySectionLabel?: string;
-    /** Compact surfaces can place First Step beside the geometric transforms
+    /** Compact surfaces can place Choose Start beside the geometric transforms
         instead of creating a sparse secondary row. */
     shiftStartPlacement?: "secondary" | "transform";
     onReset?: () => void;
@@ -150,18 +150,18 @@
       onShiftStart && handleActionClick("shift-start", onShiftStart)}
     disabled={(!hasSequence || isTransforming || !canShiftStart) && !helpMode}
     aria-label={helpMode
-      ? "Learn about First Step"
+      ? "Learn about Choose Start"
       : patternsLocked
-        ? "First Step - locked, sign up to unlock"
-        : "Pick a new first step: change where the sequence starts"}
+        ? "Choose Start - locked, sign up to unlock"
+        : "Choose Start: tap the pose the sequence should start from"}
   >
     {@render lockBadge()}
     <div class="btn-icon">
       <i class="fas fa-forward" aria-hidden="true"></i>
     </div>
     <div class="btn-text">
-      <span class="btn-label">First Step</span>
-      <span class="btn-desc">Pick new step 1</span>
+      <span class="btn-label">Choose Start</span>
+      <span class="btn-desc">Pick the start pose</span>
     </div>
   </button>
 {/snippet}
