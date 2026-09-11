@@ -150,3 +150,25 @@ describe("buildGalleryRenderInput — portable card provenance", () => {
     expect(input).not.toHaveProperty("showBirthday");
   });
 });
+
+describe("buildGalleryRenderInput — primary prop colors", () => {
+  const base = {
+    sequence: four,
+    compositionManager: source(),
+    isAuthenticated: true,
+  };
+
+  it("carries the chosen palette into the render input", () => {
+    const palette = { left: "#00ff88", right: "#ff8800" };
+    const input = buildGalleryRenderInput({
+      ...base,
+      primaryPropColors: palette,
+    } as any);
+    expect(input.primaryPropColors).toEqual(palette);
+  });
+
+  it("leaves the palette unset when none is given, so the warmer keys default renders", () => {
+    const input = buildGalleryRenderInput(base as any);
+    expect(input.primaryPropColors).toBeUndefined();
+  });
+});
