@@ -86,6 +86,7 @@
 
 <div
   class="live-path-grid"
+  class:pose-picker={!!onStepClick}
   style:--live-grid-columns={gridColumns}
   style:--live-grid-rows={gridRows}
   style:--live-cell-size={`${safeCellSize}px`}
@@ -143,12 +144,12 @@
       <button
         type="button"
         class="live-cell step-cell first-step-choice"
-        class:current-first-step={index === 0}
+        class:current-first-step={index === sequence.steps.length - 1}
         style="grid-column:{stepColumn(index)};grid-row:{stepRow(index)};"
         onclick={() => onStepClick(index)}
-        aria-label={index === 0
-          ? "Step 1 is already first"
-          : `Make step ${index + 1} the new first step`}
+        aria-label={index === sequence.steps.length - 1
+          ? "This pose is already the start"
+          : `Start from the pose after step ${index + 1}`}
       >
         {@render stepPictograph(step, index)}
       </button>
@@ -202,6 +203,22 @@
     color: inherit;
     font: inherit;
     cursor: pointer;
+  }
+
+  /*
+    Choose Start picker: each tile is the pose after its step, so arrows,
+    reversal dots, and step numbers fade out and only the prop remains.
+  */
+  .live-path-grid .step-cell :global(.pictograph-arrows),
+  .live-path-grid .step-cell :global(.reversal-indicators),
+  .live-path-grid .step-cell :global(.beat-number) {
+    transition: opacity var(--duration-fast, 150ms) ease;
+  }
+
+  .live-path-grid.pose-picker .step-cell :global(.pictograph-arrows),
+  .live-path-grid.pose-picker .step-cell :global(.reversal-indicators),
+  .live-path-grid.pose-picker .step-cell :global(.beat-number) {
+    opacity: 0;
   }
 
   .first-step-choice {
@@ -277,7 +294,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .live-cell {
+    .live-cell,
+    .live-path-grid .step-cell :global(.pictograph-arrows),
+    .live-path-grid .step-cell :global(.reversal-indicators),
+    .live-path-grid .step-cell :global(.beat-number) {
       transition: none;
     }
   }
