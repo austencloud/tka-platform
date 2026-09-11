@@ -876,17 +876,11 @@
   /*
     Choose Start picker: fade every "beat" layer on step tiles so only grid
     and props remain. ArrowSvg removes arrows with an {#if} when told to, so
-    opacity on the layer groups is what makes the fade run both ways.
+    opacity on the layer groups is what makes the fade run both ways. The
+    glyph components carry their own opacity transitions; only the arrows
+    group and path-shape glyph need one added here.
   */
   .step-grid-container :global(.step-cell .pictograph-arrows),
-  .step-grid-container :global(.step-cell .tka-glyph),
-  .step-grid-container :global(.step-cell .turns-column),
-  .step-grid-container :global(.step-cell .beat-number),
-  .step-grid-container :global(.step-cell .reversal-indicators),
-  .step-grid-container :global(.step-cell .position-glyph),
-  .step-grid-container :global(.step-cell .tnd-glyph),
-  .step-grid-container :global(.step-cell .elemental-glyph),
-  .step-grid-container :global(.step-cell .duration-glyph),
   .step-grid-container :global(.step-cell .path-shape-glyph) {
     transition: opacity var(--duration-fast, 150ms) ease;
   }
@@ -916,14 +910,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .step-grid-container :global(.step-cell .pictograph-arrows),
-    .step-grid-container :global(.step-cell .tka-glyph),
-    .step-grid-container :global(.step-cell .turns-column),
-    .step-grid-container :global(.step-cell .beat-number),
-    .step-grid-container :global(.step-cell .reversal-indicators),
-    .step-grid-container :global(.step-cell .position-glyph),
-    .step-grid-container :global(.step-cell .tnd-glyph),
-    .step-grid-container :global(.step-cell .elemental-glyph),
-    .step-grid-container :global(.step-cell .duration-glyph),
     .step-grid-container :global(.step-cell .path-shape-glyph) {
       transition: none;
     }

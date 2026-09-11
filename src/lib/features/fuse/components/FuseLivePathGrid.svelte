@@ -207,11 +207,11 @@
 
   /*
     Choose Start picker: each tile is the pose after its step, so arrows,
-    reversal dots, and step numbers fade out and only the prop remains.
+    reversal dots, and step numbers fade out and only the prop remains. The
+    dots and numbers carry their own opacity transitions; the arrows group
+    gets one here.
   */
-  .live-path-grid .step-cell :global(.pictograph-arrows),
-  .live-path-grid .step-cell :global(.reversal-indicators),
-  .live-path-grid .step-cell :global(.beat-number) {
+  .live-path-grid .step-cell :global(.pictograph-arrows) {
     transition: opacity var(--duration-fast, 150ms) ease;
   }
 
@@ -295,9 +295,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .live-cell,
-    .live-path-grid .step-cell :global(.pictograph-arrows),
-    .live-path-grid .step-cell :global(.reversal-indicators),
-    .live-path-grid .step-cell :global(.beat-number) {
+    .live-path-grid .step-cell :global(.pictograph-arrows) {
       transition: none;
     }
   }
