@@ -198,6 +198,8 @@ describe("card-configurator LOOP descriptor", () => {
     constraintPreset: "smooth",
     handPathMode: "mixed",
     motionTypeFilter: null,
+    handRelationship: "free",
+    handRelationshipInverted: false,
     durationTemplateId: null,
     spellTargetLength: null,
   };
