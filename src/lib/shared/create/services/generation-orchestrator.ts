@@ -30,6 +30,7 @@ import {
 import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/browser-data-provider";
 import { letterQueryHandler as globalLetterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { expanderMultiplier, specHasExpandInversion } from "$lib/shared/create/services/loop-type-utils";
+import { handRelationshipToEngine } from "$lib/shared/create/domain/hand-relationship";
 
 // The engine's word-based generation path reads from a global transition
 // graph singleton (mirrors mcp-server/src/shared/server-context.ts which
@@ -273,6 +274,17 @@ export class GenerationOrchestrator {
       result.motionFamily = { exclude: ["dash"] };
     } else if (options.motionTypeFilter === "prefer-dash") {
       result.dashPreference = "maximize";
+    }
+
+    // Hand relationship: a hard per-step constraint, passed straight through.
+    // Anything added to GenerationOptions has to be threaded here or it does
+    // nothing (see the endPositions note at the top of this file).
+    const relationship = handRelationshipToEngine(
+      options.handRelationship ?? "free",
+      options.handRelationshipInverted ?? false
+    );
+    if (relationship) {
+      result.handRelationship = relationship;
     }
 
     return result;

@@ -11,6 +11,7 @@ to three rows. Click opens the expanded overlay.
   import { onMount, getContext } from "svelte";
   import { customizeOverlayWasOpen } from "$lib/shared/create/state/customize-overlay-hmr";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { HandRelationship } from "$lib/shared/create/domain/hand-relationship";
   import CardHeader from "./shared/CardHeader.svelte";
   import {
     buildCustomizeSummary,
@@ -32,6 +33,10 @@ to three rows. Click opens the expanded overlay.
     onConstraintPresetChange,
     onHandPathModeChange,
     onMotionTypeFilterChange,
+    handRelationship = "free",
+    handRelationshipInverted = false,
+    onHandRelationshipChange = null,
+    onHandRelationshipInvertedChange = null,
     onStartEndChange,
     onResetAll = null,
     color = "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
@@ -55,6 +60,10 @@ to three rows. Click opens the expanded overlay.
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
     onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
+    handRelationship?: HandRelationship;
+    handRelationshipInverted?: boolean;
+    onHandRelationshipChange?: ((v: HandRelationship) => void) | null;
+    onHandRelationshipInvertedChange?: ((v: boolean) => void) | null;
     onStartEndChange?: (options: StartEndOptions) => void;
     onResetAll?: (() => void) | null;
     color?: string;
@@ -87,6 +96,8 @@ to three rows. Click opens the expanded overlay.
         constraintPreset,
         handPathMode,
         motionTypeFilter,
+        handRelationship,
+        handRelationshipInverted,
         startEndOptions,
         gridMode,
       },
@@ -121,6 +132,10 @@ to three rows. Click opens the expanded overlay.
       onConstraintPresetChange,
       onHandPathModeChange,
       onMotionTypeFilterChange,
+      handRelationship,
+      handRelationshipInverted,
+      onHandRelationshipChange,
+      onHandRelationshipInvertedChange,
       onStartEndChange: onStartEndChange ?? null,
       onResetAll: onResetAll ?? null,
     });

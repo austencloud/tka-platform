@@ -94,6 +94,13 @@ export {
   rightHandForbidDash,
   perHandDash,
 } from "./constraints/style/per-hand-dash-constraint.js";
+export {
+  HandRelationshipConstraint,
+  handRelationshipHolds,
+  HAND_RELATIONSHIP_LOCATION_MAPS,
+  type HandRelationshipMap,
+  type HandRelationshipOptions,
+} from "./constraints/style/hand-relationship-constraint.js";
 
 // Parsing
 export {

@@ -31,6 +31,10 @@
         constraintPreset={overlayProps.constraintPreset}
         handPathMode={overlayProps.handPathMode}
         motionTypeFilter={overlayProps.motionTypeFilter}
+        handRelationship={overlayProps.handRelationship}
+        handRelationshipInverted={overlayProps.handRelationshipInverted}
+        onHandRelationshipChange={overlayProps.onHandRelationshipChange}
+        onHandRelationshipInvertedChange={overlayProps.onHandRelationshipInvertedChange}
         startEndOptions={overlayProps.startEndOptions}
         level={overlayProps.level}
         gridMode={overlayProps.gridMode}
