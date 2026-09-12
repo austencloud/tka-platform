@@ -1021,5 +1021,14 @@
     height: 100%;
     object-fit: contain;
   }
+  /* Last in the cascade on purpose: the row composition above reserves
+     8.5rem for the label, which holds "Performances" at 2560×1440 (139px box)
+     but not at the 2600 tier, where the same tile leaves the label 131px and
+     the word breaks by one letter. The art gives up the difference here. */
+  @media (min-width: 2600px) {
+    .mini-tile.catalog .mini-art {
+      max-width: calc(100% - 9.25rem);
+    }
+  }
 
 </style>
