@@ -80,13 +80,15 @@
   }
 
   /**
-   * The split pane needs its left column to hold the catalog (about 445px of
-   * tiles below the 1680px seam, 512px above) plus one editor row with its
-   * header (about 240px) and the drill's own chrome. A dialog at 90dvh clears
-   * that from 900px of viewport up; 720p and 768p laptops do not, and there
-   * the step-through flow shows the editor instead of a header-only sliver.
+   * The split pane needs its left column to hold the catalog plus one whole
+   * editor row: below the 1680px seam that is 445px of tiles + 68px header +
+   * 166px card + gaps and padding (about 780px of drill); above it, 512 + 68 +
+   * 212 (about 890px). A dialog at 90dvh gives the drill 734px at 1440×900 and
+   * 896px at 1920×1080, so the laptop tier takes the step-through flow (three
+   * level cards across, then a full-width grid) instead of a split pane that
+   * shows 83% of one card, and 1080p keeps the live results beside the editor.
    */
-  const SPLIT_MIN_HEIGHT = 720;
+  const SPLIT_MIN_HEIGHT = 780;
 
   function openResults(apply: () => void): void {
     apply();
