@@ -255,6 +255,7 @@ export function buildCardDescriptors(
         inversionInterval: config.inversionInterval,
         inversionMode: config.inversionMode,
         reflectionAxis: config.reflectionAxis,
+        handRelationship: config.handRelationship,
         onLOOPTypeChange: handlers.handleLOOPTypeChange,
         cardIndex: cardIndex++,
       },
