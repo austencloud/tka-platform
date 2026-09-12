@@ -73,7 +73,7 @@ export interface CardHandlers {
   currentGridMode?: GridMode;
   // Saved setups card
   setupsCardValue?: string;
-  setupsCardStatus?: "active" | "modified" | null;
+  setupsCardStatus?: "active" | null;
   handleOpenPresetDrawer?: () => void;
 }
 

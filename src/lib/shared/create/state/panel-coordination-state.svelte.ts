@@ -185,11 +185,12 @@ export interface CustomizeOverlayProps {
 }
 
 export interface PanelCoordinationState {
-  // Shift Start Mode State
+  // Choose Start picker state. The handler receives the tapped tile index:
+  // 0 for the start tile, 1..n for step tiles (the pose after that step).
   get isShiftStartMode(): boolean;
-  get shiftStartHandler(): ((stepNumber: number) => void) | null;
+  get shiftStartHandler(): ((tileIndex: number) => void) | null;
 
-  enterShiftStartMode(handler: (stepNumber: number) => void): void;
+  enterShiftStartMode(handler: (tileIndex: number) => void): void;
   exitShiftStartMode(): void;
 
   // Edit Panel State
@@ -366,7 +367,7 @@ export interface PanelCoordinationState {
 export function createPanelCoordinationState(): PanelCoordinationState {
   // Shift start mode state
   let isShiftStartMode = $state(false);
-  let shiftStartHandler = $state<((stepNumber: number) => void) | null>(null);
+  let shiftStartHandler = $state<((tileIndex: number) => void) | null>(null);
 
   // Edit panel state
   let isEditPanelOpen = $state(false);
@@ -561,7 +562,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return shiftStartHandler;
     },
 
-    enterShiftStartMode(handler: (stepNumber: number) => void) {
+    enterShiftStartMode(handler: (tileIndex: number) => void) {
       isShiftStartMode = true;
       shiftStartHandler = handler;
     },

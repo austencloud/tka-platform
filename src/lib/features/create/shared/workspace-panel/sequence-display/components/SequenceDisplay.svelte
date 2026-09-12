@@ -175,6 +175,13 @@
 
   function handleStartPositionClick() {
     hapticService?.trigger("selection");
+
+    // Choose Start treats the start tile as a pose too (index 0).
+    if (panelState.isShiftStartMode && panelState.shiftStartHandler) {
+      panelState.shiftStartHandler(0);
+      return;
+    }
+
     onStartPositionSelected?.();
   }
 
@@ -232,6 +239,7 @@
           startPosition={startPositionStep() ?? undefined}
           onStepClick={handleStepClick}
           onStartClick={handleStartPositionClick}
+          posePicker={isShiftStartMode}
           {onStepDelete}
           {onStepLongPress}
           {selectedStepNumber}
