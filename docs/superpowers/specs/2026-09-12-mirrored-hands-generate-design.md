@@ -85,18 +85,20 @@ Start orientation is not linked either.
 ### What the dataframes say
 
 Counted directly from `static/data/pictographs/*PictographDataframe.csv`
-(576 rows each). Every relationship selects 24 rows plain and 16 inverted:
+(576 rows each). Every relationship selects 24 rows plain. Inverted swaps
+the pro/anti letters for their one-pro-one-anti counterparts and keeps the dash and
+static rows, so it is 24 rows as well:
 
-| Grid    | Relationship | Letters (plain)   | Inverted | Eligible start positions |
-| ------- | ------------ | ----------------- | -------- | ------------------------ |
-| Diamond | Mirrored     | D E J K Φ- Ψ- α β | F L      | α3, α7, β1, β5           |
-| Diamond | Flipped      | D E J K Φ- Ψ- α β | F L      | α1, α5, β3, β7           |
-| Diamond | Unison       | G H Ψ- β          | I        | β1, β3, β5, β7           |
-| Diamond | Opposite     | A B Φ- α          | C        | α1, α3, α5, α7           |
-| Box     | Mirrored     | M N P Q Λ- γ      | O R      | γ2, γ6, γ12, γ16         |
-| Box     | Flipped      | M N P Q Λ- γ      | O R      | γ4, γ8, γ10, γ14         |
-| Box     | Unison       | G H Ψ- β          | I        | β2, β4, β6, β8           |
-| Box     | Opposite     | A B Φ- α          | C        | α2, α4, α6, α8           |
+| Grid    | Relationship | Letters (plain)   | Inverted (plus the same dash/static rows) | Eligible start positions |
+| ------- | ------------ | ----------------- | ----------------------------------------- | ------------------------ |
+| Diamond | Mirrored     | D E J K Φ- Ψ- α β | F L                                       | α3, α7, β1, β5           |
+| Diamond | Flipped      | D E J K Φ- Ψ- α β | F L                                       | α1, α5, β3, β7           |
+| Diamond | Unison       | G H Ψ- β          | I                                         | β1, β3, β5, β7           |
+| Diamond | Opposite     | A B Φ- α          | C                                         | α1, α3, α5, α7           |
+| Box     | Mirrored     | M N P Q Λ- γ      | O R                                       | γ2, γ6, γ12, γ16         |
+| Box     | Flipped      | M N P Q Λ- γ      | O R                                       | γ4, γ8, γ10, γ14         |
+| Box     | Unison       | G H Ψ- β          | I                                         | β2, β4, β6, β8           |
+| Box     | Opposite     | A B Φ- α          | C                                         | α2, α4, α6, α8           |
 
 In the 6-element model (Flow Arts MCP, `elemental-model`): Unison is Earth,
 Opposite is Water, both grid-invariant. Mirrored and Flipped are the
